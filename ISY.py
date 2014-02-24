@@ -1,10 +1,12 @@
-from ISYhttp import ISYhttp
+from Connection import Connection
 from configuration import configuration
-from nodes import nodes
-from programs import programs
-from variables import variables
-from climate import climate
-from networking import networking
+from Nodes import Nodes
+from Programs import Programs
+from Events import EventStream
+from Variables import Variables
+from Climate import Climate
+#from networking import networking
+
 
 class DummyLog(object):
     """
@@ -12,7 +14,9 @@ class DummyLog(object):
 
     Template for log file class.
     """
-    def __init__(self, *args, **kwargs): pass
+    def __init__(self, *args, **kwargs):
+        pass
+
     def write(self, msg):
         print msg
     info = write
@@ -21,9 +25,10 @@ class DummyLog(object):
     critical = write
     continuation = write
 
+
 class ISY(object):
 
-    """ 
+    """
     ISY class
 
     DESCRIPTION:
@@ -31,8 +36,10 @@ class ISY(object):
         the ISY device.
 
     ATTRIBUTES:
-        x10_commands: dictionary of the commands that can be sent to X10 devices.
-        auto_update: boolean that controls whether the children update threads should be running.
+        x10_commands: dictionary of the commands that can be
+                      sent to X10 devices.
+        auto_update: boolean that controls whether the children
+                     update threads should be running.
             True: start update threads
             False: stop update threads
         conn: ISY HTTP connection
@@ -44,19 +51,17 @@ class ISY(object):
         networking: ISY networking commands (only if installed on device)
     """
 
-    x10_commands = { \
-        'all_off': 1, \
-        'all_on': 4, \
-        'on': 3, \
-        'off': 11, \
-        'bright': 7, \
-        'dim': 15 \
+    x10_commands = {
+        'all_off': 1,
+        'all_on': 4,
+        'on': 3,
+        'off': 11,
+        'bright': 7,
+        'dim': 15
     }
-    
-    _threads = []
-    _autoup = False
 
-    def __init__(self, address, port, username, password, use_https=False, log=None):
+    def __init__(self, address, port, username, password,
+                 use_https=False, log=None):
         """
         Initiates the ISY class.
 
@@ -71,33 +76,41 @@ class ISY(object):
             self.log = DummyLog()
         else:
             self.log = log
-            
-        self.conn = ISYhttp(self, address, port, username, password, use_https)
-        self.configuration = configuration(self, xml=self.conn.getConfiguration())
-        self.nodes = nodes(self, xml=self.conn.getNodes())
-        self.programs = programs(self, xml=self.conn.getPrograms())
-        self.variables = variables(self, xml=self.conn.getVariables())
-        
+
+        self.conn = Connection(self, address, port, username,
+                               password, use_https)
+        self.configuration = configuration(self,
+                                           xml=self.conn.getConfiguration())
+        self.nodes = Nodes(self, xml=self.conn.getNodes())
+        self.programs = Programs(self, xml=self.conn.getPrograms())
+        self.variables = Variables(self, xml=self.conn.getVariables())
+        self._events = EventStream(self)
+
         if len(self.configuration) == 0:
             self.log.error('ISY Unable to connect.')
         else:
             if self.configuration['Weather Information']:
-                self.climate = climate(self, xml=self.conn.getClimate())
-            if self.configuration['Networking Module']:
-                self.networking = networking(self, xml=self.conn.getNetwork())
-            
+                self.climate = Climate(self, xml=self.conn.getClimate())
+        #    if self.configuration['Networking Module']:
+        #        self.networking = networking(self, xml=self.conn.getNetwork())
+
+    def isAlive(self):
+        """Indicates if the update thread is running."""
+        for thread in self._threads:
+            return thread.isAlive()
+        return self._events.running
+
+    def stop(self):
+        """Stops auto updating."""
+        self.auto_update = False
+
     @property
     def auto_update(self):
-        return self._autoup
+        return self._events.running
+
     @auto_update.setter
     def auto_update(self, val):
-        self._autoup = val
-        upClasses = [self.nodes, self.programs, self.variables, self.climate]
-        self._threads = [upclass.updateThread for upclass in upClasses]
-
-        for thread in self._threads:
-            thread.daemon = True
-            thread.start()
+        self._events.running = val
 
     def sendX10(self, address, cmd):
         """
@@ -110,6 +123,8 @@ class ISY(object):
             command = self.x10_commands[cmd]
             result = self.sendX10(address, command)
             if result is not None:
-                self.log.info('ISY Sent X10 Command: ' + cmd + ' To: ' + address)
+                self.log.info('ISY Sent X10 Command: ' +
+                              cmd + ' To: ' + address)
             else:
-                self.log.error('ISY Failed to send X10 Command: ' + cmd + ' To: ' + address)
+                self.log.error('ISY Failed to send X10 Command: '
+                               + cmd + ' To: ' + address)

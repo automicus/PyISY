@@ -1,14 +1,15 @@
 import urllib
 import requests
 
-class ISYhttp(object):
+
+class Connection(object):
 
     def __init__(self, parent, address, port, username, password, use_https):
-        self.parent     = parent
-        self._address   = address
-        self._port      = port
-        self._username  = username
-        self._password  = password
+        self.parent = parent
+        self._address = address
+        self._port = port
+        self._username = username
+        self._password = password
         self._use_https = use_https
 
     # COMMON UTILITIES
@@ -17,25 +18,26 @@ class ISYhttp(object):
             url = 'http://'
         else:
             url = 'http://'
-        
+
         url += self._address
         url += '/rest/' + '/'.join([urllib.quote(item) for item in path])
-         
+
         if query is not None:
             url += '?' + urllib.urlencode(query)
-             
+
         return url
-         
+
     def request(self, url, ok404=False):
         if self.parent.log is not None:
             self.parent.log.info('ISY Request: ' + url)
-        
-        try:    
+
+        try:
             r = requests.get(url, auth=(self._username, self._password))
         except requests.ConnectionError:
-            self.parent.log.error('ISY Could not recieve response from device.')
+            self.parent.log.error('ISY Could not recieve response '
+                                  + 'from device.')
             return None
-        else: 
+        else:
             if r.status_code == 200:
                 self.parent.log.info('ISY Response Recieved')
                 return r.text
@@ -45,16 +47,19 @@ class ISYhttp(object):
             else:
                 self.parent.log.warning('Bad ISY Request: ' + url)
                 return None
-            
+
     # CONFIGURATION
     def getConfiguration(self):
         req_url = self.compileURL(['config'])
         result = self.request(req_url)
         return result
-        
+
     # PROGRAMS
-    def getPrograms(self):
-        req_url = self.compileURL(['programs'], {'subfolders': 'true'})
+    def getPrograms(self, pid=None):
+        addr = ['programs']
+        if pid is not None:
+            addr.append(str(pid))
+        req_url = self.compileURL(addr, {'subfolders': 'true'})
         result = self.request(req_url)
         return result
 
@@ -97,17 +102,17 @@ class ISYhttp(object):
         req_url = self.compileURL(['status'])
         result = self.request(req_url)
         return result
-        
+
     def updateNode(self, nid):
         req_url = self.compileURL(['nodes', nid, 'get', 'ST'])
         response = self.request(req_url)
         return response
-        
+
     def nodeOff(self, nid):
         req_url = self.compileURL(['nodes', nid, 'cmd', 'DOF'])
         response = self.request(req_url)
         return response
-        
+
     def nodeOn(self, nid, val):
         if val is None:
             req_url = self.compileURL(['nodes', nid, 'cmd', 'DON'])
@@ -118,44 +123,45 @@ class ISYhttp(object):
             return self.nodeOff(nid)
         response = self.request(req_url)
         return response
-        
+
     def nodeFastOff(self, nid):
         req_url = self.compileURL(['nodes', nid, 'cmd', 'DFOF'])
         response = self.request(req_url)
         return response
-        
+
     def nodeFastOf(self, nid):
         req_url = self.compileURL(['nodes', nid, 'cmd', 'DFON'])
         response = self.request(req_url)
         return response
-        
+
     def nodeBright(self, nid):
         req_url = self.compileURL(['nodes', nid, 'cmd', 'brt'])
         response = self.request(req_url)
         return response
-        
+
     def nodeDim(self, nid):
         req_url = self.compileURL(['nodes', nid, 'cmd', 'dim'])
         response = self.request(req_url)
         return response
-        
+
     # VARIABLES
     def getVariables(self):
-        requests = [['vars', 'definitions', '1'], \
-            ['vars', 'definitions', '2'], \
-            ['vars', 'get', '1'], \
-            ['vars', 'get', '2']]
+        requests = [['vars', 'definitions', '1'],
+                    ['vars', 'definitions', '2'],
+                    ['vars', 'get', '1'],
+                    ['vars', 'get', '2']]
         req_urls = [self.compileURL(req) for req in requests]
         results = [self.request(req_url) for req_url in req_urls]
         return results
 
     def updateVariables(self):
-        requests = [['vars', 'get', '1'], \
-            ['vars', 'get', '2']]
+        requests = [['vars', 'get', '1'],
+                    ['vars', 'get', '2']]
         req_urls = [self.compileURL(req) for req in requests]
         results = [self.request(req_url) for req_url in req_urls]
         result = ''.join(results)
-        result = result.replace('</vars><?xml version="1.0" encoding="UTF-8"?><vars>', '')
+        result = result.replace('</vars><?xml version="1.0" encoding="UTF-8"?>'
+                                + '<vars>', '')
         return result
 
     def updateVariable(self, vtype, vid):
@@ -164,21 +170,23 @@ class ISYhttp(object):
         return result
 
     def setVariable(self, vtype, vid, val):
-        req_url = self.compileURL(['vars', 'set', str(vtype), str(vid), str(val)])
+        req_url = self.compileURL(['vars', 'set', str(vtype),
+                                   str(vid), str(val)])
         result = self.request(req_url)
         return result
 
     def initVariable(self, vtype, vid, val):
-        req_url = self.compileURL(['vars', 'init', str(vtype), str(vid), str(val)])
+        req_url = self.compileURL(['vars', 'init', str(vtype),
+                                   str(vid), str(val)])
         result = self.request(req_url)
         return result
-    
-    # CLIMATE    
+
+    # CLIMATE
     def getClimate(self):
         req_url = self.compileURL(['climate'])
         result = self.request(req_url)
         return result
-        
+
     # NETWORK
     def getNetwork(self):
         req_url = self.compileURL(['networking', 'resources'])

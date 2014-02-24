@@ -1,5 +1,5 @@
-
 from xml.dom import minidom
+
 
 class configuration(dict):
 
@@ -10,10 +10,10 @@ class configuration(dict):
         This class handles the ISY configuration.
 
     USAGE:
-        This object may be used in a similar way as a 
+        This object may be used in a similar way as a
         dictionary with the either module names or ids
-        being used as keys and a boolean indicating 
-        whether the module is installed will be 
+        being used as keys and a boolean indicating
+        whether the module is installed will be
         returned.
 
     PARAMETERS:
@@ -49,7 +49,7 @@ class configuration(dict):
         parent: The ISY device class
     """
 
-    def __init__(self, parent, xml = None):
+    def __init__(self, parent, xml=None):
         """
         Initiates configuration class.
 
@@ -58,7 +58,7 @@ class configuration(dict):
         """
         super(configuration, self).__init__()
         self.parent = parent
-        
+
         if xml is not None:
             self.parse(xml)
 
@@ -74,7 +74,8 @@ class configuration(dict):
         for feature in features:
             idnum = feature.getElementsByTagName('id')[0].firstChild.toxml()
             desc = feature.getElementsByTagName('desc')[0].firstChild.toxml()
-            installed_raw = feature.getElementsByTagName('isInstalled')[0].firstChild.toxml()
+            installed_raw = feature.getElementsByTagName('isInstalled')[0] \
+                .firstChild.toxml()
             installed = True if installed_raw is 'true' else 'false'
             self[idnum] = installed
             self[desc] = self[idnum]
