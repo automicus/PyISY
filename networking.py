@@ -15,9 +15,9 @@ class networking(object):
         This class handles the ISY networking module.
 
     USAGE:
-        This object may be used in a similar way as a 
+        This object may be used in a similar way as a
         dictionary with the either networking command
-        names or ids being used as keys and the ISY 
+        names or ids being used as keys and the ISY
         networking command class will be returned.
 
     EXAMPLE:
@@ -69,7 +69,7 @@ class networking(object):
                     self.nobjs.append(nobj)
 
             self.parent.log.info('ISY Loaded Networking Commands')
-                    
+
     def update(self, waitTime=0):
         """
         Updates the contents of the networking class
@@ -79,7 +79,7 @@ class networking(object):
         sleep(waitTime)
         xml = self.parent.conn.getNetwork()
         self.parse(xml)
-            
+
     def updateThread(self):
         """
         Continually updates the class until it is told to stop.
@@ -87,7 +87,7 @@ class networking(object):
         """
         while self.parent.auto_update:
             self.update(_thread_sleeptime)
-    
+
     def __getitem__(self, val):
         try:
             val = int(val)
@@ -96,7 +96,7 @@ class networking(object):
             return self.getByName(val)
 
     def __setitem__(self, val):
-        return None   
+        return None
 
     def getByID(self, val):
         """
@@ -141,7 +141,7 @@ class command(object):
     ATTRIBUTES:
         parent: The networking class
     """
-    
+
     def __init__(self, parent, cid):
         """
         Initiates networking class.

@@ -140,7 +140,7 @@ class Variables(object):
                 return Variables(self.parent, val, self.vids, self.vnames,
                                  self.vobjs, self.vtypes)
             else:
-                self.parent.log.error('ISY Unknown variable type: ' + str(val))
+                raise AttributeError('Unknown variable type: ' + str(val))
         else:
             if type(val) is int:
                 search_arr = self.vids
@@ -157,7 +157,7 @@ class Variables(object):
                 except ValueError:
                     break
             if notFound:
-                return None
+                raise AttributeError('Unrecognized variable id: ' + str(val))
             else:
                 return self.vobjs[ind]
 

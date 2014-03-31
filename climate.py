@@ -41,8 +41,7 @@ class Climate(object):
 
     ATTRIBUTES:
         parent: The ISY device class
-        units: Dictionary of each parameter's unit
-
+        *_units: Strings of the units used for each of the parameters.
     """
 
     # value properties

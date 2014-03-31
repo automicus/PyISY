@@ -118,9 +118,9 @@ class Nodes(object):
 
     def __getattr__(self, name):
         if self.root is not None:
-            ind = self.pids.index(self.root)
+            ind = self.nids.index(self.root)
             if self.nobjs[ind] is not None:
-                return getattr(self.pobjs[ind], name)
+                return getattr(self.nobjs[ind], name)
             else:
                 raise AttributeError('No attribute: ' + name)
 
@@ -129,16 +129,16 @@ class Nodes(object):
             super(Nodes, self).__setattr__(name, val)
         except Exception as e:
             if self.root is not None:
-                ind = self.pids.index(self.root)
-                setattr(self.pobjs[ind], name, val)
+                ind = self.nids.index(self.root)
+                setattr(self.nobjs[ind], name, val)
             else:
                 raise e
 
     def __dir__(self):
         out = super(Nodes, self).____dir__()
         if self.root is not None:
-            ind = self.pid.index(self.root)
-            out += dir(self.pobjs[ind])
+            ind = self.nids.index(self.root)
+            out += dir(self.nobjs[ind])
         return out
 
     def _upmsg(self, xml):
