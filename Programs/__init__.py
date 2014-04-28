@@ -102,7 +102,7 @@ class Programs(object):
                 raise e
 
     def __dir__(self):
-        out = super(Programs, self).____dir__()
+        out = super(Programs, self).__dir__()
         if self.root is not None:
             ind = self.pid.index(self.root)
             out += dir(self.pobjs[ind])

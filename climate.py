@@ -44,6 +44,16 @@ class Climate(object):
         *_units: Strings of the units used for each of the parameters.
     """
 
+    # Values
+    _id2name = ['Gust_Speed', 'Temperature', 'Temperature_Rate', 'Rain_Rate',
+                'Max_Rain_Rate', 'Temperature_High', 'Pressure_Rate',
+                'Wind_Speed', 'Elevation', 'Dew_Point', 'Wind_Average_Speed',
+                'Pressure', 'Gust_Direction', 'Wind_Average_Direction',
+                'Light', 'Wind_Direction', 'Humidity', 'Humidity_Rate',
+                'Rain_Today', 'Light_Rate', 'Water_Deficit_Yesterday',
+                'Irrigation_Requirement', 'Feels_Like', 'Temperature_Low',
+                'Evapotranspiration']
+
     # value properties
     Gust_Speed = Property(0, readonly=True)
     Temperature = Property(0, readonly=True)

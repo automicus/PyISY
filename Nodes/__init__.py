@@ -135,7 +135,7 @@ class Nodes(object):
                 raise e
 
     def __dir__(self):
-        out = super(Nodes, self).____dir__()
+        out = self.__dict__.keys()
         if self.root is not None:
             ind = self.nids.index(self.root)
             out += dir(self.nobjs[ind])

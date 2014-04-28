@@ -24,6 +24,7 @@ class DummyLog(object):
     error = write
     critical = write
     continuation = write
+    debug = write
 
 
 class ISY(object):
