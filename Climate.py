@@ -191,7 +191,8 @@ class Climate(object):
                 'WSW': 247.5,
                 'W': 270.,
                 'WNW': 292.5,
-                'NW': 315.}
+                'NW': 315.,
+                'N/A': None}
         return (dirs[val], 'deg')
 
     def update(self, waitTime=0):

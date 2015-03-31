@@ -1,6 +1,6 @@
 from datetime import datetime
 from time import sleep
-from variable import Variable
+from .variable import Variable
 from xml.dom import minidom
 
 
@@ -51,7 +51,7 @@ class Variables(object):
                                   + 'poorly formatted XML.')
         else:
             # parse definitions
-            for ind in xrange(2):
+            for ind in range(2):
                 features = xmldocs[ind].getElementsByTagName('e')
                 for feature in features:
                     self.vids.append(int(feature.attributes['id'].value))
@@ -60,7 +60,7 @@ class Variables(object):
 
             # parse values
             count = 0
-            for ind in xrange(2, 4):
+            for ind in range(2, 4):
                 features = xmldocs[ind].getElementsByTagName('var')
                 for feature in features:
                     init = feature.getElementsByTagName('init')[0] \
@@ -172,7 +172,7 @@ class Variables(object):
             types = [self.root]
 
         out = []
-        for ind in xrange(len(self.vids)):
+        for ind in range(len(self.vids)):
             if self.vtypes[ind] in types:
                 out.append((self.vtypes[ind], self.vnames[ind],
                             self.vids[ind]))

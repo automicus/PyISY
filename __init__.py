@@ -11,8 +11,8 @@ COPYRIGHT: (C) 2014
 WRITTEN: December, 2014
 """
 
-from ISY import ISY
-import tests
+from .ISY import ISY
+from . import tests
 
 
 def install(*args, **kwargs):

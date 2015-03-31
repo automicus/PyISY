@@ -1,5 +1,12 @@
-import urllib
-import requests
+try:
+    # python 2.7
+    from urllib import quote
+    from urllib import urlencode
+except ImportError:
+    # python 3.4
+    from urllib.parse import quote
+    from urllib.parse import urlencode
+from . import requests
 
 
 class Connection(object):
@@ -12,6 +19,17 @@ class Connection(object):
         self._password = password
         self._use_https = use_https
 
+        # test settings
+        if not self.ping():
+            # try turning of HTTPS
+            self._use_https = False
+            if self.ping():
+                self.parent.log.warn('PyISY Could not connect with HTTPS '
+                        + 'enabled. Falling back to HTTP.')
+            else:
+                raise(ValueError('PyISY could not connect to the ISY '
+                            + 'controller with the provided attributes.'))
+
     # COMMON UTILITIES
     def compileURL(self, path, query=None):
         if self._use_https:
@@ -19,11 +37,11 @@ class Connection(object):
         else:
             url = 'http://'
 
-        url += self._address
-        url += '/rest/' + '/'.join([urllib.quote(item) for item in path])
+        url += self._address + ':' + self._port
+        url += '/rest/' + '/'.join([quote(item) for item in path])
 
         if query is not None:
-            url += '?' + urllib.urlencode(query)
+            url += '?' + urlencode(query)
 
         return url
 
@@ -32,10 +50,15 @@ class Connection(object):
             self.parent.log.info('ISY Request: ' + url)
 
         try:
-            r = requests.get(url, auth=(self._username, self._password))
+            r = requests.get(url, auth=(self._username, self._password),
+                    timeout=10)
         except requests.ConnectionError:
             self.parent.log.error('ISY Could not recieve response '
-                                  + 'from device.')
+                                  + 'from device because of a network issue.')
+            return None
+        except requests.exceptions.Timeout:
+            self.parent.log.error('Timed out waiting for response from the '
+                                  + 'ISY device.')
             return None
         else:
             if r.status_code == 200:
@@ -47,6 +70,14 @@ class Connection(object):
             else:
                 self.parent.log.warning('Bad ISY Request: ' + url)
                 return None
+
+    # PING
+    # This is a dummy command that does not exist in the REST API
+    # this function return True if the device is alive
+    def ping(self):
+        req_url = self.compileURL(['ping'])
+        result = self.request(req_url, ok404=True)
+        return result is not None
 
     # CONFIGURATION
     def getConfiguration(self):
@@ -113,7 +144,7 @@ class Connection(object):
         response = self.request(req_url)
         return response
 
-    def nodeOn(self, nid, val):
+    def nodeOn(self, nid, val=None):
         if val is None:
             req_url = self.compileURL(['nodes', nid, 'cmd', 'DON'])
         elif val > 0:
@@ -129,7 +160,7 @@ class Connection(object):
         response = self.request(req_url)
         return response
 
-    def nodeFastOf(self, nid):
+    def nodeFastOn(self, nid):
         req_url = self.compileURL(['nodes', nid, 'cmd', 'DFON'])
         response = self.request(req_url)
         return response

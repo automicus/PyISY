@@ -1,5 +1,5 @@
-from group import Group
-from node import Node
+from .group import Group
+from .node import Node
 from time import sleep
 from xml.dom import minidom
 
@@ -268,7 +268,7 @@ class Nodes(object):
 
         val: Integer representing command id
         """
-        for i in xrange(len(self.nids)):
+        for i in range(len(self.nids)):
             if self.nparents[i] == self.root and self.nnames[i] == val:
                 return self.getByInd(i)
 
@@ -298,7 +298,7 @@ class Nodes(object):
         Returns a list of the object's children.
         """
         out = []
-        for i in xrange(len(self.nids)):
+        for i in range(len(self.nids)):
             if self.nparents[i] == self.root:
                 out.append((self.ntypes[i], self.nnames[i], self.nids[i]))
         return out

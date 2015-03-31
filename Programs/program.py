@@ -1,7 +1,7 @@
 from ..constants import _change2update_interval
 from ..constants import _empty_time
 from VarEvents import Property
-from folder import Folder
+from .folder import Folder
 
 
 class Program(Folder):

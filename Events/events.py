@@ -3,7 +3,7 @@ import socket
 import select
 from threading import Thread
 from xml.dom import minidom
-import strings
+from . import strings
 
 POLL_TIME = 5
 
@@ -24,8 +24,12 @@ class EventStream(socket.socket):
         auth_data = {'user': self.parent.conn._username,
                      'passwd': self.parent.conn._password}
         self.data = {}
-        self.data['auth'] = base64.encodestring('{user}:{passwd}'
-                                                .format(**auth_data)).strip()
+        authstr = '{user}:{passwd}'.format(**auth_data)
+        try:
+            self.data['auth'] = base64.encodestring(authstr).strip()
+        except TypeError:
+            authstr = bytes(authstr, 'ascii')
+            self.data['auth'] = str(base64.encodebytes(authstr))
         self.data['addr'] = self.parent.conn._address
         self.data['port'] = int(self.parent.conn._port)
         self.data['passwd'] = self.parent.conn._password
@@ -107,8 +111,8 @@ class EventStream(socket.socket):
             super(EventStream, self).connect((self.data['addr'],
                                               self.data['port']))
             self.setblocking(0)
-            self._reader = self.makefile("rb")
-            self._writer = self.makefile("wb")
+            self._reader = self.makefile("r")
+            self._writer = self.makefile("w")
             self._connected = True
 
     def disconnect(self):

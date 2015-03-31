@@ -1,1 +1,1 @@
-from events import EventStream
+from .events import EventStream

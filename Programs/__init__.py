@@ -1,7 +1,7 @@
 from ..constants import _empty_time
 from datetime import datetime
-from folder import Folder
-from program import Program
+from .folder import Folder
+from .program import Program
 from time import sleep
 from xml.dom import minidom
 
@@ -213,10 +213,8 @@ class Programs(object):
                             'pstartrun': pstartrun, 'prunning': prunning,
                             'plastup': plastup}
 
-                # add or update object
-                if pid in self.pids:
-                    self.getByID(pid).update(data=data)
-                else:
+                # add or skip object if it already exists
+                if pid not in self.pids:
                     if ptype == 'folder':
                         pobj = Folder(self, pid, **data)
                     else:
@@ -265,7 +263,7 @@ class Programs(object):
         return None
 
     def getByName(self, val):
-        for i in xrange(len(self.pids)):
+        for i in range(len(self.pids)):
             if self.pparents[i] == self.root and self.pnames[i] == val:
                 return self.getByInd(i)
 
@@ -284,7 +282,7 @@ class Programs(object):
     def children(self):
         """Returns a list of the current objects children names and IDs."""
         out = []
-        for ind in xrange(len(self.pnames)):
+        for ind in range(len(self.pnames)):
             if self.pparents[ind] == self.root:
                 out.append((self.ptypes[ind], self.pnames[ind],
                             self.pids[ind]))

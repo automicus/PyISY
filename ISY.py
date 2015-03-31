@@ -1,30 +1,12 @@
-from Connection import Connection
-from configuration import configuration
-from Nodes import Nodes
-from Programs import Programs
-from Events import EventStream
-from Variables import Variables
-from Climate import Climate
-#from networking import networking
-
-
-class DummyLog(object):
-    """
-    DummyLog class
-
-    Template for log file class.
-    """
-    def __init__(self, *args, **kwargs):
-        pass
-
-    def write(self, msg):
-        print msg
-    info = write
-    warning = write
-    error = write
-    critical = write
-    continuation = write
-    debug = write
+from .Connection import Connection
+from .configuration import configuration
+from .Nodes import Nodes
+from .Programs import Programs
+from .Events import EventStream
+from .Variables import Variables
+from .Climate import Climate
+#from .networking import networking
+import logging
 
 
 class ISY(object):
@@ -71,39 +53,38 @@ class ISY(object):
         username: String of the administrator username for the ISY
         password: String of the administrator password for the ISY
         use_https: [optional] Boolean of whether secured HTTP should be used
-        log: [optional] Log file class, template in this Module
+        log: [optional] Log file class from logging module
         """
         if log is None:
-            self.log = DummyLog()
+            self.log = logging
         else:
             self.log = log
 
-        self.conn = Connection(self, address, port, username,
-                               password, use_https)
-        self.configuration = configuration(self,
-                                           xml=self.conn.getConfiguration())
-        self.nodes = Nodes(self, xml=self.conn.getNodes())
-        self.programs = Programs(self, xml=self.conn.getPrograms())
-        self.variables = Variables(self, xml=self.conn.getVariables())
-        self._events = EventStream(self)
+        try:
+            self.conn = Connection(self, address, port, username,
+                                   password, use_https)
+        
+        except ValueError as e:
+            self._connected = False
+            self.log.error(e.message)
 
-        if len(self.configuration) == 0:
-            self.log.error('ISY Unable to connect.')
         else:
+            self._connected = True
+            self.configuration = configuration(self,
+                                            xml=self.conn.getConfiguration())
+            self.nodes = Nodes(self, xml=self.conn.getNodes())
+            self.programs = Programs(self, xml=self.conn.getPrograms())
+            self.variables = Variables(self, xml=self.conn.getVariables())
+            self._events = EventStream(self)
+
             if self.configuration['Weather Information']:
                 self.climate = Climate(self, xml=self.conn.getClimate())
-        #    if self.configuration['Networking Module']:
-        #        self.networking = networking(self, xml=self.conn.getNetwork())
+            # if self.configuration['Networking Module']:
+            #     self.networking = networking(self, xml=self.conn.getNetwork())
 
-    def isAlive(self):
-        """Indicates if the update thread is running."""
-        for thread in self._threads:
-            return thread.isAlive()
-        return self._events.running
-
-    def stop(self):
-        """Stops auto updating."""
-        self.auto_update = False
+    @property
+    def connected(self):
+        return self._connected
 
     @property
     def auto_update(self):
