@@ -37,7 +37,7 @@ class Connection(object):
         else:
             url = 'http://'
 
-        url += self._address + ':' + self._port
+        url += self._address + ':{}'.format(self._port)
         url += '/rest/' + '/'.join([quote(item) for item in path])
 
         if query is not None:

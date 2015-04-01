@@ -66,7 +66,10 @@ class ISY(object):
         
         except ValueError as e:
             self._connected = False
-            self.log.error(e.message)
+            try:
+                self.log.error(e.message)
+            except AttributeError:
+                self.log.error(e.args[0])
 
         else:
             self._connected = True
@@ -79,6 +82,8 @@ class ISY(object):
 
             if self.configuration['Weather Information']:
                 self.climate = Climate(self, xml=self.conn.getClimate())
+            else:
+                self.climate = None
             # if self.configuration['Networking Module']:
             #     self.networking = networking(self, xml=self.conn.getNetwork())
 
