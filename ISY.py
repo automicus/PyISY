@@ -87,6 +87,14 @@ class ISY(object):
             # if self.configuration['Networking Module']:
             #     self.networking = networking(self, xml=self.conn.getNetwork())
 
+    def __del__(self):
+        # not the best method, I know, but this "forces" Python to clean up
+        # the subscription sockets if it isn't done explicitly by the user.
+        # As a rule of thumb, this should not be relied upon. The subscription
+        # should be closed explicitly by the program.
+        # See: Zen of Python Line 2
+        self.auto_update = False
+
     @property
     def connected(self):
         return self._connected
@@ -97,6 +105,7 @@ class ISY(object):
 
     @auto_update.setter
     def auto_update(self, val):
+        print(repr(val))
         self._events.running = val
 
     def sendX10(self, address, cmd):

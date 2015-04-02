@@ -20,10 +20,11 @@ class Node(object):
 
     status = Property(0)
 
-    def __init__(self, parent, nid, nval):
+    def __init__(self, parent, nid, nval, dimmable=True):
         self.parent = parent
         self._id = nid
         self.noupdate = False
+        self.dimmable = dimmable
 
         self.status = nval
         self.status.reporter = self.__report_status__

@@ -17,6 +17,7 @@ class Group(object):
     def __init__(self, parent, nid):
         self.parent = parent
         self._id = nid
+        self.dimmable = True
 
     def __str__(self):
         return 'Group(' + self._id + ')'

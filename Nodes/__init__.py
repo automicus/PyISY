@@ -182,9 +182,12 @@ class Nodes(object):
                     elif ntype == 'node':
                         nval = feature.getElementsByTagName('property')[0] \
                             .attributes['value'].value
+                        dimmable = '%' in \
+                            feature.getElementsByTagName('property')[0] \
+                            .attributes['uom'].value
                         nval = int(nval.replace(' ', '0'))
                         self.insert(nid, nname, nparent,
-                                    Node(self, nid, nval), ntype)
+                                    Node(self, nid, nval, dimmable), ntype)
                     elif ntype == 'group':
                         self.insert(nid, nname, nparent,
                                     Group(self, nid), ntype)
@@ -211,11 +214,15 @@ class Nodes(object):
                     nval = feature.getElementsByTagName('property')[0] \
                         .attributes['value'].value
                     nval = int(nval.replace(' ', '0'))
+                    dimmable = '%' in \
+                        feature.getElementsByTagName('property')[0] \
+                        .attributes['uom'].value
                     if nid in self.nids:
                         self.getByID(nid).status.update(nval, silent=True)
                     else:
                         self.insert(nid, ' ', None,
                                     Node(self, nid, nval), 'node')
+                    self.getByID(nid).dimmable = dimmable
 
                 self.parent.log.info('ISY Updated Nodes')
 

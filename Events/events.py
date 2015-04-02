@@ -136,6 +136,7 @@ class EventStream(socket.socket):
             msg = self._mkmsg(strings.unsub_msg)
             self.write(msg)
             self._subscribed = False
+            self.disconnect()
 
     def watch(self):
         if self._subscribed:
