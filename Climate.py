@@ -45,68 +45,112 @@ class Climate(object):
     """
 
     # Values
-    _id2name = ['Gust_Speed', 'Temperature', 'Temperature_Rate', 'Rain_Rate',
-                'Max_Rain_Rate', 'Temperature_High', 'Pressure_Rate',
-                'Wind_Speed', 'Elevation', 'Dew_Point', 'Wind_Average_Speed',
-                'Pressure', 'Gust_Direction', 'Wind_Average_Direction',
-                'Light', 'Wind_Direction', 'Humidity', 'Humidity_Rate',
-                'Rain_Today', 'Light_Rate', 'Water_Deficit_Yesterday',
-                'Irrigation_Requirement', 'Feels_Like', 'Temperature_Low',
-                'Evapotranspiration']
-
+    _id2name = ['Temperature', 'Temperature_High', 'Temperature_Low', 
+            'Feels_Like', 'Temperature_Average', 'Humidity', None, 'Pressure', 
+            None, 'Dew_Point', 'Wind_Speed', None, 'Wind_Direction', None, 
+            'Gust_Speed', None, 'Total_Rain_Today', 'Light', None, None, None, 
+            'Evapotranspiration', 'Irrigation_Requirement', 
+            'Water_Deficit_Yesterday', 'Elevation', 'Coverage', 'Intensity', 
+            'Weather_Condition', 'Cloud_Condition', 
+            'Average_Temperature_Tomorrow', 'High_Temperature_Tomorrow', 
+            'Low_Temperature_Tomorrow', 'Humidity_Tomorrow', 
+            'Wind_Speed_Tomorrow', 'Gust_Speed_Tomorrow', 'Rain_Tomorrow', 
+            'Snow_Tomorrow', 'Coverage_Tomorrow', 'Intensity_Tomorrow', 
+            'Weather_Condition_Tomorrow', 'Cloud_Condition_Tomorrow', 
+            'Forecast_Average_Temperature', 'Forecast_High_Temperature', 
+            'Forecast_Low_Temperature', 'Forecast_Humidity', 'Forecast_Rain', 
+            'Forecast_Snow', 'Forecast_Coverage', 'Forecast_Intensity', 
+            'Forecast_Weather_Condition', 'Forecast_Cloud_Condition']
+    
     # value properties
-    Gust_Speed = Property(0, readonly=True)
     Temperature = Property(0, readonly=True)
-    Temperature_Rate = Property(0, readonly=True)
-    Rain_Rate = Property(0, readonly=True)
-    Max_Rain_Rate = Property(0, readonly=True)
     Temperature_High = Property(0, readonly=True)
-    Pressure_Rate = Property(0, readonly=True)
-    Wind_Speed = Property(0, readonly=True)
-    Elevation = Property(0, readonly=True)
-    Dew_Point = Property(0, readonly=True)
-    Wind_Average_Speed = Property(0, readonly=True)
-    Pressure = Property(0, readonly=True)
-    Gust_Direction = Property(0, readonly=True)
-    Wind_Average_Direction = Property(0, readonly=True)
-    Light = Property(0, readonly=True)
-    Wind_Direction = Property(0, readonly=True)
-    Humidity = Property(0, readonly=True)
-    Humidity_Rate = Property(0, readonly=True)
-    Rain_Today = Property(0, readonly=True)
-    Light_Rate = Property(0, readonly=True)
-    Water_Deficit_Yesterday = Property(0, readonly=True)
-    Irrigation_Requirement = Property(0, readonly=True)
-    Feels_Like = Property(0, readonly=True)
     Temperature_Low = Property(0, readonly=True)
+    Feels_Like = Property(0, readonly=True)
+    Temperature_Average = Property(0, readonly=True)
+    Humidity = Property(0, readonly=True)
+    Pressure = Property(0, readonly=True)
+    Dew_Point = Property(0, readonly=True)
+    Wind_Speed = Property(0, readonly=True)
+    Wind_Direction = Property(0, readonly=True)
+    Gust_Speed = Property(0, readonly=True)
+    Total_Rain_Today = Property(0, readonly=True)
+    Light = Property(0, readonly=True)
     Evapotranspiration = Property(0, readonly=True)
-
+    Irrigation_Requirement = Property(0, readonly=True)
+    Water_Deficit_Yesterday = Property(0, readonly=True)
+    Elevation = Property(0, readonly=True)
+    Coverage = Property(0, readonly=True)
+    Intensity = Property(0, readonly=True)
+    Weather_Condition = Property(0, readonly=True)
+    Cloud_Condition = Property(0, readonly=True)
+    Average_Temperature_Tomorrow = Property(0, readonly=True)
+    High_Temperature_Tomorrow = Property(0, readonly=True)
+    Low_Temperature_Tomorrow = Property(0, readonly=True)
+    Humidity_Tomorrow = Property(0, readonly=True)
+    Wind_Speed_Tomorrow = Property(0, readonly=True)
+    Gust_Speed_Tomorrow = Property(0, readonly=True)
+    Rain_Tomorrow = Property(0, readonly=True)
+    Snow_Tomorrow = Property(0, readonly=True)
+    Coverage_Tomorrow = Property(0, readonly=True)
+    Intensity_Tomorrow = Property(0, readonly=True)
+    Weather_Condition_Tomorrow = Property(0, readonly=True)
+    Cloud_Condition_Tomorrow = Property(0, readonly=True)
+    Forecast_Average_Temperature = Property(0, readonly=True)
+    Forecast_High_Temperature = Property(0, readonly=True)
+    Forecast_Low_Temperature = Property(0, readonly=True)
+    Forecast_Humidity = Property(0, readonly=True)
+    Forecast_Rain = Property(0, readonly=True)
+    Forecast_Snow = Property(0, readonly=True)
+    Forecast_Coverage = Property(0, readonly=True)
+    Forecast_Intensity = Property(0, readonly=True)
+    Forecast_Weather_Condition = Property(0, readonly=True)
+    Forecast_Cloud_Condition = Property(0, readonly=True)
+    
     # unit properties
-    Gust_Speed_units = ''
     Temperature_units = ''
-    Temperature_Rate_units = ''
-    Rain_Rate_units = ''
-    Max_Rain_Rate_units = ''
     Temperature_High_units = ''
-    Pressure_Rate_units = ''
-    Wind_Speed_units = ''
-    Elevation_units = ''
-    Dew_Point_units = ''
-    Wind_Average_Speed_units = ''
-    Pressure_units = ''
-    Gust_Direction_units = ''
-    Wind_Average_Direction_units = ''
-    Light_units = ''
-    Wind_Direction_units = ''
-    Humidity_units = ''
-    Humidity_Rate_units = ''
-    Rain_Today_units = ''
-    Light_Rate_units = ''
-    Water_Deficit_Yesterday_units = ''
-    Irrigation_Requirement_units = ''
-    Feels_Like_units = ''
     Temperature_Low_units = ''
+    Feels_Like_units = ''
+    Temperature_Average_units = ''
+    Humidity_units = ''
+    Pressure_units = ''
+    Dew_Point_units = ''
+    Wind_Speed_units = ''
+    Wind_Direction_units = ''
+    Gust_Speed_units = ''
+    Total_Rain_Today_units = ''
+    Light_units = ''
     Evapotranspiration_units = ''
+    Irrigation_Requirement_units = ''
+    Water_Deficit_Yesterday_units = ''
+    Elevation_units = ''
+    Coverage_units = ''
+    Intensity_units = ''
+    Weather_Condition_units = ''
+    Cloud_Condition_units = ''
+    Average_Temperature_Tomorrow_units = ''
+    High_Temperature_Tomorrow_units = ''
+    Low_Temperature_Tomorrow_units = ''
+    Humidity_Tomorrow_units = ''
+    Wind_Speed_Tomorrow_units = ''
+    Gust_Speed_Tomorrow_units = ''
+    Rain_Tomorrow_units = ''
+    Snow_Tomorrow_units = ''
+    Coverage_Tomorrow_units = ''
+    Intensity_Tomorrow_units = ''
+    Weather_Condition_Tomorrow_units = ''
+    Cloud_Condition_Tomorrow_units = ''
+    Forecast_Average_Temperature_units = ''
+    Forecast_High_Temperature_units = ''
+    Forecast_Low_Temperature_units = ''
+    Forecast_Humidity_units = ''
+    Forecast_Rain_units = ''
+    Forecast_Snow_units = ''
+    Forecast_Coverage_units = ''
+    Forecast_Intensity_units = ''
+    Forecast_Weather_Condition_units = ''
+    Forecast_Cloud_Condition_units = ''
 
     def __init__(self, parent, xml=None):
         """
@@ -216,11 +260,13 @@ class Climate(object):
             unit_raw = unit_raw.toxml().strip()
         else:
             unit_raw = ''
-        (val, unit) = self._parse_val((val_raw + ' ' + unit_raw).strip())
 
-        cname = self._id2name[cid]
-        attr = getattr(self, cname)
-        attr.update(val, force=True, silent=True)
-        setattr(self, cname + '_units', unit)
+        if cid < len(self._id2name):
+            (val, unit) = self._parse_val((val_raw + ' ' + unit_raw).strip())
+            cname = self._id2name[cid]
+            if cname is not None:
+                attr = getattr(self, cname)
+                attr.update(val, force=True, silent=True)
+                setattr(self, cname + '_units', unit)
 
-        self.parent.log.debug('ISY Updated Climate Value: ' + cname)
+                self.parent.log.debug('ISY Updated Climate Value: ' + cname)

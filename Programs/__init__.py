@@ -119,7 +119,7 @@ class Programs(object):
             if status == '21':
                 pobj.ranThen.update(pobj.ranThen + 1, force=True, silent=True)
             elif status == '31':
-                pobj.ranElse.update(self.ranElse + 1, force=True, silent=True)
+                pobj.ranElse.update(pobj.ranElse + 1, force=True, silent=True)
 
         if '<r>' in xml:
             plastrun = xmldoc.getElementsByTagName('r')[0].firstChild.toxml()

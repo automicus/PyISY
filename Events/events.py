@@ -29,7 +29,8 @@ class EventStream(socket.socket):
             self.data['auth'] = base64.encodestring(authstr).strip()
         except TypeError:
             authstr = bytes(authstr, 'ascii')
-            self.data['auth'] = str(base64.encodebytes(authstr))
+            self.data['auth'] = base64.encodebytes(authstr) \
+                    .strip().decode('ascii')
         self.data['addr'] = self.parent.conn._address
         self.data['port'] = int(self.parent.conn._port)
         self.data['passwd'] = self.parent.conn._password

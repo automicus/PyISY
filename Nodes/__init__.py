@@ -145,7 +145,7 @@ class Nodes(object):
         """Updates nodes from event stream message."""
         xmldoc = minidom.parseString(xml)
         nid = xmldoc.getElementsByTagName('node')[0].firstChild.toxml()
-        nval = xmldoc.getElementsByTagName('action')[0].firstChild.toxml()
+        nval = int(xmldoc.getElementsByTagName('action')[0].firstChild.toxml())
         self.getByID(nid).status.update(nval, force=True, silent=True)
         self.parent.log.debug('ISY Updated Node: ' + nid)
 
