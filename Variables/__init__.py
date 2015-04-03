@@ -130,8 +130,8 @@ class Variables(object):
             vobj.val.update(int(xmldoc.getElementsByTagName('val')[0]
                             .firstChild.toxml()), force=True)
             ts_raw = xmldoc.getElementsByTagName('ts')[0].firstChild.toxml()
-            vobj.lastEdit.updat(datetime.strptime(ts_raw, '%Y%m%d %H:%M:%S'),
-                                force=True)
+            vobj.lastEdit.update(datetime.strptime(ts_raw, '%Y%m%d %H:%M:%S'),
+                                 force=True)
         self.parent.log.debug('ISY Updated Variable: ' + str(vid))
 
     def __getitem__(self, val):
