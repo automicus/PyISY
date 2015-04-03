@@ -108,9 +108,9 @@ class Programs(object):
             out += dir(self.pobjs[ind])
         return out
 
-    def _upmsg(self, xml):
+    def _upmsg(self, xmldoc):
         """Updates programs from EventStream message."""
-        xmldoc = minidom.parseString(xml)
+        xml = xmldoc.toxml()
         pid = xmldoc.getElementsByTagName('id')[0].firstChild.toxml().zfill(4)
         pobj = self.getByID(pid)
 
@@ -134,7 +134,7 @@ class Programs(object):
         if '<on />' in xml or '<off />' in xml:
             pobj.enabled.update('<on />' in xml, force=True, silent=True)
 
-        self.parent.log.debug('ISY Updated Program: ' + pid)
+        self.parent.log.info('ISY Updated Program: ' + pid)
 
     def parse(self, xml):
         try:

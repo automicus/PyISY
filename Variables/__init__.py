@@ -115,8 +115,8 @@ class Variables(object):
         else:
             self.parent.log.warning('ISY Failed to update variables.')
 
-    def _upmsg(self, xml):
-        xmldoc = minidom.parseString(xml)
+    def _upmsg(self, xmldoc):
+        xml = xmldoc.toxml()
         vtype = int(xmldoc.getElementsByTagName('var')[0]
                     .attributes['type'].value)
         vid = int(xmldoc.getElementsByTagName('var')[0]
@@ -125,14 +125,14 @@ class Variables(object):
 
         if '<init>' in xml:
             vobj.init.update(int(xmldoc.getElementsByTagName('init')[0]
-                             .firstChild.toxml()), force=True)
+                             .firstChild.toxml()), force=True, silent=True)
         else:
             vobj.val.update(int(xmldoc.getElementsByTagName('val')[0]
-                            .firstChild.toxml()), force=True)
+                            .firstChild.toxml()), force=True, silent=True)
             ts_raw = xmldoc.getElementsByTagName('ts')[0].firstChild.toxml()
             vobj.lastEdit.update(datetime.strptime(ts_raw, '%Y%m%d %H:%M:%S'),
-                                 force=True)
-        self.parent.log.debug('ISY Updated Variable: ' + str(vid))
+                                 force=True, silent=True)
+        self.parent.log.info('ISY Updated Variable: ' + str(vid))
 
     def __getitem__(self, val):
         if self.root is None:

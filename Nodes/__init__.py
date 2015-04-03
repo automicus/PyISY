@@ -141,13 +141,12 @@ class Nodes(object):
             out += dir(self.nobjs[ind])
         return out
 
-    def _upmsg(self, xml):
+    def _upmsg(self, xmldoc):
         """Updates nodes from event stream message."""
-        xmldoc = minidom.parseString(xml)
         nid = xmldoc.getElementsByTagName('node')[0].firstChild.toxml()
         nval = int(xmldoc.getElementsByTagName('action')[0].firstChild.toxml())
         self.getByID(nid).status.update(nval, force=True, silent=True)
-        self.parent.log.debug('ISY Updated Node: ' + nid)
+        self.parent.log.info('ISY Updated Node: ' + nid)
 
     def parse(self, xml):
         """

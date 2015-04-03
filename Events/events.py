@@ -2,6 +2,7 @@ import base64
 import socket
 import select
 from threading import Thread
+import xml
 from xml.dom import minidom
 from . import strings
 
@@ -48,23 +49,33 @@ class EventStream(socket.socket):
         return head + body
 
     def _routemsg(self, msg):
+        # check xml formatting
+        try:
+            xmldoc = minidom.parseString(msg)
+        except xml.parsers.expat.ExpatError:
+            self.parent.log.warning('ISY Received Malformed XML:\n' + msg)
+            return
+        self.parent.log.debug('ISY Update Received:\n' + msg)
+
+
         cntrl = '<control>{0}</control>'
+        if cntrl.format('_0') in msg:  # heartbeat
+            self.parent.log.debug('ISY HEARTBEAT')
         if cntrl.format('ST') in msg:  # NODE UPDATE
-            self.parent.nodes._upmsg(msg)
+            self.parent.nodes._upmsg(xmldoc)
         elif cntrl.format('_11') in msg:  # WEATHER UPDATE
             if self.parent.configuration['Weather Information']:
-                self.parent.climate._upmsg(msg)
+                self.parent.climate._upmsg(xmldoc)
         elif cntrl.format('_1') in msg:  # VARIABLE OR PROGRAM UPDATE
             if '<var' in msg:  # VARIABLE
-                self.parent.variables._upmsg(msg)
+                self.parent.variables._upmsg(xmldoc)
             elif '<id>' in msg:  # PROGRAM
-                self.parent.programs._upmsg(msg)
+                self.parent.programs._upmsg(xmldoc)
 
         if 'sid=' in msg and 'sid' not in self.data:
-            self._upmsg(msg)
+            self._upmsg(xmldoc)
 
-    def _upmsg(self, xml):
-        xmldoc = minidom.parseString(xml)
+    def _upmsg(self, xmldoc):
         features = xmldoc.getElementsByTagName('Event')
         self.data['sid'] = features[0].attributes['sid'].value
         self.parent.log.debug('ISY Updated Events Stream ID')

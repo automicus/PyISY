@@ -249,8 +249,7 @@ class Climate(object):
         xml = self.parent.conn.getClimate()
         self.parse(xml)
 
-    def _upmsg(self, xml):
-        xmldoc = minidom.parseString(xml)
+    def _upmsg(self, xmldoc):
         cid = int(xmldoc.getElementsByTagName('action')[0]
                   .firstChild.toxml()) - 1
         val_raw = xmldoc.getElementsByTagName('value')[0] \
@@ -269,4 +268,4 @@ class Climate(object):
                 attr.update(val, force=True, silent=True)
                 setattr(self, cname + '_units', unit)
 
-                self.parent.log.debug('ISY Updated Climate Value: ' + cname)
+                self.parent.log.info('ISY Updated Climate Value: ' + cname)
