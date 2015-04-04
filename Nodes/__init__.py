@@ -141,6 +141,14 @@ class Nodes(object):
             out += dir(self.nobjs[ind])
         return out
 
+    def __iter__(self):
+        iter_data = self.allLowerNodes
+        return NodeIterator(self, iter_data, delta=1)
+
+    def __reversed__(self):
+        iter_data = self.allLowerNodes
+        return NodeIterator(self, iter_data, delta=-1)
+
     def _upmsg(self, xmldoc):
         """Updates nodes from event stream message."""
         nid = xmldoc.getElementsByTagName('node')[0].firstChild.toxml()
@@ -188,8 +196,10 @@ class Nodes(object):
                         self.insert(nid, nname, nparent,
                                     Node(self, nid, nval, dimmable), ntype)
                     elif ntype == 'group':
+                        mems = feature.getElementsByTagName('link')
+                        members = [mem.firstChild.nodeValue for mem in mems]
                         self.insert(nid, nname, nparent,
-                                    Group(self, nid), ntype)
+                                    Group(self, nid, members), ntype)
 
             self.parent.log.info('ISY Loaded Nodes')
 
@@ -295,6 +305,8 @@ class Nodes(object):
 
         val: Integer representing command ind
         """
+        if self.ntypes[i] in ['group', 'node']:
+            return self.nobjs[i]
         return Nodes(self.parent, self.nids[i], self.nids, self.nnames,
                      self.nparents, self.nobjs, self.ntypes)
 
@@ -317,3 +329,40 @@ class Nodes(object):
             return True
         except:
             return False
+
+    @property
+    def allLowerNodes(self):
+        """ Returns all nodes beneath current level """
+        output = []
+        for dtype, name, ident in self.children:
+            if dtype in ['group', 'node']:
+                output.append((dtype, name, ident))
+
+            else:
+                output += self[ident].allLowerNodes
+        return output
+
+
+class NodeIterator(object):
+    """ Iterates through a list of nodes, returning node objects. """
+
+    def __init__(self, parent, iter_data, delta=1):
+        self._parent = parent
+        self._iterdata = iter_data
+        self._len = len(iter_data)
+        self._delta = delta
+
+        if delta > 0:
+            self._ind = 0
+        else:
+            self._ind = self._len - 1
+
+    def __next__(self):
+        if self._ind >= self._len or self._ind < 0:
+            raise StopIteration
+        _, _, ident = self._iterdata[self._ind]
+        self._ind += self._delta
+        return self._parent[ident]
+
+    def __len__(self):
+        return self._len
