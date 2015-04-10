@@ -45,23 +45,21 @@ class Climate(object):
     """
 
     # Values
-    _id2name = ['Temperature', 'Temperature_High', 'Temperature_Low', 
-            'Feels_Like', 'Temperature_Average', 'Humidity', None, 'Pressure', 
-            None, 'Dew_Point', 'Wind_Speed', None, 'Wind_Direction', None, 
-            'Gust_Speed', None, 'Total_Rain_Today', 'Light', None, None, None, 
-            'Evapotranspiration', 'Irrigation_Requirement', 
-            'Water_Deficit_Yesterday', 'Elevation', None, None, 
-            None, None, 
-            'Average_Temperature_Tomorrow', 'High_Temperature_Tomorrow', 
-            'Low_Temperature_Tomorrow', 'Humidity_Tomorrow', 
-            'Wind_Speed_Tomorrow', 'Gust_Speed_Tomorrow', 'Rain_Tomorrow', 
-            'Snow_Tomorrow', None, None, 
-            None, None, 
-            'Forecast_Average_Temperature', 'Forecast_High_Temperature', 
-            'Forecast_Low_Temperature', 'Forecast_Humidity', 'Forecast_Rain', 
-            'Forecast_Snow', None, None, 
-            None, None]
-    
+    _id2name = ['Temperature', 'Temperature_High', 'Temperature_Low',
+                'Feels_Like', 'Temperature_Average', 'Humidity', None,
+                'Pressure', None, 'Dew_Point', 'Wind_Speed', None,
+                'Wind_Direction', None, 'Gust_Speed', None, 'Total_Rain_Today',
+                'Light', None, None, None, 'Evapotranspiration',
+                'Irrigation_Requirement', 'Water_Deficit_Yesterday',
+                'Elevation', None, None, None, None,
+                'Average_Temperature_Tomorrow', 'High_Temperature_Tomorrow',
+                'Low_Temperature_Tomorrow', 'Humidity_Tomorrow',
+                'Wind_Speed_Tomorrow', 'Gust_Speed_Tomorrow', 'Rain_Tomorrow',
+                'Snow_Tomorrow', None, None, None, None,
+                'Forecast_Average_Temperature', 'Forecast_High_Temperature',
+                'Forecast_Low_Temperature', 'Forecast_Humidity',
+                'Forecast_Rain', 'Forecast_Snow', None, None, None, None]
+
     # value properties
     Temperature = Property(0, readonly=True)
     Temperature_High = Property(0, readonly=True)
@@ -106,7 +104,7 @@ class Climate(object):
     # Forecast_Intensity = Property(0, readonly=True)
     # Forecast_Weather_Condition = Property(0, readonly=True)
     # Forecast_Cloud_Condition = Property(0, readonly=True)
- 
+
     # unit properties
     Temperature_units = ''
     Temperature_High_units = ''
@@ -236,6 +234,7 @@ class Climate(object):
                 'W': 270.,
                 'WNW': 292.5,
                 'NW': 315.,
+                'NNW': 337.5,
                 'N/A': None}
         return (dirs[val], 'deg')
 
