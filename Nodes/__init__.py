@@ -194,12 +194,13 @@ class Nodes(object):
                             .attributes['uom'].value
                         nval = int(nval.replace(' ', '0'))
                         self.insert(nid, nname, nparent,
-                                    Node(self, nid, nval, dimmable), ntype)
+                                    Node(self, nid, nval, nname, dimmable),
+                                    ntype)
                     elif ntype == 'group':
                         mems = feature.getElementsByTagName('link')
                         members = [mem.firstChild.nodeValue for mem in mems]
                         self.insert(nid, nname, nparent,
-                                    Group(self, nid, members), ntype)
+                                    Group(self, nid, nname, members), ntype)
 
             self.parent.log.info('ISY Loaded Nodes')
 

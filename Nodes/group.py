@@ -21,9 +21,10 @@ class Group(object):
 
     status = Property(0)
 
-    def __init__(self, parent, nid, members=[]):
+    def __init__(self, parent, nid, name, members=[]):
         self.parent = parent
         self._id = nid
+        self.name = name
         self._members = members
         self.dimmable = False
         self._running = False
