@@ -14,7 +14,6 @@ class Node(object):
 
     ATTRIBUTES:
         parent: The nodes class
-        noupdate: stops automatic updating after manipulation
         status: The status of the node
     """
 
@@ -23,7 +22,6 @@ class Node(object):
     def __init__(self, parent, nid, nval, dimmable=True):
         self.parent = parent
         self._id = nid
-        self.noupdate = False
         self.dimmable = dimmable
 
         self.status = nval
@@ -33,12 +31,10 @@ class Node(object):
         return 'Node(' + self._id + ')'
 
     def __report_status__(self, new_val):
-        self.noupdate = True
         self.on(new_val)
-        self.noupdate = False
 
     def update(self, waitTime=0):
-        if not self.parent.parent.auto_update and not self.noupdate:
+        if not self.parent.parent.auto_update:
             sleep(waitTime)
             xml = self.parent.parent.conn.updateNode(self._id)
 

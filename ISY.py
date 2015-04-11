@@ -105,7 +105,6 @@ class ISY(object):
 
     @auto_update.setter
     def auto_update(self, val):
-        print(repr(val))
         self._events.running = val
 
     def sendX10(self, address, cmd):

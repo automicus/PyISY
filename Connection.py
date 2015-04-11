@@ -21,11 +21,11 @@ class Connection(object):
 
         # test settings
         if not self.ping():
-            # try turning of HTTPS
+            # try turning off HTTPS
             self._use_https = False
             if self.ping():
-                self.parent.log.warn('PyISY Could not connect with HTTPS '
-                        + 'enabled. Falling back to HTTP.')
+                self.parent.log.warn('PyISY could not connect with the '
+                        + 'controller. Trying again with HTTP.')
             else:
                 raise(ValueError('PyISY could not connect to the ISY '
                             + 'controller with the provided attributes.'))
@@ -166,12 +166,12 @@ class Connection(object):
         return response
 
     def nodeBright(self, nid):
-        req_url = self.compileURL(['nodes', nid, 'cmd', 'brt'])
+        req_url = self.compileURL(['nodes', nid, 'cmd', 'BRT'])
         response = self.request(req_url)
         return response
 
     def nodeDim(self, nid):
-        req_url = self.compileURL(['nodes', nid, 'cmd', 'dim'])
+        req_url = self.compileURL(['nodes', nid, 'cmd', 'DIM'])
         response = self.request(req_url)
         return response
 
