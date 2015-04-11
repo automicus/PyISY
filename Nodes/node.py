@@ -34,7 +34,7 @@ class Node(object):
     def __report_status__(self, new_val):
         self.on(new_val)
 
-    def update(self, waitTime=0):
+    def update(self, waitTime=0, hint=None):
         if not self.parent.parent.auto_update:
             sleep(waitTime)
             xml = self.parent.parent.conn.updateNode(self._id)
@@ -54,6 +54,10 @@ class Node(object):
             else:
                 self.parent.parent.log.warning('ISY could not update node: ' +
                                                self._id)
+        elif hint is not None:
+            # assume value was set correctly, auto update will correct errors
+            self.status.update(hint, silent=True)
+            self.parent.parent.log.info('ISY updated node: ' + self._id)
 
     def off(self):
         response = self.parent.parent.conn.nodeOff(self._id)
@@ -63,7 +67,7 @@ class Node(object):
                                            self._id)
         else:
             self.parent.parent.log.info('ISY turned off node: ' + self._id)
-            self.update(_change2update_interval)
+            self.update(_change2update_interval, hint=0)
 
     def on(self, val=None):
         response = self.parent.parent.conn.nodeOn(self._id, val)
@@ -74,10 +78,12 @@ class Node(object):
         else:
             if val is None:
                 self.parent.parent.log.info('ISY turned on node: ' + self._id)
+                val = 255
             else:
                 self.parent.parent.log.info('ISY turned on node: ' + self._id +
                                             ', To value: ' + str(val))
-            self.update(_change2update_interval)
+                val = int(val)
+            self.update(_change2update_interval, hint=val)
 
     def fastoff(self):
         response = self.parent.parent.conn.nodeFastOff(self._id)
@@ -88,7 +94,7 @@ class Node(object):
         else:
             self.parent.parent.log.info('ISY turned did a fast off with node: '
                                         + self._id)
-            self.update(_change2update_interval)
+            self.update(_change2update_interval, hint=0)
 
     def faston(self):
         response = self.parent.parent.conn.nodeFastOn(self._id)
@@ -99,7 +105,7 @@ class Node(object):
         else:
             self.parent.parent.log.info('ISY did a fast on with node: ' +
                                         self._id)
-            self.update(_change2update_interval)
+            self.update(_change2update_interval, hint=255)
 
     def bright(self):
         response = self.parent.parent.conn.nodeBright(self._id)
