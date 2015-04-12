@@ -109,6 +109,14 @@ class Programs(object):
             out += dir(self.pobjs[ind])
         return out
 
+    def __iter__(self):
+        iter_data = self.allLowerPrograms
+        return ProgramIterator(self, iter_data, delta=1)
+
+    def __reversed__(self):
+        iter_data = self.allLowerPrograms
+        return ProgramIterator(self, iter_data, delta=-1)
+
     def _upmsg(self, xmldoc):
         """Updates programs from EventStream message."""
         xml = xmldoc.toxml()
@@ -288,3 +296,16 @@ class Programs(object):
                 out.append((self.ptypes[ind], self.pnames[ind],
                             self.pids[ind]))
         return out
+
+    @property
+    def allLowerPrograms(self):
+        """ Returns all programs beneath the current level.
+        Does not return folders. """
+        output = []
+        for dtype, name, ident in self.children:
+            if dtype is 'program':
+                output.append((dtype, name, ident))
+
+            else:
+                output += self[ident].allLowerPrograms
+        return output
