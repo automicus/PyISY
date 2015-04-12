@@ -2,6 +2,7 @@ from ..constants import _empty_time
 from datetime import datetime
 from .folder import Folder
 from .program import Program
+from ..Nodes import NodeIterator as ProgramIterator
 from time import sleep
 from xml.dom import minidom
 
@@ -216,9 +217,9 @@ class Programs(object):
                 # add or skip object if it already exists
                 if pid not in self.pids:
                     if ptype == 'folder':
-                        pobj = Folder(self, pid, **data)
+                        pobj = Folder(self, pid, pname, **data)
                     else:
-                        pobj = Program(self, pid, **data)
+                        pobj = Program(self, pid, pname, **data)
                     self.insert(pid, pname, pparent, pobj, ptype)
 
             self.parent.log.info('ISY Loaded/Updated Programs')

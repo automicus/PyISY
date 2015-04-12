@@ -15,9 +15,9 @@ class Program(Folder):
     ranThen = Property(0, readonly=True)
     ranElse = Property(0, readonly=True)
 
-    def __init__(self, parent, pid, pstatus, plastup, plastrun, plastfin,
+    def __init__(self, parent, pid, pname, pstatus, plastup, plastrun, plastfin,
                  penabled, pstartrun, prunning):
-        super(Program, self).__init__(parent, pid, pstatus)
+        super(Program, self).__init__(parent, pid, pname, pstatus)
         self.lastUpdate.update(plastup, force=True, silent=True)
         self.lastRun.update(plastrun, force=True, silent=True)
         self.lastFinished.update(plastfin, force=True, silent=True)

@@ -6,9 +6,10 @@ class Folder(object):
 
     status = Property(0, readonly=True)
 
-    def __init__(self, parent, pid, pstatus):
+    def __init__(self, parent, pid, pname, pstatus):
         self.noupdate = False
         self.parent = parent
+        self.name = pname
         self._id = pid
 
         self.status.update(pstatus, force=True, silent=True)
