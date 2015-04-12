@@ -121,27 +121,32 @@ class Programs(object):
         """Updates programs from EventStream message."""
         xml = xmldoc.toxml()
         pid = xmldoc.getElementsByTagName('id')[0].firstChild.toxml().zfill(4)
-        pobj = self.getByID(pid)
+        pobj = self.getByID(pid).leaf
 
-        if '<s>' in xml:
-            status = xmldoc.getElementsByTagName('s')[0].firstChild.toxml()
-            if status == '21':
-                pobj.ranThen.update(pobj.ranThen + 1, force=True, silent=True)
-            elif status == '31':
-                pobj.ranElse.update(pobj.ranElse + 1, force=True, silent=True)
+        if isinstance(pobj, Program):
+            if '<s>' in xml:
+                status = xmldoc.getElementsByTagName('s')[0].firstChild.toxml()
+                if status == '21':
+                    pobj.ranThen.update(pobj.ranThen + 1, force=True,
+                                        silent=True)
+                elif status == '31':
+                    pobj.ranElse.update(pobj.ranElse + 1, force=True,
+                                        silent=True)
 
-        if '<r>' in xml:
-            plastrun = xmldoc.getElementsByTagName('r')[0].firstChild.toxml()
-            plastrun = datetime.strptime(plastrun, '%y%m%d %H:%M:%S')
-            pobj.lastRun.update(plastrun, force=True, silent=True)
+            if '<r>' in xml:
+                plastrun = xmldoc.getElementsByTagName('r')[0]. \
+                    firstChild.toxml()
+                plastrun = datetime.strptime(plastrun, '%y%m%d %H:%M:%S')
+                pobj.lastRun.update(plastrun, force=True, silent=True)
 
-        if '<f>' in xml:
-            plastfin = xmldoc.getElementsByTagName('f')[0].firstChild.toxml()
-            plastfin = datetime.strptime(plastfin, '%y%m%d %H:%M:%S')
-            pobj.lastFinished.update(plastfin, force=True, silent=True)
+            if '<f>' in xml:
+                plastfin = xmldoc.getElementsByTagName('f')[0]. \
+                    firstChild.toxml()
+                plastfin = datetime.strptime(plastfin, '%y%m%d %H:%M:%S')
+                pobj.lastFinished.update(plastfin, force=True, silent=True)
 
-        if '<on />' in xml or '<off />' in xml:
-            pobj.enabled.update('<on />' in xml, force=True, silent=True)
+            if '<on />' in xml or '<off />' in xml:
+                pobj.enabled.update('<on />' in xml, force=True, silent=True)
 
         self.parent.log.info('ISY Updated Program: ' + pid)
 
