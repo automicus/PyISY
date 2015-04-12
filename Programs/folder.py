@@ -17,6 +17,11 @@ class Folder(object):
     def __str__(self):
         return 'Folder(' + self._id + ')'
 
+    @property
+    def leaf(self):
+        ''' returns the object at the current level of navigation. '''
+        return self
+
     def update(self, waitTime=0, data=None):
         if not self.noupdate:
             if data is not None:
