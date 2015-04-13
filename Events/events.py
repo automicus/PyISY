@@ -31,7 +31,7 @@ class EventStream(socket.socket):
         except TypeError:
             authstr = bytes(authstr, 'ascii')
             self.data['auth'] = base64.encodebytes(authstr) \
-                    .strip().decode('ascii')
+                .strip().decode('ascii')
         self.data['addr'] = self.parent.conn._address
         self.data['port'] = int(self.parent.conn._port)
         self.data['passwd'] = self.parent.conn._password
@@ -57,7 +57,7 @@ class EventStream(socket.socket):
             return
         self.parent.log.debug('ISY Update Received:\n' + msg)
 
-
+        # direct the event message
         cntrl = '<control>{0}</control>'
         if cntrl.format('_0') in msg:  # heartbeat
             self.parent.log.debug('ISY HEARTBEAT')
@@ -71,7 +71,10 @@ class EventStream(socket.socket):
                 self.parent.variables._upmsg(xmldoc)
             elif '<id>' in msg:  # PROGRAM
                 self.parent.programs._upmsg(xmldoc)
+            else:  # SOMETHING HAPPENED, but they ISY didn't tell us what
+                self.parent.programs.update()
 
+        # A wild stream id appears!
         if 'sid=' in msg and 'sid' not in self.data:
             self._upmsg(xmldoc)
 

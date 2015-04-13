@@ -5,7 +5,7 @@ from .Programs import Programs
 from .Events import EventStream
 from .Variables import Variables
 from .Climate import Climate
-#from .networking import networking
+# from .networking import networking
 import logging
 
 
@@ -56,14 +56,14 @@ class ISY(object):
         log: [optional] Log file class from logging module
         """
         if log is None:
-            self.log = logging
+            self.log = logging.getLogger(__name__)
         else:
             self.log = log
 
         try:
             self.conn = Connection(self, address, port, username,
                                    password, use_https)
-        
+
         except ValueError as e:
             self._connected = False
             try:
@@ -74,7 +74,7 @@ class ISY(object):
         else:
             self._connected = True
             self.configuration = configuration(self,
-                                            xml=self.conn.getConfiguration())
+                                               xml=self.conn.getConfiguration())
             self.nodes = Nodes(self, xml=self.conn.getNodes())
             self.programs = Programs(self, xml=self.conn.getPrograms())
             self.variables = Variables(self, xml=self.conn.getVariables())

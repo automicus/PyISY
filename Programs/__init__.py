@@ -121,7 +121,10 @@ class Programs(object):
         """Updates programs from EventStream message."""
         xml = xmldoc.toxml()
         pid = xmldoc.getElementsByTagName('id')[0].firstChild.toxml().zfill(4)
-        pobj = self.getByID(pid).leaf
+        try:
+            pobj = self.getByID(pid).leaf
+        except ValueError:
+            pobj = None  # this is a new program that hasn't been registered
 
         if isinstance(pobj, Program):
             if '<s>' in xml:
@@ -227,13 +230,16 @@ class Programs(object):
                             'pstartrun': pstartrun, 'prunning': prunning,
                             'plastup': plastup}
 
-                # add or skip object if it already exists
+                # add or update object if it already exists
                 if pid not in self.pids:
                     if ptype == 'folder':
                         pobj = Folder(self, pid, pname, **data)
                     else:
                         pobj = Program(self, pid, pname, **data)
                     self.insert(pid, pname, pparent, pobj, ptype)
+                else:
+                    pobj = self.getByID(pid).leaf
+                    pobj.update(data=data)
 
             self.parent.log.info('ISY Loaded/Updated Programs')
 

@@ -121,18 +121,24 @@ class Variables(object):
                     .attributes['type'].value)
         vid = int(xmldoc.getElementsByTagName('var')[0]
                   .attributes['id'].value)
-        vobj = self[vtype][vid]
-
-        if '<init>' in xml:
-            vobj.init.update(int(xmldoc.getElementsByTagName('init')[0]
-                             .firstChild.toxml()), force=True, silent=True)
+        try:
+            vobj = self[vtype][vid]
+        except KeyError:
+            pass  # this is a new variable that hasn't been loaded
         else:
-            vobj.val.update(int(xmldoc.getElementsByTagName('val')[0]
-                            .firstChild.toxml()), force=True, silent=True)
-            ts_raw = xmldoc.getElementsByTagName('ts')[0].firstChild.toxml()
-            vobj.lastEdit.update(datetime.strptime(ts_raw, '%Y%m%d %H:%M:%S'),
+
+            if '<init>' in xml:
+                vobj.init.update(int(xmldoc.getElementsByTagName('init')[0]
+                                     .firstChild.toxml()),
                                  force=True, silent=True)
-        self.parent.log.info('ISY Updated Variable: ' + str(vid))
+            else:
+                vobj.val.update(int(xmldoc.getElementsByTagName('val')[0]
+                                .firstChild.toxml()), force=True, silent=True)
+                ts_raw = xmldoc.getElementsByTagName('ts')[0].firstChild.toxml()
+                vobj.lastEdit.update(datetime.strptime(ts_raw,
+                                                       '%Y%m%d %H:%M:%S'),
+                                     force=True, silent=True)
+            self.parent.log.info('ISY Updated Variable: ' + str(vid))
 
     def __getitem__(self, val):
         if self.root is None:
@@ -140,7 +146,7 @@ class Variables(object):
                 return Variables(self.parent, val, self.vids, self.vnames,
                                  self.vobjs, self.vtypes)
             else:
-                raise AttributeError('Unknown variable type: ' + str(val))
+                raise KeyError('Unknown variable type: ' + str(val))
         else:
             if type(val) is int:
                 search_arr = self.vids
@@ -157,7 +163,7 @@ class Variables(object):
                 except ValueError:
                     break
             if notFound:
-                raise AttributeError('Unrecognized variable id: ' + str(val))
+                raise KeyError('Unrecognized variable id: ' + str(val))
             else:
                 return self.vobjs[ind]
 
