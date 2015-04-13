@@ -14,6 +14,7 @@ class Program(Folder):
     running = Property(False, readonly=True)
     ranThen = Property(0, readonly=True)
     ranElse = Property(0, readonly=True)
+    dtype = 'program'
 
     def __init__(self, parent, pid, pname, pstatus, plastup, plastrun, plastfin,
                  penabled, pstartrun, prunning):

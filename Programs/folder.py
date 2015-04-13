@@ -5,6 +5,7 @@ from VarEvents import Property
 class Folder(object):
 
     status = Property(0, readonly=True)
+    dtype = 'folder'
 
     def __init__(self, parent, pid, pname, pstatus):
         self.noupdate = False
