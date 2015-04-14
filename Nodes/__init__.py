@@ -85,9 +85,13 @@ class Nodes(object):
         folders.sort(key=lambda x: x[1])
         groups.sort(key=lambda x: x[1])
         nodes.sort(key=lambda x: x[1])
-        out = str(self) + '\n'
+        out = str(self) + '\n' + self.__reprFolders__(folders) + \
+            self.__reprGroups__(groups) + self.__reprNodes__(nodes)
+        return out
 
+    def __reprFolders__(self, folders):
         # format folders
+        out = ''
         for fold in folders:
             fold_obj = self[fold[2]]
             out += '  + ' + fold[1] + ': Folder(' + fold[2] + ')\n'
@@ -95,12 +99,18 @@ class Nodes(object):
                 if len(line) > 0:
                     out += '  |   ' + line + '\n'
             out += '  -\n'
+        return out
 
+    def __reprGroups__(self, groups):
         # format groups
+        out = ''
         for group in groups:
             out += '  ' + group[1] + ': Group(' + group[2] + ')\n'
+        return out
 
+    def __reprNodes__(self, nodes):
         # format nodes
+        out = ''
         for node in nodes:
             node_obj = self[node[2]]
             if node_obj.hasChildren:
@@ -113,7 +123,6 @@ class Nodes(object):
                     if len(line) > 0:
                         out += '  |   ' + line + '\n'
                 out += '  -\n'
-
         return out
 
     def __getattr__(self, name):
@@ -174,33 +183,40 @@ class Nodes(object):
                 features = xmldoc.getElementsByTagName(ntype)
 
                 for feature in features:
-                    nid = feature.getElementsByTagName('address')[0] \
-                        .firstChild.toxml()
-                    nname = feature.getElementsByTagName('name')[0] \
-                        .firstChild.toxml()
-                    try:
-                        nparent = feature.getElementsByTagName('parent')[0] \
-                            .firstChild.toxml()
-                    except:
-                        nparent = None
+                    family_tag = feature.getElementsByTagName('family')
+                    if len(family_tag) > 0:
+                        family = family_tag[0].firstChild.toxml()
+                    else:
+                        family = None
 
-                    if ntype == 'folder':
-                        self.insert(nid, nname, nparent, None, ntype)
-                    elif ntype == 'node':
-                        nval = feature.getElementsByTagName('property')[0] \
-                            .attributes['value'].value
-                        dimmable = '%' in \
-                            feature.getElementsByTagName('property')[0] \
-                            .attributes['uom'].value
-                        nval = int(nval.replace(' ', '0'))
-                        self.insert(nid, nname, nparent,
-                                    Node(self, nid, nval, nname, dimmable),
-                                    ntype)
-                    elif ntype == 'group':
-                        mems = feature.getElementsByTagName('link')
-                        members = [mem.firstChild.nodeValue for mem in mems]
-                        self.insert(nid, nname, nparent,
-                                    Group(self, nid, nname, members), ntype)
+                    if family is not '6':  # ignore controller group
+                        nid = feature.getElementsByTagName('address')[0] \
+                            .firstChild.toxml()
+                        nname = feature.getElementsByTagName('name')[0] \
+                            .firstChild.toxml()
+                        try:
+                            nparent = feature.getElementsByTagName('parent')[0] \
+                                .firstChild.toxml()
+                        except:
+                            nparent = None
+
+                        if ntype == 'folder':
+                            self.insert(nid, nname, nparent, None, ntype)
+                        elif ntype == 'node':
+                            nval = feature.getElementsByTagName('property')[0] \
+                                .attributes['value'].value
+                            dimmable = '%' in \
+                                feature.getElementsByTagName('property')[0] \
+                                .attributes['uom'].value
+                            nval = int(nval.replace(' ', '0'))
+                            self.insert(nid, nname, nparent,
+                                        Node(self, nid, nval, nname, dimmable),
+                                        ntype)
+                        elif ntype == 'group':
+                            mems = feature.getElementsByTagName('link')
+                            members = [mem.firstChild.nodeValue for mem in mems]
+                            self.insert(nid, nname, nparent,
+                                        Group(self, nid, nname, members), ntype)
 
             self.parent.log.info('ISY Loaded Nodes')
 
