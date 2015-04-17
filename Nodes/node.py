@@ -18,6 +18,7 @@ class Node(object):
     """
 
     status = Property(0)
+    hasChildren = False
 
     def __init__(self, parent, nid, nval, name, dimmable=True):
         self.parent = parent

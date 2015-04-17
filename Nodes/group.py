@@ -20,6 +20,7 @@ class Group(object):
     """
 
     status = Property(0)
+    hasChildren = False
 
     def __init__(self, parent, nid, name, members=[]):
         self.parent = parent
