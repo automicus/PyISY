@@ -86,29 +86,6 @@ class Programs(object):
 
         return out
 
-    # fwd getattr and setattr to the child class when necessary
-    def __getattr__(self, name):
-        if self.root is not None:
-            ind = self.pids.index(self.root)
-            return getattr(self.pobjs[ind], name)
-
-    def __setattr__(self, name, val):
-        try:
-            super(Programs, self).__setattr__(name, val)
-        except Exception as e:
-            if self.root is not None:
-                ind = self.pids.index(self.root)
-                setattr(self.pobjs[ind], name, val)
-            else:
-                raise e
-
-    def __dir__(self):
-        out = super(Programs, self).__dir__()
-        if self.root is not None:
-            ind = self.pid.index(self.root)
-            out += dir(self.pobjs[ind])
-        return out
-
     def __iter__(self):
         iter_data = self.allLowerPrograms
         return ProgramIterator(self, iter_data, delta=1)
