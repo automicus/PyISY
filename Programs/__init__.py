@@ -288,14 +288,34 @@ class Programs(object):
         return out
 
     @property
+    def leaf(self):
+        if self.root is not None:
+            ind = self.pids.index(self.root)
+            if self.pobjs[ind] is not None:
+                return self.pobjs[ind]
+        return self
+
+    @property
+    def name(self):
+        if self.root is not None:
+            ind = self.pids.index(self.root)
+            return self.pnames[ind]
+        else:
+            return ''
+
+    @property
     def allLowerPrograms(self):
         """ Returns all programs beneath the current level.
         Does not return folders. """
         output = []
+        myname = self.name + '/'
+
         for dtype, name, ident in self.children:
             if dtype is 'program':
-                output.append((dtype, name, ident))
+                output.append((dtype, myname + name, ident))
 
             else:
-                output += self[ident].allLowerPrograms
+                output += [(dtype2, myname + name2, ident2)
+                           for (dtype2, name2, ident2)
+                           in self[ident].allLowerPrograms]
         return output
