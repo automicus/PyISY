@@ -323,15 +323,27 @@ class Nodes(object):
             return False
 
     @property
+    def name(self):
+        if self.root is None:
+            return ''
+        else:
+            ind = self.nids.index(self.root)
+            return self.nnames[ind]
+
+    @property
     def allLowerNodes(self):
         """ Returns all nodes beneath current level """
         output = []
+        myname = self.name + '/'
+
         for dtype, name, ident in self.children:
             if dtype in ['group', 'node']:
-                output.append((dtype, name, ident))
+                output.append((dtype, myname + name, ident))
 
             else:
-                output += self[ident].allLowerNodes
+                output += [(dtype2, myname + name2, ident2)
+                           for (dtype2, name2, ident2)
+                           in self[ident].allLowerNodes]
         return output
 
 
