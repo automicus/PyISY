@@ -125,31 +125,6 @@ class Nodes(object):
                 out += '  -\n'
         return out
 
-    def __getattr__(self, name):
-        if self.root is not None:
-            ind = self.nids.index(self.root)
-            if self.nobjs[ind] is not None:
-                return getattr(self.nobjs[ind], name)
-            else:
-                raise AttributeError('No attribute: ' + name)
-
-    def __setattr__(self, name, val):
-        try:
-            super(Nodes, self).__setattr__(name, val)
-        except Exception as e:
-            if self.root is not None:
-                ind = self.nids.index(self.root)
-                setattr(self.nobjs[ind], name, val)
-            else:
-                raise e
-
-    def __dir__(self):
-        out = self.__dict__.keys()
-        if self.root is not None:
-            ind = self.nids.index(self.root)
-            out += dir(self.nobjs[ind])
-        return out
-
     def __iter__(self):
         iter_data = self.allLowerNodes
         return NodeIterator(self, iter_data, delta=1)
