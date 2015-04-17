@@ -364,9 +364,9 @@ class NodeIterator(object):
     def __next__(self):
         if self._ind >= self._len or self._ind < 0:
             raise StopIteration
-        _, _, ident = self._iterdata[self._ind]
+        _, path, ident = self._iterdata[self._ind]
         self._ind += self._delta
-        return self._parent[ident]
+        return (path, self._parent[ident])
 
     def __len__(self):
         return self._len
