@@ -7,6 +7,8 @@ from .Variables import Variables
 from .Climate import Climate
 # from .networking import networking
 import logging
+from threading import Thread
+import time
 
 
 class ISY(object):
@@ -78,7 +80,9 @@ class ISY(object):
             self.nodes = Nodes(self, xml=self.conn.getNodes())
             self.programs = Programs(self, xml=self.conn.getPrograms())
             self.variables = Variables(self, xml=self.conn.getVariables())
-            self._events = EventStream(self)
+            self._events = None  # create this JIT so no socket reuse
+            self.auto_reconnect = True
+            self._reconnect_thread = None
 
             if self.configuration['Weather Information']:
                 self.climate = Climate(self, xml=self.conn.getClimate())
@@ -101,11 +105,43 @@ class ISY(object):
 
     @property
     def auto_update(self):
-        return self._events.running
+        if self._events is not None:
+            return self._events.running
+        else:
+            return False
 
     @auto_update.setter
     def auto_update(self, val):
+        if val and not self.auto_update:
+            # create new event stream socket
+            self._events = EventStream(self, self.on_lost_event_stream)
         self._events.running = val
+
+    def on_lost_event_stream(self):
+        del(self._events)
+        self._events = None
+
+        if self.auto_reconnect and self._reconnect_thread is None:
+            # attempt to reconnect
+            self._reconnect_thread = Thread(target=self.auto_reconnecter)
+            self._reconnect_thread.daemon = True
+            self._reconnect_thread.start()
+
+    def auto_reconnecter(self):
+        while self.auto_reconnect and not self.auto_update:
+            self.log.warning('PyISY attempting stream reconnect.')
+            del(self._events)
+            self._events = EventStream(self, self.on_lost_event_stream)
+            self._events.running = True
+
+        if not self.auto_update:
+            del(self._events)
+            self._events = None
+            self.log.warning('PyISY could not reconnect to the event stream.')
+        else:
+            self.log.warning('PyISY reconnected to the event stream.')
+
+        self._reconnect_thread = None
 
     def sendX10(self, address, cmd):
         """

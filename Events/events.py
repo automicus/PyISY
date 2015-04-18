@@ -1,4 +1,5 @@
 import base64
+import datetime
 import socket
 import select
 from threading import Thread
@@ -11,7 +12,7 @@ POLL_TIME = 5
 
 class EventStream(socket.socket):
 
-    def __init__(self, parent):
+    def __init__(self, parent, lost_fun=None):
         super(EventStream, self).__init__(socket.AF_INET, socket.SOCK_STREAM)
         self.parent = parent
         self._running = False
@@ -20,6 +21,9 @@ class EventStream(socket.socket):
         self._thread = None
         self._subscribed = False
         self._connected = False
+        self._lasthb = datetime.datetime.now()
+        self._hbwait = 0
+        self._lostfun = lost_fun
 
         # pull neccessary connection data
         auth_data = {'user': self.parent.conn._username,
@@ -59,8 +63,11 @@ class EventStream(socket.socket):
 
         # direct the event message
         cntrl = '<control>{0}</control>'
-        if cntrl.format('_0') in msg:  # heartbeat
-            self.parent.log.debug('ISY HEARTBEAT')
+        if cntrl.format('_0') in msg:  # ISY HEARTBEAT
+            self._lasthb = datetime.datetime.now()
+            self._hbwait = int(xmldoc.getElementsByTagName('action')[0].
+                               firstChild.toxml())
+            self.parent.log.debug('ISY HEARTBEAT: ' + self._lasthb.isoformat())
         if cntrl.format('ST') in msg:  # NODE UPDATE
             self.parent.nodes._upmsg(xmldoc)
         elif cntrl.format('_11') in msg:  # WEATHER UPDATE
@@ -71,7 +78,8 @@ class EventStream(socket.socket):
                 self.parent.variables._upmsg(xmldoc)
             elif '<id>' in msg:  # PROGRAM
                 self.parent.programs._upmsg(xmldoc)
-            else:  # SOMETHING HAPPENED, but they ISY didn't tell us what
+            else:  # SOMETHING HAPPENED WITH A PROGRAM FOLDER
+                # but they ISY didn't tell us what, so...
                 self.parent.programs.update()
 
         # A wild stream id appears!
@@ -92,16 +100,17 @@ class EventStream(socket.socket):
 
     @running.setter
     def running(self, val):
-        self._running = bool(val)
-        if self._running and not self.running:
+        if val and not self.running:
             self.parent.log.info('ISY Starting Updates')
-            self.connect()
-            self.subscribe()
-            self._thread = Thread(target=self.watch)
-            self._thread.daemon = True
-            self._thread.start()
+            if self.connect():
+                self.subscribe()
+                self._running = True
+                self._thread = Thread(target=self.watch)
+                self._thread.daemon = True
+                self._thread.start()
         else:
             self.parent.log.info('ISY Stopping Updates')
+            self._running = False
             self.unsubscribe()
             self.disconnect()
 
@@ -123,17 +132,29 @@ class EventStream(socket.socket):
 
     def connect(self):
         if not self._connected:
-            super(EventStream, self).connect((self.data['addr'],
-                                              self.data['port']))
+            try:
+                super(EventStream, self).connect((self.data['addr'],
+                                                self.data['port']))
+            except OSError:
+                self.parent.log.error('PyISY could not connect to ISY ' +
+                                      'event stream.')
+                if self._lostfun is not None:
+                    self._lostfun()
+                return False
             self.setblocking(0)
             self._reader = self.makefile("r")
             self._writer = self.makefile("w")
             self._connected = True
+            return True
+        else:
+            return True
 
     def disconnect(self):
         if self._connected:
             self.close()
             self._connected = False
+            self._subscribed = False
+            self._running = False
 
     def subscribe(self):
         if not self._subscribed and self._connected:
@@ -152,12 +173,23 @@ class EventStream(socket.socket):
             self._subscribed = False
             self.disconnect()
 
+    @property
+    def heartbeat_time(self):
+        return (datetime.datetime.now() - self._lasthb).seconds
+
     def watch(self):
         if self._subscribed:
-            global POLL_TIME
             while self._running and self._subscribed:
-                inready, _, _ = select.select([self], [], [], POLL_TIME)
+                # verify connection is still alive
+                if self.heartbeat_time > self._hbwait:
+                    self.disconnect()
+                    self.parent.log.warning('PyISY lost connection to '
+                                            + 'the ISY event stream.')
+                    if self._lostfun is not None:
+                        self._lostfun()
 
+                # poll socket for new data
+                inready, _, _ = select.select([self], [], [], POLL_TIME)
                 if self in inready:
                     data = self.read()
                     if data.startswith('<?xml'):
