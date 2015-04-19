@@ -1,0 +1,469 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>PyISY.Climate &mdash; PyISY 1.0.0 documentation</title>
+  
+
+  
+  
+
+  
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic|Roboto+Slab:400,700|Inconsolata:400,700&subset=latin,cyrillic' rel='stylesheet' type='text/css'>
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="PyISY 1.0.0 documentation" href="../../index.html"/>
+        <link rel="up" title="Module code" href="../index.html"/> 
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.6.2/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-nav-search">
+        
+          <a href="../../index.html" class="fa fa-home"> PyISY</a>
+        
+        
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        
+          
+          
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../quickstart.html">PyISY Quick Start</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../quickstart.html#environment-setup">Environment Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../quickstart.html#basic-usage">Basic Usage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../quickstart.html#event-updates">Event Updates</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../library.html">PyISY Library</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../library.html#isy-class">ISY Class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../library.html#node-manager-class">Node Manager Class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../library.html#node-class">Node Class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../library.html#group-class">Group Class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../library.html#program-manager-class">Program Manager Class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../library.html#folder-class">Folder Class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../library.html#program-class">Program Class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../library.html#variable-manager-class">Variable Manager Class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../library.html#variable-class">Variable Class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../library.html#climate-class">Climate Class</a></li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../index.html">PyISY</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+      
+    <li>PyISY.Climate</li>
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document">
+            
+  <h1>Source code for PyISY.Climate</h1><div class="highlight"><pre>
+<span class="kn">from</span> <span class="nn">VarEvents</span> <span class="kn">import</span> <span class="n">Property</span>
+<span class="kn">from</span> <span class="nn">VarEvents</span> <span class="kn">import</span> <span class="n">Var</span>
+<span class="kn">from</span> <span class="nn">time</span> <span class="kn">import</span> <span class="n">sleep</span>
+<span class="kn">from</span> <span class="nn">xml.dom</span> <span class="kn">import</span> <span class="n">minidom</span>
+
+
+<div class="viewcode-block" id="Climate"><a class="viewcode-back" href="../../library.html#PyISY.Climate.Climate">[docs]</a><span class="k">class</span> <span class="nc">Climate</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This class handles the ISY climate module.</span>
+
+<span class="sd">    |  parent: ISY class</span>
+<span class="sd">    |  xml: String of xml data containing the climate data</span>
+
+<span class="sd">    :ivar Gust_Speed: Watched Variable representing the gust speed.</span>
+<span class="sd">    :ivar Temperature: Watched Variable representing the temperature.</span>
+<span class="sd">    :ivar Temperature_Rate: Watched Variable representing the temperature rate.</span>
+<span class="sd">    :ivar Rain_Rate: Watched Variable representing the rain rate.</span>
+<span class="sd">    :ivar Max_Rain_Rate: Watched Variable representing the rain rate.</span>
+<span class="sd">    :ivar Temperature_High: Watched Variable representing the high temperature.</span>
+<span class="sd">    :ivar Pressure_Rate: Watched variable representing the pressure rate.</span>
+<span class="sd">    :ivar Wind_Speed: Watched Variable representing the wind speed.</span>
+<span class="sd">    :ivar Elevation: Watched Variable representing the elevation.</span>
+<span class="sd">    :ivar Dew_Point: Watched Variable representing the dew point.</span>
+<span class="sd">    :ivar Wind_Average_Speed: Watched Variable representing the avg wind speed.</span>
+<span class="sd">    :ivar Pressure: Watched Variable representing the pressure.</span>
+<span class="sd">    :ivar Gust_Direction: Watched Variable representing the gust direction.</span>
+<span class="sd">    :ivar Wind_Average_Direction: Watched Variable representing the average wind</span>
+<span class="sd">                                  direction.</span>
+<span class="sd">    :ivar Light: Watched Variable representing the amount of light.</span>
+<span class="sd">    :ivar Wind_Direction: Watched Variable representing the wind direction.</span>
+<span class="sd">    :ivar Humidity: Watched Variable representing the humidity.</span>
+<span class="sd">    :ivar Humidity_Rate: Watched Variable representing the humidity rate.</span>
+<span class="sd">    :ivar Rain_Today: Watched Variable representing the forcast rain today.</span>
+<span class="sd">    :ivar Light_Rate: Watched Variable representing the light rate.</span>
+<span class="sd">    :ivar Water_Deficit_Yesterday: Watched Variable representing the water</span>
+<span class="sd">                                   deficit yesterday.</span>
+<span class="sd">    :ivar Irrigation_Requirement: Watched Variable representing the irrigation</span>
+<span class="sd">                                  requirement.</span>
+<span class="sd">    :ivar Feels_Like: Watched Variable representing the feels like temperature.</span>
+<span class="sd">    :ivar Temperature_Low: Watched Variable representing the low temperature.</span>
+<span class="sd">    :ivar Evapotranspiration: Watched Variable representing the</span>
+<span class="sd">                              evapotranspiration amount.</span>
+<span class="sd">    :ivar Gust_Speed_units: Gust speed units.</span>
+<span class="sd">    :ivar Temperature_units: Temperature units.</span>
+<span class="sd">    :ivar Temperature_Rate_units: Temperature rate units.</span>
+<span class="sd">    :ivar Rain_Rate_units: Rain rate units.</span>
+<span class="sd">    :ivar Max_Rain_Rate_units: Max rain rate units.</span>
+<span class="sd">    :ivar Temperature_High_units: High temperature units.</span>
+<span class="sd">    :ivar Pressure_Rate_units: Pressure rate units.</span>
+<span class="sd">    :ivar Wind_Speed_units: Wind speed units.</span>
+<span class="sd">    :ivar Elevation_units: Elevation units.</span>
+<span class="sd">    :ivar Dew_Point_units: Dew point units.</span>
+<span class="sd">    :ivar Wind_Average_Speed_units: Average wind speed units.</span>
+<span class="sd">    :ivar Pressure_units: Pressure units.</span>
+<span class="sd">    :ivar Gust_Direction_units: Gust direction units.</span>
+<span class="sd">    :ivar Wind_Average_Direction_units: Average wind direction units.</span>
+<span class="sd">    :ivar Light_units: Light amount units.</span>
+<span class="sd">    :ivar Wind_Direction_units: Wind direction units.</span>
+<span class="sd">    :ivar Humidity_units: Humidity units.</span>
+<span class="sd">    :ivar Humidity_Rate_units: Humidity rate units.</span>
+<span class="sd">    :ivar Rain_Today_units: Rain forecast units.</span>
+<span class="sd">    :ivar Light_Rate_units: Light rate units.</span>
+<span class="sd">    :ivar Water_Deficit_Yesterday_units: Water deficit units.</span>
+<span class="sd">    :ivar Irrigation_Requirement_units: Irrigation requirement units.</span>
+<span class="sd">    :ivar Feels_Like_units: Feels like temperature units.</span>
+<span class="sd">    :ivar Temperature_Low_units: Low temperature units.</span>
+<span class="sd">    :ivar Evapotranspiration_units: Evapotranspiration units.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c"># Values</span>
+    <span class="n">_id2name</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;Temperature&#39;</span><span class="p">,</span> <span class="s">&#39;Temperature_High&#39;</span><span class="p">,</span> <span class="s">&#39;Temperature_Low&#39;</span><span class="p">,</span>
+                <span class="s">&#39;Feels_Like&#39;</span><span class="p">,</span> <span class="s">&#39;Temperature_Average&#39;</span><span class="p">,</span> <span class="s">&#39;Humidity&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">,</span>
+                <span class="s">&#39;Pressure&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">,</span> <span class="s">&#39;Dew_Point&#39;</span><span class="p">,</span> <span class="s">&#39;Wind_Speed&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">,</span>
+                <span class="s">&#39;Wind_Direction&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">,</span> <span class="s">&#39;Gust_Speed&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">,</span> <span class="s">&#39;Total_Rain_Today&#39;</span><span class="p">,</span>
+                <span class="s">&#39;Light&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">,</span> <span class="bp">None</span><span class="p">,</span> <span class="bp">None</span><span class="p">,</span> <span class="s">&#39;Evapotranspiration&#39;</span><span class="p">,</span>
+                <span class="s">&#39;Irrigation_Requirement&#39;</span><span class="p">,</span> <span class="s">&#39;Water_Deficit_Yesterday&#39;</span><span class="p">,</span>
+                <span class="s">&#39;Elevation&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">,</span> <span class="bp">None</span><span class="p">,</span> <span class="bp">None</span><span class="p">,</span> <span class="bp">None</span><span class="p">,</span>
+                <span class="s">&#39;Average_Temperature_Tomorrow&#39;</span><span class="p">,</span> <span class="s">&#39;High_Temperature_Tomorrow&#39;</span><span class="p">,</span>
+                <span class="s">&#39;Low_Temperature_Tomorrow&#39;</span><span class="p">,</span> <span class="s">&#39;Humidity_Tomorrow&#39;</span><span class="p">,</span>
+                <span class="s">&#39;Wind_Speed_Tomorrow&#39;</span><span class="p">,</span> <span class="s">&#39;Gust_Speed_Tomorrow&#39;</span><span class="p">,</span> <span class="s">&#39;Rain_Tomorrow&#39;</span><span class="p">,</span>
+                <span class="s">&#39;Snow_Tomorrow&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">,</span> <span class="bp">None</span><span class="p">,</span> <span class="bp">None</span><span class="p">,</span> <span class="bp">None</span><span class="p">,</span>
+                <span class="s">&#39;Forecast_Average_Temperature&#39;</span><span class="p">,</span> <span class="s">&#39;Forecast_High_Temperature&#39;</span><span class="p">,</span>
+                <span class="s">&#39;Forecast_Low_Temperature&#39;</span><span class="p">,</span> <span class="s">&#39;Forecast_Humidity&#39;</span><span class="p">,</span>
+                <span class="s">&#39;Forecast_Rain&#39;</span><span class="p">,</span> <span class="s">&#39;Forecast_Snow&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">,</span> <span class="bp">None</span><span class="p">,</span> <span class="bp">None</span><span class="p">,</span> <span class="bp">None</span><span class="p">]</span>
+
+    <span class="c"># value properties</span>
+    <span class="n">Temperature</span> <span class="o">=</span> <span class="n">Property</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">readonly</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">Temperature_High</span> <span class="o">=</span> <span class="n">Property</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">readonly</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">Temperature_Low</span> <span class="o">=</span> <span class="n">Property</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">readonly</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">Feels_Like</span> <span class="o">=</span> <span class="n">Property</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">readonly</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">Temperature_Average</span> <span class="o">=</span> <span class="n">Property</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">readonly</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">Humidity</span> <span class="o">=</span> <span class="n">Property</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">readonly</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">Pressure</span> <span class="o">=</span> <span class="n">Property</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">readonly</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">Dew_Point</span> <span class="o">=</span> <span class="n">Property</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">readonly</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">Wind_Speed</span> <span class="o">=</span> <span class="n">Property</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">readonly</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">Wind_Direction</span> <span class="o">=</span> <span class="n">Property</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">readonly</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">Gust_Speed</span> <span class="o">=</span> <span class="n">Property</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">readonly</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">Total_Rain_Today</span> <span class="o">=</span> <span class="n">Property</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">readonly</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">Light</span> <span class="o">=</span> <span class="n">Property</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">readonly</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">Evapotranspiration</span> <span class="o">=</span> <span class="n">Property</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">readonly</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">Irrigation_Requirement</span> <span class="o">=</span> <span class="n">Property</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">readonly</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">Water_Deficit_Yesterday</span> <span class="o">=</span> <span class="n">Property</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">readonly</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">Elevation</span> <span class="o">=</span> <span class="n">Property</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">readonly</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="c"># Coverage = Property(0, readonly=True)</span>
+    <span class="c"># Intensity = Property(0, readonly=True)</span>
+    <span class="c"># Weather_Condition = Property(0, readonly=True)</span>
+    <span class="c"># Cloud_Condition = Property(0, readonly=True)</span>
+    <span class="n">Average_Temperature_Tomorrow</span> <span class="o">=</span> <span class="n">Property</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">readonly</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">High_Temperature_Tomorrow</span> <span class="o">=</span> <span class="n">Property</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">readonly</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">Low_Temperature_Tomorrow</span> <span class="o">=</span> <span class="n">Property</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">readonly</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">Humidity_Tomorrow</span> <span class="o">=</span> <span class="n">Property</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">readonly</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">Wind_Speed_Tomorrow</span> <span class="o">=</span> <span class="n">Property</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">readonly</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">Gust_Speed_Tomorrow</span> <span class="o">=</span> <span class="n">Property</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">readonly</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">Rain_Tomorrow</span> <span class="o">=</span> <span class="n">Property</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">readonly</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">Snow_Tomorrow</span> <span class="o">=</span> <span class="n">Property</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">readonly</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="c"># Coverage_Tomorrow = Property(0, readonly=True)</span>
+    <span class="c"># Intensity_Tomorrow = Property(0, readonly=True)</span>
+    <span class="c"># Weather_Condition_Tomorrow = Property(0, readonly=True)</span>
+    <span class="c"># Cloud_Condition_Tomorrow = Property(0, readonly=True)</span>
+    <span class="n">Forecast_Average_Temperature</span> <span class="o">=</span> <span class="n">Property</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">readonly</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">Forecast_High_Temperature</span> <span class="o">=</span> <span class="n">Property</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">readonly</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">Forecast_Low_Temperature</span> <span class="o">=</span> <span class="n">Property</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">readonly</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">Forecast_Humidity</span> <span class="o">=</span> <span class="n">Property</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">readonly</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">Forecast_Rain</span> <span class="o">=</span> <span class="n">Property</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">readonly</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">Forecast_Snow</span> <span class="o">=</span> <span class="n">Property</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">readonly</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="c"># Forecast_Coverage = Property(0, readonly=True)</span>
+    <span class="c"># Forecast_Intensity = Property(0, readonly=True)</span>
+    <span class="c"># Forecast_Weather_Condition = Property(0, readonly=True)</span>
+    <span class="c"># Forecast_Cloud_Condition = Property(0, readonly=True)</span>
+
+    <span class="c"># unit properties</span>
+    <span class="n">Temperature_units</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+    <span class="n">Temperature_High_units</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+    <span class="n">Temperature_Low_units</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+    <span class="n">Feels_Like_units</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+    <span class="n">Temperature_Average_units</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+    <span class="n">Humidity_units</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+    <span class="n">Pressure_units</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+    <span class="n">Dew_Point_units</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+    <span class="n">Wind_Speed_units</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+    <span class="n">Wind_Direction_units</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+    <span class="n">Gust_Speed_units</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+    <span class="n">Total_Rain_Today_units</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+    <span class="n">Light_units</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+    <span class="n">Evapotranspiration_units</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+    <span class="n">Irrigation_Requirement_units</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+    <span class="n">Water_Deficit_Yesterday_units</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+    <span class="n">Elevation_units</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+    <span class="c"># Coverage_units = &#39;&#39;</span>
+    <span class="c"># Intensity_units = &#39;&#39;</span>
+    <span class="c"># Weather_Condition_units = &#39;&#39;</span>
+    <span class="c"># Cloud_Condition_units = &#39;&#39;</span>
+    <span class="n">Average_Temperature_Tomorrow_units</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+    <span class="n">High_Temperature_Tomorrow_units</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+    <span class="n">Low_Temperature_Tomorrow_units</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+    <span class="n">Humidity_Tomorrow_units</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+    <span class="n">Wind_Speed_Tomorrow_units</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+    <span class="n">Gust_Speed_Tomorrow_units</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+    <span class="n">Rain_Tomorrow_units</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+    <span class="n">Snow_Tomorrow_units</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+    <span class="c"># Coverage_Tomorrow_units = &#39;&#39;</span>
+    <span class="c"># Intensity_Tomorrow_units = &#39;&#39;</span>
+    <span class="c"># Weather_Condition_Tomorrow_units = &#39;&#39;</span>
+    <span class="c"># Cloud_Condition_Tomorrow_units = &#39;&#39;</span>
+    <span class="n">Forecast_Average_Temperature_units</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+    <span class="n">Forecast_High_Temperature_units</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+    <span class="n">Forecast_Low_Temperature_units</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+    <span class="n">Forecast_Humidity_units</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+    <span class="n">Forecast_Rain_units</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+    <span class="n">Forecast_Snow_units</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+    <span class="c"># Forecast_Coverage_units = &#39;&#39;</span>
+    <span class="c"># Forecast_Intensity_units = &#39;&#39;</span>
+    <span class="c"># Forecast_Weather_Condition_units = &#39;&#39;</span>
+    <span class="c"># Forecast_Cloud_Condition_units = &#39;&#39;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parent</span><span class="p">,</span> <span class="n">xml</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Climate</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parent</span> <span class="o">=</span> <span class="n">parent</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">xml</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Climate.__str__"><a class="viewcode-back" href="../../library.html#PyISY.Climate.Climate.__str__">[docs]</a>    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Returns a string representing the climate manager. &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="s">&#39;Climate Module&#39;</span>
+</div>
+<div class="viewcode-block" id="Climate.__repr__"><a class="viewcode-back" href="../../library.html#PyISY.Climate.Climate.__repr__">[docs]</a>    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Returns a long string showing all the climate values. &quot;&quot;&quot;</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="s">&#39;Climate Module</span><span class="se">\n</span><span class="s">&#39;</span>
+        <span class="k">for</span> <span class="n">attr_name</span> <span class="ow">in</span> <span class="nb">dir</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+            <span class="n">attr</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr_name</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">attr</span><span class="p">,</span> <span class="n">Var</span><span class="p">):</span>
+                <span class="n">units</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr_name</span> <span class="o">+</span> <span class="s">&#39;_units&#39;</span><span class="p">)</span>
+                <span class="n">out</span> <span class="o">+=</span> <span class="s">&#39;  &#39;</span> <span class="o">+</span> <span class="n">attr_name</span> <span class="o">+</span> <span class="s">&#39; = &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">attr</span><span class="p">)</span> \
+                    <span class="o">+</span> <span class="s">&#39; &#39;</span> <span class="o">+</span> <span class="n">units</span> <span class="o">+</span> <span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span>
+        <span class="k">return</span> <span class="n">out</span>
+</div>
+<div class="viewcode-block" id="Climate.parse"><a class="viewcode-back" href="../../library.html#PyISY.Climate.Climate.parse">[docs]</a>    <span class="k">def</span> <span class="nf">parse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">xml</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parses the xml data.</span>
+
+<span class="sd">        xml: String of the xml data</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">xmldoc</span> <span class="o">=</span> <span class="n">minidom</span><span class="o">.</span><span class="n">parseString</span><span class="p">(</span><span class="n">xml</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">u&#39;</span><span class="se">\xb0</span><span class="s">&#39;</span><span class="p">,</span> <span class="s">&#39;&#39;</span><span class="p">))</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s">&#39;ISY Could not parse climate, poorly &#39;</span>
+                                  <span class="o">+</span> <span class="s">&#39;formatted XML.&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c"># parse definitions</span>
+            <span class="n">feature</span> <span class="o">=</span> <span class="n">xmldoc</span><span class="o">.</span><span class="n">getElementsByTagName</span><span class="p">(</span><span class="s">&#39;climate&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+
+            <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">feature</span><span class="o">.</span><span class="n">childNodes</span><span class="p">:</span>
+                <span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">unit</span><span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parse_val</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">firstChild</span><span class="o">.</span><span class="n">toxml</span><span class="p">())</span>
+                <span class="n">name</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">nodeName</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">prop</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+                    <span class="n">prop</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">force</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">silent</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+                    <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span> <span class="o">+</span> <span class="s">&#39;_units&#39;</span><span class="p">,</span> <span class="n">unit</span><span class="p">)</span>
+                <span class="k">except</span><span class="p">:</span>
+                    <span class="k">pass</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;ISY Loaded Environment Data&#39;</span><span class="p">)</span>
+</div>
+    <span class="k">def</span> <span class="nf">_parse_val</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">val</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c"># assume standard val unit combination</span>
+            <span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">unit</span><span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parse_val_num</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+            <span class="c"># assume direction</span>
+            <span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">unit</span><span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parse_val_dir</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">unit</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_parse_val_num</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">val</span><span class="p">):</span>
+        <span class="n">split_val</span> <span class="o">=</span> <span class="n">val</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">split_val</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">split_val</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="n">split_val</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c"># probably elevation, assume feet</span>
+            <span class="k">return</span> <span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">split_val</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="s">&#39;feet&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_parse_val_dir</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">val</span><span class="p">):</span>
+        <span class="n">dirs</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;N&#39;</span><span class="p">:</span> <span class="mf">0.</span><span class="p">,</span>
+                <span class="s">&#39;NNE&#39;</span><span class="p">:</span> <span class="mf">22.5</span><span class="p">,</span>
+                <span class="s">&#39;NE&#39;</span><span class="p">:</span> <span class="mf">45.</span><span class="p">,</span>
+                <span class="s">&#39;ENE&#39;</span><span class="p">:</span> <span class="mf">67.5</span><span class="p">,</span>
+                <span class="s">&#39;E&#39;</span><span class="p">:</span> <span class="mf">90.</span><span class="p">,</span>
+                <span class="s">&#39;ESE&#39;</span><span class="p">:</span> <span class="mf">112.5</span><span class="p">,</span>
+                <span class="s">&#39;SE&#39;</span><span class="p">:</span> <span class="mf">135.</span><span class="p">,</span>
+                <span class="s">&#39;SSE&#39;</span><span class="p">:</span> <span class="mf">157.5</span><span class="p">,</span>
+                <span class="s">&#39;S&#39;</span><span class="p">:</span> <span class="mf">180.</span><span class="p">,</span>
+                <span class="s">&#39;SSW&#39;</span><span class="p">:</span> <span class="mf">202.5</span><span class="p">,</span>
+                <span class="s">&#39;SW&#39;</span><span class="p">:</span> <span class="mf">225.</span><span class="p">,</span>
+                <span class="s">&#39;WSW&#39;</span><span class="p">:</span> <span class="mf">247.5</span><span class="p">,</span>
+                <span class="s">&#39;W&#39;</span><span class="p">:</span> <span class="mf">270.</span><span class="p">,</span>
+                <span class="s">&#39;WNW&#39;</span><span class="p">:</span> <span class="mf">292.5</span><span class="p">,</span>
+                <span class="s">&#39;NW&#39;</span><span class="p">:</span> <span class="mf">315.</span><span class="p">,</span>
+                <span class="s">&#39;NNW&#39;</span><span class="p">:</span> <span class="mf">337.5</span><span class="p">,</span>
+                <span class="s">&#39;N/A&#39;</span><span class="p">:</span> <span class="bp">None</span><span class="p">}</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">dirs</span><span class="p">[</span><span class="n">val</span><span class="p">],</span> <span class="s">&#39;deg&#39;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Climate.update"><a class="viewcode-back" href="../../library.html#PyISY.Climate.Climate.update">[docs]</a>    <span class="k">def</span> <span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">waitTime</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Updates the contents of the climate class</span>
+
+<span class="sd">        waitTime: [optional] Amount of seconds to wait before updating</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">sleep</span><span class="p">(</span><span class="n">waitTime</span><span class="p">)</span>
+        <span class="n">xml</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">conn</span><span class="o">.</span><span class="n">getClimate</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">xml</span><span class="p">)</span>
+</div>
+    <span class="k">def</span> <span class="nf">_upmsg</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">xmldoc</span><span class="p">):</span>
+        <span class="n">cid</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">xmldoc</span><span class="o">.</span><span class="n">getElementsByTagName</span><span class="p">(</span><span class="s">&#39;action&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+                  <span class="o">.</span><span class="n">firstChild</span><span class="o">.</span><span class="n">toxml</span><span class="p">())</span> <span class="o">-</span> <span class="mi">1</span>
+        <span class="n">val_raw</span> <span class="o">=</span> <span class="n">xmldoc</span><span class="o">.</span><span class="n">getElementsByTagName</span><span class="p">(</span><span class="s">&#39;value&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> \
+            <span class="o">.</span><span class="n">firstChild</span><span class="o">.</span><span class="n">toxml</span><span class="p">()</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="n">unit_raw</span> <span class="o">=</span> <span class="n">xmldoc</span><span class="o">.</span><span class="n">getElementsByTagName</span><span class="p">(</span><span class="s">&#39;unit&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">firstChild</span>
+        <span class="k">if</span> <span class="n">unit_raw</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">unit_raw</span> <span class="o">=</span> <span class="n">unit_raw</span><span class="o">.</span><span class="n">toxml</span><span class="p">()</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">unit_raw</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+
+        <span class="k">if</span> <span class="n">cid</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_id2name</span><span class="p">):</span>
+            <span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">unit</span><span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parse_val</span><span class="p">((</span><span class="n">val_raw</span> <span class="o">+</span> <span class="s">&#39; &#39;</span> <span class="o">+</span> <span class="n">unit_raw</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+            <span class="n">cname</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_id2name</span><span class="p">[</span><span class="n">cid</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">cname</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="n">attr</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cname</span><span class="p">)</span>
+                <span class="n">attr</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">force</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">silent</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+                <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cname</span> <span class="o">+</span> <span class="s">&#39;_units&#39;</span><span class="p">,</span> <span class="n">unit</span><span class="p">)</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;ISY Updated Climate Value: &#39;</span> <span class="o">+</span> <span class="n">cname</span><span class="p">)</span></div>
+</pre></div>
+
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2015, Ryan Kraus.
+    </p>
+  </div>
+
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../',
+            VERSION:'1.0.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

@@ -1,0 +1,6 @@
+Node Manager
+============
+
+.. autoclass:: PyISY.Nodes.Nodes
+    :members:
+    :special-members:

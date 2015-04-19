@@ -3,6 +3,18 @@ from VarEvents import Property
 
 
 class Folder(object):
+    """
+    Object representing a program folder on the ISY device.
+
+    |  parent: The folder manager object.
+    |  pid: The folder ID.
+    |  pname: The folder name.
+    |  pstatus: The current folder status.
+
+    :ivar dtype: Returns the type of the object (folder).
+    :ivar status: Watched property representing the current status of the
+                  folder.
+    """
 
     status = Property(0, readonly=True)
     dtype = 'folder'
@@ -16,14 +28,20 @@ class Folder(object):
         self.status.update(pstatus, force=True, silent=True)
 
     def __str__(self):
+        """ Returns a string representation of the folder. """
         return 'Folder(' + self._id + ')'
 
     @property
     def leaf(self):
-        ''' returns the object at the current level of navigation. '''
         return self
 
     def update(self, waitTime=0, data=None):
+        """
+        Updates the status of the program.
+
+        |  data: [optional] The data to update the folder with.
+        |  waitTime: [optional] Seconds to wait before updating.
+        """
         if not self.noupdate:
             if data is not None:
                 self.status.update(data['pstatus'], force=True, silent=True)
@@ -31,6 +49,7 @@ class Folder(object):
                 self.parent.update(waitTime, pid=self._id)
 
     def run(self):
+        """ Runs the appropriate clause of the object. """
         response = self.parent.parent.conn.programRun(self._id)
 
         if response is None:
@@ -41,6 +60,7 @@ class Folder(object):
             self.update(_change2update_interval)
 
     def runThen(self):
+        """ Runs the THEN clause of the object. """
         response = self.parent.parent.conn.programRunThen(self._id)
 
         if response is None:
@@ -51,6 +71,7 @@ class Folder(object):
             self.update(_change2update_interval)
 
     def runElse(self):
+        """ Runs the ELSE clause of the object. """
         response = self.parent.parent.conn.programRunElse(self._id)
 
         if response is None:
@@ -61,6 +82,7 @@ class Folder(object):
             self.update(_change2update_interval)
 
     def stop(self):
+        """ Stops the object if it is running. """
         response = self.parent.parent.conn.programStop(self._id)
 
         if response is None:

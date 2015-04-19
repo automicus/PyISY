@@ -1,0 +1,214 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>ISY Class &mdash; PyISY 1.0.0 documentation</title>
+    
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.0.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="PyISY 1.0.0 documentation" href="index.html" />
+    <link rel="next" title="Node Manager Library" href="nodes.html" />
+    <link rel="prev" title="PyISY Tutorial" href="quickstart.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="nodes.html" title="Node Manager Library"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="quickstart.html" title="PyISY Tutorial"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">PyISY 1.0.0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="isy-class">
+<h1>ISY Class<a class="headerlink" href="#isy-class" title="Permalink to this headline">¶</a></h1>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="nodes.html">Node Manager Library</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="nodes.html#node-manager">Node Manager</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nodes.html#node">Node</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<dl class="class">
+<dt id="PyISY.ISY">
+<em class="property">class </em><code class="descclassname">PyISY.</code><code class="descname">ISY</code><span class="sig-paren">(</span><em>address</em>, <em>port</em>, <em>username</em>, <em>password</em>, <em>use_https=False</em>, <em>log=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/PyISY/ISY.html#ISY"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#PyISY.ISY" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is the main class that handles interaction with the ISY device.</p>
+<div class="line-block">
+<div class="line">address: String of the IP address of the ISY device</div>
+<div class="line">port: String of the port over which the ISY is serving its API</div>
+<div class="line">username: String of the administrator username for the ISY</div>
+<div class="line">password: String of the administrator password for the ISY</div>
+<div class="line">use_https: [optional] Boolean of whether secured HTTP should be used</div>
+<div class="line">log: [optional] Log file class from logging module</div>
+</div>
+<dl class="method">
+<dt id="PyISY.ISY.__del__">
+<code class="descname">__del__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/PyISY/ISY.html#ISY.__del__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#PyISY.ISY.__del__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Turns off auto updating when the class is deleted.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="PyISY.ISY.__weakref__">
+<code class="descname">__weakref__</code><a class="headerlink" href="#PyISY.ISY.__weakref__" title="Permalink to this definition">¶</a></dt>
+<dd><p>list of weak references to the object (if defined)</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="PyISY.ISY.auto_reconnect">
+<code class="descname">auto_reconnect</code><em class="property"> = True</em><a class="headerlink" href="#PyISY.ISY.auto_reconnect" title="Permalink to this definition">¶</a></dt>
+<dd><p>Boolean value that indicates if the class should auto-reconnect to the event
+stream if the connection is lost.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="PyISY.ISY.auto_update">
+<code class="descname">auto_update</code><a class="headerlink" href="#PyISY.ISY.auto_update" title="Permalink to this definition">¶</a></dt>
+<dd><p>Boolean value that controls the class&#8217;s subscription to the event stream
+that allows node, program, and climate values to be updated
+automatically.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="PyISY.ISY.climate">
+<code class="descname">climate</code><em class="property"> = None</em><a class="headerlink" href="#PyISY.ISY.climate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Climate manager that holds all climate properties from the
+controller if the climate module is installed on the controller.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="PyISY.ISY.connected">
+<code class="descname">connected</code><a class="headerlink" href="#PyISY.ISY.connected" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read only boolean value indicating if the class is connected to the
+controller.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="PyISY.ISY.log">
+<code class="descname">log</code><em class="property"> = None</em><a class="headerlink" href="#PyISY.ISY.log" title="Permalink to this definition">¶</a></dt>
+<dd><p>Logger used by the class and its children.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="PyISY.ISY.nodes">
+<code class="descname">nodes</code><em class="property"> = None</em><a class="headerlink" href="#PyISY.ISY.nodes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Node manager that interacts with Insteon nodes and scenes (groups).</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="PyISY.ISY.programs">
+<code class="descname">programs</code><em class="property"> = None</em><a class="headerlink" href="#PyISY.ISY.programs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Program manager that interacts with ISY programs and folders.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyISY.ISY.sendX10">
+<code class="descname">sendX10</code><span class="sig-paren">(</span><em>address</em>, <em>cmd</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/PyISY/ISY.html#ISY.sendX10"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#PyISY.ISY.sendX10" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sends an X10 command.</p>
+<p>address: String of X10 device address (Ex: A10)
+cmd: String of command to execute. Any key of x10_commands can be used</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="PyISY.ISY.variables">
+<code class="descname">variables</code><em class="property"> = None</em><a class="headerlink" href="#PyISY.ISY.variables" title="Permalink to this definition">¶</a></dt>
+<dd><p>Variable manager that interacts with ISY variables.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="PyISY.ISY.x10_commands">
+<code class="descname">x10_commands</code><em class="property"> = {'dim': 15, 'all_off': 1, 'on': 3, 'off': 11, 'bright': 7, 'all_on': 4}</em><a class="headerlink" href="#PyISY.ISY.x10_commands" title="Permalink to this definition">¶</a></dt>
+<dd><p>Dictionary of X10 commands.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="quickstart.html"
+                        title="previous chapter">PyISY Tutorial</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="nodes.html"
+                        title="next chapter">Node Manager Library</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/ISY.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2015, Ryan Kraus.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.3</a>
+      
+      |
+      <a href="_sources/ISY.txt"
+          rel="nofollow">Page source</a></li>
+    </div>
+
+    
+
+    
+  </body>
+</html>

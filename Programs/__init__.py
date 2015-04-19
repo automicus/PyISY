@@ -8,20 +8,28 @@ from xml.dom import minidom
 
 
 class Programs(object):
-
     """
-    Programs class
+    This class handles the ISY programs.This class can be used as a dictionary
+    to navigate through the controller's structure to objects of type
+    :class:`~PyISY.Programs.Program` and :class:`~PyISY.Programs.Folder`
+    (when requested) that represent objects on the controller.
 
-    DESCRIPTION:
-        This class handles the ISY programs.
+    |  parent: The ISY device class
+    |  root: Program/Folder ID representing the current level of navigation.
+    |  pids: List of program and folder IDs.
+    |  pnames: List of the program and folder names.
+    |  pparents: List of the program and folder parent IDs.
+    |  pobjs: List of program and folder objects.
+    |  ptypes: List of the program and folder types.
+    |  xml: XML string from the controller detailing the programs and folders.
 
-    ATTRIBUTES:
-        parent: The ISY device class
-        nids: List of node command ids
-        nnames: List of node command names
-        nobjs: List of node command objects
-        ntypes: List of node type
-        children: Names and IDs of the next level of programs
+    :ivar allLowerPrograms: A list of all programs below the current navigation
+                            level. Does not return folders.
+    :ivar children: A list of the children immediately below the current
+                    navigation level.
+    :ivar leaf: The child object representing the current item in navigation.
+                This is useful for getting a folder to act as a program.
+    :ivar name: The name of the program at the current level of navigation.
     """
 
     pids = []
@@ -47,6 +55,7 @@ class Programs(object):
             self.parse(xml)
 
     def __str__(self):
+        """ Returns a string representation of the program manager. """
         if self.root is None:
             return 'Folder <root>'
         else:
@@ -57,6 +66,7 @@ class Programs(object):
                 return 'Program (' + self.root + ')'
 
     def __repr__(self):
+        """ Returns a string showing the hierarchy of the program manager. """
         # get and sort children
         folders = []
         programs = []
@@ -87,10 +97,15 @@ class Programs(object):
         return out
 
     def __iter__(self):
+        """
+        Returns an iterator that iterates through all the programs (not folders)
+        that are beneath the current folder in navigation.
+        """
         iter_data = self.allLowerPrograms
         return ProgramIterator(self, iter_data, delta=1)
 
     def __reversed__(self):
+        """ Returns an iterator that goes in reverse order. """
         iter_data = self.allLowerPrograms
         return ProgramIterator(self, iter_data, delta=-1)
 
@@ -133,6 +148,11 @@ class Programs(object):
         self.parent.log.info('ISY Updated Program: ' + pid)
 
     def parse(self, xml):
+        """
+        Parses the XML from the controller and updates the state of the manager.
+
+        xml: XML string from the controller.
+        """
         try:
             xmldoc = minidom.parseString(xml)
         except:
@@ -223,6 +243,12 @@ class Programs(object):
             self.parent.log.info('ISY Loaded/Updated Programs')
 
     def update(self, waitTime=0, pid=None):
+        """
+        Update the status of the programs and folders.
+
+        |  waitTime: How long to wait before updating.
+        |  pid: The program ID to update.
+        """
         sleep(waitTime)
         xml = self.parent.conn.getPrograms(pid)
 
@@ -232,6 +258,15 @@ class Programs(object):
             self.parent.log.warning('ISY Failed to update programs.')
 
     def insert(self, pid, pname, pparent, pobj, ptype):
+        """
+        Insert a new program or folder into the manager.
+
+        |  pid: The ID of the program or folder.
+        |  pname: The name of the program or folder.
+        |  pparent: The parent of the program or folder.
+        |  pobj: The object representing the program or folder.
+        |  ptype: The type of the item being added (program/folder).
+        """
         self.pids.append(pid)
         self.pnames.append(pname)
         self.pparents.append(pparent)
@@ -239,6 +274,11 @@ class Programs(object):
         self.pobjs.append(pobj)
 
     def __getitem__(self, val):
+        """
+        Navigate through the hierarchy using names or IDs.
+
+        |  val: Name or ID to navigate to.
+        """
         try:
             self.pids.index(val)
             fun = self.getByID
@@ -262,15 +302,30 @@ class Programs(object):
         return None
 
     def getByName(self, val):
+        """
+        Get a child program/folder with the given name.
+
+        |  val: The name of the child program/folder to look for.
+        """
         for i in range(len(self.pids)):
             if self.pparents[i] == self.root and self.pnames[i] == val:
                 return self.getByInd(i)
 
-    def getByID(self, nid):
-        i = self.pids.index(nid)
+    def getByID(self, pid):
+        """
+        Get a program/folder with the given ID.
+
+        |  pid: The program/folder ID to look for.
+        """
+        i = self.pids.index(pid)
         return self.getByInd(i)
 
     def getByInd(self, i):
+        """
+        Get the program/folder at the given index.
+
+        |  i: The program/folder index.
+        """
         if self.ptypes[i] == 'folder':
             return Programs(self.parent, self.pids[i], self.pids, self.pnames,
                             self.pparents, self.pobjs, self.ptypes)
@@ -279,7 +334,6 @@ class Programs(object):
 
     @property
     def children(self):
-        """Returns a list of the current objects children names and IDs."""
         out = []
         for ind in range(len(self.pnames)):
             if self.pparents[ind] == self.root:
@@ -305,8 +359,6 @@ class Programs(object):
 
     @property
     def allLowerPrograms(self):
-        """ Returns all programs beneath the current level.
-        Does not return folders. """
         output = []
         myname = self.name + '/'
 

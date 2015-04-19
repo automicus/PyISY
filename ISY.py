@@ -11,28 +11,33 @@ from threading import Thread
 
 
 class ISY(object):
-
     """
-    ISY class
+    This is the main class that handles interaction with the ISY device.
 
-    DESCRIPTION:
-        This is the main class that handles interaction with
-        the ISY device.
+    |  address: String of the IP address of the ISY device
+    |  port: String of the port over which the ISY is serving its API
+    |  username: String of the administrator username for the ISY
+    |  password: String of the administrator password for the ISY
+    |  use_https: [optional] Boolean of whether secured HTTP should be used
+    |  log: [optional] Log file class from logging module
 
-    ATTRIBUTES:
-        x10_commands: dictionary of the commands that can be
-                      sent to X10 devices.
-        auto_update: boolean that controls whether the children
-                     update threads should be running.
-            True: start update threads
-            False: stop update threads
-        conn: ISY HTTP connection
-        configuration: ISY Configuration details
-        nodes: ISY Nodes (scenes and devices)
-        programs: ISY programs
-        variables: ISY variables
-        climate: ISY climate information (only if installed on device)
-        networking: ISY networking commands (only if installed on device)
+    :ivar auto_reconnect: Boolean value that indicates if the class should
+                          auto-reconnect to the event stream if the connection
+                          is lost.
+    :ivar auto_update: Boolean value that controls the class's subscription to
+                       the event stream that allows node, program, and climate
+                       values to be updated automatically.
+    :ivar climate: Climate manager that holds all climate properties from the
+                   controller if the climate module is installed on the
+                   controller.
+    :ivar connected: Read only boolean value indicating if the class is
+                     connected to the controller.
+    :ivar log: Logger used by the class and its children.
+    :ivar nodes: :class:`~PyISY.Nodes.Nodes` manager that interacts with Insteon
+                 nodes and groups.
+    :ivar programs: Program manager that interacts with ISY programs and i
+                    folders.
+    :ivar variables: Variable manager that interacts with ISY variables.
     """
 
     x10_commands = {
@@ -43,19 +48,11 @@ class ISY(object):
         'bright': 7,
         'dim': 15
     }
+    """ Dictionary of X10 commands. """
+    auto_reconnect = True
 
     def __init__(self, address, port, username, password,
                  use_https=False, log=None):
-        """
-        Initiates the ISY class.
-
-        address: String of the IP address of the ISY device
-        port: String of the port over which the ISY is serving its API
-        username: String of the administrator username for the ISY
-        password: String of the administrator password for the ISY
-        use_https: [optional] Boolean of whether secured HTTP should be used
-        log: [optional] Log file class from logging module
-        """
         if log is None:
             self.log = logging.getLogger(__name__)
         else:
@@ -80,7 +77,6 @@ class ISY(object):
             self.programs = Programs(self, xml=self.conn.getPrograms())
             self.variables = Variables(self, xml=self.conn.getVariables())
             self._events = None  # create this JIT so no socket reuse
-            self.auto_reconnect = True
             self._reconnect_thread = None
 
             if self.configuration['Weather Information']:
@@ -91,6 +87,7 @@ class ISY(object):
             #     self.networking = networking(self, xml=self.conn.getNetwork())
 
     def __del__(self):
+        """ Turns off auto updating when the class is deleted. """
         # not the best method, I know, but this "forces" Python to clean up
         # the subscription sockets if it isn't done explicitly by the user.
         # As a rule of thumb, this should not be relied upon. The subscription
@@ -113,24 +110,26 @@ class ISY(object):
     def auto_update(self, val):
         if val and not self.auto_update:
             # create new event stream socket
-            self._events = EventStream(self, self.on_lost_event_stream)
+            self._events = EventStream(self, self._on_lost_event_stream)
         self._events.running = val
 
-    def on_lost_event_stream(self):
+    def _on_lost_event_stream(self):
+        """ Method that executes when the event stream is lost. """
         del(self._events)
         self._events = None
 
         if self.auto_reconnect and self._reconnect_thread is None:
             # attempt to reconnect
-            self._reconnect_thread = Thread(target=self.auto_reconnecter)
+            self._reconnect_thread = Thread(target=self._auto_reconnecter)
             self._reconnect_thread.daemon = True
             self._reconnect_thread.start()
 
-    def auto_reconnecter(self):
+    def _auto_reconnecter(self):
+        """ Method that auto-reconnects to the event stream. """
         while self.auto_reconnect and not self.auto_update:
             self.log.warning('PyISY attempting stream reconnect.')
             del(self._events)
-            self._events = EventStream(self, self.on_lost_event_stream)
+            self._events = EventStream(self, self._on_lost_event_stream)
             self._events.running = True
 
         if not self.auto_update:

@@ -5,6 +5,39 @@ from .folder import Folder
 
 
 class Program(Folder):
+    """
+    Class representing a program on the ISY controller.
+
+    |  parent: The program manager object.
+    |  pid: The ID of the program.
+    |  pname: The name of the program.
+    |  pstatus: The current status of the program.
+    |  plastup: The last time the program was updated.
+    |  plastrun: The last time the program was run.
+    |  plastfin: The last time the program finished running.
+    |  penabled: Boolean value showing if the program is enabled on the
+                 controller.
+    |  pstartrun: Boolean value showing if the if the program runs on
+                  controller start up.
+    |  prunning: Boolean value showing if the current program is running
+                 on the controller.
+
+    :ivar name: The name of the program.
+    :ivar status: Watched property representing the current status of the
+                  program.
+    :ivar lastUpdate: Watched property representing the last time the program
+                      was updated.
+    :ivar lastRun: Watched property representing the last time the program was
+                   run.
+    :ivar lastFinished: Watched property representing the last time the program
+                        finished running.
+    :ivar enabled: Watched property representing if the program is enabled on
+                   the controller.
+    :ivar runAtStartup: Watched property representing the if the program runs on
+                        controller start up.
+    :ivar running: Watched property representing if the current program is
+                   running on the controller.
+    """
 
     lastUpdate = Property(_empty_time, readonly=True)
     lastRun = Property(_empty_time, readonly=True)
@@ -29,6 +62,7 @@ class Program(Folder):
         self.running.update(prunning, force=True, silent=True)
 
     def __str__(self):
+        """ Returns a string representation of the object. """
         return 'Program(' + self._id + ')'
 
     def __report_enabled__(self, val):
@@ -44,6 +78,12 @@ class Program(Folder):
         self.noupdate = False
 
     def update(self, waitTime=0, data=None):
+        """
+        Update the program with values on the controller.
+
+        |  waitTime: [optional] Seconds to wait before updating.
+        |  data: [optional] Data to update the object with.
+        """
         if not self.noupdate:
             if data is not None:
                 prunning = (data['plastrun'] >= data['plastup']) or \
@@ -62,6 +102,7 @@ class Program(Folder):
                 self.parent.update(waitTime, pid=self._id)
 
     def enable(self):
+        """ Enable the program on the controller. """
         response = self.parent.parent.conn.programEnable(self._id)
 
         if response is None:
@@ -72,6 +113,7 @@ class Program(Folder):
             self.update(_change2update_interval)
 
     def disable(self):
+        """ Disable the program on the controller. """
         response = self.parent.parent.conn.programDisable(self._id)
 
         if response is None:
@@ -82,6 +124,7 @@ class Program(Folder):
             self.update(_change2update_interval)
 
     def enableRunAtStartup(self):
+        """ Enable running the program on controller start up. """
         response = self.parent.parent.conn.programEnableRunAtStartup(self._id)
 
         if response is None:
@@ -94,6 +137,7 @@ class Program(Folder):
             self.update(_change2update_interval)
 
     def disableRunAtStartup(self):
+        """ Disable running the program on controller start up. """
         response = self.parent.parent.conn.programDisableRunAtStartup(self._id)
 
         if response is None:

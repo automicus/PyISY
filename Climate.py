@@ -7,41 +7,65 @@ from xml.dom import minidom
 class Climate(object):
 
     """
-    climate class
+    This class handles the ISY climate module.
 
-    DESCRIPTION:
-        This class handles the ISY climate module.
+    |  parent: ISY class
+    |  xml: String of xml data containing the climate data
 
-    PARAMETERS:
-        Gust_Speed
-        Temperature
-        Temperature_Rate
-        Rain_Rate
-        Max_Rain_Rate
-        Temperature_High
-        Pressure_Rate
-        Wind_Speed
-        Elevation
-        Dew_Point
-        Wind_Average_Speed
-        Pressure
-        Gust_Direction
-        Wind_Average_Direction
-        Light
-        Wind_Direction
-        Humidity
-        Humidity_Rate
-        Rain_Today
-        Light_Rate
-        Water_Deficit_Yesterday
-        Irrigation_Requirement
-        Feels_Like
-        Temperature_Low
-        Evapotranspiration
-
-    ATTRIBUTES:
-        parent: The ISY device class
-        *_units: Strings of the units used for each of the parameters.
+    :ivar Gust_Speed: Watched Variable representing the gust speed.
+    :ivar Temperature: Watched Variable representing the temperature.
+    :ivar Temperature_Rate: Watched Variable representing the temperature rate.
+    :ivar Rain_Rate: Watched Variable representing the rain rate.
+    :ivar Max_Rain_Rate: Watched Variable representing the rain rate.
+    :ivar Temperature_High: Watched Variable representing the high temperature.
+    :ivar Pressure_Rate: Watched variable representing the pressure rate.
+    :ivar Wind_Speed: Watched Variable representing the wind speed.
+    :ivar Elevation: Watched Variable representing the elevation.
+    :ivar Dew_Point: Watched Variable representing the dew point.
+    :ivar Wind_Average_Speed: Watched Variable representing the avg wind speed.
+    :ivar Pressure: Watched Variable representing the pressure.
+    :ivar Gust_Direction: Watched Variable representing the gust direction.
+    :ivar Wind_Average_Direction: Watched Variable representing the average wind
+                                  direction.
+    :ivar Light: Watched Variable representing the amount of light.
+    :ivar Wind_Direction: Watched Variable representing the wind direction.
+    :ivar Humidity: Watched Variable representing the humidity.
+    :ivar Humidity_Rate: Watched Variable representing the humidity rate.
+    :ivar Rain_Today: Watched Variable representing the forcast rain today.
+    :ivar Light_Rate: Watched Variable representing the light rate.
+    :ivar Water_Deficit_Yesterday: Watched Variable representing the water
+                                   deficit yesterday.
+    :ivar Irrigation_Requirement: Watched Variable representing the irrigation
+                                  requirement.
+    :ivar Feels_Like: Watched Variable representing the feels like temperature.
+    :ivar Temperature_Low: Watched Variable representing the low temperature.
+    :ivar Evapotranspiration: Watched Variable representing the
+                              evapotranspiration amount.
+    :ivar Gust_Speed_units: Gust speed units.
+    :ivar Temperature_units: Temperature units.
+    :ivar Temperature_Rate_units: Temperature rate units.
+    :ivar Rain_Rate_units: Rain rate units.
+    :ivar Max_Rain_Rate_units: Max rain rate units.
+    :ivar Temperature_High_units: High temperature units.
+    :ivar Pressure_Rate_units: Pressure rate units.
+    :ivar Wind_Speed_units: Wind speed units.
+    :ivar Elevation_units: Elevation units.
+    :ivar Dew_Point_units: Dew point units.
+    :ivar Wind_Average_Speed_units: Average wind speed units.
+    :ivar Pressure_units: Pressure units.
+    :ivar Gust_Direction_units: Gust direction units.
+    :ivar Wind_Average_Direction_units: Average wind direction units.
+    :ivar Light_units: Light amount units.
+    :ivar Wind_Direction_units: Wind direction units.
+    :ivar Humidity_units: Humidity units.
+    :ivar Humidity_Rate_units: Humidity rate units.
+    :ivar Rain_Today_units: Rain forecast units.
+    :ivar Light_Rate_units: Light rate units.
+    :ivar Water_Deficit_Yesterday_units: Water deficit units.
+    :ivar Irrigation_Requirement_units: Irrigation requirement units.
+    :ivar Feels_Like_units: Feels like temperature units.
+    :ivar Temperature_Low_units: Low temperature units.
+    :ivar Evapotranspiration_units: Evapotranspiration units.
     """
 
     # Values
@@ -151,20 +175,16 @@ class Climate(object):
     # Forecast_Cloud_Condition_units = ''
 
     def __init__(self, parent, xml=None):
-        """
-        Initiates climate class.
-
-        parent: ISY class
-        xml: String of xml data containing the climate data
-        """
         super(Climate, self).__init__()
         self.parent = parent
         self.parse(xml)
 
     def __str__(self):
+        """ Returns a string representing the climate manager. """
         return 'Climate Module'
 
     def __repr__(self):
+        """ Returns a long string showing all the climate values. """
         out = 'Climate Module\n'
         for attr_name in dir(self):
             attr = getattr(self, attr_name)

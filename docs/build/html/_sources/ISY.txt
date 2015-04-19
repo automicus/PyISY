@@ -1,0 +1,11 @@
+ISY Class
+=========
+
+.. toctree::                                                                                                                                         
+   :maxdepth: 2                                                                                                                                      
+                                                                                                                                                        
+   nodes
+
+.. autoclass:: PyISY.ISY
+    :members:
+    :special-members:

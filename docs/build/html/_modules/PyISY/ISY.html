@@ -1,0 +1,338 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>PyISY.ISY &mdash; PyISY 1.0.0 documentation</title>
+  
+
+  
+  
+
+  
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic|Roboto+Slab:400,700|Inconsolata:400,700&subset=latin,cyrillic' rel='stylesheet' type='text/css'>
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="PyISY 1.0.0 documentation" href="../../index.html"/>
+        <link rel="up" title="Module code" href="../index.html"/> 
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.6.2/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-nav-search">
+        
+          <a href="../../index.html" class="fa fa-home"> PyISY</a>
+        
+        
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        
+          
+          
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../quickstart.html">PyISY Quick Start</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../quickstart.html#environment-setup">Environment Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../quickstart.html#basic-usage">Basic Usage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../quickstart.html#event-updates">Event Updates</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../library.html">PyISY Library</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../library.html#isy-class">ISY Class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../library.html#node-manager-class">Node Manager Class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../library.html#node-class">Node Class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../library.html#group-class">Group Class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../library.html#program-manager-class">Program Manager Class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../library.html#folder-class">Folder Class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../library.html#program-class">Program Class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../library.html#variable-manager-class">Variable Manager Class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../library.html#variable-class">Variable Class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../library.html#climate-class">Climate Class</a></li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../index.html">PyISY</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+      
+    <li>PyISY.ISY</li>
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document">
+            
+  <h1>Source code for PyISY.ISY</h1><div class="highlight"><pre>
+<span class="kn">from</span> <span class="nn">.Connection</span> <span class="kn">import</span> <span class="n">Connection</span>
+<span class="kn">from</span> <span class="nn">.configuration</span> <span class="kn">import</span> <span class="n">configuration</span>
+<span class="kn">from</span> <span class="nn">.Nodes</span> <span class="kn">import</span> <span class="n">Nodes</span>
+<span class="kn">from</span> <span class="nn">.Programs</span> <span class="kn">import</span> <span class="n">Programs</span>
+<span class="kn">from</span> <span class="nn">.Events</span> <span class="kn">import</span> <span class="n">EventStream</span>
+<span class="kn">from</span> <span class="nn">.Variables</span> <span class="kn">import</span> <span class="n">Variables</span>
+<span class="kn">from</span> <span class="nn">.Climate</span> <span class="kn">import</span> <span class="n">Climate</span>
+<span class="c"># from .networking import networking</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">from</span> <span class="nn">threading</span> <span class="kn">import</span> <span class="n">Thread</span>
+
+
+<div class="viewcode-block" id="ISY"><a class="viewcode-back" href="../../library.html#PyISY.ISY">[docs]</a><span class="k">class</span> <span class="nc">ISY</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This is the main class that handles interaction with the ISY device.</span>
+
+<span class="sd">    |  address: String of the IP address of the ISY device</span>
+<span class="sd">    |  port: String of the port over which the ISY is serving its API</span>
+<span class="sd">    |  username: String of the administrator username for the ISY</span>
+<span class="sd">    |  password: String of the administrator password for the ISY</span>
+<span class="sd">    |  use_https: [optional] Boolean of whether secured HTTP should be used</span>
+<span class="sd">    |  log: [optional] Log file class from logging module</span>
+
+<span class="sd">    :ivar auto_reconnect: Boolean value that indicates if the class should</span>
+<span class="sd">                          auto-reconnect to the event stream if the connection</span>
+<span class="sd">                          is lost.</span>
+<span class="sd">    :ivar auto_update: Boolean value that controls the class&#39;s subscription to</span>
+<span class="sd">                       the event stream that allows node, program, and climate</span>
+<span class="sd">                       values to be updated automatically.</span>
+<span class="sd">    :ivar climate: Climate manager that holds all climate properties from the</span>
+<span class="sd">                   controller if the climate module is installed on the</span>
+<span class="sd">                   controller.</span>
+<span class="sd">    :ivar connected: Read only boolean value indicating if the class is</span>
+<span class="sd">                     connected to the controller.</span>
+<span class="sd">    :ivar log: Logger used by the class and its children.</span>
+<span class="sd">    :ivar nodes: :class:`~PyISY.Nodes.Nodes` manager that interacts with Insteon</span>
+<span class="sd">                 nodes and groups.</span>
+<span class="sd">    :ivar programs: Program manager that interacts with ISY programs and i</span>
+<span class="sd">                    folders.</span>
+<span class="sd">    :ivar variables: Variable manager that interacts with ISY variables.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">x10_commands</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s">&#39;all_off&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="s">&#39;all_on&#39;</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span>
+        <span class="s">&#39;on&#39;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span>
+        <span class="s">&#39;off&#39;</span><span class="p">:</span> <span class="mi">11</span><span class="p">,</span>
+        <span class="s">&#39;bright&#39;</span><span class="p">:</span> <span class="mi">7</span><span class="p">,</span>
+        <span class="s">&#39;dim&#39;</span><span class="p">:</span> <span class="mi">15</span>
+    <span class="p">}</span>
+    <span class="sd">&quot;&quot;&quot; Dictionary of X10 commands. &quot;&quot;&quot;</span>
+    <span class="n">auto_reconnect</span> <span class="o">=</span> <span class="bp">True</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">address</span><span class="p">,</span> <span class="n">port</span><span class="p">,</span> <span class="n">username</span><span class="p">,</span> <span class="n">password</span><span class="p">,</span>
+                 <span class="n">use_https</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">log</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="n">__name__</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span> <span class="o">=</span> <span class="n">log</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">conn</span> <span class="o">=</span> <span class="n">Connection</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">address</span><span class="p">,</span> <span class="n">port</span><span class="p">,</span> <span class="n">username</span><span class="p">,</span>
+                                   <span class="n">password</span><span class="p">,</span> <span class="n">use_https</span><span class="p">)</span>
+
+        <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_connected</span> <span class="o">=</span> <span class="bp">False</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">message</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_connected</span> <span class="o">=</span> <span class="bp">True</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">configuration</span> <span class="o">=</span> <span class="n">configuration</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                                               <span class="n">xml</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">conn</span><span class="o">.</span><span class="n">getConfiguration</span><span class="p">())</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">nodes</span> <span class="o">=</span> <span class="n">Nodes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">xml</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">conn</span><span class="o">.</span><span class="n">getNodes</span><span class="p">())</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">programs</span> <span class="o">=</span> <span class="n">Programs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">xml</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">conn</span><span class="o">.</span><span class="n">getPrograms</span><span class="p">())</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">variables</span> <span class="o">=</span> <span class="n">Variables</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">xml</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">conn</span><span class="o">.</span><span class="n">getVariables</span><span class="p">())</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_events</span> <span class="o">=</span> <span class="bp">None</span>  <span class="c"># create this JIT so no socket reuse</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_reconnect_thread</span> <span class="o">=</span> <span class="bp">None</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">configuration</span><span class="p">[</span><span class="s">&#39;Weather Information&#39;</span><span class="p">]:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">climate</span> <span class="o">=</span> <span class="n">Climate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">xml</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">conn</span><span class="o">.</span><span class="n">getClimate</span><span class="p">())</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">climate</span> <span class="o">=</span> <span class="bp">None</span>
+            <span class="c"># if self.configuration[&#39;Networking Module&#39;]:</span>
+            <span class="c">#     self.networking = networking(self, xml=self.conn.getNetwork())</span>
+
+<div class="viewcode-block" id="ISY.__del__"><a class="viewcode-back" href="../../library.html#PyISY.ISY.__del__">[docs]</a>    <span class="k">def</span> <span class="nf">__del__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Turns off auto updating when the class is deleted. &quot;&quot;&quot;</span>
+        <span class="c"># not the best method, I know, but this &quot;forces&quot; Python to clean up</span>
+        <span class="c"># the subscription sockets if it isn&#39;t done explicitly by the user.</span>
+        <span class="c"># As a rule of thumb, this should not be relied upon. The subscription</span>
+        <span class="c"># should be closed explicitly by the program.</span>
+        <span class="c"># See: Zen of Python Line 2</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">auto_update</span> <span class="o">=</span> <span class="bp">False</span>
+</div>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">connected</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_connected</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">auto_update</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_events</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_events</span><span class="o">.</span><span class="n">running</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">False</span>
+
+    <span class="nd">@auto_update.setter</span>
+    <span class="k">def</span> <span class="nf">auto_update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">val</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">val</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">auto_update</span><span class="p">:</span>
+            <span class="c"># create new event stream socket</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_events</span> <span class="o">=</span> <span class="n">EventStream</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_on_lost_event_stream</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_events</span><span class="o">.</span><span class="n">running</span> <span class="o">=</span> <span class="n">val</span>
+
+    <span class="k">def</span> <span class="nf">_on_lost_event_stream</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Method that executes when the event stream is lost. &quot;&quot;&quot;</span>
+        <span class="k">del</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_events</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_events</span> <span class="o">=</span> <span class="bp">None</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">auto_reconnect</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_reconnect_thread</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="c"># attempt to reconnect</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_reconnect_thread</span> <span class="o">=</span> <span class="n">Thread</span><span class="p">(</span><span class="n">target</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_auto_reconnecter</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_reconnect_thread</span><span class="o">.</span><span class="n">daemon</span> <span class="o">=</span> <span class="bp">True</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_reconnect_thread</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">_auto_reconnecter</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Method that auto-reconnects to the event stream. &quot;&quot;&quot;</span>
+        <span class="k">while</span> <span class="bp">self</span><span class="o">.</span><span class="n">auto_reconnect</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">auto_update</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&#39;PyISY attempting stream reconnect.&#39;</span><span class="p">)</span>
+            <span class="k">del</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_events</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_events</span> <span class="o">=</span> <span class="n">EventStream</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_on_lost_event_stream</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_events</span><span class="o">.</span><span class="n">running</span> <span class="o">=</span> <span class="bp">True</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">auto_update</span><span class="p">:</span>
+            <span class="k">del</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_events</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_events</span> <span class="o">=</span> <span class="bp">None</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&#39;PyISY could not reconnect to the event stream.&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&#39;PyISY reconnected to the event stream.&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_reconnect_thread</span> <span class="o">=</span> <span class="bp">None</span>
+
+<div class="viewcode-block" id="ISY.sendX10"><a class="viewcode-back" href="../../library.html#PyISY.ISY.sendX10">[docs]</a>    <span class="k">def</span> <span class="nf">sendX10</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">address</span><span class="p">,</span> <span class="n">cmd</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Sends an X10 command.</span>
+
+<span class="sd">        address: String of X10 device address (Ex: A10)</span>
+<span class="sd">        cmd: String of command to execute. Any key of x10_commands can be used</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">cmd</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">x10_commands</span><span class="p">:</span>
+            <span class="n">command</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">x10_commands</span><span class="p">[</span><span class="n">cmd</span><span class="p">]</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sendX10</span><span class="p">(</span><span class="n">address</span><span class="p">,</span> <span class="n">command</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">result</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;ISY Sent X10 Command: &#39;</span> <span class="o">+</span>
+                              <span class="n">cmd</span> <span class="o">+</span> <span class="s">&#39; To: &#39;</span> <span class="o">+</span> <span class="n">address</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s">&#39;ISY Failed to send X10 Command: &#39;</span>
+                               <span class="o">+</span> <span class="n">cmd</span> <span class="o">+</span> <span class="s">&#39; To: &#39;</span> <span class="o">+</span> <span class="n">address</span><span class="p">)</span></div></div>
+</pre></div>
+
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2015, Ryan Kraus.
+    </p>
+  </div>
+
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../',
+            VERSION:'1.0.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

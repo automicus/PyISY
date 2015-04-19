@@ -7,17 +7,24 @@ from xml.dom import minidom
 class Nodes(object):
 
     """
-    Nodes class
+    This class handles the ISY nodes. This class can be used as a dictionary to
+    navigate through the controller's structure to objects of type
+    :class:`~PyISY.Nodes.Node` and :class:`~PyISY.Nodes.Group` that represent
+    objects on the controller.
 
-    DESCRIPTION:
-        This class handles the ISY nodes.
+    |  parent: ISY class
+    |  root: [optional] String representing the current navigation level's ID
+    |  nids: [optional] list of node ids
+    |  nnames: [optional] list of node names
+    |  nparents: [optional] list of node parents
+    |  nobjs: [optional] list of node objects
+    |  ntypes: [optional] list of node types
+    |  xml: [optional] String of xml data containing the configuration data
 
-    ATTRIBUTES:
-        parent: The ISY device class
-        nids: List of node command ids
-        nnames: List of node command names
-        nobjs: List of node command objects
-        ntypes: List of node type
+    :ivar allLowerNodes: Returns all nodes beneath current level
+    :ivar children: A list of the object's children.
+    :ivar hasChildren: Indicates if object has children
+    :ivar name: The name of the current folder in navigation.
     """
 
     nids = []
@@ -28,19 +35,6 @@ class Nodes(object):
 
     def __init__(self, parent, root=None, nids=None, nnames=None,
                  nparents=None, nobjs=None, ntypes=None, xml=None):
-        """
-        Initiates nodes class.
-
-        parent: ISY class
-        root: [optional] String representing the current ID,
-                         used for navigating folders
-        nids: [optional] list of node ids
-        nnames: [optional] list of node names
-        nparents: [optional] list of node parents
-        nobjs: [optional] list of node objects
-        ntypes: [optional] list of node types
-        xml: [optional] String of xml data containing the configuration data
-        """
         self.parent = parent
         self.root = root
 
@@ -57,6 +51,7 @@ class Nodes(object):
             self.parse(xml)
 
     def __str__(self):
+        """ Returns string representation of the nodes/folders/groups. """
         if self.root is None:
             return 'Folder <root>'
         else:
@@ -69,6 +64,7 @@ class Nodes(object):
                 return 'Node (' + self.root + ')'
 
     def __repr__(self):
+        """ Creates a pretty representation of the nodes/folders/groups. """
         # get and sort children
         folders = []
         groups = []
@@ -126,10 +122,14 @@ class Nodes(object):
         return out
 
     def __iter__(self):
+        """
+        Returns an iterator for each node below the current navigation level.
+        """
         iter_data = self.allLowerNodes
         return NodeIterator(self, iter_data, delta=1)
 
     def __reversed__(self):
+        """ Returns the iterator in reverse order. """
         iter_data = self.allLowerNodes
         return NodeIterator(self, iter_data, delta=-1)
 
@@ -144,7 +144,7 @@ class Nodes(object):
         """
         Parses the xml data.
 
-        xml: String of the xml data
+        |  xml: String of the xml data
         """
         try:
             xmldoc = minidom.parseString(xml)
@@ -199,7 +199,7 @@ class Nodes(object):
         """
         Updates the contents of the class
 
-        waitTime: [optional] Amount of seconds to wait before updating
+        |  waitTime: [optional] Amount of seconds to wait before updating
         """
         sleep(waitTime)
         xml = self.parent.conn.updateNodes()
@@ -234,11 +234,11 @@ class Nodes(object):
         """
         Inserts a new node into the lists.
 
-        nid: node id
-        nname: node name
-        nparent: node parent
-        nobj: node object
-        ntype: node type
+        |  nid: node id
+        |  nname: node name
+        |  nparent: node parent
+        |  nobj: node object
+        |  ntype: node type
         """
         self.nids.append(nid)
         self.nnames.append(nname)
@@ -247,6 +247,9 @@ class Nodes(object):
         self.nobjs.append(nobj)
 
     def __getitem__(self, val):
+        """
+        Used for navigating through the node tree. Can take names or IDs.
+        """
         try:
             self.nids.index(val)
             fun = self.getByID
@@ -271,10 +274,9 @@ class Nodes(object):
 
     def getByName(self, val):
         """
-        Returns node object or nodes class at folder
-        being given a command or folder name
+        Gets child object with the given name.
 
-        val: Integer representing command id
+        |  val: String representing name to look for.
         """
         for i in range(len(self.nids)):
             if self.nparents[i] == self.root and self.nnames[i] == val:
@@ -282,20 +284,18 @@ class Nodes(object):
 
     def getByID(self, nid):
         """
-        Returns node object or nodes class at folder
-        being given a command or folder id
+        Gets object with the given ID.
 
-        val: Integer representing command id
+        |  nid: Integer representing node/group/folder id.
         """
         i = self.nids.index(nid)
         return self.getByInd(i)
 
     def getByInd(self, i):
         """
-        Returns node object or nodes class at folder
-        being given a command or folder ind
+        Returns the object at the given index in the list.
 
-        val: Integer representing command ind
+        |  i: Integer representing index of node/group/folder.
         """
         if self.ntypes[i] in ['group', 'node']:
             return self.nobjs[i]
@@ -304,9 +304,6 @@ class Nodes(object):
 
     @property
     def children(self):
-        """
-        Returns a list of the object's children.
-        """
         out = []
         for i in range(len(self.nids)):
             if self.nparents[i] == self.root:
@@ -315,7 +312,6 @@ class Nodes(object):
 
     @property
     def hasChildren(self):
-        """ Indicates if object has children """
         try:
             self.nparents.index(self.root)
             return True
@@ -332,7 +328,6 @@ class Nodes(object):
 
     @property
     def allLowerNodes(self):
-        """ Returns all nodes beneath current level """
         output = []
         myname = self.name + '/'
 

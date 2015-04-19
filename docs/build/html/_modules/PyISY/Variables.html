@@ -1,0 +1,392 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>PyISY.Variables &mdash; PyISY 1.0.0 documentation</title>
+  
+
+  
+  
+
+  
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic|Roboto+Slab:400,700|Inconsolata:400,700&subset=latin,cyrillic' rel='stylesheet' type='text/css'>
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="PyISY 1.0.0 documentation" href="../../index.html"/>
+        <link rel="up" title="Module code" href="../index.html"/> 
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.6.2/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-nav-search">
+        
+          <a href="../../index.html" class="fa fa-home"> PyISY</a>
+        
+        
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        
+          
+          
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../quickstart.html">PyISY Quick Start</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../quickstart.html#environment-setup">Environment Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../quickstart.html#basic-usage">Basic Usage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../quickstart.html#event-updates">Event Updates</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../library.html">PyISY Library</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../library.html#isy-class">ISY Class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../library.html#node-manager-class">Node Manager Class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../library.html#node-class">Node Class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../library.html#group-class">Group Class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../library.html#program-manager-class">Program Manager Class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../library.html#folder-class">Folder Class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../library.html#program-class">Program Class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../library.html#variable-manager-class">Variable Manager Class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../library.html#variable-class">Variable Class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../library.html#climate-class">Climate Class</a></li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../index.html">PyISY</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+      
+    <li>PyISY.Variables</li>
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document">
+            
+  <h1>Source code for PyISY.Variables</h1><div class="highlight"><pre>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span>
+<span class="kn">from</span> <span class="nn">time</span> <span class="kn">import</span> <span class="n">sleep</span>
+<span class="kn">from</span> <span class="nn">.variable</span> <span class="kn">import</span> <span class="n">Variable</span>
+<span class="kn">from</span> <span class="nn">xml.dom</span> <span class="kn">import</span> <span class="n">minidom</span>
+
+
+<div class="viewcode-block" id="Variables"><a class="viewcode-back" href="../../library.html#PyISY.Variables.Variables">[docs]</a><span class="k">class</span> <span class="nc">Variables</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This class handles the ISY variables. This class can be used as a dictionary</span>
+<span class="sd">    to navigate through the controller&#39;s structure to objects of type</span>
+<span class="sd">    :class:`~PyISY.Variables.Variable` that represent objects on the controller.</span>
+
+<span class="sd">    |  parent: The ISY object.</span>
+<span class="sd">    |  root: The ID of the current level of navigation.</span>
+<span class="sd">    |  vids: List of variable IDs from the controller.</span>
+<span class="sd">    |  vnames: List of variable names form the controller.</span>
+<span class="sd">    |  vobjs: List of variable objects.</span>
+<span class="sd">    |  vtypes: List of variable types.</span>
+<span class="sd">    |  xml: XML string from the controller detailing the device&#39;s variables.</span>
+
+<span class="sd">    :ivar children: List of the children below the current level of navigation.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">vids</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">vnames</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">vobjs</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">vtypes</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parent</span><span class="p">,</span> <span class="n">root</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">vids</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">vnames</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                 <span class="n">vobjs</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">vtypes</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">xml</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parent</span> <span class="o">=</span> <span class="n">parent</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">root</span> <span class="o">=</span> <span class="n">root</span>
+
+        <span class="k">if</span> <span class="n">vids</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span> <span class="ow">and</span> <span class="n">vnames</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span> \
+                <span class="ow">and</span> <span class="n">vobjs</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span> <span class="ow">and</span> <span class="n">vtypes</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">vids</span> <span class="o">=</span> <span class="n">vids</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">vnames</span> <span class="o">=</span> <span class="n">vnames</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">vobjs</span> <span class="o">=</span> <span class="n">vobjs</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">vtypes</span> <span class="o">=</span> <span class="n">vtypes</span>
+
+        <span class="k">elif</span> <span class="n">xml</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">xml</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Variables.__str__"><a class="viewcode-back" href="../../library.html#PyISY.Variables.Variables.__str__">[docs]</a>    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Returns a string representation of the variable manager. &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">root</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s">&#39;Variable Collection&#39;</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">root</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s">&#39;Variable Collection (Type: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="p">)</span> <span class="o">+</span> <span class="s">&#39;)&#39;</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">root</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s">&#39;Variable Collection (Type: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="p">)</span> <span class="o">+</span> <span class="s">&#39;)&#39;</span>
+</div>
+<div class="viewcode-block" id="Variables.__repr__"><a class="viewcode-back" href="../../library.html#PyISY.Variables.Variables.__repr__">[docs]</a>    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Returns a string representing the children variables. &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">root</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">repr</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">+</span> <span class="nb">repr</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">+</span> <span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span>
+            <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">children</span><span class="p">:</span>
+                <span class="n">out</span> <span class="o">+=</span> <span class="s">&#39;  &#39;</span> <span class="o">+</span> <span class="n">child</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="s">&#39;: Variable(&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">child</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span> <span class="o">+</span> <span class="s">&#39;)</span><span class="se">\n</span><span class="s">&#39;</span>
+            <span class="k">return</span> <span class="n">out</span>
+</div>
+<div class="viewcode-block" id="Variables.parse"><a class="viewcode-back" href="../../library.html#PyISY.Variables.Variables.parse">[docs]</a>    <span class="k">def</span> <span class="nf">parse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">xmls</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Parse XML from the controller with details about the variables. &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">xmldocs</span> <span class="o">=</span> <span class="p">[</span><span class="n">minidom</span><span class="o">.</span><span class="n">parseString</span><span class="p">(</span><span class="n">xml</span><span class="p">)</span> <span class="k">for</span> <span class="n">xml</span> <span class="ow">in</span> <span class="n">xmls</span><span class="p">]</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s">&#39;ISY Could not parse variables, &#39;</span>
+                                  <span class="o">+</span> <span class="s">&#39;poorly formatted XML.&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c"># parse definitions</span>
+            <span class="k">for</span> <span class="n">ind</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">):</span>
+                <span class="n">features</span> <span class="o">=</span> <span class="n">xmldocs</span><span class="p">[</span><span class="n">ind</span><span class="p">]</span><span class="o">.</span><span class="n">getElementsByTagName</span><span class="p">(</span><span class="s">&#39;e&#39;</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">feature</span> <span class="ow">in</span> <span class="n">features</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">vids</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">feature</span><span class="o">.</span><span class="n">attributes</span><span class="p">[</span><span class="s">&#39;id&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">))</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">vnames</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">feature</span><span class="o">.</span><span class="n">attributes</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">vtypes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ind</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+
+            <span class="c"># parse values</span>
+            <span class="n">count</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">for</span> <span class="n">ind</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">):</span>
+                <span class="n">features</span> <span class="o">=</span> <span class="n">xmldocs</span><span class="p">[</span><span class="n">ind</span><span class="p">]</span><span class="o">.</span><span class="n">getElementsByTagName</span><span class="p">(</span><span class="s">&#39;var&#39;</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">feature</span> <span class="ow">in</span> <span class="n">features</span><span class="p">:</span>
+                    <span class="n">init</span> <span class="o">=</span> <span class="n">feature</span><span class="o">.</span><span class="n">getElementsByTagName</span><span class="p">(</span><span class="s">&#39;init&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> \
+                        <span class="o">.</span><span class="n">firstChild</span><span class="o">.</span><span class="n">toxml</span><span class="p">()</span>
+                    <span class="n">val</span> <span class="o">=</span> <span class="n">feature</span><span class="o">.</span><span class="n">getElementsByTagName</span><span class="p">(</span><span class="s">&#39;val&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> \
+                        <span class="o">.</span><span class="n">firstChild</span><span class="o">.</span><span class="n">toxml</span><span class="p">()</span>
+                    <span class="n">ts_raw</span> <span class="o">=</span> <span class="n">feature</span><span class="o">.</span><span class="n">getElementsByTagName</span><span class="p">(</span><span class="s">&#39;ts&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> \
+                        <span class="o">.</span><span class="n">firstChild</span><span class="o">.</span><span class="n">toxml</span><span class="p">()</span>
+                    <span class="n">ts</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="n">ts_raw</span><span class="p">,</span> <span class="s">&#39;%Y%m</span><span class="si">%d</span><span class="s"> %H:%M:%S&#39;</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">vobjs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Variable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">vids</span><span class="p">[</span><span class="n">count</span><span class="p">],</span> <span class="n">ind</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span>
+                                               <span class="n">init</span><span class="p">,</span> <span class="n">val</span><span class="p">,</span> <span class="n">ts</span><span class="p">))</span>
+                    <span class="n">count</span> <span class="o">+=</span> <span class="mi">1</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;ISY Loaded Variables&#39;</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="Variables.update"><a class="viewcode-back" href="../../library.html#PyISY.Variables.Variables.update">[docs]</a>    <span class="k">def</span> <span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">waitTime</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Update the variable objects with data from the controller.</span>
+
+<span class="sd">        |  waitTime: Seconds to wait before updating.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">sleep</span><span class="p">(</span><span class="n">waitTime</span><span class="p">)</span>
+        <span class="n">xml</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">conn</span><span class="o">.</span><span class="n">updateVariables</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">xml</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">xmldoc</span> <span class="o">=</span> <span class="n">minidom</span><span class="o">.</span><span class="n">parseString</span><span class="p">(</span><span class="n">xml</span><span class="p">)</span>
+
+                <span class="n">features</span> <span class="o">=</span> <span class="n">xmldoc</span><span class="o">.</span><span class="n">getElementsByTagName</span><span class="p">(</span><span class="s">&#39;var&#39;</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">feature</span> <span class="ow">in</span> <span class="n">features</span><span class="p">:</span>
+                    <span class="n">vid</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">feature</span><span class="o">.</span><span class="n">attributes</span><span class="p">[</span><span class="s">&#39;id&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+                    <span class="n">vtype</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">feature</span><span class="o">.</span><span class="n">attributes</span><span class="p">[</span><span class="s">&#39;type&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+                    <span class="n">init</span> <span class="o">=</span> <span class="n">feature</span><span class="o">.</span><span class="n">getElementsByTagName</span><span class="p">(</span><span class="s">&#39;init&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> \
+                        <span class="o">.</span><span class="n">firstChild</span><span class="o">.</span><span class="n">toxml</span><span class="p">()</span>
+                    <span class="n">val</span> <span class="o">=</span> <span class="n">feature</span><span class="o">.</span><span class="n">getElementsByTagName</span><span class="p">(</span><span class="s">&#39;val&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> \
+                        <span class="o">.</span><span class="n">firstChild</span><span class="o">.</span><span class="n">toxml</span><span class="p">()</span>
+                    <span class="n">ts_raw</span> <span class="o">=</span> <span class="n">feature</span><span class="o">.</span><span class="n">getElementsByTagName</span><span class="p">(</span><span class="s">&#39;ts&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> \
+                        <span class="o">.</span><span class="n">firstChild</span><span class="o">.</span><span class="n">toxml</span><span class="p">()</span>
+                    <span class="n">ts</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="n">ts_raw</span><span class="p">,</span> <span class="s">&#39;%Y%m</span><span class="si">%d</span><span class="s"> %H:%M:%S&#39;</span><span class="p">)</span>
+
+                    <span class="n">vobj</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="n">vtype</span><span class="p">][</span><span class="n">vid</span><span class="p">]</span>
+                    <span class="k">if</span> <span class="n">vobj</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                        <span class="n">vobj</span> <span class="o">=</span> <span class="n">Variable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vid</span><span class="p">,</span> <span class="n">vtype</span><span class="p">,</span> <span class="n">init</span><span class="p">,</span> <span class="n">val</span><span class="p">,</span> <span class="n">ts</span><span class="p">)</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">vtypes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">vtype</span><span class="p">)</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">vids</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">vid</span><span class="p">)</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">vnames</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;&#39;</span><span class="p">)</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">vobjs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">vobj</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">vobj</span><span class="o">.</span><span class="n">init</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">init</span><span class="p">,</span> <span class="n">force</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">silent</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+                        <span class="n">vobj</span><span class="o">.</span><span class="n">val</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">force</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">silent</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+                        <span class="n">vobj</span><span class="o">.</span><span class="n">lastEdit</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">ts</span><span class="p">,</span> <span class="n">force</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">silent</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+            <span class="k">except</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&#39;ISY Failed to update variables, &#39;</span>
+                                        <span class="o">+</span> <span class="s">&#39;recieved bad XML.&#39;</span><span class="p">)</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&#39;ISY Failed to update variables.&#39;</span><span class="p">)</span>
+</div>
+    <span class="k">def</span> <span class="nf">_upmsg</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">xmldoc</span><span class="p">):</span>
+        <span class="n">xml</span> <span class="o">=</span> <span class="n">xmldoc</span><span class="o">.</span><span class="n">toxml</span><span class="p">()</span>
+        <span class="n">vtype</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">xmldoc</span><span class="o">.</span><span class="n">getElementsByTagName</span><span class="p">(</span><span class="s">&#39;var&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+                    <span class="o">.</span><span class="n">attributes</span><span class="p">[</span><span class="s">&#39;type&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+        <span class="n">vid</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">xmldoc</span><span class="o">.</span><span class="n">getElementsByTagName</span><span class="p">(</span><span class="s">&#39;var&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+                  <span class="o">.</span><span class="n">attributes</span><span class="p">[</span><span class="s">&#39;id&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">vobj</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="n">vtype</span><span class="p">][</span><span class="n">vid</span><span class="p">]</span>
+        <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+            <span class="k">pass</span>  <span class="c"># this is a new variable that hasn&#39;t been loaded</span>
+        <span class="k">else</span><span class="p">:</span>
+
+            <span class="k">if</span> <span class="s">&#39;&lt;init&gt;&#39;</span> <span class="ow">in</span> <span class="n">xml</span><span class="p">:</span>
+                <span class="n">vobj</span><span class="o">.</span><span class="n">init</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">xmldoc</span><span class="o">.</span><span class="n">getElementsByTagName</span><span class="p">(</span><span class="s">&#39;init&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+                                     <span class="o">.</span><span class="n">firstChild</span><span class="o">.</span><span class="n">toxml</span><span class="p">()),</span>
+                                 <span class="n">force</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">silent</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">vobj</span><span class="o">.</span><span class="n">val</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">xmldoc</span><span class="o">.</span><span class="n">getElementsByTagName</span><span class="p">(</span><span class="s">&#39;val&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+                                <span class="o">.</span><span class="n">firstChild</span><span class="o">.</span><span class="n">toxml</span><span class="p">()),</span> <span class="n">force</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">silent</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+                <span class="n">ts_raw</span> <span class="o">=</span> <span class="n">xmldoc</span><span class="o">.</span><span class="n">getElementsByTagName</span><span class="p">(</span><span class="s">&#39;ts&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">firstChild</span><span class="o">.</span><span class="n">toxml</span><span class="p">()</span>
+                <span class="n">vobj</span><span class="o">.</span><span class="n">lastEdit</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="n">ts_raw</span><span class="p">,</span>
+                                                       <span class="s">&#39;%Y%m</span><span class="si">%d</span><span class="s"> %H:%M:%S&#39;</span><span class="p">),</span>
+                                     <span class="n">force</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">silent</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;ISY Updated Variable: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">vid</span><span class="p">))</span>
+
+<div class="viewcode-block" id="Variables.__getitem__"><a class="viewcode-back" href="../../library.html#PyISY.Variables.Variables.__getitem__">[docs]</a>    <span class="k">def</span> <span class="nf">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">val</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Navigate through the variables by ID or name.</span>
+
+<span class="sd">        |  val: Name or ID for navigation.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">root</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">val</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">]:</span>
+                <span class="k">return</span> <span class="n">Variables</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="p">,</span> <span class="n">val</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">vids</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">vnames</span><span class="p">,</span>
+                                 <span class="bp">self</span><span class="o">.</span><span class="n">vobjs</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">vtypes</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="s">&#39;Unknown variable type: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">val</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">val</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">int</span><span class="p">:</span>
+                <span class="n">search_arr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">vids</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">search_arr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">vnames</span>
+
+            <span class="n">notFound</span> <span class="o">=</span> <span class="bp">True</span>
+            <span class="n">ind</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+            <span class="k">while</span> <span class="n">notFound</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">ind</span> <span class="o">=</span> <span class="n">search_arr</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">ind</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">vtypes</span><span class="p">[</span><span class="n">ind</span><span class="p">]</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="p">:</span>
+                        <span class="n">notFound</span> <span class="o">=</span> <span class="bp">False</span>
+                <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+                    <span class="k">break</span>
+            <span class="k">if</span> <span class="n">notFound</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="s">&#39;Unrecognized variable id: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">val</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">vobjs</span><span class="p">[</span><span class="n">ind</span><span class="p">]</span>
+</div>
+    <span class="k">def</span> <span class="nf">__setitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">val</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">None</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">children</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">root</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">types</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">types</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="p">]</span>
+
+        <span class="n">out</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">ind</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">vids</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">vtypes</span><span class="p">[</span><span class="n">ind</span><span class="p">]</span> <span class="ow">in</span> <span class="n">types</span><span class="p">:</span>
+                <span class="n">out</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">vtypes</span><span class="p">[</span><span class="n">ind</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">vnames</span><span class="p">[</span><span class="n">ind</span><span class="p">],</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">vids</span><span class="p">[</span><span class="n">ind</span><span class="p">]))</span>
+        <span class="k">return</span> <span class="n">out</span></div>
+</pre></div>
+
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2015, Ryan Kraus.
+    </p>
+  </div>
+
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../',
+            VERSION:'1.0.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

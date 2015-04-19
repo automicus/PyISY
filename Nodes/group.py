@@ -4,19 +4,18 @@ from VarEvents import Property
 class Group(object):
 
     """
-    Group class
+    This class interacts with ISY groups (scenes).
 
-    DESCRIPTION:
-        This class interacts with ISY groups (scenes).
+    |  parent: The node manager object.
+    |  nid: The node ID.
+    |  name: The node name.
+    |  members: List of the members in this group.
 
-    ATTRIBUTES:
-        parent: The nodes class
-        noupdate: stops automatic updating after manipulation
-        status: The status of the node
-
-    METHODS:
-        off()
-        on()
+    :ivar dimmable: Boolean value idicating that this group cannot be dimmed.
+    :ivar hasChildren: Boolean value indicating that this group has no children.
+    :ivar members: List of the members of this group.
+    :ivar name: The name of this group.
+    :ivar status: Watched property indicating the status of the group.
     """
 
     status = Property(0)
@@ -31,9 +30,9 @@ class Group(object):
         self._running = False
 
         # listen for changes in children
-        self._membersHandlers = [ \
-                self.parent[m].status.subscribe('changed', self.update) \
-                for m in self.members]
+        self._membersHandlers = [
+            self.parent[m].status.subscribe('changed', self.update)
+            for m in self.members]
 
         # get and update the status
         self.update()
@@ -42,10 +41,12 @@ class Group(object):
         self.status.reporter = self.__report_status__
 
     def __del__(self):
+        """ Cleanup event handlers before deleting. """
         for handler in self._membersHandlers:
             handler.unsubscribe()
 
     def __str__(self):
+        """ Return a string representation for this group. """
         return 'Group(' + self._id + ')'
 
     def __report_status__(self, new_val):
@@ -68,6 +69,7 @@ class Group(object):
         return self._members
 
     def update(self, e=None):
+        """ Update the group with values from the controller. """
         for m in self.members:
             if self.parent[m].status > 0:
                 self.status.update(255, force=True, silent=True)

@@ -5,6 +5,21 @@ from xml.dom import minidom
 
 
 class Variables(object):
+    """
+    This class handles the ISY variables. This class can be used as a dictionary
+    to navigate through the controller's structure to objects of type
+    :class:`~PyISY.Variables.Variable` that represent objects on the controller.
+
+    |  parent: The ISY object.
+    |  root: The ID of the current level of navigation.
+    |  vids: List of variable IDs from the controller.
+    |  vnames: List of variable names form the controller.
+    |  vobjs: List of variable objects.
+    |  vtypes: List of variable types.
+    |  xml: XML string from the controller detailing the device's variables.
+
+    :ivar children: List of the children below the current level of navigation.
+    """
 
     vids = []
     vnames = []
@@ -27,6 +42,7 @@ class Variables(object):
             self.parse(xml)
 
     def __str__(self):
+        """ Returns a string representation of the variable manager. """
         if self.root is None:
             return 'Variable Collection'
         elif self.root == 1:
@@ -35,6 +51,7 @@ class Variables(object):
             return 'Variable Collection (Type: ' + str(self.root) + ')'
 
     def __repr__(self):
+        """ Returns a string representing the children variables. """
         if self.root is None:
             return repr(self[1]) + repr(self[2])
         else:
@@ -44,6 +61,7 @@ class Variables(object):
             return out
 
     def parse(self, xmls):
+        """ Parse XML from the controller with details about the variables. """
         try:
             xmldocs = [minidom.parseString(xml) for xml in xmls]
         except:
@@ -77,6 +95,11 @@ class Variables(object):
             self.parent.log.info('ISY Loaded Variables')
 
     def update(self, waitTime=0):
+        """
+        Update the variable objects with data from the controller.
+
+        |  waitTime: Seconds to wait before updating.
+        """
         sleep(waitTime)
         xml = self.parent.conn.updateVariables()
 
@@ -141,6 +164,11 @@ class Variables(object):
             self.parent.log.info('ISY Updated Variable: ' + str(vid))
 
     def __getitem__(self, val):
+        """
+        Navigate through the variables by ID or name.
+
+        |  val: Name or ID for navigation.
+        """
         if self.root is None:
             if val in [1, 2]:
                 return Variables(self.parent, val, self.vids, self.vnames,
