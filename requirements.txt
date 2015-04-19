@@ -1,0 +1,2 @@
+requests>=2.0
+VarEvents>=1.0.0

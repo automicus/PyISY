@@ -12,3 +12,5 @@ WRITTEN: December, 2014
 """
 
 from .ISY import ISY
+
+__version__ = '1.0.0'
