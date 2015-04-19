@@ -8,7 +8,6 @@ from .Climate import Climate
 # from .networking import networking
 import logging
 from threading import Thread
-import time
 
 
 class ISY(object):

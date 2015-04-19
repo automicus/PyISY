@@ -6,7 +6,7 @@ except ImportError:
     # python 3.4
     from urllib.parse import quote
     from urllib.parse import urlencode
-from . import requests
+import requests
 
 
 class Connection(object):
