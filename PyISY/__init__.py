@@ -12,10 +12,3 @@ WRITTEN: December, 2014
 """
 
 from .ISY import ISY
-from . import tests
-
-
-def install(*args, **kwargs):
-    mod = ISY(*args, **kwargs)
-    mod.auto_update = True
-    return mod
