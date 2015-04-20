@@ -728,10 +728,83 @@ running on the controller.</li>
 </tr>
 </tbody>
 </table>
+<dl class="attribute">
+<dt id="PyISY.Programs.Program.__delattr__">
+<code class="descname">__delattr__</code><a class="headerlink" href="#PyISY.Programs.Program.__delattr__" title="Permalink to this definition">¶</a></dt>
+<dd><p>x.__delattr__(&#8216;name&#8217;) &lt;==&gt; del x.name</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyISY.Programs.Program.__format__">
+<code class="descname">__format__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PyISY.Programs.Program.__format__" title="Permalink to this definition">¶</a></dt>
+<dd><p>default object formatter</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="PyISY.Programs.Program.__getattribute__">
+<code class="descname">__getattribute__</code><a class="headerlink" href="#PyISY.Programs.Program.__getattribute__" title="Permalink to this definition">¶</a></dt>
+<dd><p>x.__getattribute__(&#8216;name&#8217;) &lt;==&gt; x.name</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="PyISY.Programs.Program.__hash__">
+<code class="descname">__hash__</code><a class="headerlink" href="#PyISY.Programs.Program.__hash__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="PyISY.Programs.Program.__new__">
+<code class="descname">__new__</code><span class="sig-paren">(</span><em>S</em>, <em>...</em><span class="sig-paren">)</span> &rarr; a new object with type S, a subtype of T<a class="headerlink" href="#PyISY.Programs.Program.__new__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="PyISY.Programs.Program.__reduce__">
+<code class="descname">__reduce__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PyISY.Programs.Program.__reduce__" title="Permalink to this definition">¶</a></dt>
+<dd><p>helper for pickle</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyISY.Programs.Program.__reduce_ex__">
+<code class="descname">__reduce_ex__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PyISY.Programs.Program.__reduce_ex__" title="Permalink to this definition">¶</a></dt>
+<dd><p>helper for pickle</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="PyISY.Programs.Program.__repr__">
+<code class="descname">__repr__</code><a class="headerlink" href="#PyISY.Programs.Program.__repr__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="PyISY.Programs.Program.__setattr__">
+<code class="descname">__setattr__</code><a class="headerlink" href="#PyISY.Programs.Program.__setattr__" title="Permalink to this definition">¶</a></dt>
+<dd><p>x.__setattr__(&#8216;name&#8217;, value) &lt;==&gt; x.name = value</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyISY.Programs.Program.__sizeof__">
+<code class="descname">__sizeof__</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &rarr; int<a class="headerlink" href="#PyISY.Programs.Program.__sizeof__" title="Permalink to this definition">¶</a></dt>
+<dd><p>size of object in memory, in bytes</p>
+</dd></dl>
+
 <dl class="method">
 <dt id="PyISY.Programs.Program.__str__">
 <code class="descname">__str__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/PyISY/Programs/program.html#Program.__str__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#PyISY.Programs.Program.__str__" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns a string representation of the object.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyISY.Programs.Program.__subclasshook__">
+<code class="descname">__subclasshook__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PyISY.Programs.Program.__subclasshook__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Abstract classes can override this to customize issubclass().</p>
+<p>This is invoked early on by abc.ABCMeta.__subclasscheck__().
+It should return True, False or NotImplemented.  If it returns
+NotImplemented, the normal algorithm is used.  Otherwise, it
+overrides the normal algorithm (and the outcome is cached).</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="PyISY.Programs.Program.__weakref__">
+<code class="descname">__weakref__</code><a class="headerlink" href="#PyISY.Programs.Program.__weakref__" title="Permalink to this definition">¶</a></dt>
+<dd><p>list of weak references to the object (if defined)</p>
 </dd></dl>
 
 <dl class="method">
@@ -756,6 +829,30 @@ running on the controller.</li>
 <dt id="PyISY.Programs.Program.enableRunAtStartup">
 <code class="descname">enableRunAtStartup</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/PyISY/Programs/program.html#Program.enableRunAtStartup"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#PyISY.Programs.Program.enableRunAtStartup" title="Permalink to this definition">¶</a></dt>
 <dd><p>Enable running the program on controller start up.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyISY.Programs.Program.run">
+<code class="descname">run</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PyISY.Programs.Program.run" title="Permalink to this definition">¶</a></dt>
+<dd><p>Runs the appropriate clause of the object.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyISY.Programs.Program.runElse">
+<code class="descname">runElse</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PyISY.Programs.Program.runElse" title="Permalink to this definition">¶</a></dt>
+<dd><p>Runs the ELSE clause of the object.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyISY.Programs.Program.runThen">
+<code class="descname">runThen</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PyISY.Programs.Program.runThen" title="Permalink to this definition">¶</a></dt>
+<dd><p>Runs the THEN clause of the object.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyISY.Programs.Program.stop">
+<code class="descname">stop</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PyISY.Programs.Program.stop" title="Permalink to this definition">¶</a></dt>
+<dd><p>Stops the object if it is running.</p>
 </dd></dl>
 
 <dl class="method">

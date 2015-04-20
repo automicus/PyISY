@@ -43,6 +43,7 @@ Program Class
 .. autoclass:: PyISY.Programs.Program
     :members:
     :special-members:
+    :inherited-members: run, runThen, runElse
 
 Variable Manager Class
 ----------------------
