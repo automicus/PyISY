@@ -1,15 +1,15 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 setup(
     name='PyISY',
-    version='1.0.1',
+    version='1.0.2',
     license='Apache License 2.0',
     url='http://automic.us/projects/pyisy',
-    download_url='https://github.com/automicus/pyisy/tarball/1.0.1',
+    download_url='https://github.com/automicus/pyisy/tarball/1.0.2',
     author='Ryan Kraus',
     author_email='automicus@gmail.com',
     description='Python module to talk to ISY994 from UDI.',
-    packages=['PyISY'],
+    packages=find_packages(),
     zip_safe=False,
     include_package_data=True,
     platforms='any',
