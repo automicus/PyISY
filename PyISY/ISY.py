@@ -111,7 +111,8 @@ class ISY(object):
         if val and not self.auto_update:
             # create new event stream socket
             self._events = EventStream(self, self._on_lost_event_stream)
-        self._events.running = val
+        if self._events is not None:
+            self._events.running = val
 
     def _on_lost_event_stream(self):
         """ Method that executes when the event stream is lost. """
