@@ -200,8 +200,10 @@ class Climate(object):
 
         xml: String of the xml data
         """
+        # remove unicode from string in python 2.7, 3.2, and 3.4 compatible way
+        xml = ''.join(char for char in xml if ord(char) < 128)
         try:
-            xmldoc = minidom.parseString(xml.replace('\xb0', ''))
+            xmldoc = minidom.parseString(xml)
         except:
             self.parent.log.error('ISY Could not parse climate, poorly '
                                   + 'formatted XML.')
