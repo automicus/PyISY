@@ -201,7 +201,7 @@ class Climate(object):
         xml: String of the xml data
         """
         try:
-            xmldoc = minidom.parseString(xml.replace(u'\xb0', ''))
+            xmldoc = minidom.parseString(xml.replace('\xb0', ''))
         except:
             self.parent.log.error('ISY Could not parse climate, poorly '
                                   + 'formatted XML.')
