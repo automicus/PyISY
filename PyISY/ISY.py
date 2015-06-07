@@ -53,6 +53,9 @@ class ISY(object):
 
     def __init__(self, address, port, username, password,
                  use_https=False, log=None):
+         self._events = None  # create this JIT so no socket reuse
+         self._reconnect_thread = None
+
         if log is None:
             self.log = logging.getLogger(__name__)
         else:
@@ -76,8 +79,6 @@ class ISY(object):
             self.nodes = Nodes(self, xml=self.conn.getNodes())
             self.programs = Programs(self, xml=self.conn.getPrograms())
             self.variables = Variables(self, xml=self.conn.getVariables())
-            self._events = None  # create this JIT so no socket reuse
-            self._reconnect_thread = None
 
             if self.configuration['Weather Information']:
                 self.climate = Climate(self, xml=self.conn.getClimate())
