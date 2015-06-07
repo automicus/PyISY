@@ -53,8 +53,8 @@ class ISY(object):
 
     def __init__(self, address, port, username, password,
                  use_https=False, log=None):
-         self._events = None  # create this JIT so no socket reuse
-         self._reconnect_thread = None
+        self._events = None  # create this JIT so no socket reuse
+        self._reconnect_thread = None
 
         if log is None:
             self.log = logging.getLogger(__name__)
