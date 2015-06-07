@@ -65,6 +65,8 @@ class ISY(object):
             self.log = log
 
         try:
+            if tls_ver is None:
+                tls_ver = 1.1
             self.conn = Connection(self, address, port, username,
                                    password, use_https, tls_ver)
 
