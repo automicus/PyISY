@@ -7,17 +7,35 @@ except ImportError:
     from urllib.parse import quote
     from urllib.parse import urlencode
 import requests
+from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.poolmanager import PoolManager
+import ssl
+import sys
 
 
 class Connection(object):
 
-    def __init__(self, parent, address, port, username, password, use_https):
+    def __init__(self, parent, address, port, username, password, use_https,
+                 tls_ver):
         self.parent = parent
         self._address = address
         self._port = port
         self._username = username
         self._password = password
-        self._use_https = use_https
+
+        # setup proper HTTPS handling for the ISY
+        if use_https and can_https(self.parent.log, tls_ver):
+            self._use_https = True
+            self._tls_ver = tls_ver
+            # Most SSL certs will not be valid. Let's not warn about them.
+            requests.packages.urllib3.disable_warnings()
+
+            # ISY uses TLS1 and not SSL
+            req_session = requests.Session()
+            req_session.mount(self.compileURL(None), TLSHttpAdapter(tls_ver))
+        else:
+            self._use_https = False
+            self._tls_ver = None
 
         # test settings
         if not self.ping():
@@ -33,12 +51,13 @@ class Connection(object):
     # COMMON UTILITIES
     def compileURL(self, path, query=None):
         if self._use_https:
-            url = 'http://'
+            url = 'https://'
         else:
             url = 'http://'
 
         url += self._address + ':{}'.format(self._port)
-        url += '/rest/' + '/'.join([quote(item) for item in path])
+        if path is not None:
+            url += '/rest/' + '/'.join([quote(item) for item in path])
 
         if query is not None:
             url += '?' + urlencode(query)
@@ -51,25 +70,28 @@ class Connection(object):
 
         try:
             r = requests.get(url, auth=(self._username, self._password),
-                    timeout=10)
-        except requests.ConnectionError:
-            self.parent.log.error('ISY Could not recieve response '
-                                  + 'from device because of a network issue.')
-            return None
+                    timeout=10, verify=False)
+
+        except requests.ConnectionError as err:
+                self.parent.log.error('ISY Could not recieve response '
+                                      + 'from device because of a network '
+                                      + 'issue.')
+                return None
+
         except requests.exceptions.Timeout:
             self.parent.log.error('Timed out waiting for response from the '
                                   + 'ISY device.')
             return None
+
+        if r.status_code == 200:
+            self.parent.log.info('ISY Response Recieved')
+            return r.text
+        elif r.status_code == 404 and ok404:
+            self.parent.log.info('ISY Response Recieved')
+            return ''
         else:
-            if r.status_code == 200:
-                self.parent.log.info('ISY Response Recieved')
-                return r.text
-            elif r.status_code == 404 and ok404:
-                self.parent.log.info('ISY Response Recieved')
-                return ''
-            else:
-                self.parent.log.warning('Bad ISY Request: ' + url)
-                return None
+            self.parent.log.warning('Bad ISY Request: ' + url)
+            return None
 
     # PING
     # This is a dummy command that does not exist in the REST API
@@ -234,3 +256,56 @@ class Connection(object):
         req_url = self.compileURL(['X10', address, str(code)])
         result = self.request(req_url)
         return result
+
+
+class TLSHttpAdapter(HTTPAdapter):
+    '''
+    Transport adapter that uses TLS1
+    '''
+
+    def __init__(self, tls_ver):
+        if tls_ver == 1.1:
+            self.tls = getattr(ssl, 'PROTOCOL_TLSv1_1')
+        elif tls_ver == 1.2:
+            self.tls = getattr(ssl, 'PROTOCOL_TLSv1_2')
+        super(TLSHttpAdapter, self).__init__()
+
+    def init_poolmanager(self, connections, maxsize, block=False):
+        self.poolmanager = PoolManager(num_pools=connections,
+                                       maxsize=maxsize,
+                                       block=block,
+                                       ssl_version=self.tls)
+
+
+def can_https(log, tls_ver):
+    '''
+    Function to verify minimum requirements to use an HTTPS connection. Returns
+    boolean indicating whether HTTPS is available.
+
+    |  log: The logger class to write results to
+    '''
+    output = True
+
+    # check python version
+    py_version = sys.version_info
+    if py_version.major == 3:
+        req_version = (3,4)
+    else:
+        req_version = (2,7,9)
+    if py_version < req_version:
+        log.error('PyISY cannot use HTTPS: Invalid Python version. See docs.')
+        output = False
+
+    # check that Python was compiled against correct OpenSSL lib
+    if 'PROTOCOL_TLSv1_1' not in dir(ssl):
+        log.error('PyISY cannot use HTTPS: Compiled against old OpenSSL '
+                  + 'library. See docs.')
+        output = False
+
+    # check the requested TLS version
+    if tls_ver not in [1.1, 1.2]:
+        log.error('PyISY cannot use HTTPS: Only TLS 1.1 and 1.2 are supported '
+                  + 'by the ISY controller.')
+        output = False
+
+    return output

@@ -2,7 +2,7 @@ from .Connection import Connection
 from .configuration import configuration
 from .Nodes import Nodes
 from .Programs import Programs
-from .Events import EventStream
+from .Events import get_stream
 from .Variables import Variables
 from .Climate import Climate
 # from .networking import networking
@@ -19,6 +19,8 @@ class ISY(object):
     |  username: String of the administrator username for the ISY
     |  password: String of the administrator password for the ISY
     |  use_https: [optional] Boolean of whether secured HTTP should be used
+    |  tls_ver: [optional] Number indicating the version of TLS encryption to
+       use. Valid options are 1.1 or 1.2.
     |  log: [optional] Log file class from logging module
 
     :ivar auto_reconnect: Boolean value that indicates if the class should
@@ -52,18 +54,19 @@ class ISY(object):
     auto_reconnect = True
 
     def __init__(self, address, port, username, password,
-                 use_https=False, log=None):
+                 use_https=False, tls_ver=None, log=None):
         self._events = None  # create this JIT so no socket reuse
         self._reconnect_thread = None
 
         if log is None:
             self.log = logging.getLogger(__name__)
+            self.log.addHandler(NullHandler())
         else:
             self.log = log
 
         try:
             self.conn = Connection(self, address, port, username,
-                                   password, use_https)
+                                   password, use_https, tls_ver)
 
         except ValueError as e:
             self._connected = False
@@ -111,7 +114,8 @@ class ISY(object):
     def auto_update(self, val):
         if val and not self.auto_update:
             # create new event stream socket
-            self._events = EventStream(self, self._on_lost_event_stream)
+            stream = get_stream(self.conn._use_https)
+            self._events = stream(self, self._on_lost_event_stream)
         if self._events is not None:
             self._events.running = val
 
@@ -131,7 +135,8 @@ class ISY(object):
         while self.auto_reconnect and not self.auto_update:
             self.log.warning('PyISY attempting stream reconnect.')
             del(self._events)
-            self._events = EventStream(self, self._on_lost_event_stream)
+            stream = get_stream(self.conn._use_https)
+            self._events = stream(self, self._on_lost_event_stream)
             self._events.running = True
 
         if not self.auto_update:
@@ -159,3 +164,8 @@ class ISY(object):
             else:
                 self.log.error('ISY Failed to send X10 Command: '
                                + cmd + ' To: ' + address)
+
+
+class NullHandler(logging.Handler):
+    def emit(self, record):
+        pass

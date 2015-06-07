@@ -1,6 +1,6 @@
 
-PyISY Quick Start
-=================
+PyISY Tutorial
+==============
 
 This is the basic user guide for the PyISY Python module. This file can
 be downloaded and run locally to observe the actions first hand. In
@@ -9,7 +9,8 @@ file in the same directory that the iPython Notebook file is placed.
 I'll cover this more later. You'll also want to pay close attention to
 the item addresses and names that are being called.
 
-This Notebook can be downloaded `here. <http://docs.automic.us/PyISY/v1.0.0/PyISY.ipynb>`_
+This Notebook can be downloaded
+`here <http://docs.automic.us/PyISY/v1.0.4/PyISY.ipynb>`__.
 
 Environment Setup
 -----------------
@@ -35,12 +36,10 @@ lines and contain the IP address, port, username, and password needed to
 connect to the ISY controller. It should look something like the
 following.
 
-.. parsed-literal::
-
-    192.168.1.10
-    80
-    username
-    password
+192.168.1.10
+80
+username
+password
 
 .. code:: python
 
@@ -74,6 +73,7 @@ networking module will be loaded if it is available.
     isy = PyISY.ISY(ADDR, PORT, USER, PASS)
     print(isy.connected)
 
+
 .. parsed-literal::
 
     True
@@ -96,6 +96,7 @@ called by their name.
     node.off()
     sleep(5)
     node.on()
+
 .. code:: python
 
     # interact with node using name
@@ -121,6 +122,7 @@ be referenced by either name or address.
     isy.nodes[SCENE].off()
     sleep(5)
     isy.nodes[SCENE].on()
+
 .. code:: python
 
     # control scene by name
@@ -171,6 +173,7 @@ called with a 2. Below is an example of both.
     var.val = 6
     print(var.val)
 
+
 .. parsed-literal::
 
     0
@@ -185,6 +188,7 @@ called with a 2. Below is an example of both.
     print(var.val)
     var.val = 6
     print(var.val)
+
 
 .. parsed-literal::
 
@@ -204,6 +208,7 @@ pulled in the same way.
     print(repr(isy.climate))
     print(isy.climate.Dew_Point)
     print(isy.climate.Dew_Point_units)
+
 
 .. parsed-literal::
 
@@ -308,6 +313,7 @@ notification...
 
     node.status.update(100)
 
+
 .. parsed-literal::
 
     Notification Received
@@ -322,3 +328,35 @@ Now we can unsubscribe from the event using the handler.
 
 More details about event handling are discussed inside the rest of the
 documentation, but that is the basics.
+
+Using HTTPS Encryption
+----------------------
+
+Many users may prefer to have the data transferred between their ISY and
+their application to be done so in a secure, encrypted way. This is what
+HTTPS does. In order to user HTTPS, the following requirements must be
+met:
+
+-  OpenSSL version 1.0.1 or greater must be present on the machine.
+   OpenSSL 1.0.1g or greater is strongly recommended because those
+   version include the patch for the Heartbleen vulnerability.
+-  Python must have been compiled against one of the required OpenSSL
+   libraries.
+-  For Python 2, version 2.7.9 or newer must be used.
+-  For Python 3, version 3.4 or newer must be used.
+
+If those requirements are not met, HTTPS will not work. Unfortunately,
+there is no way to get around those requirements. HTTP will remain
+functioning perfectly fine without these requirements.
+
+HTTPS is enabled when creating the ISY object. In order to do that, you
+will need to know the version of TLS your ISY controller is configured
+to use. It will be either 1.1 or 1.2. If you are unsure, try 1.1 first.
+Below is an example of connecting with HTTPS.
+
+.. code:: python
+
+    HTTPS = True
+    TLS = 1.1
+    
+    isy = PyISY.ISY(ADDR, PORT, USER, PASS, HTTPS, TLS)

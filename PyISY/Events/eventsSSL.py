@@ -2,6 +2,7 @@ import base64
 import datetime
 import socket
 import select
+import ssl
 from threading import Thread
 import xml
 from xml.dom import minidom
@@ -10,10 +11,10 @@ from . import strings
 POLL_TIME = 5
 
 
-class EventStream(socket.socket):
+class SSLEventStream(object):
 
     def __init__(self, parent, lost_fun=None):
-        super(EventStream, self).__init__(socket.AF_INET, socket.SOCK_STREAM)
+        #super(EventStream, self).__init__(socket.AF_INET, socket.SOCK_STREAM)
         self.parent = parent
         self._running = False
         self._reader = None
@@ -39,6 +40,18 @@ class EventStream(socket.socket):
         self.data['addr'] = self.parent.conn._address
         self.data['port'] = int(self.parent.conn._port)
         self.data['passwd'] = self.parent.conn._password
+        self.data['tls'] = self.parent.conn._tls_ver
+
+        # create TLS encrypted socket
+        if self.data['tls'] == 1.1:
+            context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_1)
+        else:
+            context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
+        #context.verify_mode = ssl.CERT_OPTIONAL
+        context.check_hostname = False
+        self.socket = context.wrap_socket \
+            (socket.socket(socket.AF_INET, socket.SOCK_STREAM),
+            server_hostname='https://{}'.format(self.data['addr']))
 
     def _NIYerror(self):
         raise NotImplementedError('Function not available while '
@@ -133,17 +146,18 @@ class EventStream(socket.socket):
     def connect(self):
         if not self._connected:
             try:
-                super(EventStream, self).connect((self.data['addr'],
-                                                self.data['port']))
+                self.socket.connect((self.data['addr'], self.data['port']))
+                self.cert = self.socket.getpeercert()
+
             except OSError:
                 self.parent.log.error('PyISY could not connect to ISY ' +
                                       'event stream.')
                 if self._lostfun is not None:
                     self._lostfun()
                 return False
-            self.setblocking(0)
-            self._reader = self.makefile("r")
-            self._writer = self.makefile("w")
+            self.socket.setblocking(0)
+            self._reader = self.socket.makefile("r")
+            self._writer = self.socket.makefile("w")
             self._connected = True
             return True
         else:
@@ -151,7 +165,7 @@ class EventStream(socket.socket):
 
     def disconnect(self):
         if self._connected:
-            self.close()
+            self.socket.close()
             self._connected = False
             self._subscribed = False
             self._running = False
@@ -192,8 +206,19 @@ class EventStream(socket.socket):
                         self._lostfun()
 
                 # poll socket for new data
-                inready, _, _ = select.select([self], [], [], POLL_TIME)
-                if self in inready:
+                #try:
+                #    self.socket.do_handshake()
+                #    inready = []
+                #except ssl.SSLWantReadError:
+                #    inready, _, _ = \
+                #        select.select([self.socket], [], [], POLL_TIME)
+                #except ssl.SSLWantWriteError:
+                #    # this shouldn't happen
+                #    select.select([], [self.socket], [], POLL_TIME)
+                inready, _, _ = \
+                    select.select([self.socket], [], [], POLL_TIME)
+
+                if self.socket in inready:
                     data = self.read()
                     if data.startswith('<?xml'):
                         data = data.strip().replace('POST reuse HTTP/1.1', '')
