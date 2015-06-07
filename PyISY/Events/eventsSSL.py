@@ -3,10 +3,11 @@ import datetime
 import socket
 import select
 import ssl
+import sys
 from threading import Thread
 import xml
 from xml.dom import minidom
-from . import strings
+from PyISY.Events import strings
 
 POLL_TIME = 5
 
@@ -131,10 +132,23 @@ class SSLEventStream(object):
         if self._reader is None:
             self._NIYerror()
         else:
-            try:
-                return self._reader.readline()
-            except socket.error:
-                return ''
+            loop = True
+            output = ''
+            while loop:
+                try:
+                    new_data = self.socket.recv(4096)
+                except ssl.SSLWantReadError:
+                    pass
+                except socket.error:
+                    loop = False
+                else:
+                    if sys.version_info.major == 3:
+                        new_data = new_data.decode('utf-8')
+                    output += new_data
+                    if len(new_data) * 8 < 4096:
+                        loop = False
+
+            return output.split('\n')
 
     def write(self, msg):
         if self._writer is None:
@@ -206,20 +220,12 @@ class SSLEventStream(object):
                         self._lostfun()
 
                 # poll socket for new data
-                #try:
-                #    self.socket.do_handshake()
-                #    inready = []
-                #except ssl.SSLWantReadError:
-                #    inready, _, _ = \
-                #        select.select([self.socket], [], [], POLL_TIME)
-                #except ssl.SSLWantWriteError:
-                #    # this shouldn't happen
-                #    select.select([], [self.socket], [], POLL_TIME)
                 inready, _, _ = \
                     select.select([self.socket], [], [], POLL_TIME)
 
+                #if self.socket in inready:
                 if self.socket in inready:
-                    data = self.read()
-                    if data.startswith('<?xml'):
-                        data = data.strip().replace('POST reuse HTTP/1.1', '')
-                        self._routemsg(data)
+                    for data in self.read():
+                        if data.startswith('<?xml'):
+                            data = data.strip().replace('POST reuse HTTP/1.1', '')
+                            self._routemsg(data)
