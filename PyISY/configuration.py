@@ -76,7 +76,7 @@ class configuration(dict):
             desc = feature.getElementsByTagName('desc')[0].firstChild.toxml()
             installed_raw = feature.getElementsByTagName('isInstalled')[0] \
                 .firstChild.toxml()
-            installed = True if installed_raw is 'true' else 'false'
+            installed = True if installed_raw is 'true' else False
             self[idnum] = installed
             self[desc] = self[idnum]
 
