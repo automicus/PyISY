@@ -178,12 +178,15 @@ class Nodes(object):
                         if ntype == 'folder':
                             self.insert(nid, nname, nparent, None, ntype)
                         elif ntype == 'node':
-                            nval = feature.getElementsByTagName('property')[0] \
-                                .attributes['value'].value
-                            dimmable = '%' in \
-                                feature.getElementsByTagName('property')[0] \
-                                .attributes['uom'].value
-                            nval = int(nval.replace(' ', '0'))
+                            nval = None
+                            dimmable = False
+                            nprop = feature.getElementsByTagName('property')
+                            # Not all devices have propertiess
+                            if len(nprop) > 0:
+                                nval = nprop[0].attributes['value'].value
+                                dimmable = '%' in \
+                                    nprop[0].attributes['uom'].value
+                                nval = int(nval.replace(' ', '0'))
                             self.insert(nid, nname, nparent,
                                         Node(self, nid, nval, nname, dimmable),
                                         ntype)

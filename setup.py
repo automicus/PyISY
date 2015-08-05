@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='PyISY',
-    version='1.0.5',
+    version='1.0.6',
     license='Apache License 2.0',
     url='http://automic.us/projects/pyisy',
     download_url='https://github.com/automicus/pyisy/tarball/1.0.5',
