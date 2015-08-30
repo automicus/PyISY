@@ -181,7 +181,7 @@ class Nodes(object):
                             nval = None
                             dimmable = False
                             nprop = feature.getElementsByTagName('property')
-                            # Not all devices have propertiess
+                            # Not all devices have properties
                             if len(nprop) > 0:
                                 nval = nprop[0].attributes['value'].value
                                 dimmable = '%' in \

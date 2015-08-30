@@ -43,10 +43,10 @@ class Connection(object):
             self._use_https = False
             if self.ping():
                 self.parent.log.warn('PyISY could not connect with the '
-                        + 'controller. Trying again with HTTP.')
+                                     + 'controller. Trying again with HTTP.')
             else:
                 raise(ValueError('PyISY could not connect to the ISY '
-                            + 'controller with the provided attributes.'))
+                                 + 'controller with the provided attributes.'))
 
     # COMMON UTILITIES
     def compileURL(self, path, query=None):
@@ -73,10 +73,10 @@ class Connection(object):
                     timeout=10, verify=False)
 
         except requests.ConnectionError as err:
-                self.parent.log.error('ISY Could not recieve response '
-                                      + 'from device because of a network '
-                                      + 'issue.')
-                return None
+            self.parent.log.error('ISY Could not recieve response '
+                                  + 'from device because of a network '
+                                  + 'issue.')
+            return None
 
         except requests.exceptions.Timeout:
             self.parent.log.error('Timed out waiting for response from the '
@@ -85,7 +85,10 @@ class Connection(object):
 
         if r.status_code == 200:
             self.parent.log.info('ISY Response Recieved')
-            return r.text
+            # remove unicode from string in python 2.7, 3.2,
+            # and 3.4 compatible way
+            xml = ''.join(char for char in r.text if ord(char) < 128)
+            return xml
         elif r.status_code == 404 and ok404:
             self.parent.log.info('ISY Response Recieved')
             return ''
@@ -289,9 +292,9 @@ def can_https(log, tls_ver):
     # check python version
     py_version = sys.version_info
     if py_version.major == 3:
-        req_version = (3,4)
+        req_version = (3, 4)
     else:
-        req_version = (2,7,9)
+        req_version = (2, 7, 9)
     if py_version < req_version:
         log.error('PyISY cannot use HTTPS: Invalid Python version. See docs.')
         output = False
