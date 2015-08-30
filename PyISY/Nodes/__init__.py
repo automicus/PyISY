@@ -256,21 +256,26 @@ class Nodes(object):
         try:
             self.nids.index(val)
             fun = self.getByID
-        except:
+        except ValueError:
             try:
                 self.nnames.index(val)
                 fun = self.getByName
-            except:
+            except ValueError:
                 try:
                     val = int(val)
                     fun = self.getByInd
-                except:
-                    raise AttributeError('Unrecognized Key: ' + val)
+                except ValueError:
+                    fun = None
 
-        try:
-            return fun(val)
-        except:
-            return AttributeError('Unrecognized Key: ' + val)
+        if fun:
+            try:
+                output = fun(val)
+            except:
+                pass
+
+            if output:
+                return output
+        return KeyError('Unrecognized Key: ' + val)
 
     def __setitem__(self, val):
         return None
