@@ -55,9 +55,11 @@ class Folder(object):
         if response is None:
             self.parent.parent.log.warning('ISY could not run program: '
                                            + self._id)
+            return False
         else:
             self.parent.parent.log.info('ISY ran program: ' + self._id)
             self.update(_change2update_interval)
+            return True
 
     def runThen(self):
         """ Runs the THEN clause of the object. """
@@ -66,9 +68,11 @@ class Folder(object):
         if response is None:
             self.parent.parent.log.warning("ISY couldn't run then in program: "
                                            + self._id)
+            return False
         else:
             self.parent.parent.log.info('ISY ran then in program: ' + self._id)
             self.update(_change2update_interval)
+            return True
 
     def runElse(self):
         """ Runs the ELSE clause of the object. """
@@ -77,6 +81,7 @@ class Folder(object):
         if response is None:
             self.parent.parent.log.warning("ISY couldn't run else in program: "
                                            + self._id)
+            return False
         else:
             self.parent.parent.log.info('ISY ran else in program: ' + self._id)
             self.update(_change2update_interval)
@@ -88,6 +93,8 @@ class Folder(object):
         if response is None:
             self.parent.parent.log.warning('ISY could not stop program: '
                                            + self._id)
+            return False
         else:
             self.parent.parent.log.info('ISY stopped program: ' + self._id)
             self.update(_change2update_interval)
+            return True

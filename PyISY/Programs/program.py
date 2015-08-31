@@ -108,9 +108,11 @@ class Program(Folder):
         if response is None:
             self.parent.parent.log.warning('ISY could not enable program: '
                                            + self._id)
+            return False
         else:
             self.parent.parent.log.info('ISY enabled program: ' + self._id)
             self.update(_change2update_interval)
+            return True
 
     def disable(self):
         """ Disable the program on the controller. """
@@ -119,9 +121,11 @@ class Program(Folder):
         if response is None:
             self.parent.parent.log.warning('ISY could not disable program: '
                                            + self._id)
+            return False
         else:
             self.parent.parent.log.info('ISY disabled program: ' + self._id)
             self.update(_change2update_interval)
+            return True
 
     def enableRunAtStartup(self):
         """ Enable running the program on controller start up. """
@@ -131,10 +135,12 @@ class Program(Folder):
             self.parent.parent.log.warning('ISY could not enable run at '
                                            + 'startup for program: '
                                            + self._id)
+            return False
         else:
             self.parent.parent.log.info('ISY enabled run at startup for '
                                         + 'program: ' + self._id)
             self.update(_change2update_interval)
+            return True
 
     def disableRunAtStartup(self):
         """ Disable running the program on controller start up. """
@@ -144,7 +150,9 @@ class Program(Folder):
             self.parent.parent.log.warning('ISY could not disable run at '
                                            + 'startup for program: '
                                            + self._id)
+            return False
         else:
             self.parent.parent.log.info('ISY disabled run at startup for '
                                         + 'program: ' + self._id)
             self.update(_change2update_interval)
+            return True
