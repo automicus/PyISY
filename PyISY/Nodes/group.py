@@ -83,8 +83,10 @@ class Group(object):
         if response is None:
             self.parent.parent.log.warning('ISY could not turn off scene: ' +
                                            self._id)
+            return False
         else:
             self.parent.parent.log.info('ISY turned off scene: ' + self._id)
+            return True
 
     def on(self):
         """Turns on all the nodes in the scene to the set values."""
@@ -93,5 +95,7 @@ class Group(object):
         if response is None:
             self.parent.parent.log.warning('ISY could not turn on scene: ' +
                                            self._id)
+            return False
         else:
             self.parent.parent.log.info('ISY turned on scene: ' + self._id)
+            return True

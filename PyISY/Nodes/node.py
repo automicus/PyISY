@@ -72,9 +72,11 @@ class Node(object):
         if response is None:
             self.parent.parent.log.warning('ISY could not turn off node: ' +
                                            self._id)
+            return False
         else:
             self.parent.parent.log.info('ISY turned off node: ' + self._id)
             self.update(_change2update_interval, hint=0)
+            return True
 
     def on(self, val=None):
         """
@@ -87,6 +89,7 @@ class Node(object):
         if response is None:
             self.parent.parent.log.warning('ISY could not turn on node: ' +
                                            self._id)
+            return False
         else:
             if val is None:
                 self.parent.parent.log.info('ISY turned on node: ' + self._id)
@@ -96,6 +99,7 @@ class Node(object):
                                             ', To value: ' + str(val))
                 val = int(val)
             self.update(_change2update_interval, hint=val)
+            return True
 
     def fastoff(self):
         """ Turns the node fast off. """
@@ -104,10 +108,12 @@ class Node(object):
         if response is None:
             self.parent.parent.log.warning('ISY could not fast off node: ' +
                                            self._id)
+            return False
         else:
             self.parent.parent.log.info('ISY turned did a fast off with node: '
                                         + self._id)
             self.update(_change2update_interval, hint=0)
+            return True
 
     def faston(self):
         """ Turns the node fast on. """
@@ -116,10 +122,12 @@ class Node(object):
         if response is None:
             self.parent.parent.log.warning('ISY could not fast on node: ' +
                                            self._id)
+            return False
         else:
             self.parent.parent.log.info('ISY did a fast on with node: ' +
                                         self._id)
             self.update(_change2update_interval, hint=255)
+            return True
 
     def bright(self):
         """ Brightens the node by one step. """
@@ -128,9 +136,11 @@ class Node(object):
         if response is None:
             self.parent.parent.log.warning('ISY could not brighten node: ' +
                                            self._id)
+            return False
         else:
             self.parent.parent.log.info('ISY brightened node: ' + self._id)
             self.update(_change2update_interval)
+            return True
 
     def dim(self):
         """ Dims the node by one step. """
@@ -139,6 +149,8 @@ class Node(object):
         if response is None:
             self.parent.parent.log.warning('ISY could not dim node: ' +
                                            self._id)
+            return False
         else:
             self.parent.parent.log.info('ISY dimmed node: ' + self._id)
             self.update(_change2update_interval)
+            return True

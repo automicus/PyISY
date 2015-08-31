@@ -78,9 +78,10 @@ class EventStream(socket.socket):
                 self.parent.variables._upmsg(xmldoc)
             elif '<id>' in msg:  # PROGRAM
                 self.parent.programs._upmsg(xmldoc)
-            else:  # SOMETHING HAPPENED WITH A PROGRAM FOLDER
+            #else:  # SOMETHING HAPPENED WITH A PROGRAM FOLDER
                 # but they ISY didn't tell us what, so...
-                self.parent.programs.update()
+                #self.parent.log.info("Need to update programs, but not doing it now, I think this is a bug?")
+                #self.parent.programs.update()
 
         # A wild stream id appears!
         if 'sid=' in msg and 'sid' not in self.data:

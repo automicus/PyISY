@@ -265,12 +265,12 @@ class Nodes(object):
                     val = int(val)
                     fun = self.getByInd
                 except:
-                    raise AttributeError('Unrecognized Key: ' + val)
+                    raise AttributeError('Unrecognized Key: [' + val + ']')
 
         try:
             return fun(val)
         except:
-            return AttributeError('Unrecognized Key: ' + val)
+            return AttributeError('Unrecognized Key: [' + val + ']')
 
     def __setitem__(self, val):
         return None
