@@ -275,7 +275,7 @@ class Nodes(object):
 
             if output:
                 return output
-        return KeyError('Unrecognized Key: ' + val)
+        return KeyError('Unrecognized Key: [' + val + ']')
 
     def __setitem__(self, val):
         return None
