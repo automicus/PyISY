@@ -187,8 +187,22 @@ class Nodes(object):
                                 dimmable = '%' in \
                                     nprop[0].attributes['uom'].value
                                 nval = int(nval.replace(' ', '0'))
+                            # Get the device notes, currently only the Spoken property is saved.
+                            notes_xml = self.parent.conn.getNodeNotes(nid)
+                            spoken = None
+                            if notes_xml is not None:
+                                try:
+                                    notesdom = minidom.parseString(notes_xml)
+                                except:
+                                    self.parent.log.error('ISY Could not parse node ' + nid + ' notes '
+                                                          + 'poorly formatted XML.')
+                                spoken_tag = notesdom.getElementsByTagName('spoken');
+                                if len(spoken_tag) > 0:
+                                    # IT will be none if notes exist, but Spoken is not set.
+                                    if spoken_tag[0].firstChild is not None:
+                                        spoken = spoken_tag[0].firstChild.toxml()
                             self.insert(nid, nname, nparent,
-                                        Node(self, nid, nval, nname, dimmable),
+                                        Node(self, nid, nval, nname, dimmable, spoken),
                                         ntype)
                         elif ntype == 'group':
                             mems = feature.getElementsByTagName('link')
@@ -275,7 +289,7 @@ class Nodes(object):
 
             if output:
                 return output
-        return KeyError('Unrecognized Key: [' + val + ']')
+        raise KeyError('Unrecognized Key: [' + val + ']')
 
     def __setitem__(self, val):
         return None

@@ -154,6 +154,11 @@ class Connection(object):
         result = self.request(req_url)
         return result
 
+    def getNodeNotes(self,nid):
+        req_url = self.compileURL(['nodes', nid, 'notes'])
+        result = self.request(req_url)
+        return result
+
     def updateNodes(self):
         req_url = self.compileURL(['status'])
         result = self.request(req_url)
