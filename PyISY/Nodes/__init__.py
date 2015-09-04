@@ -187,22 +187,8 @@ class Nodes(object):
                                 dimmable = '%' in \
                                     nprop[0].attributes['uom'].value
                                 nval = int(nval.replace(' ', '0'))
-                            # Get the device notes, currently only the Spoken property is saved.
-                            notes_xml = self.parent.conn.getNodeNotes(nid)
-                            spoken = None
-                            if notes_xml is not None:
-                                try:
-                                    notesdom = minidom.parseString(notes_xml)
-                                except:
-                                    self.parent.log.error('ISY Could not parse node ' + nid + ' notes '
-                                                          + 'poorly formatted XML.')
-                                spoken_tag = notesdom.getElementsByTagName('spoken');
-                                if len(spoken_tag) > 0:
-                                    # IT will be none if notes exist, but Spoken is not set.
-                                    if spoken_tag[0].firstChild is not None:
-                                        spoken = spoken_tag[0].firstChild.toxml()
                             self.insert(nid, nname, nparent,
-                                        Node(self, nid, nval, nname, dimmable, spoken),
+                                        Node(self, nid, nval, nname, dimmable, None),
                                         ntype)
                         elif ntype == 'group':
                             mems = feature.getElementsByTagName('link')
@@ -362,7 +348,6 @@ class Nodes(object):
                            for (dtype2, name2, ident2)
                            in self[ident].allLowerNodes]
         return output
-
 
 class NodeIterator(object):
     """ Iterates through a list of nodes, returning node objects. """

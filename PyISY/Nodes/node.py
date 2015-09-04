@@ -28,7 +28,7 @@ class Node(object):
         self._id = nid
         self.dimmable = dimmable
         self.name = name
-        self.spoken = spoken
+        self._spoken = spoken
 
         self.status = nval
         self.status.reporter = self.__report_status__
@@ -155,3 +155,24 @@ class Node(object):
             self.parent.parent.log.info('ISY dimmed node: ' + self._id)
             self.update(_change2update_interval)
             return True
+
+    @property
+    def spoken(self):
+        if self._spoken is None:
+            # Get the device notes, currently only the Spoken property is saved.
+            notes_xml = self.parent.parent.conn.getNodeNotes(self._id)
+            spoken = False
+            if notes_xml is not None:
+                try:
+                    notesdom = minidom.parseString(notes_xml)
+                except:
+                    self.parent.log.error('ISY Could not parse node ' + self._id + ' notes '
+                                          + 'poorly formatted XML.')
+                spoken_tag = notesdom.getElementsByTagName('spoken')
+                if len(spoken_tag) > 0:
+                    # will be none if notes exist, but Spoken is not set.
+                    if spoken_tag[0].firstChild is not None:
+                        spoken = spoken_tag[0].firstChild.toxml()
+            self._spoken = spoken
+        return self._spoken
+    
