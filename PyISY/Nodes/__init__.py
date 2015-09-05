@@ -275,7 +275,7 @@ class Nodes(object):
 
             if output:
                 return output
-        return KeyError('Unrecognized Key: [' + val + ']')
+        raise KeyError('Unrecognized Key: [' + val + ']')
 
     def __setitem__(self, val):
         return None
@@ -348,7 +348,6 @@ class Nodes(object):
                            for (dtype2, name2, ident2)
                            in self[ident].allLowerNodes]
         return output
-
 
 class NodeIterator(object):
     """ Iterates through a list of nodes, returning node objects. """
