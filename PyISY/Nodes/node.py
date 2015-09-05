@@ -23,7 +23,7 @@ class Node(object):
     status = Property(0)
     hasChildren = False
 
-    def __init__(self, parent, nid, nval, name, dimmable=True, spoken=None):
+    def __init__(self, parent, nid, nval, name, dimmable=True, spoken=False):
         self.parent = parent
         self._id = nid
         self.dimmable = dimmable
@@ -156,23 +156,23 @@ class Node(object):
             self.update(_change2update_interval)
             return True
 
+    def _get_notes(self):
+        # Get the device notes, currently only the Spoken property is saved.
+        notes_xml = self.parent.parent.conn.getNodeNotes(self._id)
+        if notes_xml is None:
+            self._spoken = None
+        else:
+            try:
+                notesdom = minidom.parseString(notes_xml)
+            except:
+                self.parent.log.error('ISY Could not parse node ' + self._id + ' notes '
+                                      + 'poorly formatted XML.')
+            spoken_tag = notesdom.getElementsByTagName('spoken')
+            if spoken_tag:
+                self._spoken = spoken_tag[0].firstChild.toxml()
+        
     @property
     def spoken(self):
-        if self._spoken is None:
-            # Get the device notes, currently only the Spoken property is saved.
-            notes_xml = self.parent.parent.conn.getNodeNotes(self._id)
-            spoken = False
-            if notes_xml is not None:
-                try:
-                    notesdom = minidom.parseString(notes_xml)
-                except:
-                    self.parent.log.error('ISY Could not parse node ' + self._id + ' notes '
-                                          + 'poorly formatted XML.')
-                spoken_tag = notesdom.getElementsByTagName('spoken')
-                if len(spoken_tag) > 0:
-                    # will be none if notes exist, but Spoken is not set.
-                    if spoken_tag[0].firstChild is not None:
-                        spoken = spoken_tag[0].firstChild.toxml()
-            self._spoken = spoken
+        if self._spoken is False:
+            self._get_notes()
         return self._spoken
-    

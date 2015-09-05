@@ -188,7 +188,7 @@ class Nodes(object):
                                     nprop[0].attributes['uom'].value
                                 nval = int(nval.replace(' ', '0'))
                             self.insert(nid, nname, nparent,
-                                        Node(self, nid, nval, nname, dimmable, None),
+                                        Node(self, nid, nval, nname, dimmable),
                                         ntype)
                         elif ntype == 'group':
                             mems = feature.getElementsByTagName('link')
