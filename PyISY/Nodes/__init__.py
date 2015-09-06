@@ -192,7 +192,8 @@ class Nodes(object):
                                         ntype)
                         elif ntype == 'group':
                             mems = feature.getElementsByTagName('link')
-                            members = [mem.firstChild.nodeValue for mem in mems]
+                            members = [{ 'type': int(mem.attributes['type'].value),
+                                         'nid': mem.firstChild.nodeValue } for mem in mems]
                             self.insert(nid, nname, nparent,
                                         Group(self, nid, nname, members), ntype)
 

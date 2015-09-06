@@ -171,6 +171,24 @@ class Node(object):
             if spoken_tag:
                 self._spoken = spoken_tag[0].firstChild.toxml()
         
+    def get_groups(self, controller=True, responder=True):
+        """
+        Returns the groups (scenes) that this node is a member of.
+        If controller is True, then the scene it controls is added to the list
+        If responder is True, then the scenes it is a responder of are added to the list
+        """
+        groups = []
+        for child in self.parent.parent.nodes.allLowerNodes:
+            if child[0] is 'group':
+                #print(child)
+                #print(self.parent.parent.nodes[child[2]].members)
+                for mem in self.parent.parent.nodes[child[2]].members:
+                    if mem['nid'] == self._id and (
+                            (mem['type'] == 16 and controller is True)
+                            or (mem['type'] == 32 and responder is True)):
+                        groups.append(child[2])
+        return groups
+
     @property
     def spoken(self):
         if self._spoken is False:

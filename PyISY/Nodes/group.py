@@ -31,7 +31,7 @@ class Group(object):
 
         # listen for changes in children
         self._membersHandlers = [
-            self.parent[m].status.subscribe('changed', self.update)
+            self.parent[m['nid']].status.subscribe('changed', self.update)
             for m in self.members]
 
         # get and update the status
@@ -71,7 +71,7 @@ class Group(object):
     def update(self, e=None):
         """ Update the group with values from the controller. """
         for m in self.members:
-            if self.parent[m].status > 0:
+            if self.parent[m['nid']].status > 0:
                 self.status.update(255, force=True, silent=True)
                 return
         self.status.update(0, force=True, silent=True)
