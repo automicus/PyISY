@@ -168,7 +168,7 @@ class Node(object):
                 self.parent.log.error('ISY Could not parse node ' + self._id + ' notes '
                                       + 'poorly formatted XML.')
             spoken_tag = notesdom.getElementsByTagName('spoken')
-            if spoken_tag and len(spoken_tag) > 0 and spoken_tag[0].firstChild is not None
+            if spoken_tag and len(spoken_tag) > 0 and spoken_tag[0].firstChild is not None:
                 self._spoken = spoken_tag[0].firstChild.toxml()
         
     def get_groups(self, controller=True, responder=True):
