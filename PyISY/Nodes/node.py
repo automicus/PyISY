@@ -170,6 +170,8 @@ class Node(object):
             spoken_tag = notesdom.getElementsByTagName('spoken')
             if spoken_tag and len(spoken_tag) > 0 and spoken_tag[0].firstChild is not None:
                 self._spoken = spoken_tag[0].firstChild.toxml()
+            else:
+                self._spoken = None
         
     def get_groups(self, controller=True, responder=True):
         """
