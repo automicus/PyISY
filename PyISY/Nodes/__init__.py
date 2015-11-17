@@ -1,3 +1,4 @@
+
 from .group import Group
 from .node import Node
 from time import sleep
@@ -194,6 +195,7 @@ class Nodes(object):
                             mems = feature.getElementsByTagName('link')
                             members = [{ 'type': int(mem.attributes['type'].value),
                                          'nid': mem.firstChild.nodeValue } for mem in mems]
+                            controller = None
                             self.insert(nid, nname, nparent,
                                         Group(self, nid, nname, members), ntype)
 
