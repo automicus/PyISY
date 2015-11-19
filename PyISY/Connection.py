@@ -11,7 +11,7 @@ from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.poolmanager import PoolManager
 import ssl
 import sys
-
+from xml.dom import minidom
 
 class Connection(object):
 
@@ -154,10 +154,22 @@ class Connection(object):
         result = self.request(req_url)
         return result
 
+    # Get the device notes, currently only the Spoken property is saved.
     def getNodeNotes(self,nid):
         req_url = self.compileURL(['nodes', nid, 'notes'])
         result = self.request(req_url)
-        return result
+        spoken = None
+        if result is not None:
+            try:
+                notesdom = minidom.parseString(result)
+            except:
+                self.parent.log.error('ISY Could not parse node ' + nid + ' notes '
+                                      + 'poorly formatted XML.')
+            else:
+                spoken_tag = notesdom.getElementsByTagName('spoken')
+                if spoken_tag and len(spoken_tag) > 0 and spoken_tag[0].firstChild is not None:
+                    spoken = spoken_tag[0].firstChild.toxml()
+        return { "spoken": spoken }
 
     def updateNodes(self):
         req_url = self.compileURL(['status'])

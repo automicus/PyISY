@@ -23,12 +23,12 @@ class Node(object):
     status = Property(0)
     hasChildren = False
 
-    def __init__(self, parent, nid, nval, name, dimmable=True, spoken=False):
+    def __init__(self, parent, nid, nval, name, dimmable=True, notes=False):
         self.parent = parent
         self._id = nid
         self.dimmable = dimmable
         self.name = name
-        self._spoken = spoken
+        self._notes = notes
 
         self.status = nval
         self.status.reporter = self.__report_status__
@@ -157,22 +157,8 @@ class Node(object):
             return True
 
     def _get_notes(self):
-        # Get the device notes, currently only the Spoken property is saved.
-        notes_xml = self.parent.parent.conn.getNodeNotes(self._id)
-        if notes_xml is None:
-            self._spoken = None
-        else:
-            try:
-                notesdom = minidom.parseString(notes_xml)
-            except:
-                self.parent.log.error('ISY Could not parse node ' + self._id + ' notes '
-                                      + 'poorly formatted XML.')
-            spoken_tag = notesdom.getElementsByTagName('spoken')
-            if spoken_tag and len(spoken_tag) > 0 and spoken_tag[0].firstChild is not None:
-                self._spoken = spoken_tag[0].firstChild.toxml()
-            else:
-                self._spoken = None
-        
+        self._notes = self.parent.parent.conn.getNodeNotes(self._id)
+
     def get_groups(self, controller=True, responder=True):
         """
         Returns the groups (scenes) that this node is a member of.
@@ -193,6 +179,6 @@ class Node(object):
 
     @property
     def spoken(self):
-        if self._spoken is False:
+        if self._notes is False:
             self._get_notes()
-        return self._spoken
+        return self._notes['spoken']

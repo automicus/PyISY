@@ -21,13 +21,14 @@ class Group(object):
     status = Property(0)
     hasChildren = False
 
-    def __init__(self, parent, nid, name, members=[]):
+    def __init__(self, parent, nid, name, members=[], notes=False):
         self.parent = parent
         self._id = nid
         self.name = name
         self._members = members
         self.dimmable = False
         self._running = False
+        self._notes = notes
 
         # listen for changes in children
         self._membersHandlers = [
@@ -99,3 +100,12 @@ class Group(object):
         else:
             self.parent.parent.log.info('ISY turned on scene: ' + self._id)
             return True
+
+    def _get_notes(self):
+        self._notes = self.parent.parent.conn.getNodeNotes(self._id)
+
+    @property
+    def spoken(self):
+        if self._notes is False:
+            self._get_notes()
+        return self._notes['spoken']
