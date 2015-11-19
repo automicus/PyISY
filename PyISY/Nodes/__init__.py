@@ -1,3 +1,4 @@
+
 from .group import Group
 from .node import Node
 from time import sleep
@@ -192,10 +193,13 @@ class Nodes(object):
                                         ntype)
                         elif ntype == 'group':
                             mems = feature.getElementsByTagName('link')
-                            members = [{ 'type': int(mem.attributes['type'].value),
-                                         'nid': mem.firstChild.nodeValue } for mem in mems]
+                            members = [mem.firstChild.nodeValue for mem in mems]
+                            controllers = []
+                            for mem in mems:
+                                if int(mem.attributes['type'].value) == 16:
+                                    controllers.append(mem.firstChild.nodeValue)
                             self.insert(nid, nname, nparent,
-                                        Group(self, nid, nname, members), ntype)
+                                        Group(self, nid, nname, members, controllers), ntype)
 
             self.parent.log.info('ISY Loaded Nodes')
 

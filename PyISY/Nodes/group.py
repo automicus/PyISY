@@ -10,10 +10,12 @@ class Group(object):
     |  nid: The node ID.
     |  name: The node name.
     |  members: List of the members in this group.
+    |  controllers: List of the controllers in this group.
 
     :ivar dimmable: Boolean value idicating that this group cannot be dimmed.
     :ivar hasChildren: Boolean value indicating that this group has no children.
     :ivar members: List of the members of this group.
+    :ivar controllers: List of the controllers of this group.
     :ivar name: The name of this group.
     :ivar status: Watched property indicating the status of the group.
     """
@@ -21,18 +23,19 @@ class Group(object):
     status = Property(0)
     hasChildren = False
 
-    def __init__(self, parent, nid, name, members=[], notes=False):
+    def __init__(self, parent, nid, name, members=[], controllers=[], notes=False):
         self.parent = parent
         self._id = nid
         self.name = name
         self._members = members
+        self._controllers = controllers
         self.dimmable = False
         self._running = False
         self._notes = notes
 
         # listen for changes in children
         self._membersHandlers = [
-            self.parent[m['nid']].status.subscribe('changed', self.update)
+            self.parent[m].status.subscribe('changed', self.update)
             for m in self.members]
 
         # get and update the status
@@ -69,10 +72,14 @@ class Group(object):
     def members(self):
         return self._members
 
+    @property
+    def controllers(self):
+        return self._controllers
+
     def update(self, e=None):
         """ Update the group with values from the controller. """
         for m in self.members:
-            if self.parent[m['nid']].status > 0:
+            if self.parent[m].status > 0:
                 self.status.update(255, force=True, silent=True)
                 return
         self.status.update(0, force=True, silent=True)
