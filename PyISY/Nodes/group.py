@@ -23,12 +23,12 @@ class Group(object):
     status = Property(0)
     hasChildren = False
 
-    def __init__(self, parent, nid, name, members=[], controllers=[]):
+    def __init__(self, parent, nid, name, members=None, controllers=None):
         self.parent = parent
         self._id = nid
         self.name = name
-        self._members = members
-        self._controllers = controllers
+        self._members = members or []
+        self._controllers = controllers or []
         self.dimmable = False
         self._running = False
 
