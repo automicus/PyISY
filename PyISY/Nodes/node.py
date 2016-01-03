@@ -170,10 +170,10 @@ class Node(object):
             if child[0] is 'group':
                 if responder:
                     if self._id in self.parent.parent.nodes[child[2]].members:
-                        groups.append(child[2])                    
-                if controller and not responder:
-                    if self._id in self.parent.parent.nodes[child[2]].members:
-                        groups.append(child[2])                    
+                        groups.append(child[2])
+                elif controller:
+                    if self._id in self.parent.parent.nodes[child[2]].controllers:
+                        groups.append(child[2])
         return groups
 
     @property
