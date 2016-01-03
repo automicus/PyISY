@@ -168,14 +168,12 @@ class Node(object):
         groups = []
         for child in self.parent.parent.nodes.allLowerNodes:
             if child[0] is 'group':
-                if responder is True:
-                    for mem in self.parent.parent.nodes[child[2]].members:
-                        if mem == self._id:
-                            groups.append(child[2])
-                if controller is True and responder is not True:
-                    for mem in self.parent.parent.nodes[child[2]].controllers:
-                        if mem == self._id:
-                            groups.append(child[2])
+                if responder:
+                    if self._id in self.parent.parent.nodes[child[2]].members:
+                        groups.append(child[2])                    
+                if controller and not responder:
+                    if self._id in self.parent.parent.nodes[child[2]].members:
+                        groups.append(child[2])                    
         return groups
 
     @property
