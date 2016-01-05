@@ -10,10 +10,12 @@ class Group(object):
     |  nid: The node ID.
     |  name: The node name.
     |  members: List of the members in this group.
+    |  controllers: List of the controllers in this group.
 
     :ivar dimmable: Boolean value idicating that this group cannot be dimmed.
     :ivar hasChildren: Boolean value indicating that this group has no children.
     :ivar members: List of the members of this group.
+    :ivar controllers: List of the controllers of this group.
     :ivar name: The name of this group.
     :ivar status: Watched property indicating the status of the group.
     """
@@ -21,11 +23,12 @@ class Group(object):
     status = Property(0)
     hasChildren = False
 
-    def __init__(self, parent, nid, name, members=[]):
+    def __init__(self, parent, nid, name, members=None, controllers=None):
         self.parent = parent
         self._id = nid
         self.name = name
-        self._members = members
+        self._members = members or []
+        self._controllers = controllers or []
         self.dimmable = False
         self._running = False
 
@@ -67,6 +70,10 @@ class Group(object):
     @property
     def members(self):
         return self._members
+
+    @property
+    def controllers(self):
+        return self._controllers
 
     def update(self, e=None):
         """ Update the group with values from the controller. """

@@ -168,9 +168,28 @@ class Node(object):
                 self.parent.log.error('ISY Could not parse node ' + self._id + ' notes '
                                       + 'poorly formatted XML.')
             spoken_tag = notesdom.getElementsByTagName('spoken')
-            if spoken_tag:
+            if spoken_tag and len(spoken_tag) > 0 and spoken_tag[0].firstChild is not None:
                 self._spoken = spoken_tag[0].firstChild.toxml()
+            else:
+                self._spoken = None
         
+    def get_groups(self, controller=True, responder=True):
+        """
+        Returns the groups (scenes) that this node is a member of.
+        If controller is True, then the scene it controls is added to the list
+        If responder is True, then the scenes it is a responder of are added to the list
+        """
+        groups = []
+        for child in self.parent.parent.nodes.allLowerNodes:
+            if child[0] is 'group':
+                if responder:
+                    if self._id in self.parent.parent.nodes[child[2]].members:
+                        groups.append(child[2])
+                elif controller:
+                    if self._id in self.parent.parent.nodes[child[2]].controllers:
+                        groups.append(child[2])
+        return groups
+
     @property
     def spoken(self):
         if self._spoken is False:
