@@ -14,6 +14,7 @@ class Node(object):
     |  name: The node name.
     |  [optional] dimmable: Default True. Boolean of whether the node is
        dimmable.
+    |  spoken: The string of the Notes Spoken field.
 
     :ivar status: A watched property that indicates the current status of the
                   node.
@@ -157,7 +158,8 @@ class Node(object):
             return True
 
     def _get_notes(self):
-        self._notes = self.parent.parent.conn.getNodeNotes(self._id)
+        if not self._notes:
+            self._notes = self.parent.parseNotes(self.parent.parent.conn.getNodeNotes(self._id))
 
     def get_groups(self, controller=True, responder=True):
         """
@@ -178,6 +180,6 @@ class Node(object):
 
     @property
     def spoken(self):
-        if self._notes is False:
-            self._get_notes()
+        """Returns the text string of the Spoken property inside the node notes"""
+        self._get_notes()
         return self._notes['spoken']

@@ -315,6 +315,21 @@ class Nodes(object):
         return Nodes(self.parent, self.nids[i], self.nids, self.nnames,
                      self.nparents, self.nobjs, self.ntypes)
 
+    def parseNotes(self, notes_xml):
+        spoken = None
+        if notes_xml is not None:
+            try:
+                notesdom = minidom.parseString(notes_xml)
+            except:
+                self.parent.log.error('ISY Could not parse node ' + nid + ' notes '
+                                      + 'poorly formatted XML.')
+            else:
+                spoken_tag = notesdom.getElementsByTagName('spoken')
+                if spoken_tag and len(spoken_tag) > 0 and spoken_tag[0].firstChild is not None:
+                    spoken = spoken_tag[0].firstChild.toxml()
+        return { "spoken": spoken }
+            
+    
     @property
     def children(self):
         out = []

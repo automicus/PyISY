@@ -154,23 +154,12 @@ class Connection(object):
         result = self.request(req_url)
         return result
 
-    # Get the device notes, currently only the Spoken property is saved.
+    # Get the device notes xml
     def getNodeNotes(self,nid):
         req_url = self.compileURL(['nodes', nid, 'notes'])
         result = self.request(req_url)
-        spoken = None
-        if result is not None:
-            try:
-                notesdom = minidom.parseString(result)
-            except:
-                self.parent.log.error('ISY Could not parse node ' + nid + ' notes '
-                                      + 'poorly formatted XML.')
-            else:
-                spoken_tag = notesdom.getElementsByTagName('spoken')
-                if spoken_tag and len(spoken_tag) > 0 and spoken_tag[0].firstChild is not None:
-                    spoken = spoken_tag[0].firstChild.toxml()
-        return { "spoken": spoken }
-
+        return result
+    
     def updateNodes(self):
         req_url = self.compileURL(['status'])
         result = self.request(req_url)

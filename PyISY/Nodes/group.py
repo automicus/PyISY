@@ -11,6 +11,7 @@ class Group(object):
     |  name: The node name.
     |  members: List of the members in this group.
     |  controllers: List of the controllers in this group.
+    |  spoken: The string of the Notes Spoken field.
 
     :ivar dimmable: Boolean value idicating that this group cannot be dimmed.
     :ivar hasChildren: Boolean value indicating that this group has no children.
@@ -109,10 +110,11 @@ class Group(object):
             return True
 
     def _get_notes(self):
-        self._notes = self.parent.parent.conn.getNodeNotes(self._id)
+        if not self._notes:
+            self._notes = self.parent.parseNotes(self.parent.parent.conn.getNodeNotes(self._id))
 
     @property
     def spoken(self):
-        if self._notes is False:
-            self._get_notes()
+        """Returns the text string of the Spoken property inside the group notes"""
+        self._get_notes()
         return self._notes['spoken']
