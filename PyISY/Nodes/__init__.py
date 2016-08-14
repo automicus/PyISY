@@ -4,6 +4,11 @@ from .node import Node
 from time import sleep
 from xml.dom import minidom
 
+UNIT_OF_MEASURE = {
+    '73': 'watt',
+    '11': 'unlocked/locked'
+}
+
 
 class Nodes(object):
 
@@ -185,8 +190,12 @@ class Nodes(object):
                             # Not all devices have properties
                             if len(nprop) > 0:
                                 nval = nprop[0].attributes['value'].value
-                                dimmable = '%' in \
-                                    nprop[0].attributes['uom'].value
+                                uom = nprop[0].attributes['uom'].value
+                                if uom in UNIT_OF_MEASURE:
+                                    units = UNIT_OF_MEASURE[unit]
+                                else:
+                                    units = uom.split('/')
+                                dimmable = '%' in units
                                 nval = int(nval.replace(' ', '0'))
                             self.insert(nid, nname, nparent,
                                         Node(self, nid, nval, nname, dimmable),
