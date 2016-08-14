@@ -5,6 +5,7 @@ from time import sleep
 from xml.dom import minidom
 
 UNIT_OF_MEASURE = {
+    '97': 'stopped/closed/closing/open/opening',
     '73': 'watt',
     '11': 'unlocked/locked'
 }
