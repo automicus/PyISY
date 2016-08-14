@@ -196,9 +196,12 @@ class Nodes(object):
                                 else:
                                     units = uom.split('/')
                                 dimmable = '%' in units
+                                if 'prec' in nprop[0].attributes:
+                                    prec = nprop[0].attributes['prec'].value
                                 nval = int(nval.replace(' ', '0'))
                             self.insert(nid, nname, nparent,
-                                        Node(self, nid, nval, nname, dimmable),
+                                        Node(self, nid, nval, nname, dimmable,
+                                             uom=units, prec=prec),
                                         ntype)
                         elif ntype == 'group':
                             mems = feature.getElementsByTagName('link')
