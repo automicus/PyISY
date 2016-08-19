@@ -12,6 +12,10 @@ UNIT_OF_MEASURE = {
         'open',
         'opening'
     ],
+    '78': [  # Motion, etc.
+        'on',
+        'off'
+    ],
     '73': [  # Energy Meter
         'watt'
     ],
