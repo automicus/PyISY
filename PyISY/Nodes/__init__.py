@@ -206,7 +206,8 @@ class Nodes(object):
                             # Not all devices have properties
                             if len(nprop) > 0:
                                 nval = nprop[0].attributes['value'].value
-                                uom = nprop[0].attributes['uom'].value
+                                if 'uom' in nprop[0].attributes:
+                                    uom = nprop[0].attributes['uom'].value
                                 if uom in UNIT_OF_MEASURE:
                                     units = UNIT_OF_MEASURE[unit]
                                 else:
