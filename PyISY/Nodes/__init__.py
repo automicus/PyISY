@@ -179,25 +179,43 @@ class Nodes(object):
                         if ntype == 'folder':
                             self.insert(nid, nname, nparent, None, ntype)
                         elif ntype == 'node':
-                            nval = None
-                            dimmable = False
                             nprop = feature.getElementsByTagName('property')
-                            uom = None
-                            prec = 0
                             # Not all devices have properties
-                            if len(nprop) > 0:
-                                nval = nprop[0].attributes['value'].value
-                                if 'uom' in nprop[0].attributes:
-                                    uom = nprop[0].attributes['uom'].value
-                                units = uom.split('/')
-                                dimmable = '%' in units
-                                if 'prec' in nprop[0].attributes:
-                                    prec = nprop[0].attributes['prec'].value
-                                nval = int(nval.replace(' ', '0'))
-                            self.insert(nid, nname, nparent,
-                                        Node(self, nid, nval, nname, dimmable,
-                                             uom=units, prec=prec),
-                                        ntype)
+
+                            if len(nprop) == 0:
+                                self.insert(nid, nname, nparent,
+                                            Node(self, nid, None, nname,
+                                                 False),
+                                            ntype)
+                            else:
+                                for prop in nprop:
+                                    uom = ''
+                                    prec = '0'
+                                    prop_type = prop.attributes['id'].value
+                                    if 'uom' in prop.attributes:
+                                        uom = prop.attributes['uom'].value
+                                    units = uom.split('/')
+                                    dimmable = '%' in units
+                                    if 'prec' in prop.attributes:
+                                        prec = prop.attributes['prec'].value
+                                    nval = prop.attributes['value'].value
+                                    nval = int(nval.replace(' ', '0'))
+
+                                    if prop_type == 'ST':
+                                        self.insert(nid, nname, nparent,
+                                                    Node(self, nid, nval,
+                                                         nname, dimmable,
+                                                         uom=units, prec=prec),
+                                                    ntype)
+                                    else: # Ancilliary property
+                                        id = '{}_{}'.format(nid, prop_type)
+                                        pname = '{}_{}'.format(nname,
+                                                               prop_type)
+                                        self.insert(id, pname, nparent,
+                                                    Node(self, id, nval,
+                                                         pname, dimmable,
+                                                         uom=units, prec=prec),
+                                                    ntype)
                         elif ntype == 'group':
                             mems = feature.getElementsByTagName('link')
                             members = [mem.firstChild.nodeValue for mem in mems]
