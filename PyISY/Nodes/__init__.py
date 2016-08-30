@@ -245,18 +245,29 @@ class Nodes(object):
             else:
                 for feature in xmldoc.getElementsByTagName('node'):
                     nid = feature.attributes['id'].value
-                    nval = feature.getElementsByTagName('property')[0] \
-                        .attributes['value'].value
-                    nval = int(nval.replace(' ', '0'))
-                    dimmable = '%' in \
-                        feature.getElementsByTagName('property')[0] \
-                        .attributes['uom'].value
-                    if nid in self.nids:
-                        self.getByID(nid).status.update(nval, silent=True)
-                    else:
-                        self.insert(nid, ' ', None,
-                                    Node(self, nid, nval), 'node')
-                    self.getByID(nid).dimmable = dimmable
+                    nprop = feature.getElementsByTagName('property')
+                    for prop in nprop:
+                        uom = ''
+                        prop_type = prop.attributes['id'].value
+                        if 'uom' in prop.attributes:
+                            uom = prop.attributes['uom'].value
+                        units = uom.split('/')
+                        dimmable = '%' in units
+                        nval = prop.attributes['value'].value
+                        nval = int(nval.replace(' ', '0'))
+
+                        if prop_type == 'ST':
+                            id = nid
+                        else:
+                            id = '{}_{}'.format(nid)
+
+                        if id in self.nids:
+                            self.getByID(id).status.update(nval, silent=True)
+                        else:
+                            self.insert(id, ' ', None,
+                                        Node(self, id, nval), 'node')
+
+                        self.getById(id).dimmable = dimmable
 
                 self.parent.log.info('ISY Updated Nodes')
 
