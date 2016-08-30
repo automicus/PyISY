@@ -4,6 +4,51 @@ from time import sleep
 from xml.dom import minidom
 
 
+STATE_PROPERTY = 'ST'
+ATTR_ID = 'id'
+ATTR_UOM = 'uom'
+ATTR_VALUE = 'value'
+ATTR_PREC = 'prec'
+
+
+def parse_xml_properties(xmldoc):
+    """
+    Args:
+        xmldoc: xml document to parse
+
+    Returns:
+        (state_val, state_uom, state_prec, aux_props)
+    """
+    state_val = None
+    state_uom = []
+    state_prec = ''
+    aux_props = []
+
+    props = xmldoc.getElementsByTagName('property')
+    if len(props) > 0:
+        for prop in props:
+            attrs = prop.attributes
+            prop_id = attrs[ATTR_ID] if ATTR_ID in attrs else None
+            uom = attrs[ATTR_UOM].value if ATTR_UOM in attrs else ''
+            val = attrs[ATTR_VALUE].value if ATTR_VALUE in attrs else None
+            prec = attrs[ATTR_PREC].value if ATTR_PREC in attrs else '0'
+            units = uom.split('/')
+
+            if prop_id == STATE_PROPERTY:
+                state_val = val
+                state_uom = units
+                state_prec = prec
+            else:
+                aux_props.append({
+                    ATTR_ID: prop_id,
+                    ATTR_VALUE: val,
+                    ATTR_PREC: prec,
+                    ATTR_UOM: units
+                })
+
+    return state_val, state_uom, state_prec, aux_props
+
+
 class Node(object):
     """
     This class handles ISY nodes.
@@ -24,7 +69,7 @@ class Node(object):
     hasChildren = False
 
     def __init__(self, parent, nid, nval, name, dimmable=True, spoken=False,
-                 uom=None, prec=0):
+                 uom=None, prec=0, aux_properties=None):
         self.parent = parent
         self._id = nid
         self.dimmable = dimmable
@@ -32,6 +77,7 @@ class Node(object):
         self.uom = uom
         self.prec = prec
         self._spoken = spoken
+        self.aux_properties = aux_properties or {}
 
         self.status = nval
         self.status.reporter = self.__report_status__
@@ -56,9 +102,15 @@ class Node(object):
                     self.parent.parent.log.error('ISY Could not parse nodes,' +
                                                  'poorly formatted XML.')
                 else:
-                    new_st = int(xmldoc.getElementsByTagName('property')[0]
-                                 .attributes['value'].value)
-                    self.status.update(new_st, silent=True)
+                    state_val, state_uom, state_prec, aux_props = parse_xml_properties(
+                        xmldoc)
+
+                    for prop in aux_props:
+                        self.aux_properties[prop.get(ATTR_ID)] = prop
+
+                    self.uom = state_uom
+                    self.prec = state_prec
+                    self.status.update(state_val, silent=True)
                     self.parent.parent.log.info('ISY updated node: ' +
                                                 self._id)
             else:

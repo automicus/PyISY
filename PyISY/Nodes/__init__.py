@@ -1,6 +1,6 @@
 
 from .group import Group
-from .node import Node
+from .node import (Node, parse_xml_properties)
 from time import sleep
 from xml.dom import minidom
 
@@ -179,43 +179,17 @@ class Nodes(object):
                         if ntype == 'folder':
                             self.insert(nid, nname, nparent, None, ntype)
                         elif ntype == 'node':
-                            nprop = feature.getElementsByTagName('property')
-                            # Not all devices have properties
+                            (state_val, state_uom, state_prec,
+                             aux_props) = parse_xml_properties(feature)
 
-                            if len(nprop) == 0:
-                                self.insert(nid, nname, nparent,
-                                            Node(self, nid, None, nname,
-                                                 False),
-                                            ntype)
-                            else:
-                                for prop in nprop:
-                                    uom = ''
-                                    prec = '0'
-                                    prop_type = prop.attributes['id'].value
-                                    if 'uom' in prop.attributes:
-                                        uom = prop.attributes['uom'].value
-                                    units = uom.split('/')
-                                    dimmable = '%' in units
-                                    if 'prec' in prop.attributes:
-                                        prec = prop.attributes['prec'].value
-                                    nval = prop.attributes['value'].value
-                                    nval = int(nval.replace(' ', '0'))
+                            dimmable = '%' in state_uom
 
-                                    if prop_type == 'ST':
-                                        self.insert(nid, nname, nparent,
-                                                    Node(self, nid, nval,
-                                                         nname, dimmable,
-                                                         uom=units, prec=prec),
-                                                    ntype)
-                                    else: # Ancilliary property
-                                        id = '{}_{}'.format(nid, prop_type)
-                                        pname = '{}_{}'.format(nname,
-                                                               prop_type)
-                                        self.insert(id, pname, nparent,
-                                                    Node(self, id, nval,
-                                                         pname, dimmable,
-                                                         uom=units, prec=prec),
-                                                    ntype)
+                            self.insert(nid, nname, nparent,
+                                        Node(self, nid, state_val, nname,
+                                             dimmable,
+                                             uom=state_uom, prec=state_prec,
+                                             aux_properties=aux_props),
+                                        ntype)
                         elif ntype == 'group':
                             mems = feature.getElementsByTagName('link')
                             members = [mem.firstChild.nodeValue for mem in mems]
@@ -245,29 +219,25 @@ class Nodes(object):
             else:
                 for feature in xmldoc.getElementsByTagName('node'):
                     nid = feature.attributes['id'].value
-                    nprop = feature.getElementsByTagName('property')
-                    for prop in nprop:
-                        uom = ''
-                        prop_type = prop.attributes['id'].value
-                        if 'uom' in prop.attributes:
-                            uom = prop.attributes['uom'].value
-                        units = uom.split('/')
-                        dimmable = '%' in units
-                        nval = prop.attributes['value'].value
-                        nval = int(nval.replace(' ', '0'))
 
-                        if prop_type == 'ST':
-                            id = nid
-                        else:
-                            id = '{}_{}'.format(nid)
+                    (state_val, state_uom, state_prec,
+                     aux_props) = parse_xml_properties(feature)
 
-                        if id in self.nids:
-                            self.getByID(id).status.update(nval, silent=True)
-                        else:
-                            self.insert(id, ' ', None,
-                                        Node(self, id, nval), 'node')
+                    dimmable = '%' in state_uom
 
-                        self.getById(id).dimmable = dimmable
+                    if nid in self.nids:
+                        node = self.getByID(id)
+                        node.aux_properties = aux_props
+                        node.uom = state_uom
+                        node.prec = state_prec
+                        node.dimmable = dimmable
+
+                        node.status.update(state_val, silent=True)
+                    else:
+                        node = Node(self, id, state_val, ' ', dimmable,
+                                    uom=state_uom, prec=state_prec,
+                                    aux_properties=aux_props)
+                        self.insert(id, ' ', None, node)
 
                 self.parent.log.info('ISY Updated Nodes')
 
