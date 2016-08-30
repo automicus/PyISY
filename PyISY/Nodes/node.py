@@ -159,6 +159,32 @@ class Node(object):
             self.update(_change2update_interval)
             return True
 
+    def lock(self):
+        """ Sends a command via secure mode to z-wave locks."""
+        response = self.parent.parent.conn.nodeSecMd(self._id, '1')
+
+        if response is None:
+            self.parent.parent.log.warning('ISY could not send command: ' +
+                                           self._id)
+            return False
+        else:
+            self.parent.parent.log.info('ISY command sent: ' + self._id)
+            self.update(_change2update_interval)
+            return True
+
+    def unlock(self):
+        """ Sends a command via secure mode to z-wave locks."""
+        response = self.parent.parent.conn.nodeSecMd(self._id, '0')
+
+        if response is None:
+            self.parent.parent.log.warning('ISY could not send command: ' +
+                                           self._id)
+            return False
+        else:
+            self.parent.parent.log.info('ISY command sent: ' + self._id)
+            self.update(_change2update_interval)
+            return True
+
     def _get_notes(self):
         # Get the device notes, currently only the Spoken property is saved.
         notes_xml = self.parent.parent.conn.getNodeNotes(self._id)
