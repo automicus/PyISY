@@ -23,7 +23,7 @@ limitations under the License.
 
 from .ISY import ISY
 
-__version__ = '1.0.8'
+__version__ = '1.0.7'
 __author__ = 'Ryan M. Kraus'
 __email__ = 'automicus@gmail.com'
 __date__ = 'April 2015'
