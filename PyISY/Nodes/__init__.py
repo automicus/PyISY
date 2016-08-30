@@ -4,27 +4,6 @@ from .node import Node
 from time import sleep
 from xml.dom import minidom
 
-UNIT_OF_MEASURE = {
-    '97': [  # Barrier
-        'stopped',
-        'closed',
-        'closing',
-        'open',
-        'opening'
-    ],
-    '78': [  # Motion, etc.
-        'on',
-        'off'
-    ],
-    '73': [  # Energy Meter
-        'watt'
-    ],
-    '11': [  # Lock
-        'unlocked',
-        'locked'
-    ]
-}
-
 
 class Nodes(object):
 
@@ -210,10 +189,7 @@ class Nodes(object):
                                 nval = nprop[0].attributes['value'].value
                                 if 'uom' in nprop[0].attributes:
                                     uom = nprop[0].attributes['uom'].value
-                                if uom in UNIT_OF_MEASURE:
-                                    units = UNIT_OF_MEASURE[uom]
-                                else:
-                                    units = uom.split('/')
+                                units = uom.split('/')
                                 dimmable = '%' in units
                                 if 'prec' in nprop[0].attributes:
                                     prec = nprop[0].attributes['prec'].value
