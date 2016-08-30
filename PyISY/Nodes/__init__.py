@@ -209,7 +209,7 @@ class Nodes(object):
                                 if 'uom' in nprop[0].attributes:
                                     uom = nprop[0].attributes['uom'].value
                                 if uom in UNIT_OF_MEASURE:
-                                    units = UNIT_OF_MEASURE[unit]
+                                    units = UNIT_OF_MEASURE[uom]
                                 else:
                                     units = uom.split('/')
                                 dimmable = '%' in units
