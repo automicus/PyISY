@@ -28,11 +28,12 @@ def parse_xml_properties(xmldoc):
     if len(props) > 0:
         for prop in props:
             attrs = prop.attributes
-            prop_id = attrs[ATTR_ID] if ATTR_ID in attrs else None
+            prop_id = attrs[ATTR_ID].value if ATTR_ID in attrs else None
             uom = attrs[ATTR_UOM].value if ATTR_UOM in attrs else ''
             val = attrs[ATTR_VALUE].value if ATTR_VALUE in attrs else None
             prec = attrs[ATTR_PREC].value if ATTR_PREC in attrs else '0'
             units = uom.split('/')
+            val = int(val.replace(' ', '0'))
 
             if prop_id == STATE_PROPERTY:
                 state_val = val
@@ -105,6 +106,7 @@ class Node(object):
                     state_val, state_uom, state_prec, aux_props = parse_xml_properties(
                         xmldoc)
 
+                    self.aux_properties = {}
                     for prop in aux_props:
                         self.aux_properties[prop.get(ATTR_ID)] = prop
 

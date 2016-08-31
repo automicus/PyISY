@@ -226,11 +226,14 @@ class Nodes(object):
                     dimmable = '%' in state_uom
 
                     if nid in self.nids:
-                        node = self.getByID(id)
-                        node.aux_properties = aux_props
+                        node = self.getByID(nid)
                         node.uom = state_uom
                         node.prec = state_prec
                         node.dimmable = dimmable
+
+                        node.aux_properties = {}
+                        for prop in aux_props:
+                            node.aux_properties[prop.get(ATTR_ID)] = prop
 
                         node.status.update(state_val, silent=True)
                     else:
