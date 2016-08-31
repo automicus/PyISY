@@ -5,6 +5,7 @@ from xml.dom import minidom
 
 
 STATE_PROPERTY = 'ST'
+BATLVL_PROPERTY = 'BATLVL'
 ATTR_ID = 'id'
 ATTR_UOM = 'uom'
 ATTR_VALUE = 'value'
@@ -23,6 +24,7 @@ def parse_xml_properties(xmldoc):
     state_uom = []
     state_prec = ''
     aux_props = []
+    state_set = False
 
     props = xmldoc.getElementsByTagName('property')
     if len(props) > 0:
@@ -36,6 +38,11 @@ def parse_xml_properties(xmldoc):
             val = int(val.replace(' ', '0'))
 
             if prop_id == STATE_PROPERTY:
+                state_val = val
+                state_uom = units
+                state_prec = prec
+                state_set = True
+            elif prop_id == BATLVL_PROPERTY and not state_set:
                 state_val = val
                 state_uom = units
                 state_prec = prec
