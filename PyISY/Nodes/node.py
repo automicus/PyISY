@@ -11,6 +11,30 @@ ATTR_UOM = 'uom'
 ATTR_VALUE = 'value'
 ATTR_PREC = 'prec'
 
+FAN_MODE_OFF = 'off'
+FAN_MODE_ON = 'on'
+FAN_MODE_AUTO = 'auto'
+
+CLIMATE_MODE_OFF = 'off'
+CLIMATE_MODE_HEAT = 'heat'
+CLIMATE_MODE_COOL = 'cool'
+CLIMATE_MODE_AUTO = 'auto'
+CLIMATE_MODE_FAN = 'fan'
+
+FAN_MODES = {
+    FAN_MODE_OFF: 0,
+    FAN_MODE_ON: 7,
+    FAN_MODE_AUTO: 8,
+}
+
+CLIMATE_MODES = {
+    CLIMATE_MODE_OFF: 0,
+    CLIMATE_MODE_HEAT: 1,
+    CLIMATE_MODE_COOL: 2,
+    CLIMATE_MODE_AUTO: 3,
+    CLIMATE_MODE_FAN: 4,
+}
+
 
 def parse_xml_properties(xmldoc):
     """
@@ -217,6 +241,111 @@ class Node(object):
             return False
         else:
             self.parent.parent.log.info('ISY dimmed node: ' + self._id)
+            self.update(_change2update_interval)
+            return True
+
+    def _fan_mode(self, mode):
+        """ Sends a command to the climate device to set the fan mode. """
+        if not hasattr(FAN_MODES, mode):
+            self.parent.parent.log.warning('Invalid fan mode: ' + mode)
+            return False
+
+        response = self.parent.parent.conn.nodeCliFS(FAN_MODES[mode])
+
+        if response is None:
+            self.parent.parent.log.warning('ISY could not send command: ' +
+                                           self._id)
+            return False
+        else:
+            self.parent.parent.log.info('ISY command sent: ' + self._id)
+            self.update(_change2update_interval)
+            return True
+
+    def fan_auto(self):
+        """ Sends a command to the climate device to set fan mode=auto. """
+        return self._fan_mode(FAN_MODE_AUTO)
+
+    def fan_on(self):
+        """ Sends a command to the climate device to set fan mode=on. """
+        return self._fan_mode(FAN_MODE_ON)
+
+    def fan_off(self):
+        """ Sends a command to the climate device to set fan mode=off.  """
+        return self._fan_mode(FAN_MODE_OFF)
+
+    def _climate_mode(self, mode):
+        """ Sends a command to the climate device to set the system mode. """
+        if not hasattr(CLIMATE_MODES, mode):
+            self.parent.parent.log.warning('Invalid climate mode: ' + mode)
+            return False
+
+        response = self.parent.parent.nodeCliMD(CLIMATE_MODES[mode])
+
+        if response is None:
+            self.parent.parent.log.warning('ISY could not send command: ' +
+                                           self._id)
+            return False
+        else:
+            self.parent.parent.log.info('ISY command sent: ' + self._id)
+            self.update(_change2update_interval)
+            return True
+
+    def climate_off(self):
+        """ Sends a command to the device to set the system mode=off. """
+        return self._climate_mode(CLIMATE_MODE_OFF)
+
+    def climate_auto(self):
+        """ Sends a command to the device to set the system mode=auto. """
+        return self._climate_mode(CLIMATE_MODE_AUTO)
+
+    def climate_heat(self):
+        """ Sends a command to the device to set the system mode=heat. """
+        return self._climate_mode(CLIMATE_MODE_HEAT)
+
+    def climate_cool(self):
+        """ Sends a command to the device to set the system mode=cool. """
+        return self._climate_mode(CLIMATE_MODE_COOL)
+
+    def climate_setpoint(self, val):
+        """ Sends a command to the device to set the system setpoints. """
+        # For some reason, wants 2 times the temperature
+        for cmd in ['nodeCliSPH', 'nodeCliSPC']:
+            response = getattr(self.parent.parent, cmd)(2 * val)
+
+            if response is None:
+                self.parent.parent.log.warning('ISY could not send command: ' +
+                                               self._id)
+                return False
+
+        self.parent.parent.log.info('ISY command sent: ' + self._id)
+        self.update(_change2update_interval)
+        return True
+
+    def climate_setpoint_heat(self, val):
+        """ Sends a command to the device to set the system heat setpoint. """
+        # For some reason, wants 2 times the temperature
+        response = self.parent.parent.nodeCliSPH(2 * val)
+
+        if response is None:
+            self.parent.parent.log.warning('ISY could not send command: ' +
+                                           self._id)
+            return False
+        else:
+            self.parent.parent.log.info('ISY command sent: ' + self._id)
+            self.update(_change2update_interval)
+            return True
+
+    def climate_setpoint_cool(self, val):
+        """ Sends a command to the device to set the system cool setpoint. """
+        # For some reason, wants 2 times the temperature
+        response = self.parent.parent.nodeCliSPC(2 * val)
+
+        if response is None:
+            self.parent.parent.log.warning('ISY could not send command: ' +
+                                           self._id)
+            return False
+        else:
+            self.parent.parent.log.info('ISY command sent: ' + self._id)
             self.update(_change2update_interval)
             return True
 
