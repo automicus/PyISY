@@ -24,12 +24,16 @@ class Node(object):
     status = Property(0)
     hasChildren = False
 
-    def __init__(self, parent, nid, nval, name, dimmable=True, notes=False):
+    def __init__(self, parent, nid, nval, name, dimmable=True, spoken=False,
+                 notes=False, uom=None, prec=0):
         self.parent = parent
         self._id = nid
         self.dimmable = dimmable
         self.name = name
         self._notes = notes
+        self.uom = uom
+        self.prec = prec
+        self._spoken = spoken
 
         self.status = nval
         self.status.reporter = self.__report_status__

@@ -4,6 +4,27 @@ from .node import Node
 from time import sleep
 from xml.dom import minidom
 
+UNIT_OF_MEASURE = {
+    '97': [  # Barrier
+        'stopped',
+        'closed',
+        'closing',
+        'open',
+        'opening'
+    ],
+    '78': [  # Motion, etc.
+        'on',
+        'off'
+    ],
+    '73': [  # Energy Meter
+        'watt'
+    ],
+    '11': [  # Lock
+        'unlocked',
+        'locked'
+    ]
+}
+
 
 class Nodes(object):
 
@@ -182,14 +203,24 @@ class Nodes(object):
                             nval = None
                             dimmable = False
                             nprop = feature.getElementsByTagName('property')
+                            uom = None
+                            prec = 0
                             # Not all devices have properties
                             if len(nprop) > 0:
                                 nval = nprop[0].attributes['value'].value
-                                dimmable = '%' in \
-                                    nprop[0].attributes['uom'].value
+                                if 'uom' in nprop[0].attributes:
+                                    uom = nprop[0].attributes['uom'].value
+                                if uom in UNIT_OF_MEASURE:
+                                    units = UNIT_OF_MEASURE[uom]
+                                else:
+                                    units = uom.split('/')
+                                dimmable = '%' in units
+                                if 'prec' in nprop[0].attributes:
+                                    prec = nprop[0].attributes['prec'].value
                                 nval = int(nval.replace(' ', '0'))
                             self.insert(nid, nname, nparent,
-                                        Node(self, nid, nval, nname, dimmable),
+                                        Node(self, nid, nval, nname, dimmable,
+                                             uom=units, prec=prec),
                                         ntype)
                         elif ntype == 'group':
                             mems = feature.getElementsByTagName('link')
