@@ -205,6 +205,31 @@ class Connection(object):
         response = self.request(req_url)
         return response
 
+    def nodeSecMd(self, nid, val=0):
+        req_url = self.compileURL(['nodes', nid, 'cmd', 'SECMD', val])
+        response = self.request(req_url)
+        return response
+
+    def nodeCliFS(self, nid, val=0):
+        req_url = self.compileURL(['nodes', nid, 'cmd', 'CLIFS', val])
+        response = self.request(req_url)
+        return response
+
+    def nodeCliMD(self, nid, val=0):
+        req_url = self.compileURL(['nodes', nid, 'cmd', 'CLIMD', val])
+        response = self.request(req_url)
+        return response
+
+    def nodeCliSPH(self, nid, val=0):
+        req_url = self.compileURL(['nodes', nid, 'cmd', 'CLISPH', val])
+        response = self.request(req_url)
+        return response
+
+    def nodeCliSPC(self, nid, val=0):
+        req_url = self.compileURL(['nodes', nid, 'cmd', 'CLISPC', val])
+        response = self.request(req_url)
+        return response
+
     # VARIABLES
     def getVariables(self):
         requests = [['vars', 'definitions', '1'],
