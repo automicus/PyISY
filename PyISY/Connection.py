@@ -165,7 +165,7 @@ class Connection(object):
         return result
 
     def updateNode(self, nid):
-        req_url = self.compileURL(['nodes', nid, 'get', 'ST'])
+        req_url = self.compileURL(['status', nid])
         response = self.request(req_url)
         return response
 
@@ -289,6 +289,12 @@ class Connection(object):
         req_url = self.compileURL(['X10', address, str(code)])
         result = self.request(req_url)
         return result
+
+    # AUX PROPERTY
+    def setProperty(self, nid, prop_id, val):
+        req_url = self.compileURL(['nodes', nid, 'cmd', prop_id, val])
+        response = self.request(req_url)
+        return response
 
 
 class TLSHttpAdapter(HTTPAdapter):
