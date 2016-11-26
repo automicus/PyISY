@@ -195,7 +195,7 @@ class Nodes(object):
                             members = [mem.firstChild.nodeValue for mem in mems]
                             controllers = []
                             for mem in mems:
-                                if int(mem.attributes['type'].value) == 32:
+                                if int(mem.attributes['type'].value) == 16:
                                     controllers.append(mem.firstChild.nodeValue)
                             self.insert(nid, nname, nparent,
                                         Group(self, nid, nname, members, controllers), ntype)
@@ -324,6 +324,21 @@ class Nodes(object):
         return Nodes(self.parent, self.nids[i], self.nids, self.nnames,
                      self.nparents, self.nobjs, self.ntypes)
 
+    def parseNotes(self, notes_xml):
+        spoken = None
+        if notes_xml is not None:
+            try:
+                notesdom = minidom.parseString(notes_xml)
+            except:
+                self.parent.log.error('ISY Could not parse node ' + nid + ' notes '
+                                      + 'poorly formatted XML.')
+            else:
+                spoken_tag = notesdom.getElementsByTagName('spoken')
+                if spoken_tag and len(spoken_tag) > 0 and spoken_tag[0].firstChild is not None:
+                    spoken = spoken_tag[0].firstChild.toxml()
+        return { "spoken": spoken }
+            
+    
     @property
     def children(self):
         out = []

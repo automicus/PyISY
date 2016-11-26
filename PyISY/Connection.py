@@ -11,7 +11,7 @@ from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.poolmanager import PoolManager
 import ssl
 import sys
-
+from xml.dom import minidom
 
 class Connection(object):
 
@@ -154,11 +154,12 @@ class Connection(object):
         result = self.request(req_url)
         return result
 
+    # Get the device notes xml
     def getNodeNotes(self,nid):
         req_url = self.compileURL(['nodes', nid, 'notes'])
         result = self.request(req_url)
         return result
-
+    
     def updateNodes(self):
         req_url = self.compileURL(['status'])
         result = self.request(req_url)
