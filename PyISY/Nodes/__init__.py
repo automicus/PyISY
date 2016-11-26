@@ -208,14 +208,14 @@ class Nodes(object):
                             # Not all devices have properties
                             if len(nprop) > 0:
                                 nval = nprop[0].attributes['value'].value
-                                if 'uom' in nprop[0].attributes:
+                                if 'uom' in nprop[0].attributes.keys():
                                     uom = nprop[0].attributes['uom'].value
                                 if uom in UNIT_OF_MEASURE:
                                     units = UNIT_OF_MEASURE[uom]
                                 else:
                                     units = uom.split('/')
                                 dimmable = '%' in units
-                                if 'prec' in nprop[0].attributes:
+                                if 'prec' in nprop[0].attributes.keys():
                                     prec = nprop[0].attributes['prec'].value
                                 nval = int(nval.replace(' ', '0'))
                             self.insert(nid, nname, nparent,
