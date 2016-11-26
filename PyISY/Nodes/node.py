@@ -14,6 +14,7 @@ class Node(object):
     |  name: The node name.
     |  [optional] dimmable: Default True. Boolean of whether the node is
        dimmable.
+    |  spoken: The string of the Notes Spoken field.
 
     :ivar status: A watched property that indicates the current status of the
                   node.
@@ -24,11 +25,12 @@ class Node(object):
     hasChildren = False
 
     def __init__(self, parent, nid, nval, name, dimmable=True, spoken=False,
-                 uom=None, prec=0):
+                 notes=False, uom=None, prec=0):
         self.parent = parent
         self._id = nid
         self.dimmable = dimmable
         self.name = name
+        self._notes = notes
         self.uom = uom
         self.prec = prec
         self._spoken = spoken
@@ -160,22 +162,9 @@ class Node(object):
             return True
 
     def _get_notes(self):
-        # Get the device notes, currently only the Spoken property is saved.
-        notes_xml = self.parent.parent.conn.getNodeNotes(self._id)
-        if notes_xml is None:
-            self._spoken = None
-        else:
-            try:
-                notesdom = minidom.parseString(notes_xml)
-            except:
-                self.parent.log.error('ISY Could not parse node ' + self._id + ' notes '
-                                      + 'poorly formatted XML.')
-            spoken_tag = notesdom.getElementsByTagName('spoken')
-            if spoken_tag and len(spoken_tag) > 0 and spoken_tag[0].firstChild is not None:
-                self._spoken = spoken_tag[0].firstChild.toxml()
-            else:
-                self._spoken = None
-        
+        if not self._notes:
+            self._notes = self.parent.parseNotes(self.parent.parent.conn.getNodeNotes(self._id))
+
     def get_groups(self, controller=True, responder=True):
         """
         Returns the groups (scenes) that this node is a member of.
@@ -195,6 +184,6 @@ class Node(object):
 
     @property
     def spoken(self):
-        if self._spoken is False:
-            self._get_notes()
-        return self._spoken
+        """Returns the text string of the Spoken property inside the node notes"""
+        self._get_notes()
+        return self._notes['spoken']
