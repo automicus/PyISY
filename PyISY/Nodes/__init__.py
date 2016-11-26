@@ -1,6 +1,6 @@
 
 from .group import Group
-from .node import (Node, parse_xml_properties)
+from .node import (Node, parse_xml_properties, ATTR_ID)
 from time import sleep
 from xml.dom import minidom
 
@@ -330,7 +330,7 @@ class Nodes(object):
             try:
                 notesdom = minidom.parseString(notes_xml)
             except:
-                self.parent.log.error('ISY Could not parse node ' + nid + ' notes '
+                self.parent.log.error('ISY Could not parse node, notes '
                                       + 'poorly formatted XML.')
             else:
                 spoken_tag = notesdom.getElementsByTagName('spoken')
