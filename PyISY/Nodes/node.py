@@ -70,7 +70,7 @@ def parse_xml_properties(xmldoc):
                 prec = attrs[ATTR_PREC].value
             except KeyError:
                 prec = '0'
-            units = uom.split('/')
+            units = uom if uom == 'n/a' else uom.split('/')
             val = int(val.replace(' ', '0'))
 
             if prop_id == STATE_PROPERTY:
