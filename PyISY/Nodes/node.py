@@ -418,22 +418,24 @@ class Node(object):
     def properties(self):
         return self.aux_properties
 
-    def get_property(self, prop_id):
-        if prop_id in self.aux_properties:
-            return self.aux_properties[prop_id]
+    def property(self, prop_id, prop_value=None):
+        if prop_value == None:
+            # GETTER
+            if prop_id in self.aux_properties:
+                return self.aux_properties[prop_id]
+        else:
+            # SETTER
+            if prop_id in self.aux_properties:
+                response = self.parent.parent.conn.setProperty(self._id, prop_id, prop_value)
 
-    def set_property(self, prop_id, prop_value):
-        if prop_id in self.aux_properties:
-            response = self.parent.parent.conn.setProperty(self._id, prop_id, prop_value)
-
-            if response is None:
-                self.parent.parent.log.warning('ISY could not set ' + self._id  + ' - property ' + prop_id + ' to: ' +
-                                               prop_value)
-                return False
-            else:
-                self.parent.parent.log.info('ISY command sent: set ' + self._id  + ' - property ' + prop_id + ' to: ' +
-                                               prop_value)
-                self.update(_change2update_interval)
-                return True
+                if response is None:
+                    self.parent.parent.log.warning('ISY could not set ' + self._id  + ' - property ' + prop_id + ' to: ' +
+                                                   prop_value)
+                    return False
+                else:
+                    self.parent.parent.log.info('ISY command sent: set ' + self._id  + ' - property ' + prop_id + ' to: ' +
+                                                   prop_value)
+                    self.update(_change2update_interval)
+                    return True
 
 
