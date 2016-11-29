@@ -220,7 +220,7 @@ class Nodes(object):
                                 nval = int(nval.replace(' ', '0'))
                             self.insert(nid, nname, nparent,
                                         Node(self, nid, nval, nname, dimmable,
-                                             uom=units, prec=prec),
+                                             uom=None, prec=prec),
                                         ntype)
                         elif ntype == 'group':
                             mems = feature.getElementsByTagName('link')
