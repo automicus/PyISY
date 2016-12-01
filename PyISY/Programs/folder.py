@@ -85,6 +85,7 @@ class Folder(object):
         else:
             self.parent.parent.log.info('ISY ran else in program: ' + self._id)
             self.update(_change2update_interval)
+            return True
 
     def stop(self):
         """ Stops the object if it is running. """
