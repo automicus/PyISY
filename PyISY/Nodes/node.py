@@ -54,21 +54,17 @@ def parse_xml_properties(xmldoc):
     if len(props) > 0:
         for prop in props:
             attrs = prop.attributes
-            try:
+            if ATTR_ID in prop.attributes.keys():
                 prop_id = attrs[ATTR_ID].value
-            except KeyError:
-                prop_id = None
-            try:
+            if ATTR_UOM in prop.attributes.keys():
                 uom = attrs[ATTR_UOM].value
-            except KeyError:
+            else:
                 uom = ''
-            try:
+            if ATTR_VALUE in prop.attributes.keys():
                 val = attrs[ATTR_VALUE].value
-            except KeyError:
-                val = None
-            try:
+            if ATTR_PREC in prop.attributes.keys():
                 prec = attrs[ATTR_PREC].value
-            except KeyError:
+            else:
                 prec = '0'
             units = uom if uom == 'n/a' else uom.split('/')
             val = int(val.replace(' ', '0'))
