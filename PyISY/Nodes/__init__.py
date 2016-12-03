@@ -1,29 +1,8 @@
 
 from .group import Group
-from .node import Node
+from .node import (Node, parse_xml_properties, ATTR_ID)
 from time import sleep
 from xml.dom import minidom
-
-UNIT_OF_MEASURE = {
-    '97': [  # Barrier
-        'stopped',
-        'closed',
-        'closing',
-        'open',
-        'opening'
-    ],
-    '78': [  # Motion, etc.
-        'on',
-        'off'
-    ],
-    '73': [  # Energy Meter
-        'watt'
-    ],
-    '11': [  # Lock
-        'unlocked',
-        'locked'
-    ]
-}
 
 
 class Nodes(object):
@@ -200,27 +179,16 @@ class Nodes(object):
                         if ntype == 'folder':
                             self.insert(nid, nname, nparent, None, ntype)
                         elif ntype == 'node':
-                            nval = None
-                            dimmable = False
-                            nprop = feature.getElementsByTagName('property')
-                            uom = None
-                            prec = 0
-                            # Not all devices have properties
-                            if len(nprop) > 0:
-                                nval = nprop[0].attributes['value'].value
-                                if 'uom' in nprop[0].attributes.keys():
-                                    uom = nprop[0].attributes['uom'].value
-                                if uom in UNIT_OF_MEASURE:
-                                    units = UNIT_OF_MEASURE[uom]
-                                else:
-                                    units = uom.split('/')
-                                dimmable = '%' in units
-                                if 'prec' in nprop[0].attributes.keys():
-                                    prec = nprop[0].attributes['prec'].value
-                                nval = int(nval.replace(' ', '0'))
+                            (state_val, state_uom, state_prec,
+                             aux_props) = parse_xml_properties(feature)
+
+                            dimmable = '%' in state_uom
+
                             self.insert(nid, nname, nparent,
-                                        Node(self, nid, nval, nname, dimmable,
-                                             uom=None, prec=prec),
+                                        Node(self, nid, state_val, nname,
+                                             dimmable,
+                                             uom=state_uom, prec=state_prec,
+                                             aux_properties=aux_props),
                                         ntype)
                         elif ntype == 'group':
                             mems = feature.getElementsByTagName('link')
@@ -251,18 +219,28 @@ class Nodes(object):
             else:
                 for feature in xmldoc.getElementsByTagName('node'):
                     nid = feature.attributes['id'].value
-                    nval = feature.getElementsByTagName('property')[0] \
-                        .attributes['value'].value
-                    nval = int(nval.replace(' ', '0'))
-                    dimmable = '%' in \
-                        feature.getElementsByTagName('property')[0] \
-                        .attributes['uom'].value
+
+                    (state_val, state_uom, state_prec,
+                     aux_props) = parse_xml_properties(feature)
+
+                    dimmable = '%' in state_uom
+
                     if nid in self.nids:
-                        self.getByID(nid).status.update(nval, silent=True)
+                        node = self.getByID(nid)
+                        node.uom = state_uom
+                        node.prec = state_prec
+                        node.dimmable = dimmable
+
+                        node.aux_properties = {}
+                        for prop in aux_props:
+                            node.aux_properties[prop.get(ATTR_ID)] = prop
+
+                        node.status.update(state_val, silent=True)
                     else:
-                        self.insert(nid, ' ', None,
-                                    Node(self, nid, nval), 'node')
-                    self.getByID(nid).dimmable = dimmable
+                        node = Node(self, id, state_val, ' ', dimmable,
+                                    uom=state_uom, prec=state_prec,
+                                    aux_properties=aux_props)
+                        self.insert(id, ' ', None, node)
 
                 self.parent.log.info('ISY Updated Nodes')
 
@@ -352,7 +330,7 @@ class Nodes(object):
             try:
                 notesdom = minidom.parseString(notes_xml)
             except:
-                self.parent.log.error('ISY Could not parse node ' + nid + ' notes '
+                self.parent.log.error('ISY Could not parse node, notes '
                                       + 'poorly formatted XML.')
             else:
                 spoken_tag = notesdom.getElementsByTagName('spoken')

@@ -4,6 +4,91 @@ from time import sleep
 from xml.dom import minidom
 
 
+STATE_PROPERTY = 'ST'
+BATLVL_PROPERTY = 'BATLVL'
+ATTR_ID = 'id'
+ATTR_UOM = 'uom'
+ATTR_VALUE = 'value'
+ATTR_PREC = 'prec'
+
+FAN_MODE_OFF = 'off'
+FAN_MODE_ON = 'on'
+FAN_MODE_AUTO = 'auto'
+
+CLIMATE_MODE_OFF = 'off'
+CLIMATE_MODE_HEAT = 'heat'
+CLIMATE_MODE_COOL = 'cool'
+CLIMATE_MODE_AUTO = 'auto'
+CLIMATE_MODE_FAN = 'fan'
+
+FAN_MODES = {
+    FAN_MODE_OFF: 0,
+    FAN_MODE_ON: 7,
+    FAN_MODE_AUTO: 8,
+}
+
+CLIMATE_MODES = {
+    CLIMATE_MODE_OFF: 0,
+    CLIMATE_MODE_HEAT: 1,
+    CLIMATE_MODE_COOL: 2,
+    CLIMATE_MODE_AUTO: 3,
+    CLIMATE_MODE_FAN: 4,
+}
+
+
+def parse_xml_properties(xmldoc):
+    """
+    Args:
+        xmldoc: xml document to parse
+
+    Returns:
+        (state_val, state_uom, state_prec, aux_props)
+    """
+    state_val = None
+    state_uom = []
+    state_prec = ''
+    aux_props = []
+    state_set = False
+
+    props = xmldoc.getElementsByTagName('property')
+    if len(props) > 0:
+        for prop in props:
+            attrs = prop.attributes
+            if ATTR_ID in prop.attributes.keys():
+                prop_id = attrs[ATTR_ID].value
+            if ATTR_UOM in prop.attributes.keys():
+                uom = attrs[ATTR_UOM].value
+            else:
+                uom = ''
+            if ATTR_VALUE in prop.attributes.keys():
+                val = attrs[ATTR_VALUE].value
+            if ATTR_PREC in prop.attributes.keys():
+                prec = attrs[ATTR_PREC].value
+            else:
+                prec = '0'
+            units = uom if uom == 'n/a' else uom.split('/')
+            val = int(val.replace(' ', '0'))
+
+            if prop_id == STATE_PROPERTY:
+                state_val = val
+                state_uom = units
+                state_prec = prec
+                state_set = True
+            elif prop_id == BATLVL_PROPERTY and not state_set:
+                state_val = val
+                state_uom = units
+                state_prec = prec
+            else:
+                aux_props.append({
+                    ATTR_ID: prop_id,
+                    ATTR_VALUE: val,
+                    ATTR_PREC: prec,
+                    ATTR_UOM: units
+                })
+
+    return state_val, state_uom, state_prec, aux_props
+
+
 class Node(object):
     """
     This class handles ISY nodes.
@@ -25,7 +110,7 @@ class Node(object):
     hasChildren = False
 
     def __init__(self, parent, nid, nval, name, dimmable=True, spoken=False,
-                 notes=False, uom=None, prec=0):
+                 notes=False, uom=None, prec=0, aux_properties=None):
         self.parent = parent
         self._id = nid
         self.dimmable = dimmable
@@ -34,6 +119,7 @@ class Node(object):
         self.uom = uom
         self.prec = prec
         self._spoken = spoken
+        self.aux_properties = aux_properties or {}
 
         self.status = nval
         self.status.reporter = self.__report_status__
@@ -58,9 +144,16 @@ class Node(object):
                     self.parent.parent.log.error('ISY Could not parse nodes,' +
                                                  'poorly formatted XML.')
                 else:
-                    new_st = int(xmldoc.getElementsByTagName('property')[0]
-                                 .attributes['value'].value)
-                    self.status.update(new_st, silent=True)
+                    state_val, state_uom, state_prec, aux_props = parse_xml_properties(
+                        xmldoc)
+
+                    self.aux_properties = {}
+                    for prop in aux_props:
+                        self.aux_properties[prop.get(ATTR_ID)] = prop
+
+                    self.uom = state_uom
+                    self.prec = state_prec
+                    self.status.update(state_val, silent=True)
                     self.parent.parent.log.info('ISY updated node: ' +
                                                 self._id)
             else:
@@ -158,6 +251,137 @@ class Node(object):
             return False
         else:
             self.parent.parent.log.info('ISY dimmed node: ' + self._id)
+            self.update(_change2update_interval)
+            return True
+
+    def _fan_mode(self, mode):
+        """ Sends a command to the climate device to set the fan mode. """
+        if not hasattr(FAN_MODES, mode):
+            self.parent.parent.log.warning('Invalid fan mode: ' + mode)
+            return False
+
+        response = self.parent.parent.conn.nodeCliFS(FAN_MODES[mode])
+
+        if response is None:
+            self.parent.parent.log.warning('ISY could not send command: ' +
+                                           self._id)
+            return False
+        else:
+            self.parent.parent.log.info('ISY command sent: ' + self._id)
+            self.update(_change2update_interval)
+            return True
+
+    def fan_auto(self):
+        """ Sends a command to the climate device to set fan mode=auto. """
+        return self._fan_mode(FAN_MODE_AUTO)
+
+    def fan_on(self):
+        """ Sends a command to the climate device to set fan mode=on. """
+        return self._fan_mode(FAN_MODE_ON)
+
+    def fan_off(self):
+        """ Sends a command to the climate device to set fan mode=off.  """
+        return self._fan_mode(FAN_MODE_OFF)
+
+    def _climate_mode(self, mode):
+        """ Sends a command to the climate device to set the system mode. """
+        if not hasattr(CLIMATE_MODES, mode):
+            self.parent.parent.log.warning('Invalid climate mode: ' + mode)
+            return False
+
+        response = self.parent.parent.nodeCliMD(CLIMATE_MODES[mode])
+
+        if response is None:
+            self.parent.parent.log.warning('ISY could not send command: ' +
+                                           self._id)
+            return False
+        else:
+            self.parent.parent.log.info('ISY command sent: ' + self._id)
+            self.update(_change2update_interval)
+            return True
+
+    def climate_off(self):
+        """ Sends a command to the device to set the system mode=off. """
+        return self._climate_mode(CLIMATE_MODE_OFF)
+
+    def climate_auto(self):
+        """ Sends a command to the device to set the system mode=auto. """
+        return self._climate_mode(CLIMATE_MODE_AUTO)
+
+    def climate_heat(self):
+        """ Sends a command to the device to set the system mode=heat. """
+        return self._climate_mode(CLIMATE_MODE_HEAT)
+
+    def climate_cool(self):
+        """ Sends a command to the device to set the system mode=cool. """
+        return self._climate_mode(CLIMATE_MODE_COOL)
+
+    def climate_setpoint(self, val):
+        """ Sends a command to the device to set the system setpoints. """
+        # For some reason, wants 2 times the temperature
+        for cmd in ['nodeCliSPH', 'nodeCliSPC']:
+            response = getattr(self.parent.parent, cmd)(2 * val)
+
+            if response is None:
+                self.parent.parent.log.warning('ISY could not send command: ' +
+                                               self._id)
+                return False
+
+        self.parent.parent.log.info('ISY command sent: ' + self._id)
+        self.update(_change2update_interval)
+        return True
+
+    def climate_setpoint_heat(self, val):
+        """ Sends a command to the device to set the system heat setpoint. """
+        # For some reason, wants 2 times the temperature
+        response = self.parent.parent.nodeCliSPH(2 * val)
+
+        if response is None:
+            self.parent.parent.log.warning('ISY could not send command: ' +
+                                           self._id)
+            return False
+        else:
+            self.parent.parent.log.info('ISY command sent: ' + self._id)
+            self.update(_change2update_interval)
+            return True
+
+    def climate_setpoint_cool(self, val):
+        """ Sends a command to the device to set the system cool setpoint. """
+        # For some reason, wants 2 times the temperature
+        response = self.parent.parent.nodeCliSPC(2 * val)
+
+        if response is None:
+            self.parent.parent.log.warning('ISY could not send command: ' +
+                                           self._id)
+            return False
+        else:
+            self.parent.parent.log.info('ISY command sent: ' + self._id)
+            self.update(_change2update_interval)
+            return True
+
+    def lock(self):
+        """ Sends a command via secure mode to z-wave locks."""
+        response = self.parent.parent.conn.nodeSecMd(self._id, '1')
+
+        if response is None:
+            self.parent.parent.log.warning('ISY could not send command: ' +
+                                           self._id)
+            return False
+        else:
+            self.parent.parent.log.info('ISY command sent: ' + self._id)
+            self.update(_change2update_interval)
+            return True
+
+    def unlock(self):
+        """ Sends a command via secure mode to z-wave locks."""
+        response = self.parent.parent.conn.nodeSecMd(self._id, '0')
+
+        if response is None:
+            self.parent.parent.log.warning('ISY could not send command: ' +
+                                           self._id)
+            return False
+        else:
+            self.parent.parent.log.info('ISY command sent: ' + self._id)
             self.update(_change2update_interval)
             return True
 
