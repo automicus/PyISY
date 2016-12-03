@@ -192,7 +192,16 @@ class Nodes(object):
                                         ntype)
                         elif ntype == 'group':
                             mems = feature.getElementsByTagName('link')
-                            members = [mem.firstChild.nodeValue for mem in mems]
+                            # Build list of members
+                            # Ignore if name is the same as my address
+                            members = []
+                            #[mem.firstChild.nodeValue for mem in mems]
+                            #self.parent.log.info('nid=' + nid)
+                            for mem in mems:
+                                #self.parent.log.info(' value=' + mem.firstChild.nodeValue)
+                                if (mem.firstChild.nodeValue != nid):
+                                    members.append(mem.firstChild.nodeValue)
+                            # Build list of controllers
                             controllers = []
                             for mem in mems:
                                 if int(mem.attributes['type'].value) == 16:
