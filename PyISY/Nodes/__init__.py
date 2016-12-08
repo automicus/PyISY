@@ -191,23 +191,23 @@ class Nodes(object):
                                              aux_properties=aux_props),
                                         ntype)
                         elif ntype == 'group':
-                            mems = feature.getElementsByTagName('link')
-                            # Build list of members
-                            # Ignore if name is the same as my address
-                            members = []
-                            #[mem.firstChild.nodeValue for mem in mems]
-                            #self.parent.log.info('nid=' + nid)
-                            for mem in mems:
-                                #self.parent.log.info(' value=' + mem.firstChild.nodeValue)
-                                if (mem.firstChild.nodeValue != nid):
-                                    members.append(mem.firstChild.nodeValue)
-                            # Build list of controllers
-                            controllers = []
-                            for mem in mems:
-                                if int(mem.attributes['type'].value) == 16:
-                                    controllers.append(mem.firstChild.nodeValue)
-                            self.insert(nid, nname, nparent,
-                                        Group(self, nid, nname, members, controllers), ntype)
+                            flag = feature.attributes['flag'].value
+                            # Ignore group flag=12 since that is a ISY scene that contains every device/scene
+                            # so it will contain some scenes we have not seen yet so they are not defined
+                            # and it includes the ISY MAC addrees in newer versions of ISY 5.0.6+ ..
+                            if int(flag) == 12:
+                                self.parent.log.info('Skipping group flag=' + flag + " " + nid )
+                            else:
+                                mems = feature.getElementsByTagName('link')
+                                # Build list of members
+                                members = [mem.firstChild.nodeValue for mem in mems]
+                                # Build list of controllers
+                                controllers = []
+                                for mem in mems:
+                                    if int(mem.attributes['type'].value) == 16:
+                                        controllers.append(mem.firstChild.nodeValue)
+                                self.insert(nid, nname, nparent,
+                                            Group(self, nid, nname, members, controllers), ntype)
 
             self.parent.log.info('ISY Loaded Nodes')
 
