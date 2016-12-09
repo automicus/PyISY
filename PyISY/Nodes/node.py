@@ -79,7 +79,7 @@ def parse_xml_properties(xmldoc):
                 state_uom = units
                 state_prec = prec
             else:
-                aux_props[ATTR_ID] = {
+                aux_props[prop_id] = {
                     ATTR_ID: prop_id,
                     ATTR_VALUE: val,
                     ATTR_PREC: prec,
