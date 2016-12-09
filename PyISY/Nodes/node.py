@@ -47,7 +47,7 @@ def parse_xml_properties(xmldoc):
     state_val = None
     state_uom = []
     state_prec = ''
-    aux_props = []
+    aux_props = {}
     state_set = False
 
     props = xmldoc.getElementsByTagName('property')
@@ -79,12 +79,12 @@ def parse_xml_properties(xmldoc):
                 state_uom = units
                 state_prec = prec
             else:
-                aux_props.append({
+                aux_props[ATTR_ID] = {
                     ATTR_ID: prop_id,
                     ATTR_VALUE: val,
                     ATTR_PREC: prec,
                     ATTR_UOM: units
-                })
+                }
 
     return state_val, state_uom, state_prec, aux_props
 
