@@ -146,8 +146,8 @@ class Node(object):
                 else:
                     state_val, state_uom, state_prec, aux_props = parse_xml_properties(
                         xmldoc)
-
-                    self.aux_properties.update(aux_props)
+                    for k,v in aux_props.items():
+                        self.aux_properties[k] = v
 
                     self.uom = state_uom
                     self.prec = state_prec

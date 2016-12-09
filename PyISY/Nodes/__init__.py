@@ -230,9 +230,8 @@ class Nodes(object):
                         node.uom = state_uom
                         node.prec = state_prec
                         node.dimmable = dimmable
-
-                        node.aux_properties.update(aux_props)
-
+                        for k, v in aux_props.items():
+                            node.aux_properties[k] = v
                         node.status.update(state_val, silent=True)
                     else:
                         node = Node(self, id, state_val, ' ', dimmable,
