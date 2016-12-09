@@ -10,6 +10,7 @@ ATTR_ID = 'id'
 ATTR_UOM = 'uom'
 ATTR_VALUE = 'value'
 ATTR_PREC = 'prec'
+ATTR_FORMATTED = 'formatted'
 
 FAN_MODE_OFF = 'off'
 FAN_MODE_ON = 'on'
@@ -68,6 +69,8 @@ def parse_xml_properties(xmldoc):
                 prec = '0'
             units = uom if uom == 'n/a' else uom.split('/')
             val = int(val.replace(' ', '0'))
+            if ATTR_FORMATTED in attrs.keys():
+                formatted = attrs[ATTR_FORMATTED].value
 
             if prop_id == STATE_PROPERTY:
                 state_val = val
@@ -83,7 +86,8 @@ def parse_xml_properties(xmldoc):
                     ATTR_ID: prop_id,
                     ATTR_VALUE: val,
                     ATTR_PREC: prec,
-                    ATTR_UOM: units
+                    ATTR_UOM: units,
+                    ATTR_FORMATTED: formatted
                 }
 
     return state_val, state_uom, state_prec, aux_props
