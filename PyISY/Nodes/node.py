@@ -131,9 +131,9 @@ class Node(object):
     def __report_status__(self, new_val):
         self.on(new_val)
 
-    def update(self, waitTime=0, hint=None):
+    def update(self, waitTime=0, hint=None, force=False):
         """ Update the value of the node from the controller. """
-        if not self.parent.parent.auto_update:
+        if not self.parent.parent.auto_update or force:
             sleep(waitTime)
             xml = self.parent.parent.conn.updateNode(self._id)
 
