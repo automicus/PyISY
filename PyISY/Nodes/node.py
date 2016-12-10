@@ -66,7 +66,6 @@ def parse_xml_properties(xmldoc):
             else:
                 prec = '0'
             units = uom if uom == 'n/a' else uom.split('/')
-            val = int(val.replace(' ', '0'))
             if ATTR_FORMATTED in attrs.keys():
                 formatted = attrs[ATTR_FORMATTED].value
 
@@ -83,11 +82,12 @@ def parse_xml_properties(xmldoc):
             else:
                 aux_props[prop_id] = {
                     ATTR_ID: prop_id,
-                    ATTR_VALUE: val,
+                    ATTR_VALUE: int(val.replace(' ', '0')),
                     ATTR_PREC: prec,
                     ATTR_UOM: units,
                     ATTR_FORMATTED: formatted
                 }
+        state_val = int(state_val.replace(' ', '0'))
 
     return state_val, state_uom, state_prec, aux_props
 
