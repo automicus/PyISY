@@ -49,8 +49,6 @@ def parse_xml_properties(xmldoc):
     state_uom = []
     state_prec = ''
     aux_props = {}
-    state_set = False
-
     props = xmldoc.getElementsByTagName('property')
     if len(props) > 0:
         for prop in props:
@@ -72,12 +70,13 @@ def parse_xml_properties(xmldoc):
             if ATTR_FORMATTED in attrs.keys():
                 formatted = attrs[ATTR_FORMATTED].value
 
-            if prop_id == STATE_PROPERTY:
+            if prop_id == STATE_PROPERTY\
+                    and (state_val is None or str(state_val).strip() == ''):
                 state_val = val
                 state_uom = units
                 state_prec = prec
-                state_set = True
-            elif prop_id == BATLVL_PROPERTY and not state_set:
+            elif prop_id == BATLVL_PROPERTY\
+                    and (state_val is None or str(state_val).strip() == ''):
                 state_val = val
                 state_uom = units
                 state_prec = prec
