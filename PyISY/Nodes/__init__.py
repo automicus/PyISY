@@ -335,12 +335,12 @@ class Nodes(object):
 
     def parseNotes(self, notes_xml):
         spoken = None
-        if notes_xml is not None:
+        if notes_xml is not None and notes_xml != "":
             try:
                 notesdom = minidom.parseString(notes_xml)
             except:
                 self.parent.log.error('ISY Could not parse node, notes '
-                                      + 'poorly formatted XML.')
+                                      + 'poorly formatted XML: ' + notes_xml)
             else:
                 spoken_tag = notesdom.getElementsByTagName('spoken')
                 if spoken_tag and len(spoken_tag) > 0 and spoken_tag[0].firstChild is not None:
