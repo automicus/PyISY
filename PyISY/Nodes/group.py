@@ -110,8 +110,8 @@ class Group(object):
             return True
 
     def _get_notes(self):
-        if not self._notes:
-            self._notes = self.parent.parseNotes(self.parent.parent.conn.getNodeNotes(self._id))
+        #if not self._notes:
+        self._notes = self.parent.parseNotes(self.parent.parent.conn.getNodeNotes(self._id))
 
     @property
     def spoken(self):

@@ -386,8 +386,8 @@ class Node(object):
             return True
 
     def _get_notes(self):
-        if not self._notes:
-            self._notes = self.parent.parseNotes(self.parent.parent.conn.getNodeNotes(self._id))
+        #if not self._notes:
+        self._notes = self.parent.parseNotes(self.parent.parent.conn.getNodeNotes(self._id))
 
     def get_groups(self, controller=True, responder=True):
         """
