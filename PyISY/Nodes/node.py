@@ -87,7 +87,9 @@ def parse_xml_properties(xmldoc):
                     ATTR_UOM: units,
                     ATTR_FORMATTED: formatted
                 }
-        state_val = int(state_val.replace(' ', '0'))
+
+        if state_val is not None:
+            state_val = int(state_val.replace(' ', '0'))
 
     return state_val, state_uom, state_prec, aux_props
 
