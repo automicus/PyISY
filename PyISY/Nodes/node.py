@@ -90,8 +90,8 @@ def parse_xml_properties(xmldoc):
 
         if state_val is None:
             state_val = '0'
-        else:
-            state_val = int(state_val.replace(' ', '0'))
+
+        state_val = int(state_val.replace(' ', '0'))
 
     return state_val, state_uom, state_prec, aux_props
 
