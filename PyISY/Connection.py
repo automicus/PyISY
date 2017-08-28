@@ -157,7 +157,7 @@ class Connection(object):
     # Get the device notes xml
     def getNodeNotes(self,nid):
         req_url = self.compileURL(['nodes', nid, 'notes'])
-        result = self.request(req_url)
+        result = self.request(req_url,ok404=True)
         return result
     
     def updateNodes(self):

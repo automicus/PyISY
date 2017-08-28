@@ -66,8 +66,12 @@ def parse_xml_properties(xmldoc):
                 prec = attrs[ATTR_PREC].value
             else:
                 prec = '0'
+            #print "prop=",prop.toprettyxml();
             units = uom if uom == 'n/a' else uom.split('/')
-            val = int(val.replace(' ', '0'))
+            if (val == ""):
+                val = 0
+            else:
+                val = int(val.replace(' ', '0'))
 
             if prop_id == STATE_PROPERTY:
                 state_val = val
@@ -386,8 +390,8 @@ class Node(object):
             return True
 
     def _get_notes(self):
-        if not self._notes:
-            self._notes = self.parent.parseNotes(self.parent.parent.conn.getNodeNotes(self._id))
+        #if not self._notes:
+        self._notes = self.parent.parseNotes(self.parent.parent.conn.getNodeNotes(self._id))
 
     def get_groups(self, controller=True, responder=True):
         """

@@ -191,14 +191,23 @@ class Nodes(object):
                                              aux_properties=aux_props),
                                         ntype)
                         elif ntype == 'group':
-                            mems = feature.getElementsByTagName('link')
-                            members = [mem.firstChild.nodeValue for mem in mems]
-                            controllers = []
-                            for mem in mems:
-                                if int(mem.attributes['type'].value) == 16:
-                                    controllers.append(mem.firstChild.nodeValue)
-                            self.insert(nid, nname, nparent,
-                                        Group(self, nid, nname, members, controllers), ntype)
+                            flag = feature.attributes['flag'].value
+                            # Ignore group flag=12 since that is a ISY scene that contains every device/scene
+                            # so it will contain some scenes we have not seen yet so they are not defined
+                            # and it includes the ISY MAC addrees in newer versions of ISY 5.0.6+ ..
+                            if int(flag) == 12:
+                                self.parent.log.info('Skipping group flag=' + flag + " " + nid )
+                            else:
+                                mems = feature.getElementsByTagName('link')
+                                # Build list of members
+                                members = [mem.firstChild.nodeValue for mem in mems]
+                                # Build list of controllers
+                                controllers = []
+                                for mem in mems:
+                                    if int(mem.attributes['type'].value) == 16:
+                                        controllers.append(mem.firstChild.nodeValue)
+                                self.insert(nid, nname, nparent,
+                                            Group(self, nid, nname, members, controllers), ntype)
 
             self.parent.log.info('ISY Loaded Nodes')
 
@@ -326,12 +335,12 @@ class Nodes(object):
 
     def parseNotes(self, notes_xml):
         spoken = None
-        if notes_xml is not None:
+        if notes_xml is not None and notes_xml != "":
             try:
                 notesdom = minidom.parseString(notes_xml)
             except:
                 self.parent.log.error('ISY Could not parse node, notes '
-                                      + 'poorly formatted XML.')
+                                      + 'poorly formatted XML: ' + notes_xml)
             else:
                 spoken_tag = notesdom.getElementsByTagName('spoken')
                 if spoken_tag and len(spoken_tag) > 0 and spoken_tag[0].firstChild is not None:
