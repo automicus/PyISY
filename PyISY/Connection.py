@@ -165,6 +165,11 @@ class Connection(object):
         result = self.request(req_url)
         return result
 
+    def getNode(self, nid):
+        req_url = self.compileURL(['nodes', nid])
+        response = self.request(req_url)
+        return response
+
     def updateNode(self, nid):
         req_url = self.compileURL(['nodes', nid, 'get', 'ST'])
         response = self.request(req_url)

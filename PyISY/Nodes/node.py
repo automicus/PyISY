@@ -47,7 +47,7 @@ def parse_xml_properties(xmldoc):
     state_val = None
     state_uom = []
     state_prec = ''
-    aux_props = []
+    aux_props = {}
     state_set = False
 
     props = xmldoc.getElementsByTagName('property')
@@ -66,29 +66,28 @@ def parse_xml_properties(xmldoc):
                 prec = attrs[ATTR_PREC].value
             else:
                 prec = '0'
-            #print "prop=",prop.toprettyxml();
+
             units = uom if uom == 'n/a' else uom.split('/')
-            if (val == ""):
-                val = 0
-            else:
-                val = int(val.replace(' ', '0'))
+            nval = 0
+            if val.strip() != "":
+                nval = int(val.replace(' ', '0'))
 
             if prop_id == STATE_PROPERTY:
-                state_val = val
+                state_val = nval
                 state_uom = units
                 state_prec = prec
                 state_set = True
             elif prop_id == BATLVL_PROPERTY and not state_set:
-                state_val = val
+                state_val = nval
                 state_uom = units
                 state_prec = prec
-            else:
-                aux_props.append({
+            elif val.strip() != "":
+                aux_props[prop_id] = {
                     ATTR_ID: prop_id,
-                    ATTR_VALUE: val,
+                    ATTR_VALUE: nval,
                     ATTR_PREC: prec,
                     ATTR_UOM: units
-                })
+                }
 
     return state_val, state_uom, state_prec, aux_props
 
@@ -123,10 +122,20 @@ class Node(object):
         self.uom = uom
         self.prec = prec
         self._spoken = spoken
+
         self.aux_properties = aux_properties or {}
+        if isinstance(self.aux_properties, list):
+            new_props = {}
+            for prop in self.aux_properties:
+                new_props[prop.get(ATTR_ID)] = prop
+            self.aux_properties = new_props
 
         self.status = nval
         self.status.reporter = self.__report_status__
+
+    @property
+    def id(self):
+        return self._id
 
     def __str__(self):
         """ Returns a string representation of the node. """
@@ -139,7 +148,7 @@ class Node(object):
         """ Update the value of the node from the controller. """
         if not self.parent.parent.auto_update:
             sleep(waitTime)
-            xml = self.parent.parent.conn.updateNode(self._id)
+            xml = self.parent.parent.conn.getNode(self._id)
 
             if xml is not None:
                 try:

@@ -1,5 +1,6 @@
 from .Connection import Connection
 from .configuration import configuration
+from .device_specs import device_specs
 from .Nodes import Nodes
 from .Programs import Programs
 from .Events import get_stream
@@ -79,8 +80,12 @@ class ISY(object):
 
         else:
             self._connected = True
+
+            config = self.conn.getConfiguration()
             self.configuration = configuration(self,
-                                               xml=self.conn.getConfiguration())
+                                               xml=config)
+            self.device_specs = device_specs(self, xml=config)
+
             self.nodes = Nodes(self, xml=self.conn.getNodes())
             self.programs = Programs(self, xml=self.conn.getPrograms())
             self.variables = Variables(self, xml=self.conn.getVariables())

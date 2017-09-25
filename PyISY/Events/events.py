@@ -52,6 +52,14 @@ class EventStream(socket.socket):
         head = head.format(length=length, **self.data)
         return head + body
 
+    # '<?xml version="1.0"?>
+    # <Event seqnum="85" sid="uuid:48">
+    #   <control>CLITEMP</control>
+    #   <action uom="17" prec="2">7210</action>
+    #   <node>ZW002_1</node>
+    #   <eventInfo></eventInfo>
+    # </Event>'
+
     def _routemsg(self, msg):
         # check xml formatting
         try:
@@ -78,6 +86,17 @@ class EventStream(socket.socket):
                 self.parent.variables._upmsg(xmldoc)
             elif '<id>' in msg:  # PROGRAM
                 self.parent.programs._upmsg(xmldoc)
+        # elif cntrl.format('BATLVL') in msg or cntrl.format('CLITEMP') in msg:
+        # elif '<control>' in msg: # Anything else, let the node handle
+        #     self.parent.nodes._upmsg(xmldoc)
+        else:
+            try:
+                nid = xmldoc.getElementsByTagName('node')[0].firstChild.toxml()
+                ctrl = xmldoc.getElementsByTagName('control')[0].firstChild.toxml()
+                if nid != '' and ctrl != '' and not ctrl.startswith('_'):
+                    self.parent.nodes._upmsg(xmldoc)
+            except:
+                pass
 
         # A wild stream id appears!
         if 'sid=' in msg and 'sid' not in self.data:
@@ -139,8 +158,8 @@ class EventStream(socket.socket):
                     self._lostfun()
                 return False
             self.setblocking(0)
-            self._reader = self.makefile("r")
-            self._writer = self.makefile("w")
+            self._reader = self.makefile("r", encoding="utf-8")
+            self._writer = self.makefile("w", encoding="utf-8")
             self._connected = True
             return True
         else:
