@@ -189,15 +189,28 @@ class Nodes(object):
                             #  aux_props) = parse_xml_properties(feature)
 
                             new_xml = self.parent.conn.getNode(nid)
-                            new_node = minidom.parseString(new_xml)
-                            (state_val, state_uom, state_prec,
-                             aux_props) = parse_xml_properties(new_node)
+                            new_doc = minidom.parseString(new_xml) # type: xml.dom.minidom.Document
+                            new_node = new_doc.getElementsByTagName('node')[0]
 
-                            dimmable = '%' in state_uom or '100' in state_uom
+                            dev_type = 'insteon'
+                            type_node = new_node.getElementsByTagName('type')
+                            if len(type_node) > 0 and type_node[0].firstChild.data.startswith('4.'):
+                                dev_type = 'zwave'
+
+                            self.parent.log.info('Discovered %s device with ID %s', dev_type, nid)
+
+                            (state_val, state_uom, state_prec,
+                             aux_props) = parse_xml_properties(new_doc)
+
+                            if new_node.hasAttribute('nodeDefId'):  # 5.0 or later firmware
+                                dimmable = 'Dimmer' in new_node.getAttribute('nodeDefId')
+                            else:
+                                dimmable = '%' in state_uom or '100' in state_uom
 
                             self.insert(nid, nname, nparent,
                                         Node(self, nid, state_val, nname,
                                              dimmable,
+                                             dev_type=dev_type, ntype=ntype,
                                              uom=state_uom, prec=state_prec,
                                              aux_properties=aux_props),
                                         ntype)
@@ -210,6 +223,7 @@ class Nodes(object):
                                     self.insert(prop_id, prop_name, nparent,
                                                 Node(self, prop_id, prop['value'],
                                                      prop_name, False,
+                                                     dev_type=dev_type, ntype='property',
                                                      uom=prop['uom'],
                                                      prec=prop['prec']),
                                                 'property')

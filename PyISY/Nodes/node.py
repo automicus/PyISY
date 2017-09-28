@@ -113,7 +113,8 @@ class Node(object):
     hasChildren = False
 
     def __init__(self, parent, nid, nval, name, dimmable=True, spoken=False,
-                 notes=False, uom=None, prec=0, aux_properties=None):
+                 notes=False, uom=None, prec=0, aux_properties=None,
+                 dev_type=None, ntype=None):
         self.parent = parent
         self._id = nid
         self.dimmable = dimmable
@@ -122,6 +123,8 @@ class Node(object):
         self.uom = uom
         self.prec = prec
         self._spoken = spoken
+        self.dev_type = dev_type
+        self.ntype = ntype
 
         self.aux_properties = aux_properties or {}
         if isinstance(self.aux_properties, list):
