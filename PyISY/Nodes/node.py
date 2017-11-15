@@ -93,6 +93,32 @@ def parse_xml_properties(xmldoc):
     return state_val, state_uom, state_prec, aux_props
 
 
+class EventEmitter(object):
+    def __init__(self):
+        self._subscribers = []
+
+    def subscribe(self, callback):
+        listener = EventListener(self, callback)
+        self._subscribers.append(listener)
+        return listener
+
+    def unsubscribe(self, listener):
+        self._subscribers.remove(listener)
+
+    def notify(self, event):
+        for subscriber in self._subscribers:
+            subscriber.callback(event)
+
+
+class EventListener(object):
+    def __init__(self, emitter, callback):
+        self._emitter = emitter
+        self.callback = callback
+
+    def unsubscribe(self):
+        self._emitter.unsubscribe(self)
+
+
 class Node(object):
     """
     This class handles ISY nodes.
@@ -127,6 +153,8 @@ class Node(object):
 
         self.status = nval
         self.status.reporter = self.__report_status__
+
+        self.controlEvents = EventEmitter()
 
     def __str__(self):
         """ Returns a string representation of the node. """

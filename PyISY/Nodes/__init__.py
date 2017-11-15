@@ -141,6 +141,14 @@ class Nodes(object):
         self.getByID(nid).status.update(nval, force=True, silent=True)
         self.parent.log.info('ISY Updated Node: ' + nid)
 
+    def _controlmsg(self, xmldoc):
+        """Passes Control events from an event stream message to nodes, for
+        sending out to subscribers."""
+        nid = xmldoc.getElementsByTagName('node')[0].firstChild.toxml()
+        cntrl = xmldoc.getElementsByTagName('control')[0].firstChild.toxml()
+        self.getByID(nid).controlEvents.notify(cntrl)
+        self.parent.log.info('ISY Node Control Event: ' + nid + ' ' + cntrl)
+
     def parse(self, xml):
         """
         Parses the xml data.

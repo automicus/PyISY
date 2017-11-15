@@ -11,6 +11,18 @@ from PyISY.Events import strings
 
 POLL_TIME = 5
 
+control_events = [
+    'DON',
+    'DOF',
+    'DFON',
+    'DFOF',
+    'BRT',
+    'DIM',
+    'FDDOWN',
+    'FDUP',
+    'FDSTOP'
+]
+
 
 class SSLEventStream(object):
 
@@ -77,6 +89,9 @@ class SSLEventStream(object):
 
         # direct the event message
         cntrl = '<control>{0}</control>'
+        wrapped_control_events = [
+            cntrl.format(e) for e in control_events]
+
         if cntrl.format('_0') in msg:  # ISY HEARTBEAT
             self._lasthb = datetime.datetime.now()
             self._hbwait = int(xmldoc.getElementsByTagName('action')[0].
@@ -84,6 +99,8 @@ class SSLEventStream(object):
             self.parent.log.debug('ISY HEARTBEAT: ' + self._lasthb.isoformat())
         if cntrl.format('ST') in msg:  # NODE UPDATE
             self.parent.nodes._upmsg(xmldoc)
+        if any(cmd in msg for cmd in wrapped_control_events):
+            self.parent.nodes._controlmsg(xmldoc)
         elif cntrl.format('_11') in msg:  # WEATHER UPDATE
             if self.parent.configuration['Weather Information']:
                 self.parent.climate._upmsg(xmldoc)
