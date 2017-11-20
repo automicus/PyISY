@@ -144,10 +144,16 @@ class Nodes(object):
     def _controlmsg(self, xmldoc):
         """Passes Control events from an event stream message to nodes, for
         sending out to subscribers."""
-        nid = xmldoc.getElementsByTagName('node')[0].firstChild.toxml()
-        cntrl = xmldoc.getElementsByTagName('control')[0].firstChild.toxml()
-        self.getByID(nid).controlEvents.notify(cntrl)
-        self.parent.log.info('ISY Node Control Event: ' + nid + ' ' + cntrl)
+        try:
+            nid = xmldoc.getElementsByTagName('node')[0].firstChild.toxml()
+            cntrl = xmldoc.getElementsByTagName('control')[0].firstChild.toxml()
+            self.getByID(nid).controlEvents.notify(cntrl)
+            self.parent.log.info('ISY Node Control Event: ' + nid + ' ' + cntrl)
+        except:
+            # Control event did not have a node associated,
+            # so we're skipping it
+            pass
+
 
     def parse(self, xml):
         """

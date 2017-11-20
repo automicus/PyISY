@@ -11,19 +11,6 @@ from PyISY.Events import strings
 
 POLL_TIME = 5
 
-control_events = [
-    'DON',
-    'DOF',
-    'DFON',
-    'DFOF',
-    'BRT',
-    'DIM',
-    'FDDOWN',
-    'FDUP',
-    'FDSTOP'
-]
-
-
 class SSLEventStream(object):
 
     def __init__(self, parent, lost_fun=None):
@@ -88,30 +75,30 @@ class SSLEventStream(object):
         self.parent.log.debug('ISY Update Received:\n' + msg)
 
         # direct the event message
-        cntrl = '<control>{0}</control>'
-        wrapped_control_events = [
-            cntrl.format(e) for e in control_events]
-
-        if cntrl.format('_0') in msg:  # ISY HEARTBEAT
-            self._lasthb = datetime.datetime.now()
-            self._hbwait = int(xmldoc.getElementsByTagName('action')[0].
-                               firstChild.toxml())
-            self.parent.log.debug('ISY HEARTBEAT: ' + self._lasthb.isoformat())
-        if cntrl.format('ST') in msg:  # NODE UPDATE
-            self.parent.nodes._upmsg(xmldoc)
-        if any(cmd in msg for cmd in wrapped_control_events):
-            self.parent.nodes._controlmsg(xmldoc)
-        elif cntrl.format('_11') in msg:  # WEATHER UPDATE
-            if self.parent.configuration['Weather Information']:
-                self.parent.climate._upmsg(xmldoc)
-        elif cntrl.format('_1') in msg:  # VARIABLE OR PROGRAM UPDATE
-            if '<var' in msg:  # VARIABLE
-                self.parent.variables._upmsg(xmldoc)
-            elif '<id>' in msg:  # PROGRAM
-                self.parent.programs._upmsg(xmldoc)
-            else:  # SOMETHING HAPPENED WITH A PROGRAM FOLDER
-                # but they ISY didn't tell us what, so...
-                self.parent.programs.update()
+        try:
+            cntrl = xmldoc.getElementsByTagName('control')[0].firstChild.toxml()
+            if cntrl == '_0':  # ISY HEARTBEAT
+                self._lasthb = datetime.datetime.now()
+                self._hbwait = int(xmldoc.getElementsByTagName('action')[0].
+                                   firstChild.toxml())
+                self.parent.log.debug('ISY HEARTBEAT: ' + self._lasthb.isoformat())
+            if cntrl == 'ST':  # NODE UPDATE
+                self.parent.nodes._upmsg(xmldoc)
+            if  cntrl[0] != '_': # NODE CONTROL EVENT
+                self.parent.nodes._controlmsg(xmldoc)
+            elif cntrl == '_11':  # WEATHER UPDATE
+                if self.parent.configuration['Weather Information']:
+                    self.parent.climate._upmsg(xmldoc)
+            elif cntrl == '_1':  # VARIABLE OR PROGRAM UPDATE
+                if '<var' in msg:  # VARIABLE
+                    self.parent.variables._upmsg(xmldoc)
+                elif '<id>' in msg:  # PROGRAM
+                    self.parent.programs._upmsg(xmldoc)
+                else:  # SOMETHING HAPPENED WITH A PROGRAM FOLDER
+                    # but they ISY didn't tell us what, so...
+                    self.parent.programs.update()
+        except:
+            pass
 
         # A wild stream id appears!
         if 'sid=' in msg and 'sid' not in self.data:
