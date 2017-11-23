@@ -114,7 +114,8 @@ class Node(object):
     hasChildren = False
 
     def __init__(self, parent, nid, nval, name, dimmable=True, spoken=False,
-                 notes=False, uom=None, prec=0, aux_properties=None):
+                 notes=False, uom=None, prec=0, aux_properties=None,
+                 node_def_id=None, parent_nid=None):
         self.parent = parent
         self._id = nid
         self.dimmable = dimmable
@@ -124,6 +125,12 @@ class Node(object):
         self.prec = prec
         self._spoken = spoken
         self.aux_properties = aux_properties or {}
+        self.node_def_id = node_def_id
+
+        if(parent_nid != nid):
+            self.parent_nid = parent_nid
+        else:
+            self.parent_nid = None
 
         self.status = nval
         self.status.reporter = self.__report_status__
@@ -131,6 +138,10 @@ class Node(object):
     def __str__(self):
         """ Returns a string representation of the node. """
         return 'Node(' + self._id + ')'
+
+    @property
+    def nid(self):
+        return self._id
 
     def __report_status__(self, new_val):
         self.on(new_val)
@@ -409,6 +420,18 @@ class Node(object):
                     if self._id in self.parent.parent.nodes[child[2]].controllers:
                         groups.append(child[2])
         return groups
+
+    @property
+    def parent_node(self):
+        """
+        Returns the parent node object of this node. Typically this is for
+        devices that are represented as multiple nodes in the ISY, such as
+        door and leak sensors. Returns None if there is no parent.
+        """
+        try:
+            return self.parent.getByID(self.parent_nid)
+        except:
+            return None
 
     @property
     def spoken(self):

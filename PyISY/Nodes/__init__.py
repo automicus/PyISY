@@ -175,6 +175,17 @@ class Nodes(object):
                     except:
                         nparent = None
 
+                    try:
+                        parent_nid = feature.getElementsByTagName('pnode')[0] \
+                            .firstChild.toxml()
+                    except:
+                        parent_nid = None
+
+                    try:
+                        nodeDefId = feature.attributes['nodeDefId'].value
+                    except:
+                        nodeDefId = None
+
                     if ntype == 'folder':
                         self.insert(nid, nname, nparent, None, ntype)
                     elif ntype == 'node':
@@ -187,7 +198,9 @@ class Nodes(object):
                                     Node(self, nid, state_val, nname,
                                          dimmable,
                                          uom=state_uom, prec=state_prec,
-                                         aux_properties=aux_props),
+                                         aux_properties=aux_props,
+                                         node_def_id=nodeDefId,
+                                         parent_nid=parent_nid),
                                     ntype)
                     elif ntype == 'group':
                         flag = feature.attributes['flag'].value
