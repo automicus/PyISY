@@ -182,8 +182,14 @@ class Nodes(object):
                         parent_nid = None
 
                     try:
-                        nodeDefId = feature.attributes['nodeDefId'].value
+                        type = feature.getElementsByTagName('type')[0] \
+                            .firstChild.toxml()
                     except:
+                        type = None
+
+                    try:
+                        nodeDefId = feature.attributes['nodeDefId'].value
+                    except KeyError:
                         nodeDefId = None
 
                     if ntype == 'folder':
@@ -200,7 +206,8 @@ class Nodes(object):
                                          uom=state_uom, prec=state_prec,
                                          aux_properties=aux_props,
                                          node_def_id=nodeDefId,
-                                         parent_nid=parent_nid),
+                                         parent_nid=parent_nid,
+                                         type=type),
                                     ntype)
                     elif ntype == 'group':
                         flag = feature.attributes['flag'].value

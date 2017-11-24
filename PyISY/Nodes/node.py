@@ -115,7 +115,7 @@ class Node(object):
 
     def __init__(self, parent, nid, nval, name, dimmable=True, spoken=False,
                  notes=False, uom=None, prec=0, aux_properties=None,
-                 node_def_id=None, parent_nid=None):
+                 node_def_id=None, parent_nid=None, type=None):
         self.parent = parent
         self._id = nid
         self.dimmable = dimmable
@@ -126,6 +126,7 @@ class Node(object):
         self._spoken = spoken
         self.aux_properties = aux_properties or {}
         self.node_def_id = node_def_id
+        self.type = type
 
         if(parent_nid != nid):
             self.parent_nid = parent_nid
