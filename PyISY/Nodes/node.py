@@ -69,9 +69,9 @@ def parse_xml_properties(xmldoc):
             #print "prop=",prop.toprettyxml();
             units = uom if uom == 'n/a' else uom.split('/')
             if (val == ""):
-                val = 0
+                val = -1
             else:
-                val = int(val.replace(' ', '0'))
+                val = int(val.replace(' ', '-1'))
 
             if prop_id == STATE_PROPERTY:
                 state_val = val
