@@ -172,19 +172,19 @@ class Nodes(object):
                     try:
                         nparent = feature.getElementsByTagName('parent')[0] \
                             .firstChild.toxml()
-                    except:
+                    except IndexError:
                         nparent = None
 
                     try:
                         parent_nid = feature.getElementsByTagName('pnode')[0] \
                             .firstChild.toxml()
-                    except:
+                    except IndexError:
                         parent_nid = None
 
                     try:
                         type = feature.getElementsByTagName('type')[0] \
                             .firstChild.toxml()
-                    except:
+                    except IndexError:
                         type = None
 
                     try:
