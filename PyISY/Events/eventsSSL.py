@@ -77,6 +77,10 @@ class SSLEventStream(object):
         # direct the event message
         try:
             cntrl = xmldoc.getElementsByTagName('control')[0].firstChild.toxml()
+        except IndexError:
+            # No control tag
+            pass
+        else:
             if cntrl == '_0':  # ISY HEARTBEAT
                 self._lasthb = datetime.datetime.now()
                 self._hbwait = int(xmldoc.getElementsByTagName('action')[0].
@@ -97,8 +101,6 @@ class SSLEventStream(object):
                 else:  # SOMETHING HAPPENED WITH A PROGRAM FOLDER
                     # but they ISY didn't tell us what, so...
                     self.parent.programs.update()
-        except:
-            pass
 
         # A wild stream id appears!
         if 'sid=' in msg and 'sid' not in self.data:

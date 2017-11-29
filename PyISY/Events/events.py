@@ -63,6 +63,10 @@ class EventStream(socket.socket):
         # direct the event message
         try:
             cntrl = xmldoc.getElementsByTagName('control')[0].firstChild.toxml()
+        except IndexError:
+            # No control tag
+            pass
+        else:
             if cntrl == '_0':  # ISY HEARTBEAT
                 self._lasthb = datetime.datetime.now()
                 self._hbwait = int(xmldoc.getElementsByTagName('action')[0].
@@ -80,8 +84,6 @@ class EventStream(socket.socket):
                     self.parent.variables._upmsg(xmldoc)
                 elif '<id>' in msg:  # PROGRAM
                     self.parent.programs._upmsg(xmldoc)
-        except:
-            pass
 
         # A wild stream id appears!
         if 'sid=' in msg and 'sid' not in self.data:

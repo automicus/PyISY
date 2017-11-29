@@ -147,12 +147,12 @@ class Nodes(object):
         try:
             nid = xmldoc.getElementsByTagName('node')[0].firstChild.toxml()
             cntrl = xmldoc.getElementsByTagName('control')[0].firstChild.toxml()
-            self.getByID(nid).controlEvents.notify(cntrl)
-            self.parent.log.info('ISY Node Control Event: ' + nid + ' ' + cntrl)
-        except:
-            # Control event did not have a node associated,
-            # so we're skipping it
-            pass
+        except IndexError:
+            # If there is no node associated with the control message we ignore it
+            return
+
+        self.getByID(nid).controlEvents.notify(cntrl)
+        self.parent.log.info('ISY Node Control Event: ' + nid + ' ' + cntrl)
 
 
     def parse(self, xml):
@@ -187,7 +187,7 @@ class Nodes(object):
                         try:
                             nparent = feature.getElementsByTagName('parent')[0] \
                                 .firstChild.toxml()
-                        except:
+                        except IndexError:
                             nparent = None
 
                         if ntype == 'folder':
