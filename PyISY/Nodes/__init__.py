@@ -173,12 +173,6 @@ class Nodes(object):
                 features = xmldoc.getElementsByTagName(ntype)
 
                 for feature in features:
-                    family_tag = feature.getElementsByTagName('family')
-                    if len(family_tag) > 0:
-                        family = family_tag[0].firstChild.toxml()
-                    else:
-                        family = None
-
                     nid = feature.getElementsByTagName('address')[0] \
                         .firstChild.toxml()
                     nname = feature.getElementsByTagName('name')[0] \
@@ -186,13 +180,8 @@ class Nodes(object):
                     try:
                         nparent = feature.getElementsByTagName('parent')[0] \
                             .firstChild.toxml()
-                        nname = feature.getElementsByTagName('name')[0] \
-                            .firstChild.toxml()
-                        try:
-                            nparent = feature.getElementsByTagName('parent')[0] \
-                                .firstChild.toxml()
-                        except IndexError:
-                            nparent = None
+                    except IndexError:
+                        nparent = None
 
                     if ntype == 'folder':
                         self.insert(nid, nname, nparent, None, ntype)
