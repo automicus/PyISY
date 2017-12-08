@@ -141,6 +141,20 @@ class Nodes(object):
         self.getByID(nid).status.update(nval, force=True, silent=True)
         self.parent.log.info('ISY Updated Node: ' + nid)
 
+    def _controlmsg(self, xmldoc):
+        """Passes Control events from an event stream message to nodes, for
+        sending out to subscribers."""
+        try:
+            nid = xmldoc.getElementsByTagName('node')[0].firstChild.toxml()
+            cntrl = xmldoc.getElementsByTagName('control')[0].firstChild.toxml()
+        except IndexError:
+            # If there is no node associated with the control message we ignore it
+            return
+
+        self.getByID(nid).controlEvents.notify(cntrl)
+        self.parent.log.info('ISY Node Control Event: ' + nid + ' ' + cntrl)
+
+
     def parse(self, xml):
         """
         Parses the xml data.
@@ -159,12 +173,6 @@ class Nodes(object):
                 features = xmldoc.getElementsByTagName(ntype)
 
                 for feature in features:
-                    family_tag = feature.getElementsByTagName('family')
-                    if len(family_tag) > 0:
-                        family = family_tag[0].firstChild.toxml()
-                    else:
-                        family = None
-
                     nid = feature.getElementsByTagName('address')[0] \
                         .firstChild.toxml()
                     nname = feature.getElementsByTagName('name')[0] \
@@ -172,7 +180,7 @@ class Nodes(object):
                     try:
                         nparent = feature.getElementsByTagName('parent')[0] \
                             .firstChild.toxml()
-                    except:
+                    except IndexError:
                         nparent = None
 
                     if ntype == 'folder':
