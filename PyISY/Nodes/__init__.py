@@ -183,6 +183,23 @@ class Nodes(object):
                     except IndexError:
                         nparent = None
 
+                    try:
+                        parent_nid = feature.getElementsByTagName('pnode')[0] \
+                            .firstChild.toxml()
+                    except IndexError:
+                        parent_nid = None
+
+                    try:
+                        type = feature.getElementsByTagName('type')[0] \
+                            .firstChild.toxml()
+                    except IndexError:
+                        type = None
+
+                    try:
+                        nodeDefId = feature.attributes['nodeDefId'].value
+                    except KeyError:
+                        nodeDefId = None
+
                     if ntype == 'folder':
                         self.insert(nid, nname, nparent, None, ntype)
                     elif ntype == 'node':
@@ -195,7 +212,10 @@ class Nodes(object):
                                     Node(self, nid, state_val, nname,
                                          dimmable,
                                          uom=state_uom, prec=state_prec,
-                                         aux_properties=aux_props),
+                                         aux_properties=aux_props,
+                                         node_def_id=nodeDefId,
+                                         parent_nid=parent_nid,
+                                         type=type),
                                     ntype)
                     elif ntype == 'group':
                         flag = feature.attributes['flag'].value
