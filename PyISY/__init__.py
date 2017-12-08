@@ -6,7 +6,7 @@ ISY is developed by Universal Devices and is a home automation
 controller for Insteon and X10 devices.
 
 Copyright 2015 Ryan M. Kraus
-               automicus@gmail.com
+               rmkraus at gmail dot com
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -23,8 +23,7 @@ limitations under the License.
 
 from .ISY import ISY
 
-__version__ = '1.0.8'
+__version__ = '1.1.0'
 __author__ = 'Ryan M. Kraus'
-__email__ = 'automicus@gmail.com'
-__date__ = 'April 2015'
-__website__ = 'http://automic.us'
+__email__ = 'rmkraus at gmail dot com'
+__date__ = 'December 2017'
