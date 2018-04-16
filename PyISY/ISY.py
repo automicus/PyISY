@@ -85,7 +85,7 @@ class ISY(object):
             self.programs = Programs(self, xml=self.conn.getPrograms())
             self.variables = Variables(self, xml=self.conn.getVariables())
 
-            if self.configuration['Weather Information']:
+            if self.configuration.get('Weather Information'):
                 self.climate = Climate(self, xml=self.conn.getClimate())
             else:
                 self.climate = None
