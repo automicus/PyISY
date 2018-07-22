@@ -80,7 +80,9 @@ class Group(object):
     def update(self, e=None):
         """ Update the group with values from the controller. """
         for m in self.members:
-            if self.parent[m].status > 0:
+            if self.parent[m].status == None:
+                continue
+            elif self.parent[m].status > 0:
                 self.status.update(255, force=True, silent=True)
                 return
         self.status.update(0, force=True, silent=True)
