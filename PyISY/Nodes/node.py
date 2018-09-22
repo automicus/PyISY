@@ -152,7 +152,8 @@ class Node(object):
         self.uom = uom
         self.prec = prec
         self._spoken = spoken
-        self.aux_properties = aux_properties or {}
+        self.aux_properties = {}
+        self.update_aux_properties(aux_properties)
         self.node_def_id = node_def_id
         self.type = type
 
@@ -169,6 +170,13 @@ class Node(object):
     def __str__(self):
         """ Returns a string representation of the node. """
         return 'Node(' + self._id + ')'
+
+    def update_aux_properties(self, aux_props):
+        self.aux_properties = {}
+
+        if aux_props is not None:
+            for prop in aux_props:
+                self.aux_properties[prop.get(ATTR_ID)] = prop
 
     @property
     def nid(self):
@@ -193,9 +201,7 @@ class Node(object):
                     state_val, state_uom, state_prec, aux_props = parse_xml_properties(
                         xmldoc)
 
-                    self.aux_properties = {}
-                    for prop in aux_props:
-                        self.aux_properties[prop.get(ATTR_ID)] = prop
+                    self.update_aux_properties(aux_props)
 
                     self.uom = state_uom
                     self.prec = state_prec

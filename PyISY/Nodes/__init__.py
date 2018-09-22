@@ -268,9 +268,7 @@ class Nodes(object):
                         node.prec = state_prec
                         node.dimmable = dimmable
 
-                        node.aux_properties = {}
-                        for prop in aux_props:
-                            node.aux_properties[prop.get(ATTR_ID)] = prop
+                        node.update_aux_properties(aux_props)
 
                         node.status.update(state_val, silent=True)
                     else:
