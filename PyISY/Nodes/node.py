@@ -11,7 +11,6 @@ ATTR_UOM = 'uom'
 ATTR_VALUE = 'value'
 ATTR_PREC = 'prec'
 
-FAN_MODE_OFF = 'off'
 FAN_MODE_ON = 'on'
 FAN_MODE_AUTO = 'auto'
 
@@ -19,12 +18,15 @@ CLIMATE_MODE_OFF = 'off'
 CLIMATE_MODE_HEAT = 'heat'
 CLIMATE_MODE_COOL = 'cool'
 CLIMATE_MODE_AUTO = 'auto'
-CLIMATE_MODE_FAN = 'fan'
+CLIMATE_MODE_FAN_ONLY = 'fan_only'
+CLIMATE_MODE_PROG_AUTO = 'program_auto'
+CLIMATE_MODE_PROG_HEAT = 'program_heat'
+CLIMATE_MODE_PROG_COOL = 'program_cool'
+
 
 FAN_MODES = {
-    FAN_MODE_OFF: 0,
-    FAN_MODE_ON: 7,
-    FAN_MODE_AUTO: 8,
+    FAN_MODE_AUTO: 7,
+    FAN_MODE_ON: 8,
 }
 
 CLIMATE_MODES = {
@@ -32,7 +34,10 @@ CLIMATE_MODES = {
     CLIMATE_MODE_HEAT: 1,
     CLIMATE_MODE_COOL: 2,
     CLIMATE_MODE_AUTO: 3,
-    CLIMATE_MODE_FAN: 4,
+    CLIMATE_MODE_FAN_ONLY: 4,
+    CLIMATE_MODE_PROG_AUTO: 5,
+    CLIMATE_MODE_PROG_HEAT: 6,
+    CLIMATE_MODE_PROG_COOL: 7,
 }
 
 
@@ -119,6 +124,44 @@ class EventListener(object):
 
     def unsubscribe(self):
         self._emitter.unsubscribe(self)
+
+
+class EventResult(dict):
+    """Class to hold result of a command event."""
+
+    def __init__(self, event, nval=None, prec=None, uom=None):
+        """Initialize an event result."""
+        super().__init__(self, event=event, nval=nval, prec=prec, uom=uom)
+        self._event = event
+        self._nval = nval
+        self._prec = prec
+        self._uom = uom
+
+    @property
+    def event(self):
+        """Report the event control string."""
+        return self._event
+
+    @property
+    def nval(self):
+        """Report the value, if there was one."""
+        return self._nval
+
+    @property
+    def prec(self):
+        """Report the precision, if there was one."""
+        return self._prec
+
+    @property
+    def uom(self):
+        """Report the unit of measure, if there was one."""
+        return self._uom
+
+    def __str__(self):
+        """Return just the event title to prevent breaking changes."""
+        return str(self.event)
+
+    __repr__ = __str__
 
 
 class Node(object):
@@ -302,11 +345,11 @@ class Node(object):
 
     def _fan_mode(self, mode):
         """ Sends a command to the climate device to set the fan mode. """
-        if not hasattr(FAN_MODES, mode):
+        if mode not in FAN_MODES:
             self.parent.parent.log.warning('Invalid fan mode: ' + mode)
             return False
 
-        response = self.parent.parent.conn.nodeCliFS(FAN_MODES[mode])
+        response = self.parent.parent.conn.nodeCliFS(self._id, FAN_MODES[mode])
 
         if response is None:
             self.parent.parent.log.warning('ISY could not send command: ' +
@@ -325,17 +368,13 @@ class Node(object):
         """ Sends a command to the climate device to set fan mode=on. """
         return self._fan_mode(FAN_MODE_ON)
 
-    def fan_off(self):
-        """ Sends a command to the climate device to set fan mode=off.  """
-        return self._fan_mode(FAN_MODE_OFF)
-
     def _climate_mode(self, mode):
         """ Sends a command to the climate device to set the system mode. """
-        if not hasattr(CLIMATE_MODES, mode):
+        if mode not in CLIMATE_MODES:
             self.parent.parent.log.warning('Invalid climate mode: ' + mode)
             return False
 
-        response = self.parent.parent.nodeCliMD(CLIMATE_MODES[mode])
+        response = self.parent.parent.conn.nodeCliMD(self._id, CLIMATE_MODES[mode])
 
         if response is None:
             self.parent.parent.log.warning('ISY could not send command: ' +
@@ -362,11 +401,23 @@ class Node(object):
         """ Sends a command to the device to set the system mode=cool. """
         return self._climate_mode(CLIMATE_MODE_COOL)
 
+    def climate_prog_auto(self):
+        """ Sends a command to the device to set the system mode=auto. """
+        return self._climate_mode(CLIMATE_MODE_PROG_AUTO)
+
+    def climate_prog_heat(self):
+        """ Sends a command to the device to set the system mode=heat. """
+        return self._climate_mode(CLIMATE_MODE_PROG_HEAT)
+
+    def climate_prog_cool(self):
+        """ Sends a command to the device to set the system mode=cool. """
+        return self._climate_mode(CLIMATE_MODE_PROG_COOL)
+
     def climate_setpoint(self, val):
         """ Sends a command to the device to set the system setpoints. """
         # For some reason, wants 2 times the temperature
         for cmd in ['nodeCliSPH', 'nodeCliSPC']:
-            response = getattr(self.parent.parent, cmd)(2 * val)
+            response = getattr(self.parent.parent.conn, cmd)(self._id, 2 * val)
 
             if response is None:
                 self.parent.parent.log.warning('ISY could not send command: ' +
@@ -380,7 +431,7 @@ class Node(object):
     def climate_setpoint_heat(self, val):
         """ Sends a command to the device to set the system heat setpoint. """
         # For some reason, wants 2 times the temperature
-        response = self.parent.parent.nodeCliSPH(2 * val)
+        response = self.parent.parent.conn.nodeCliSPH(self._id, 2 * val)
 
         if response is None:
             self.parent.parent.log.warning('ISY could not send command: ' +
@@ -394,7 +445,7 @@ class Node(object):
     def climate_setpoint_cool(self, val):
         """ Sends a command to the device to set the system cool setpoint. """
         # For some reason, wants 2 times the temperature
-        response = self.parent.parent.nodeCliSPC(2 * val)
+        response = self.parent.parent.conn.nodeCliSPC(self._id, 2 * val)
 
         if response is None:
             self.parent.parent.log.warning('ISY could not send command: ' +

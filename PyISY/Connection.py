@@ -159,7 +159,7 @@ class Connection(object):
         req_url = self.compileURL(['nodes', nid, 'notes'])
         result = self.request(req_url,ok404=True)
         return result
-    
+
     def updateNodes(self):
         req_url = self.compileURL(['status'])
         result = self.request(req_url)
@@ -212,22 +212,22 @@ class Connection(object):
         return response
 
     def nodeCliFS(self, nid, val=0):
-        req_url = self.compileURL(['nodes', nid, 'cmd', 'CLIFS', val])
+        req_url = self.compileURL(['nodes', nid, 'cmd', 'CLIFS', str(val)])
         response = self.request(req_url)
         return response
 
     def nodeCliMD(self, nid, val=0):
-        req_url = self.compileURL(['nodes', nid, 'cmd', 'CLIMD', val])
+        req_url = self.compileURL(['nodes', nid, 'cmd', 'CLIMD', str(val)])
         response = self.request(req_url)
         return response
 
     def nodeCliSPH(self, nid, val=0):
-        req_url = self.compileURL(['nodes', nid, 'cmd', 'CLISPH', val])
+        req_url = self.compileURL(['nodes', nid, 'cmd', 'CLISPH', str(val)])
         response = self.request(req_url)
         return response
 
     def nodeCliSPC(self, nid, val=0):
-        req_url = self.compileURL(['nodes', nid, 'cmd', 'CLISPC', val])
+        req_url = self.compileURL(['nodes', nid, 'cmd', 'CLISPC', str(val)])
         response = self.request(req_url)
         return response
 

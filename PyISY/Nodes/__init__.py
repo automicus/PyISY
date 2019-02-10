@@ -1,6 +1,6 @@
 
 from .group import Group
-from .node import (Node, parse_xml_properties, ATTR_ID)
+from .node import (Node, parse_xml_properties, ATTR_ID, EventResult)
 from time import sleep
 from xml.dom import minidom
 
@@ -151,9 +151,28 @@ class Nodes(object):
             # If there is no node associated with the control message we ignore it
             return
 
-        self.getByID(nid).controlEvents.notify(cntrl)
-        self.parent.log.info('ISY Node Control Event: ' + nid + ' ' + cntrl)
+        # Process the action and value if provided in event data.
+        try:
+            nval = xmldoc.getElementsByTagName('action')[0].firstChild.toxml()
+        except IndexError:
+            nval = 0  # Error getting value, there might not be one.
 
+        try:
+            prec = xmldoc.getElementsByTagName('action')[0]. \
+                        attributes['prec'].value
+        except KeyError:
+            prec = None
+
+        try:
+            uom = xmldoc.getElementsByTagName('action')[0]. \
+                        attributes['uom'].value
+        except KeyError:
+            uom = None
+
+        self.getByID(nid).controlEvents.notify(EventResult(cntrl, nval,
+                                                           prec, uom))
+        self.parent.log.info('ISY Node Control Event: ' + nid + ' ' + cntrl +
+                             ' ' + nval)
 
     def parse(self, xml):
         """
