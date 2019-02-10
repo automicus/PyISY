@@ -25,8 +25,8 @@ CLIMATE_MODE_PROG_COOL = 'program_cool'
 
 
 FAN_MODES = {
-    FAN_MODE_AUTO: 7,
-    FAN_MODE_ON: 8,
+    FAN_MODE_ON: 7,
+    FAN_MODE_AUTO: 8,
 }
 
 CLIMATE_MODES = {
