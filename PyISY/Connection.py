@@ -111,7 +111,7 @@ class Connection(object):
                 self.parent.log.error('Bad ISY Request: {} {}: '
                                       'Failed after {} retries'.format(url,
                                       r.status_code, retries))
-              return None
+                return None
 
     # PING
     # This is a dummy command that does not exist in the REST API
