@@ -23,6 +23,8 @@ class Connection(object):
         self._username = username
         self._password = password
 
+        self.req_session = requests.Session()
+
         # setup proper HTTPS handling for the ISY
         if use_https and can_https(self.parent.log, tls_ver):
             self._use_https = True
@@ -31,7 +33,6 @@ class Connection(object):
             requests.packages.urllib3.disable_warnings()
 
             # ISY uses TLS1 and not SSL
-            req_session = requests.Session()
             req_session.mount(self.compileURL(None), TLSHttpAdapter(tls_ver))
         else:
             self._use_https = False
@@ -69,7 +70,7 @@ class Connection(object):
             self.parent.log.info('ISY Request: ' + url)
 
         try:
-            r = requests.get(url, auth=(self._username, self._password),
+            r = self.req_session.get(url, auth=(self._username, self._password),
                     timeout=10, verify=False)
 
         except requests.ConnectionError as err:
