@@ -7,11 +7,14 @@ except ImportError:
     from urllib.parse import quote
     from urllib.parse import urlencode
 import requests
+import time
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.poolmanager import PoolManager
 import ssl
 import sys
 from xml.dom import minidom
+
+MAX_RETRIES=5
 
 class Connection(object):
 
@@ -65,7 +68,7 @@ class Connection(object):
 
         return url
 
-    def request(self, url, ok404=False):
+    def request(self, url, retries=0, ok404=False):
         if self.parent.log is not None:
             self.parent.log.info('ISY Request: ' + url)
 
@@ -94,8 +97,22 @@ class Connection(object):
             self.parent.log.info('ISY Response Recieved')
             return ''
         else:
-            self.parent.log.warning('Bad ISY Request: ' + url)
-            return None
+            self.parent.log.warning('Bad ISY Request: {} {}: '
+                                    'retry #{}'.format(url,
+                                    r.status_code, retries))
+
+            # sleep for one second to allow the ISY to catch up
+            time.sleep(1)
+
+            if retries < MAX_RETRIES:
+                # recurse to try again
+                return self.request(url, retries+1, ok404=False)
+            else:
+                # fail for good
+                self.parent.log.error('Bad ISY Request: {} {}: '
+                                      'Failed after {} retries'.format(url,
+                                      r.status_code, retries))
+              return None
 
     # PING
     # This is a dummy command that does not exist in the REST API
