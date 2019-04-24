@@ -360,6 +360,10 @@ class Node(object):
             self.update(_change2update_interval)
             return True
 
+    def fan_by_mode(self, mode):
+        """ Sends a command to the climate device to set fan mode=auto. """
+        return self._fan_mode(mode)
+
     def fan_auto(self):
         """ Sends a command to the climate device to set fan mode=auto. """
         return self._fan_mode(FAN_MODE_AUTO)
@@ -374,7 +378,8 @@ class Node(object):
             self.parent.parent.log.warning('Invalid climate mode: ' + mode)
             return False
 
-        response = self.parent.parent.conn.nodeCliMD(self._id, CLIMATE_MODES[mode])
+        response = self.parent.parent.conn.nodeCliMD(self._id,
+                                                     CLIMATE_MODES[mode])
 
         if response is None:
             self.parent.parent.log.warning('ISY could not send command: ' +
@@ -384,6 +389,10 @@ class Node(object):
             self.parent.parent.log.info('ISY command sent: ' + self._id)
             self.update(_change2update_interval)
             return True
+
+    def climate_by_mode(self, mode):
+        """ Sends a command to the device to set the system to a given mode """
+        return self._climate_mode(mode)
 
     def climate_off(self):
         """ Sends a command to the device to set the system mode=off. """
