@@ -88,13 +88,13 @@ class Connection(object):
             return None
 
         if r.status_code == 200:
-            self.parent.log.info('ISY Response Recieved')
+            self.parent.log.debug('ISY Response Recieved')
             # remove unicode from string in python 2.7, 3.2,
             # and 3.4 compatible way
             xml = ''.join(char for char in r.text if ord(char) < 128)
             return xml
         elif r.status_code == 404 and ok404:
-            self.parent.log.info('ISY Response Recieved')
+            self.parent.log.debug('ISY Response Recieved')
             return ''
         else:
             self.parent.log.warning('Bad ISY Request: {} {}: '

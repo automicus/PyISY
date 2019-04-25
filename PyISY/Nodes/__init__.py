@@ -139,7 +139,7 @@ class Nodes(object):
         nid = xmldoc.getElementsByTagName('node')[0].firstChild.toxml()
         nval = int(xmldoc.getElementsByTagName('action')[0].firstChild.toxml())
         self.getByID(nid).status.update(nval, force=True, silent=True)
-        self.parent.log.info('ISY Updated Node: ' + nid)
+        self.parent.log.debug('ISY Updated Node: ' + nid)
 
     def _controlmsg(self, xmldoc):
         """Passes Control events from an event stream message to nodes, for
@@ -171,7 +171,7 @@ class Nodes(object):
 
         self.getByID(nid).controlEvents.notify(EventResult(cntrl, nval,
                                                            prec, uom))
-        self.parent.log.info('ISY Node Control Event: ' + nid + ' ' + cntrl +
+        self.parent.log.debug('ISY Node Control Event: ' + nid + ' ' + cntrl +
                              ' ' + nval)
 
     def parse(self, xml):
@@ -393,8 +393,8 @@ class Nodes(object):
                 if spoken_tag and len(spoken_tag) > 0 and spoken_tag[0].firstChild is not None:
                     spoken = spoken_tag[0].firstChild.toxml()
         return { "spoken": spoken }
-            
-    
+
+
     @property
     def children(self):
         out = []

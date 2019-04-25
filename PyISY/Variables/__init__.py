@@ -161,7 +161,7 @@ class Variables(object):
                 vobj.lastEdit.update(datetime.strptime(ts_raw,
                                                        '%Y%m%d %H:%M:%S'),
                                      force=True, silent=True)
-            self.parent.log.info('ISY Updated Variable: ' + str(vid))
+            self.parent.log.debug('ISY Updated Variable: ' + str(vid))
 
     def __getitem__(self, val):
         """

@@ -287,4 +287,4 @@ class Climate(object):
                 attr.update(val, force=True, silent=True)
                 setattr(self, cname + '_units', unit)
 
-                self.parent.log.info('ISY Updated Climate Value: ' + cname)
+                self.parent.log.debug('ISY Updated Climate Value: ' + cname)

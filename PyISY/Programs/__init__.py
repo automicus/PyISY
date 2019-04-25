@@ -145,7 +145,7 @@ class Programs(object):
             if '<on />' in xml or '<off />' in xml:
                 pobj.enabled.update('<on />' in xml, force=True, silent=True)
 
-        self.parent.log.info('ISY Updated Program: ' + pid)
+        self.parent.log.debug('ISY Updated Program: ' + pid)
 
     def parse(self, xml):
         """

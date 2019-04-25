@@ -243,7 +243,7 @@ class Node(object):
                     self.uom = state_uom
                     self.prec = state_prec
                     self.status.update(state_val, silent=True)
-                    self.parent.parent.log.info('ISY updated node: ' +
+                    self.parent.parent.log.debug('ISY updated node: ' +
                                                 self._id)
             else:
                 self.parent.parent.log.warning('ISY could not update node: ' +
@@ -251,7 +251,7 @@ class Node(object):
         elif hint is not None:
             # assume value was set correctly, auto update will correct errors
             self.status.update(hint, silent=True)
-            self.parent.parent.log.info('ISY updated node: ' + self._id)
+            self.parent.parent.log.debug('ISY updated node: ' + self._id)
 
     def off(self):
         """ Turns the node off. """
