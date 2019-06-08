@@ -18,8 +18,12 @@ For more information about the beta package: https://github.com/shbatm/PyISY/tre
 For more information, visit the Automicus website.
 
 ORIGINAL AUTHOR: Automicus (Ryan Kraus)
+
 DATE: 4/2014
+
 EMAIL: automicus@gmail.com
+
 WEBSITE: http://automic.us/portfolio/pyisy
+
 GITHUB: https://github.com/automicus/PyISY
 
