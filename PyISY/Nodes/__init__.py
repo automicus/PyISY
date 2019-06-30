@@ -219,7 +219,8 @@ class Nodes(object):
                         try:
                             devtype_cat = feature \
                                 .getElementsByTagName('devtype')[0] \
-                                .getElementsByTagName('cat')[0].toxml()
+                                .getElementsByTagName('cat')[0] \
+                                .firstChild.toxml()
                         except IndexError:
                             devtype_cat = None
 
