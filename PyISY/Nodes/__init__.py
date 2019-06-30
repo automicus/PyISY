@@ -209,10 +209,19 @@ class Nodes(object):
                         parent_nid = None
 
                     try:
-                        type = feature.getElementsByTagName('type')[0] \
+                        dev_type = feature.getElementsByTagName('type')[0] \
                             .firstChild.toxml()
                     except IndexError:
-                        type = None
+                        dev_type = None
+
+                    devtype_cat = None
+                    if dev_type is not None and dev_type.startswith('4.'):
+                        try:
+                            devtype_cat = feature \
+                                .getElementsByTagName('devtype')[0] \
+                                .getElementsByTagName('cat')[0].toxml()
+                        except IndexError:
+                            devtype_cat = None
 
                     try:
                         nodeDefId = feature.attributes['nodeDefId'].value
@@ -232,9 +241,10 @@ class Nodes(object):
                                          dimmable,
                                          uom=state_uom, prec=state_prec,
                                          aux_properties=aux_props,
+                                         devtype_cat=devtype_cat,
                                          node_def_id=nodeDefId,
                                          parent_nid=parent_nid,
-                                         type=type),
+                                         dev_type=dev_type),
                                     ntype)
                     elif ntype == 'group':
                         flag = feature.attributes['flag'].value
