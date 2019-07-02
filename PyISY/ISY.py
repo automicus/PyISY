@@ -1,13 +1,14 @@
-from .Connection import Connection
-from .configuration import configuration
-from .Nodes import Nodes
-from .Programs import Programs
-from .Events import get_stream
-from .Variables import Variables
-from .Climate import Climate
 # from .networking import networking
 import logging
 from threading import Thread
+
+from .Climate import Climate
+from .configuration import configuration
+from .Connection import Connection
+from .Events import get_stream
+from .Nodes import Nodes
+from .Programs import Programs
+from .Variables import Variables
 
 
 class ISY(object):

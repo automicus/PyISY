@@ -26,4 +26,3 @@ EMAIL: automicus@gmail.com
 WEBSITE: http://automic.us/portfolio/pyisy
 
 GITHUB: https://github.com/automicus/PyISY
-

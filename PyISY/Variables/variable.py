@@ -1,6 +1,7 @@
-from ..constants import _change2update_interval
-from ..constants import _empty_time
+"""Manage variables from the ISY."""
 from VarEvents import Property
+
+from ..constants import UPDATE_INTERVAL, EMPTY_TIME
 
 
 class Variable(object):
@@ -24,7 +25,7 @@ class Variable(object):
 
     init = Property(0)
     val = Property(0)
-    lastEdit = Property(_empty_time, readonly=True)
+    lastEdit = Property(EMPTY_TIME, readonly=True)
 
     def __init__(self, parent, vid, vtype, init, val, ts):
         super(Variable, self).__init__()
@@ -83,7 +84,7 @@ class Variable(object):
             self.parent.parent.log.info('ISY set variable init value: '
                                         + str(self._type) + ', '
                                         + str(self._id))
-            self.update(_change2update_interval)
+            self.update(UPDATE_INTERVAL)
 
     def setValue(self, val):
         """
@@ -100,4 +101,4 @@ class Variable(object):
         else:
             self.parent.parent.log.info('ISY set variable: ' + str(self._type)
                                         + ', ' + str(self._id))
-            self.update(_change2update_interval)
+            self.update(UPDATE_INTERVAL)

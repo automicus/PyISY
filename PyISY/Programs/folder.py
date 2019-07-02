@@ -1,5 +1,6 @@
-from ..constants import _change2update_interval
 from VarEvents import Property
+
+from ..constants import UPDATE_INTERVAL
 
 
 class Folder(object):
@@ -58,7 +59,7 @@ class Folder(object):
             return False
         else:
             self.parent.parent.log.info('ISY ran program: ' + self._id)
-            self.update(_change2update_interval)
+            self.update(UPDATE_INTERVAL)
             return True
 
     def runThen(self):
@@ -71,7 +72,7 @@ class Folder(object):
             return False
         else:
             self.parent.parent.log.info('ISY ran then in program: ' + self._id)
-            self.update(_change2update_interval)
+            self.update(UPDATE_INTERVAL)
             return True
 
     def runElse(self):
@@ -84,7 +85,7 @@ class Folder(object):
             return False
         else:
             self.parent.parent.log.info('ISY ran else in program: ' + self._id)
-            self.update(_change2update_interval)
+            self.update(UPDATE_INTERVAL)
             return True
 
     def stop(self):
@@ -97,5 +98,5 @@ class Folder(object):
             return False
         else:
             self.parent.parent.log.info('ISY stopped program: ' + self._id)
-            self.update(_change2update_interval)
+            self.update(UPDATE_INTERVAL)
             return True

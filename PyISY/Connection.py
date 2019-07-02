@@ -6,15 +6,16 @@ except ImportError:
     # python 3.4
     from urllib.parse import quote
     from urllib.parse import urlencode
-import requests
-import time
-from requests.adapters import HTTPAdapter
-from requests.packages.urllib3.poolmanager import PoolManager
 import ssl
 import sys
-from xml.dom import minidom
+import time
 
-MAX_RETRIES=5
+import requests
+from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.poolmanager import PoolManager
+
+MAX_RETRIES = 5
+
 
 class Connection(object):
 
@@ -73,46 +74,44 @@ class Connection(object):
             self.parent.log.info('ISY Request: ' + url)
 
         try:
-            r = self.req_session.get(url, auth=(self._username, self._password),
-                    timeout=10, verify=False)
-
-        except requests.ConnectionError as err:
+            req = self.req_session.get(url,
+                                       auth=(self._username, self._password),
+                                       timeout=10,
+                                       verify=False)
+        except requests.ConnectionError:
             self.parent.log.error('ISY Could not recieve response '
                                   + 'from device because of a network '
                                   + 'issue.')
             return None
-
         except requests.exceptions.Timeout:
             self.parent.log.error('Timed out waiting for response from the '
                                   + 'ISY device.')
             return None
 
-        if r.status_code == 200:
+        if req.status_code == 200:
             self.parent.log.debug('ISY Response Recieved')
             # remove unicode from string in python 2.7, 3.2,
             # and 3.4 compatible way
-            xml = ''.join(char for char in r.text if ord(char) < 128)
+            xml = ''.join(char for char in req.text if ord(char) < 128)
             return xml
-        elif r.status_code == 404 and ok404:
+        if req.status_code == 404 and ok404:
             self.parent.log.debug('ISY Response Recieved')
             return ''
-        else:
-            self.parent.log.warning('Bad ISY Request: {} {}: '
-                                    'retry #{}'.format(url,
-                                    r.status_code, retries))
 
-            # sleep for one second to allow the ISY to catch up
-            time.sleep(1)
+        self.parent.log.warning('Bad ISY Request: %s %s: retry #%s',
+                                url, req.status_code, retries)
 
-            if retries < MAX_RETRIES:
-                # recurse to try again
-                return self.request(url, retries+1, ok404=False)
-            else:
-                # fail for good
-                self.parent.log.error('Bad ISY Request: {} {}: '
-                                      'Failed after {} retries'.format(url,
-                                      r.status_code, retries))
-                return None
+        # sleep for one second to allow the ISY to catch up
+        time.sleep(1)
+
+        if retries < MAX_RETRIES:
+            # recurse to try again
+            return self.request(url, retries+1, ok404=False)
+        # fail for good
+        self.parent.log.error('Bad ISY Request: %s %s: '
+                              'Failed after %s retries',
+                              url, req.status_code, retries)
+        return None
 
     # PING
     # This is a dummy command that does not exist in the REST API
@@ -188,64 +187,12 @@ class Connection(object):
         response = self.request(req_url)
         return response
 
-    def nodeOff(self, nid):
-        req_url = self.compileURL(['nodes', nid, 'cmd', 'DOF'])
-        response = self.request(req_url)
-        return response
-
-    def nodeOn(self, nid, val=None):
-        if val is None:
-            req_url = self.compileURL(['nodes', nid, 'cmd', 'DON'])
-        elif val > 0:
-            val = str(min(255, val))
-            req_url = self.compileURL(['nodes', nid, 'cmd', 'DON', val])
-        elif val <= 0:
-            return self.nodeOff(nid)
-        response = self.request(req_url)
-        return response
-
-    def nodeFastOff(self, nid):
-        req_url = self.compileURL(['nodes', nid, 'cmd', 'DFOF'])
-        response = self.request(req_url)
-        return response
-
-    def nodeFastOn(self, nid):
-        req_url = self.compileURL(['nodes', nid, 'cmd', 'DFON'])
-        response = self.request(req_url)
-        return response
-
-    def nodeBright(self, nid):
-        req_url = self.compileURL(['nodes', nid, 'cmd', 'BRT'])
-        response = self.request(req_url)
-        return response
-
-    def nodeDim(self, nid):
-        req_url = self.compileURL(['nodes', nid, 'cmd', 'DIM'])
-        response = self.request(req_url)
-        return response
-
-    def nodeSecMd(self, nid, val=0):
-        req_url = self.compileURL(['nodes', nid, 'cmd', 'SECMD', val])
-        response = self.request(req_url)
-        return response
-
-    def nodeCliFS(self, nid, val=0):
-        req_url = self.compileURL(['nodes', nid, 'cmd', 'CLIFS', str(val)])
-        response = self.request(req_url)
-        return response
-
-    def nodeCliMD(self, nid, val=0):
-        req_url = self.compileURL(['nodes', nid, 'cmd', 'CLIMD', str(val)])
-        response = self.request(req_url)
-        return response
-
-    def nodeCliSPH(self, nid, val=0):
-        req_url = self.compileURL(['nodes', nid, 'cmd', 'CLISPH', str(val)])
-        response = self.request(req_url)
-        return response
-
-    def nodeCliSPC(self, nid, val=0):
-        req_url = self.compileURL(['nodes', nid, 'cmd', 'CLISPC', str(val)])
+    def node_send_cmd(self, nid, cmd, val=None):
+        """Send command to a specific node."""
+        req = ['nodes', nid, 'cmd', cmd]
+        if val:
+            req.append(val)
+        req_url = self.compileURL(req)
         response = self.request(req_url)
         return response
 
@@ -311,9 +258,7 @@ class Connection(object):
 
 
 class TLSHttpAdapter(HTTPAdapter):
-    '''
-    Transport adapter that uses TLS1
-    '''
+    """Transport adapter that uses TLS1."""
 
     def __init__(self, tls_ver):
         if tls_ver == 1.1:
@@ -330,12 +275,12 @@ class TLSHttpAdapter(HTTPAdapter):
 
 
 def can_https(log, tls_ver):
-    '''
+    """
     Function to verify minimum requirements to use an HTTPS connection. Returns
     boolean indicating whether HTTPS is available.
 
     |  log: The logger class to write results to
-    '''
+    """
     output = True
 
     # check python version

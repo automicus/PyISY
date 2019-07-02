@@ -1,14 +1,16 @@
-
-from .group import Group
-from .node import (Node, parse_xml_properties, ATTR_ID, EventResult)
+"""Representation of ISY Nodes."""
 from time import sleep
 from xml.dom import minidom
 
+from .group import Group
+from .node import EventResult, Node, parse_xml_properties
+
 
 class Nodes(object):
-
     """
-    This class handles the ISY nodes. This class can be used as a dictionary to
+    This class handles the ISY nodes.
+
+    This class can be used as a dictionary to
     navigate through the controller's structure to objects of type
     :class:`~PyISY.Nodes.Node` and :class:`~PyISY.Nodes.Group` that represent
     objects on the controller.
@@ -22,7 +24,7 @@ class Nodes(object):
     |  ntypes: [optional] list of node types
     |  xml: [optional] String of xml data containing the configuration data
 
-    :ivar allLowerNodes: Returns all nodes beneath current level
+    :ivar allLowerNodes: Return all nodes beneath current level
     :ivar children: A list of the object's children.
     :ivar hasChildren: Indicates if object has children
     :ivar name: The name of the current folder in navigation.
@@ -52,30 +54,28 @@ class Nodes(object):
             self.parse(xml)
 
     def __str__(self):
-        """ Returns string representation of the nodes/folders/groups. """
+        """Return string representation of the nodes/folders/groups."""
         if self.root is None:
             return 'Folder <root>'
-        else:
-            ind = self.nids.index(self.root)
-            if self.ntypes[ind] == 'folder':
-                return 'Folder (' + self.root + ')'
-            elif self.ntypes[ind] == 'group':
-                return 'Group (' + self.root + ')'
-            else:
-                return 'Node (' + self.root + ')'
+        ind = self.nids.index(self.root)
+        if self.ntypes[ind] == 'folder':
+            return 'Folder (' + self.root + ')'
+        elif self.ntypes[ind] == 'group':
+            return 'Group (' + self.root + ')'
+        return 'Node (' + self.root + ')'
 
     def __repr__(self):
-        """ Creates a pretty representation of the nodes/folders/groups. """
+        """Creates a pretty representation of the nodes/folders/groups."""
         # get and sort children
         folders = []
         groups = []
         nodes = []
         for child in self.children:
-            if child[0] is 'folder':
+            if child[0] == 'folder':
                 folders.append(child)
-            elif child[0] is 'group':
+            elif child[0] == 'group':
                 groups.append(child)
-            elif child[0] is 'node':
+            elif child[0] == 'node':
                 nodes.append(child)
 
         # initialize data
@@ -123,14 +123,12 @@ class Nodes(object):
         return out
 
     def __iter__(self):
-        """
-        Returns an iterator for each node below the current navigation level.
-        """
+        """Return an iterator for each node below the current nav level."""
         iter_data = self.allLowerNodes
         return NodeIterator(self, iter_data, delta=1)
 
     def __reversed__(self):
-        """ Returns the iterator in reverse order. """
+        """Return the iterator in reverse order."""
         iter_data = self.allLowerNodes
         return NodeIterator(self, iter_data, delta=-1)
 
@@ -148,7 +146,7 @@ class Nodes(object):
             nid = xmldoc.getElementsByTagName('node')[0].firstChild.toxml()
             cntrl = xmldoc.getElementsByTagName('control')[0].firstChild.toxml()
         except IndexError:
-            # If there is no node associated with the control message we ignore it
+            # If there is no node associated with the control message ignore it
             return
 
         # Process the action and value if provided in event data.
@@ -171,12 +169,12 @@ class Nodes(object):
 
         self.getByID(nid).controlEvents.notify(EventResult(cntrl, nval,
                                                            prec, uom))
-        self.parent.log.debug('ISY Node Control Event: ' + nid + ' ' + cntrl +
-                             ' ' + nval)
+        self.parent.log.debug('ISY Node Control Event: %s %s %s',
+                              nid, cntrl, nval)
 
     def parse(self, xml):
         """
-        Parses the xml data.
+        Parse the xml data.
 
         |  xml: String of the xml data
         """
@@ -380,7 +378,7 @@ class Nodes(object):
 
     def getByInd(self, i):
         """
-        Returns the object at the given index in the list.
+        Return the object at the given index in the list.
 
         |  i: Integer representing index of node/group/folder.
         """
@@ -444,7 +442,7 @@ class Nodes(object):
         return output
 
 class NodeIterator(object):
-    """ Iterates through a list of nodes, returning node objects. """
+    """Iterates through a list of nodes, returning node objects."""
 
     def __init__(self, parent, iter_data, delta=1):
         self._parent = parent

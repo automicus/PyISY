@@ -1,11 +1,11 @@
 import base64
 import datetime
-import socket
 import select
-import sys
-from threading import Thread
+import socket
 import xml
+from threading import Thread
 from xml.dom import minidom
+
 from . import strings
 
 POLL_TIME = 5

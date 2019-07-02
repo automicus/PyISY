@@ -1,7 +1,8 @@
 from datetime import datetime
 from time import sleep
-from .variable import Variable
 from xml.dom import minidom
+
+from .variable import Variable
 
 
 class Variables(object):

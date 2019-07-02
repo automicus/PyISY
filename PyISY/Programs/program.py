@@ -1,6 +1,6 @@
-from ..constants import _change2update_interval
-from ..constants import _empty_time
 from VarEvents import Property
+
+from ..constants import UPDATE_INTERVAL, EMPTY_TIME
 from .folder import Folder
 
 
@@ -39,9 +39,9 @@ class Program(Folder):
                    running on the controller.
     """
 
-    lastUpdate = Property(_empty_time, readonly=True)
-    lastRun = Property(_empty_time, readonly=True)
-    lastFinished = Property(_empty_time, readonly=True)
+    lastUpdate = Property(EMPTY_TIME, readonly=True)
+    lastRun = Property(EMPTY_TIME, readonly=True)
+    lastFinished = Property(EMPTY_TIME, readonly=True)
     enabled = Property(True)
     runAtStartup = Property(True)
     running = Property(False, readonly=True)
@@ -111,7 +111,7 @@ class Program(Folder):
             return False
         else:
             self.parent.parent.log.info('ISY enabled program: ' + self._id)
-            self.update(_change2update_interval)
+            self.update(UPDATE_INTERVAL)
             return True
 
     def disable(self):
@@ -124,7 +124,7 @@ class Program(Folder):
             return False
         else:
             self.parent.parent.log.info('ISY disabled program: ' + self._id)
-            self.update(_change2update_interval)
+            self.update(UPDATE_INTERVAL)
             return True
 
     def enableRunAtStartup(self):
@@ -139,7 +139,7 @@ class Program(Folder):
         else:
             self.parent.parent.log.info('ISY enabled run at startup for '
                                         + 'program: ' + self._id)
-            self.update(_change2update_interval)
+            self.update(UPDATE_INTERVAL)
             return True
 
     def disableRunAtStartup(self):
@@ -154,5 +154,5 @@ class Program(Folder):
         else:
             self.parent.parent.log.info('ISY disabled run at startup for '
                                         + 'program: ' + self._id)
-            self.update(_change2update_interval)
+            self.update(UPDATE_INTERVAL)
             return True

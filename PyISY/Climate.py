@@ -1,7 +1,7 @@
-from VarEvents import Property
-from VarEvents import Var
 from time import sleep
 from xml.dom import minidom
+
+from VarEvents import Property, Var
 
 
 class Climate(object):

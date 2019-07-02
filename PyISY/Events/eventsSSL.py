@@ -1,12 +1,13 @@
 import base64
 import datetime
-import socket
 import select
+import socket
 import ssl
 import sys
-from threading import Thread
 import xml
+from threading import Thread
 from xml.dom import minidom
+
 from PyISY.Events import strings
 
 POLL_TIME = 5

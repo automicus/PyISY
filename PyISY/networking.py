@@ -1,8 +1,9 @@
 
-from xml.dom import minidom
-from time import sleep
-from ISYtypes import MonitoredDict
 from datetime import datetime
+from time import sleep
+from xml.dom import minidom
+
+from ISYtypes import MonitoredDict
 
 _thread_sleeptime = 30.0
 

@@ -1,10 +1,11 @@
-from ..constants import _empty_time
 from datetime import datetime
-from .folder import Folder
-from .program import Program
-from ..Nodes import NodeIterator as ProgramIterator
 from time import sleep
 from xml.dom import minidom
+
+from ..constants import EMPTY_TIME
+from ..Nodes import NodeIterator as ProgramIterator
+from .folder import Folder
+from .program import Program
 
 
 class Programs(object):
@@ -189,12 +190,12 @@ class Programs(object):
                         plastrun = feature.getElementsByTagName(tag)
                         plastrun = plastrun[0].firstChild
                         if plastrun is None:
-                            plastrun = _empty_time
+                            plastrun = EMPTY_TIME
                         else:
                             plastrun = datetime.strptime(
                                 plastrun.toxml(), '%Y/%m/%d %I:%M:%S %p')
                     except:
-                        plastrun = _empty_time
+                        plastrun = EMPTY_TIME
 
                     # last finish time
                     try:
@@ -202,12 +203,12 @@ class Programs(object):
                         plastfin = feature.getElementsByTagName(tag)
                         plastfin = plastfin[0].firstChild
                         if plastfin is None:
-                            plastfin = _empty_time
+                            plastfin = EMPTY_TIME
                         else:
                             plastfin = datetime.strptime(
                                 plastfin.toxml(), '%Y/%m/%d %I:%M:%S %p')
                     except:
-                        plastfin = _empty_time
+                        plastfin = EMPTY_TIME
 
                     # enabled, run at startup, running
                     if feature.attributes['enabled'].value == 'true':
