@@ -58,7 +58,7 @@ def parse_xml_properties(xmldoc):
     state_val = None
     state_uom = ''
     state_prec = ''
-    aux_props = []
+    aux_props = {}
     state_set = False
 
     props = xmldoc.getElementsByTagName('property')
@@ -101,12 +101,12 @@ def parse_xml_properties(xmldoc):
             state_uom = units
             state_prec = prec
         else:
-            aux_props.append({
+            aux_props[prop_id] = {
                 ATTR_ID: prop_id,
                 ATTR_VALUE: val,
                 ATTR_PREC: prec,
                 ATTR_UOM: units
-            })
+            }
 
     return state_val, state_uom, state_prec, aux_props
 
@@ -204,7 +204,7 @@ class Node(object):
     hasChildren = False
 
     def __init__(self, parent, nid, nval, name, dimmable=True, spoken=False,
-                 notes=False, uom=None, prec=0, aux_properties=None,
+                 notes=False, uom=None, prec=0, aux_properties={},
                  devtype_cat=None, node_def_id=None, parent_nid=None,
                  dev_type=None):
         """Initialize a Node class."""
@@ -218,8 +218,7 @@ class Node(object):
         self.uom = uom
         self.prec = prec
         self._spoken = spoken
-        self.aux_properties = {}
-        self.update_aux_properties(aux_properties)
+        self.aux_properties = aux_properties
         self.devtype_cat = devtype_cat
         self.node_def_id = node_def_id
         self.type = dev_type
@@ -230,15 +229,7 @@ class Node(object):
 
     def __str__(self):
         """Return a string representation of the node."""
-        return 'Node(%s', self._id + ')'
-
-    def update_aux_properties(self, aux_props):
-        """Update the Aux Properties of the Node."""
-        self.aux_properties = {}
-
-        if aux_props is not None:
-            for prop in aux_props:
-                self.aux_properties[prop.get(ATTR_ID)] = prop
+        return 'Node({})'.format(self._id)
 
     @property
     def nid(self):
@@ -265,8 +256,7 @@ class Node(object):
                     state_val, state_uom, state_prec, aux_props = \
                         parse_xml_properties(xmldoc)
 
-                    self.update_aux_properties(aux_props)
-
+                    self.aux_properties.update(aux_props)
                     self.uom = state_uom
                     self.prec = state_prec
                     self.status.update(state_val, silent=True)
