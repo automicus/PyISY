@@ -258,7 +258,7 @@ class Climate:
         wait_time: [optional] Amount of seconds to wait before updating
         """
         sleep(wait_time)
-        xml = self.isy.conn.getClimate()
+        xml = self.isy.conn.get_climate()
         self.parse(xml)
 
     def _upmsg(self, xmldoc):

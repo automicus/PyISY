@@ -51,6 +51,9 @@ ATTR_UOM = 'uom'
 ATTR_VAL = 'val'        # Used for Variables.
 ATTR_VALUE = 'value'    # Used for everything else.
 ATTR_VAR = 'var'
+ATTR_VARS = 'vars'
+ATTR_SET = 'set'
+ATTR_GET = 'get'
 ATTR_PREC = 'prec'
 ATTR_FORMATTED = 'formatted'
 ATTR_NODE = 'node'
@@ -62,6 +65,9 @@ ATTR_TS = 'ts'
 ATTR_DESC = 'desc'
 ATTR_FLAG = 'flag'
 ATTR_CONTROL = 'control'
+
+VAR_INTEGER = '1'
+VAR_STATE = '2'
 
 
 CLIMATE_SETPOINT_MIN_GAP = 2
@@ -88,7 +94,7 @@ COMMAND_FRIENDLY_NAME = {
     'ATMPRES': 'atmospheric_pressure',
     'BARPRES': 'barometric_pressure',
     'BATLVL': 'battery_level',
-    'CLIMD': 'mode',
+    'CLIMD': 'climate_mode',
     'CLISMD': 'schedule_mode',
     'CLITEMP': 'temperature',
     'CO2LVL': 'co2_level',

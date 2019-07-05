@@ -9,7 +9,7 @@ from threading import Thread
 from xml.dom import minidom
 
 from . import strings
-from .constants import ATTR_ACTION, ATTR_CONTROL, POLL_TIME
+from .constants import ATTR_ACTION, ATTR_CONTROL, POLL_TIME, STATE_PROPERTY
 from .helpers import attr_from_xml, value_from_xml
 
 
@@ -74,7 +74,7 @@ class EventStream:
             self._hbwait = int(value_from_xml(xmldoc, ATTR_ACTION))
             self.isy.log.debug('ISY HEARTBEAT: %s',
                                self._lasthb.isoformat())
-        elif cntrl == 'ST':  # NODE UPDATE
+        elif cntrl == STATE_PROPERTY:  # NODE UPDATE
             self.isy.nodes._upmsg(xmldoc)
         elif cntrl[0] != '_':  # NODE CONTROL EVENT
             self.isy.nodes._controlmsg(xmldoc)

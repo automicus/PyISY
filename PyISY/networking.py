@@ -77,7 +77,7 @@ class NetworkResources:
         wait_time: [optional] Amount of seconds to wait before updating
         """
         sleep(wait_time)
-        xml = self.isy.conn.getNetwork()
+        xml = self.isy.conn.get_network()
         self.parse(xml)
 
     def updateThread(self):
@@ -146,22 +146,28 @@ class NetworkCommand:
 
     """
 
-    def __init__(self, network_resources, cid):
+    def __init__(self, network_resources, rid):
         """Initialize network command class.
 
         network_resources: NetworkResources class
-        cid: Integer of the command id
+        rid: Integer of the command id
         """
         self._network_resources = network_resources
         self.isy = network_resources.isy
-        self._id = cid
+        self._id = rid
+
+    @property
+    def rid(self):
+        """Return the Resource ID for the Network Resource."""
+        return self._id
 
     def run(self):
         """Execute the networking command."""
-        response = self.isy.conn.runNetwork(self._id)
+        req_url = self.isy.conn.compile_url(['networking', 'resources',
+                                             str(self._id)])
 
-        if response is None:
+        if not self.isy.conn.request(req_url, ok404=True):
             self.isy.log.warning('ISY could not run networking command: %s',
                                  str(self._id))
-        else:
-            self.isy.log.info('ISY ran networking command: %s', str(self._id))
+            return
+        self.isy.log.info('ISY ran networking command: %s', str(self._id))

@@ -74,19 +74,19 @@ class ISY:
         else:
             self._connected = True
             self.configuration = Configuration(
-                self, xml=self.conn.getConfiguration())
+                self, xml=self.conn.get_config())
             self._add_commands()
-            self.nodes = Nodes(self, xml=self.conn.getNodes())
-            self.programs = Programs(self, xml=self.conn.getPrograms())
-            self.variables = Variables(self, xml=self.conn.getVariables())
+            self.nodes = Nodes(self, xml=self.conn.get_nodes())
+            self.programs = Programs(self, xml=self.conn.get_programs())
+            self.variables = Variables(self, xml=self.conn.get_variables())
 
             if self.configuration.get('Weather Information'):
-                self.climate = Climate(self, xml=self.conn.getClimate())
+                self.climate = Climate(self, xml=self.conn.get_climate())
             else:
                 self.climate = None
             # if self.configuration['Networking Module']:
             #     self.networking = NetworkResources(self,
-            #       xml=self.conn.getNetwork())
+            #       xml=self.conn.get_network())
 
     def __del__(self):
         """Turn off auto updating when the class is deleted."""
@@ -228,7 +228,8 @@ class ISY:
         """
         if cmd in X10_COMMANDS:
             command = X10_COMMANDS.get(cmd)
-            result = self.conn.sendX10(address, command)
+            req_url = self.conn.compile_url(['X10', address, str(command)])
+            result = self.conn.request(req_url)
             if result is not None:
                 self.log.info('ISY Sent X10 Command: %s To: %s',
                               cmd, address)

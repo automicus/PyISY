@@ -103,7 +103,7 @@ class Variables:
         """
         sleep(wait_time)
         xml = self.isy.conn.updateVariables()
-
+        # TODO: Combine Parse and Update functions.
         if xml is not None:
             try:
                 xmldoc = minidom.parseString(xml)

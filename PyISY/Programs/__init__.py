@@ -232,8 +232,9 @@ class Programs:
         |  wait_time: How long to wait before updating.
         |  pid: The program ID to update.
         """
+        # TODO Update this method to only update this program and to use autoupdate.
         sleep(wait_time)
-        xml = self.isy.conn.getPrograms(pid)
+        xml = self.isy.conn.get_programs(pid)
 
         if xml is not None:
             self.parse(xml)

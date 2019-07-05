@@ -31,8 +31,8 @@ class Folder:
         self.status.update(pstatus, force=True, silent=True)
 
     def __str__(self):
-        """Return a string representation of the folder."""
-        return 'Folder({})'.format(self._id)
+        """Return a string representation of the node."""
+        return '{}({})'.format(type(self).__name__, self._id)
 
     @property
     def nid(self):
@@ -59,7 +59,10 @@ class Folder:
 
     def send_pgrm_cmd(self, command):
         """Run the appropriate clause of the object."""
-        if not self.isy.conn.program_run_cmd(self._id, command):
+        req_url = self.isy.conn.compile_url(['programs', str(self._id),
+                                             command])
+        result = self.isy.conn.request(req_url)
+        if not result:
             self.isy.log.warning('ISY could not run program: %s', self._id)
             return False
         self.isy.log.info('ISY ran program: ' + self._id)

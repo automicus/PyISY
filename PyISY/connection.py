@@ -16,7 +16,8 @@ import requests
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.poolmanager import PoolManager
 
-from .constants import ATTR_INIT
+from .constants import (ATTR_GET, ATTR_INIT, ATTR_SET, ATTR_VARS, VAR_INTEGER,
+                        VAR_STATE)
 
 MAX_RETRIES = 5
 
@@ -147,14 +148,14 @@ class Connection:
         result = self.request(req_url, ok404=True)
         return result is not None
 
-    # CONFIGURATION
-    def getConfiguration(self):
+    def get_config(self):
+        """Fetch the configuration from the ISY."""
         req_url = self.compile_url(['config'])
         result = self.request(req_url)
         return result
 
-    # PROGRAMS
-    def getPrograms(self, pid=None):
+    def get_programs(self, pid=None):
+        """Fetch the list of programs from the ISY."""
         addr = ['programs']
         if pid is not None:
             addr.append(str(pid))
@@ -162,99 +163,41 @@ class Connection:
         result = self.request(req_url)
         return result
 
-    def program_run_cmd(self, pid, cmd):
-        req_url = self.compile_url(['programs', str(pid), cmd])
-        result = self.request(req_url)
-        return result
-
-    # NODES
-    def getNodes(self):
+    def get_nodes(self):
+        """Fetch the list of nodes/groups/scenes from the ISY."""
         req_url = self.compile_url(['nodes'], {'members': 'false'})
         result = self.request(req_url)
         return result
 
-    # Get the device notes xml
-    def get_node_notes(self, nid):
-        req_url = self.compile_url(['nodes', nid, 'notes'])
-        result = self.request(req_url, ok404=True)
-        return result
-
-    def updateNodes(self):
-        req_url = self.compile_url(['status'])
-        result = self.request(req_url)
-        return result
-
-    def updateNode(self, nid):
-        req_url = self.compile_url(['nodes', nid, 'get', 'ST'])
-        response = self.request(req_url)
-        return response
-
-    def node_send_cmd(self, nid, cmd, val=None):
-        """Send command to a specific node."""
-        req = ['nodes', nid, 'cmd', cmd]
-        if val:
-            req.append(val)
-        req_url = self.compile_url(req)
-        response = self.request(req_url)
-        return response
-
-    # VARIABLES
-    def getVariables(self):
-        requests = [['vars', 'definitions', '1'],
-                    ['vars', 'definitions', '2'],
-                    ['vars', 'get', '1'],
-                    ['vars', 'get', '2']]
-        req_urls = [self.compile_url(req) for req in requests]
+    def get_variables(self):
+        """Fetch the list of variables from the ISY."""
+        req_list = [[ATTR_VARS, 'definitions', VAR_INTEGER],
+                    [ATTR_VARS, 'definitions', VAR_STATE],
+                    [ATTR_VARS, ATTR_GET, VAR_INTEGER],
+                    [ATTR_VARS, ATTR_GET, VAR_STATE]]
+        req_urls = [self.compile_url(req) for req in req_list]
         results = [self.request(req_url) for req_url in req_urls]
         return results
 
     def updateVariables(self):
-        requests = [['vars', 'get', '1'],
-                    ['vars', 'get', '2']]
-        req_urls = [self.compile_url(req) for req in requests]
+        req_list = [[ATTR_VARS, ATTR_GET, VAR_INTEGER],
+                    [ATTR_VARS, ATTR_GET, VAR_STATE]]
+        req_urls = [self.compile_url(req) for req in req_list]
         results = [self.request(req_url) for req_url in req_urls]
         result = ''.join(results)
         result = result.replace('</vars><?xml version="1.0" encoding="UTF-8"?>'
-                              '<vars>', '')
+                                '<vars>', '')
         return result
 
-    def updateVariable(self, vtype, vid):
-        req_url = self.compile_url(['vars', 'get', str(vtype), str(vid)])
-        result = self.request(req_url)
-        return result
-
-    def setVariable(self, vtype, vid, val):
-        req_url = self.compile_url(['vars', 'set', str(vtype),
-                                   str(vid), str(val)])
-        result = self.request(req_url)
-        return result
-
-    def initVariable(self, vtype, vid, val):
-        req_url = self.compile_url(['vars', ATTR_INIT, str(vtype),
-                                   str(vid), str(val)])
-        result = self.request(req_url)
-        return result
-
-    # CLIMATE
-    def getClimate(self):
+    def get_climate(self):
+        """Fetch the list of climate information from the ISY."""
         req_url = self.compile_url(['climate'])
         result = self.request(req_url)
         return result
 
-    # NETWORK
-    def getNetwork(self):
+    def get_network(self):
+        """Fetch the list of network resources from the ISY."""
         req_url = self.compile_url(['networking', 'resources'])
-        result = self.request(req_url)
-        return result
-
-    def runNetwork(self, cid):
-        req_url = self.compile_url(['networking', 'resources', str(cid)])
-        result = self.request(req_url, ok404=True)
-        return result
-
-    # X10
-    def sendX10(self, address, code):
-        req_url = self.compile_url(['X10', address, str(code)])
         result = self.request(req_url)
         return result
 

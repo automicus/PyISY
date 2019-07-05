@@ -1,7 +1,8 @@
 """Manage variables from the ISY."""
 from VarEvents import Property
 
-from ..constants import EMPTY_TIME, UPDATE_INTERVAL
+from ..constants import (ATTR_INIT, ATTR_SET, ATTR_VARS, EMPTY_TIME,
+                         UPDATE_INTERVAL)
 
 
 class Variable:
@@ -69,6 +70,7 @@ class Variable:
 
         |  wait_time: Seconds to wait before updating.
         """
+        # TODO: Update this method to only update this variable and to use autoupdate.
         if not self.noupdate:
             self._variables.update(wait_time)
 
@@ -78,26 +80,25 @@ class Variable:
 
         |  val: The value to have the variable initialize to.
         """
-        response = self.isy.conn.initVariable(self._type, self._id, val)
-        if response is None:
-            self.isy.log.warning('ISY could not set variable init value: '
-                                 '%s.%s', str(self._type), str(self._id))
-        else:
-            self.isy.log.info('ISY set variable init value: %s.%s',
-                              str(self._type), str(self._id))
-            self.update(UPDATE_INTERVAL)
+        self.setValue(val, True)
 
-    def setValue(self, val):
+    def setValue(self, val, init=False):
         """
         Set the value of the variable.
 
         |  val: The value to set the variable to.
         """
-        response = self.isy.conn.setVariable(self._type, self._id, val)
-        if response is None:
-            self.isy.log.warning('ISY could not set variable: %s.%s',
+        req_url = self.isy.conn.compile_url([ATTR_VARS,
+                                             ATTR_INIT if init else ATTR_SET,
+                                             str(self._type),
+                                             str(self._id),
+                                             str(val)])
+        if not self.isy.conn.request(req_url):
+            self.isy.log.warning("ISY could not set variable%s: %s.%s",
+                                 " init value" if init else "",
                                  str(self._type), str(self._id))
-        else:
-            self.isy.log.info('ISY set variable: %s.%s',
-                              str(self._type), str(self._id))
-            self.update(UPDATE_INTERVAL)
+            return
+        self.isy.log.info("ISY set variable%s: %s.%s",
+                          " init value" if init else "",
+                          str(self._type), str(self._id))
+        self.update(UPDATE_INTERVAL)

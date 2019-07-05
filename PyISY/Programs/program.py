@@ -62,10 +62,6 @@ class Program(Folder):
         self.runAtStartup.responder = self.__report_startrun__
         self.running.update(prunning, force=True, silent=True)
 
-    def __str__(self):
-        """Return a string representation of the object."""
-        return 'Program({})'.format(self._id)
-
     def __report_enabled__(self, val):
         """Set the enabled flag."""
         self.noupdate = True

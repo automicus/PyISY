@@ -3,9 +3,8 @@ from time import sleep
 from xml.dom import minidom
 
 from ..constants import (ATTR_ACTION, ATTR_CONTROL, ATTR_FLAG, ATTR_FOLDER,
-                         ATTR_FORMATTED, ATTR_GROUP, ATTR_NAME, ATTR_NODE,
-                         ATTR_PREC, ATTR_TYPE, ATTR_UOM, ATTR_VALUE,
-                         VALUE_UNKNOWN, XML_PARSE_ERROR)
+                         ATTR_GROUP, ATTR_NAME, ATTR_NODE, ATTR_PREC,
+                         ATTR_TYPE, ATTR_UOM, XML_PARSE_ERROR)
 from ..events import EventResult
 from ..helpers import (attr_from_element, attr_from_xml, parse_xml_properties,
                        value_from_xml)
@@ -181,91 +180,78 @@ class Nodes:
             xmldoc = minidom.parseString(xml)
         except:
             self.isy.log.error("%s: Nodes", XML_PARSE_ERROR)
-        else:
-            # get nodes
-            ntypes = [ATTR_FOLDER, ATTR_NODE, ATTR_GROUP]
-            for ntype in ntypes:
-                features = xmldoc.getElementsByTagName(ntype)
+            return False
 
-                for feature in features:
-                    # Get Node Information
-                    nid = value_from_xml(feature, 'address')
-                    nname = value_from_xml(feature, ATTR_NAME)
-                    nparent = value_from_xml(feature, 'parent')
-                    parent_nid = value_from_xml(feature, 'pnode')
-                    dev_type = value_from_xml(feature, ATTR_TYPE)
-                    node_def_id = value_from_xml(feature, 'nodeDefId')
-                    enabled = value_from_xml(feature, 'enabled')
+        # get nodes
+        ntypes = [ATTR_FOLDER, ATTR_NODE, ATTR_GROUP]
+        for ntype in ntypes:
+            features = xmldoc.getElementsByTagName(ntype)
 
-                    # Get Z-Wave Device Type Category
-                    devtype_cat = None
-                    if dev_type is not None and dev_type.startswith('4.'):
-                        try:
-                            devtype_cat = feature \
-                                .getElementsByTagName('devtype')[0] \
-                                .getElementsByTagName('cat')[0] \
-                                .firstChild.toxml()
-                        except IndexError:
-                            devtype_cat = None
+            for feature in features:
+                # Get Node Information
+                nid = value_from_xml(feature, 'address')
+                nname = value_from_xml(feature, ATTR_NAME)
+                nparent = value_from_xml(feature, 'parent')
+                parent_nid = value_from_xml(feature, 'pnode')
+                dev_type = value_from_xml(feature, ATTR_TYPE)
+                node_def_id = value_from_xml(feature, 'nodeDefId')
+                enabled = value_from_xml(feature, 'enabled')
 
-                    # Process the different node types
-                    if ntype == ATTR_FOLDER:
-                        if nid not in self.nids:
-                            self.insert(nid, nname, nparent, None, ntype)
-                    elif ntype == ATTR_NODE:
-                        state, aux_props = parse_xml_properties(feature)
-                        if nid in self.nids:
-                            node = self.get_by_id(nid)
-                            node.uom = state.get(ATTR_UOM, '')
-                            node.prec = state.get(ATTR_PREC, '0')
-                            node.formatted = state.get(ATTR_FORMATTED,
-                                                       state.get(ATTR_VALUE,
-                                                                 VALUE_UNKNOWN)
-                                                       )
-                            node.update_aux_properties(aux_props)
-                            node.status.update(state.get(ATTR_VALUE,
-                                                         VALUE_UNKNOWN),
-                                               silent=True)
-                        else:
-                            self.insert(nid, nname, nparent,
-                                        Node(self, nid=nid, name=nname,
-                                             state=state,
-                                             aux_properties=aux_props,
-                                             devtype_cat=devtype_cat,
-                                             node_def_id=node_def_id,
-                                             parent_nid=parent_nid,
-                                             dev_type=dev_type,
-                                             enabled=enabled),
-                                        ntype)
+                # Get Z-Wave Device Type Category
+                devtype_cat = None
+                if dev_type is not None and dev_type.startswith('4.'):
+                    try:
+                        devtype_cat = feature \
+                            .getElementsByTagName('devtype')[0] \
+                            .getElementsByTagName('cat')[0] \
+                            .firstChild.toxml()
+                    except IndexError:
+                        devtype_cat = None
 
-                    elif ntype == ATTR_GROUP:
-                        if nid not in self.nids:
-                            flag = attr_from_element(feature, ATTR_FLAG)
-                            # Ignore groups that contain 0x08 in the flag since
-                            # that is a ISY scene that contains every device/
-                            # scene so it will contain some scenes we have not
-                            # seen yet so they are not defined and it includes
-                            # the ISY MAC addrees in newer versions of
-                            # ISY firmwares > 5.0.6+ ..
-                            if int(flag) & 0x08:
-                                self.isy.log.info('Skipping group flag=%s %s',
-                                                  flag, nid)
-                            else:
-                                mems = feature.getElementsByTagName('link')
-                                # Build list of members
-                                members = [mem.firstChild.nodeValue
-                                           for mem in mems]
-                                # Build list of controllers
-                                controllers = []
-                                for mem in mems:
-                                    if int(attr_from_element(
-                                            mem, ATTR_TYPE, 0)) == 16:
-                                        controllers.append(
-                                            mem.firstChild.nodeValue)
-                                self.insert(nid, nname, nparent,
-                                            Group(self, nid, nname,
-                                                  members, controllers),
-                                            ntype)
+                # Process the different node types
+                if ntype == ATTR_FOLDER and nid not in self.nids:
+                    self.insert(nid, nname, nparent, None, ntype)
+                elif ntype == ATTR_NODE:
+                    if nid in self.nids:
+                        self.get_by_id(nid).update(feature)
+                        continue
+                    state, aux_props = parse_xml_properties(feature)
+                    self.insert(nid, nname, nparent,
+                                Node(self, nid=nid, name=nname,
+                                     state=state,
+                                     aux_properties=aux_props,
+                                     devtype_cat=devtype_cat,
+                                     node_def_id=node_def_id,
+                                     parent_nid=parent_nid,
+                                     dev_type=dev_type,
+                                     enabled=enabled),
+                                ntype)
+                elif ntype == ATTR_GROUP and nid not in self.nids:
+                    flag = attr_from_element(feature, ATTR_FLAG)
+                    # Ignore groups that contain 0x08 in the flag since
+                    # that is a ISY scene that contains every device/
+                    # scene so it will contain some scenes we have not
+                    # seen yet so they are not defined and it includes
+                    # the ISY MAC addrees in newer versions of
+                    # ISY firmwares > 5.0.6+ ..
+                    if int(flag) & 0x08:
+                        self.isy.log.info('Skipping group flag=%s %s',
+                                          flag, nid)
+                        continue
+                    mems = feature.getElementsByTagName('link')
+                    # Build list of members
+                    members = [mem.firstChild.nodeValue
+                               for mem in mems]
+                    # Build list of controllers
+                    controllers = []
+                    for mem in mems:
+                        if int(attr_from_element(
+                                mem, ATTR_TYPE, 0)) == 16:
+                            controllers.append(mem.firstChild.nodeValue)
+                    self.insert(nid, nname, nparent,
+                                Group(self, nid, nname,
+                                      members, controllers),
+                                ntype)
             self.isy.log.info('ISY Loaded Nodes')
 
     def update(self, wait_time=0):
@@ -275,7 +261,7 @@ class Nodes:
         |  wait_time: [optional] Amount of seconds to wait before updating
         """
         sleep(wait_time)
-        xml = self.isy.conn.updateNodes()
+        xml = self.isy.conn.request(self.isy.conn.compile_url(['status']))
         if xml is not None:
             self.parse(xml)
         else:
@@ -357,20 +343,6 @@ class Nodes:
             return self.nobjs[i]
         return Nodes(self.isy, self.nids[i], self.nids, self.nnames,
                      self.nparents, self.nobjs, self.ntypes)
-
-    def parse_notes(self, node_id):
-        """Parse the notes for a given node."""
-        notes_xml = self.isy.conn.get_node_notes(node_id)
-        spoken = None
-        if notes_xml is not None and notes_xml != "":
-            try:
-                notesdom = minidom.parseString(notes_xml)
-            except:
-                self.isy.log.error("%s: Node Notes %s",
-                                   XML_PARSE_ERROR, notes_xml)
-            else:
-                spoken = value_from_xml(notesdom, 'spoken')
-        return {"spoken": spoken}
 
     @property
     def children(self):
