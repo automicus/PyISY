@@ -4,178 +4,16 @@ from xml.dom import minidom
 
 from VarEvents import Property
 
-from ..constants import UPDATE_INTERVAL
-
-STATE_PROPERTY = 'ST'
-BATLVL_PROPERTY = 'BATLVL'
-ATTR_ID = 'id'
-ATTR_UOM = 'uom'
-ATTR_VALUE = 'value'
-ATTR_PREC = 'prec'
-
-FAN_MODE_ON = 'on'
-FAN_MODE_AUTO = 'auto'
-
-CLIMATE_MODE_OFF = 'off'
-CLIMATE_MODE_HEAT = 'heat'
-CLIMATE_MODE_COOL = 'cool'
-CLIMATE_MODE_AUTO = 'auto'
-CLIMATE_MODE_FAN_ONLY = 'fan_only'
-CLIMATE_MODE_PROG_AUTO = 'program_auto'
-CLIMATE_MODE_PROG_HEAT = 'program_heat'
-CLIMATE_MODE_PROG_COOL = 'program_cool'
-
-CLIMATE_SETPOINT_MIN_GAP = 2
-
-FAN_MODES = {
-    FAN_MODE_ON: 7,
-    FAN_MODE_AUTO: 8,
-}
-
-CLIMATE_MODES = {
-    CLIMATE_MODE_OFF: 0,
-    CLIMATE_MODE_HEAT: 1,
-    CLIMATE_MODE_COOL: 2,
-    CLIMATE_MODE_AUTO: 3,
-    CLIMATE_MODE_FAN_ONLY: 4,
-    CLIMATE_MODE_PROG_AUTO: 5,
-    CLIMATE_MODE_PROG_HEAT: 6,
-    CLIMATE_MODE_PROG_COOL: 7,
-}
+from ..constants import (ATTR_FORMATTED, ATTR_GROUP, ATTR_ID, ATTR_PREC,
+                         ATTR_UOM, ATTR_VALUE, BATLVL_PROPERTY,
+                         CLIMATE_SETPOINT_MIN_GAP, COMMAND_FRIENDLY_NAME,
+                         COMMAND_NAME, STATE_PROPERTY, UOM_TO_STATES,
+                         UPDATE_INTERVAL, VALUE_UNKNOWN, XML_PARSE_ERROR)
+from ..events import EventEmitter
+from ..helpers import parse_xml_properties
 
 
-def parse_xml_properties(xmldoc):
-    """
-    Parse the xml properties string.
-
-    Args:
-        xmldoc: xml document to parse
-
-    Returns:
-        (state_val, state_uom, state_prec, aux_props)
-
-    """
-    state_val = None
-    state_uom = ''
-    state_prec = ''
-    aux_props = {}
-    state_set = False
-
-    props = xmldoc.getElementsByTagName('property')
-    if not props:
-        return state_val, state_uom, state_prec, aux_props
-
-    for prop in props:
-        attrs = prop.attributes
-        if ATTR_ID in prop.attributes.keys():
-            prop_id = attrs[ATTR_ID].value
-        if ATTR_UOM in prop.attributes.keys():
-            uom = attrs[ATTR_UOM].value
-        else:
-            uom = ''
-        if ATTR_VALUE in prop.attributes.keys():
-            val = attrs[ATTR_VALUE].value
-        if ATTR_PREC in prop.attributes.keys():
-            prec = attrs[ATTR_PREC].value
-        else:
-            prec = '0'
-
-        # ISY firmwares < 5 return a list of possible units.
-        # ISYv5+ returns a UOM string which is checked against the SDK.
-        # Only return a list if the UOM should be a list.
-        units = uom.split('/') if ('/' in uom and uom != 'n/a') else uom
-
-        val = val.strip()
-        if val == "":
-            val = -1 * float('inf')
-        else:
-            val = int(val)
-
-        if prop_id == STATE_PROPERTY:
-            state_val = val
-            state_uom = units
-            state_prec = prec
-            state_set = True
-        elif prop_id == BATLVL_PROPERTY and not state_set:
-            state_val = val
-            state_uom = units
-            state_prec = prec
-        else:
-            aux_props[prop_id] = {
-                ATTR_ID: prop_id,
-                ATTR_VALUE: val,
-                ATTR_PREC: prec,
-                ATTR_UOM: units
-            }
-
-    return state_val, state_uom, state_prec, aux_props
-
-
-class EventEmitter(object):
-    def __init__(self):
-        self._subscribers = []
-
-    def subscribe(self, callback):
-        listener = EventListener(self, callback)
-        self._subscribers.append(listener)
-        return listener
-
-    def unsubscribe(self, listener):
-        self._subscribers.remove(listener)
-
-    def notify(self, event):
-        for subscriber in self._subscribers:
-            subscriber.callback(event)
-
-
-class EventListener(object):
-    def __init__(self, emitter, callback):
-        self._emitter = emitter
-        self.callback = callback
-
-    def unsubscribe(self):
-        self._emitter.unsubscribe(self)
-
-
-class EventResult(dict):
-    """Class to hold result of a command event."""
-
-    def __init__(self, event, nval=None, prec=None, uom=None):
-        """Initialize an event result."""
-        super().__init__(self, event=event, nval=nval, prec=prec, uom=uom)
-        self._event = event
-        self._nval = nval
-        self._prec = prec
-        self._uom = uom
-
-    @property
-    def event(self):
-        """Report the event control string."""
-        return self._event
-
-    @property
-    def nval(self):
-        """Report the value, if there was one."""
-        return self._nval
-
-    @property
-    def prec(self):
-        """Report the precision, if there was one."""
-        return self._prec
-
-    @property
-    def uom(self):
-        """Report the unit of measure, if there was one."""
-        return self._uom
-
-    def __str__(self):
-        """Return just the event title to prevent breaking changes."""
-        return str(self.event)
-
-    __repr__ = __str__
-
-
-class Node(object):
+class Node:
     """
     This class handles ISY nodes.
 
@@ -183,8 +21,6 @@ class Node(object):
     |  nid: The Node ID.
     |  nval: The current Node value.
     |  name: The node name.
-    |  [optional] dimmable: Default True. Boolean of whether the node is
-       dimmable.
     |  spoken: The string of the Notes Spoken field.
     |  notes: Notes from the ISY
     |  uom: Unit of Measure returned by the ISY
@@ -203,27 +39,27 @@ class Node(object):
     status = Property(0)
     hasChildren = False
 
-    def __init__(self, parent, nid, nval, name, dimmable=True, spoken=False,
-                 notes=False, uom=None, prec=0, aux_properties={},
-                 devtype_cat=None, node_def_id=None, parent_nid=None,
-                 dev_type=None):
+    def __init__(self, nodes, nid, name, state, spoken=False, notes=False,
+                 aux_properties=None, devtype_cat=None, node_def_id=None,
+                 parent_nid=None, dev_type=None, enabled=None):
         """Initialize a Node class."""
-        self.parent = parent
-        self._conn = parent.parent.conn
-        self._log = parent.parent.log
+        self._nodes = nodes
+        self.isy = nodes.isy
         self._id = nid
-        self.dimmable = dimmable
         self.name = name
         self._notes = notes
-        self.uom = uom
-        self.prec = prec
         self._spoken = spoken
-        self.aux_properties = aux_properties
+        self.aux_properties = aux_properties \
+            if aux_properties is not None else {}
         self.devtype_cat = devtype_cat
         self.node_def_id = node_def_id
         self.type = dev_type
+        self.enabled = enabled if enabled is not None else True
         self.parent_nid = parent_nid if parent_nid != nid else None
-        self.status = nval
+        self.uom = state.get(ATTR_UOM, '')
+        self.prec = state.get(ATTR_PREC, '0')
+        self.formatted = state.get(ATTR_FORMATTED, str(self.status))
+        self.status = state.get(ATTR_VALUE, VALUE_UNKNOWN)
         self.status.reporter = self.__report_status__
         self.controlEvents = EventEmitter()
 
@@ -236,177 +72,123 @@ class Node(object):
         """Return the Node ID."""
         return self._id
 
+    @property
+    def dimmable(self):
+        """
+        Return the best guess if this is a dimmable node.
+
+        Check ISYv4 UOM, then Insteon and Z-Wave Types for dimmable types.
+        """
+        dimmable = '%' in str(self.uom) or \
+            (isinstance(self.type, str) and self.type.startswith("1.")) or \
+            (self.devtype_cat is not None and
+             self.devtype_cat in ['109', '119'])
+        return dimmable
+
     def __report_status__(self, new_val):
         """Report the status of the node."""
         self.on(new_val)
 
     def update(self, wait_time=0, hint=None):
         """Update the value of the node from the controller."""
-        if not self.parent.parent.auto_update:
+        if not self.isy.auto_update:
             sleep(wait_time)
-            xml = self._conn.updateNode(self._id)
+            xml = self.isy.conn.updateNode(self._id)
 
             if xml is not None:
                 try:
                     xmldoc = minidom.parseString(xml)
                 except:
-                    self._log.error('ISY Could not parse nodes,' +
-                                    'poorly formatted XML.')
+                    self.isy.log.error("%s: Nodes", XML_PARSE_ERROR)
                 else:
-                    state_val, state_uom, state_prec, aux_props = \
-                        parse_xml_properties(xmldoc)
-
+                    state, aux_props = parse_xml_properties(xmldoc)
                     self.aux_properties.update(aux_props)
-                    self.uom = state_uom
-                    self.prec = state_prec
-                    self.status.update(state_val, silent=True)
-                    self._log.debug('ISY updated node: %s', self._id)
+                    self.uom = state[ATTR_UOM]
+                    self.prec = state[ATTR_PREC]
+                    self.status.update(state[ATTR_VALUE], silent=True)
+                    self.isy.log.debug('ISY updated node: %s', self._id)
             else:
-                self._log.warning('ISY could not update node: %s', self._id)
+                self.isy.log.warning('ISY could not update node: %s', self._id)
         elif hint is not None:
             # assume value was set correctly, auto update will correct errors
             self.status.update(hint, silent=True)
-            self._log.debug('ISY updated node: %s', self._id)
+            self.isy.log.debug('ISY updated node: %s', self._id)
 
-    def off(self):
-        """Turn the node off."""
-        if not self._conn.node_send_cmd(self._id, 'DOF'):
-            self._log.warning('ISY could not turn off node: %s', self._id)
-            return False
-        self._log.info('ISY turned off node: %s', self._id)
-        self.update(UPDATE_INTERVAL, hint=0)
-        return True
+    def get_groups(self, controller=True, responder=True):
+        """
+        Return the groups (scenes) of which this node is a member.
 
-    def on(self, val=None):
+        If controller is True, then the scene it controls is added to the list
+        If responder is True, then the scenes it is a responder of are added to
+        the list.
+        """
+        groups = []
+        for child in self._nodes.all_lower_nodes:
+            if child[0] == ATTR_GROUP:
+                if responder:
+                    if self._id in self._nodes[child[2]].members:
+                        groups.append(child[2])
+                elif controller:
+                    if self._id in self._nodes[child[2]] \
+                            .controllers:
+                        groups.append(child[2])
+        return groups
+
+    @property
+    def parent_node(self):
+        """
+        Return the parent node object of this node.
+
+        Typically this is for devices that are represented as multiple nodes in
+        the ISY, such as door and leak sensors.
+        Return None if there is no parent.
+
+        """
+        try:
+            return self._nodes.get_by_id(self.parent_nid)
+        except:
+            return None
+
+    @property
+    def spoken(self):
+        """Return the string of the Spoken property inside the node notes."""
+        self._notes = self._nodes.parse_notes(self._id)
+        return self._notes['spoken']
+
+    """
+    NODE CONTROL COMMANDS.
+
+    Most are added dynamically, these are special cases.
+    """
+    def on(self, val=255):
         """
         Turn the node on.
 
         |  [optional] val: The value brightness value (0-255) for the node.
         """
         if val is None:
-            response = self._conn.node_send_cmd(self._id, 'DON')
-        elif val > 0:
-            response = self._conn.node_send_cmd(self._id, 'DOF',
-                                                str(min(255, val)))
+            cmd = 'DON'
+        elif int(val) > 0:
+            cmd = 'DON'
+            val = str(val) if int(val) < 255 else None
         else:
-            response = self._conn.node_send_cmd(self._id, 'DOF')
+            cmd = 'DOF'
+            val = None
+        return self.send_cmd(cmd, val)
 
-        if response is None:
-            self._log.warning('ISY could not turn on node: %s', self._id)
+    def send_cmd(self, cmd, val=None):
+        """Send a command to the device."""
+        value = str(val) if val is not None else None
+        if not self.isy.conn.node_send_cmd(self._id, cmd, value):
+            self.isy.log.warning('ISY could not send %s command to %s.',
+                                 COMMAND_FRIENDLY_NAME.get(cmd), self._id)
             return False
-
-        if val is None:
-            self._log.info('ISY turned on node: %s', self._id)
-            val = 255
-        else:
-            self._log.info('ISY turned on node: %s, To value: %s',
-                           self._id, str(val))
-            val = int(val)
+        self.isy.log.info('ISY command %s sent to %s.',
+                          COMMAND_FRIENDLY_NAME.get(cmd), self._id)
+        # Special hint case for DON command.
+        val = val if not (val is None and cmd == 'DON') else 255
         self.update(UPDATE_INTERVAL, hint=val)
         return True
-
-    def fastoff(self):
-        """Turn the node fast off."""
-        if not self._conn.node_send_cmd(self._id, 'DFOF'):
-            self._log.warning('ISY could not fast off node: %s', self._id)
-            return False
-        self._log.info('ISY turned did a fast off with node: %s', self._id)
-        self.update(UPDATE_INTERVAL, hint=0)
-        return True
-
-    def faston(self):
-        """Turn the node fast on."""
-        if not self._conn.node_send_cmd(self._id, 'DFON'):
-            self._log.warning('ISY could not fast on node: %s', self._id)
-            return False
-        self._log.info('ISY did a fast on with node: %s', self._id)
-        self.update(UPDATE_INTERVAL, hint=255)
-        return True
-
-    def bright(self):
-        """Brighten the node by one step."""
-        if not self._conn.node_send_cmd(self._id, 'BRT'):
-            self._log.warning('ISY could not brighten node: %s', self._id)
-            return False
-        self._log.info('ISY brightened node: %s', self._id)
-        self.update(UPDATE_INTERVAL)
-        return True
-
-    def dim(self):
-        """Dim the node by one step."""
-        if not self._conn.node_send_cmd(self._id, 'DIM'):
-            self._log.warning('ISY could not dim node: %s', self._id)
-            return False
-        self._log.info('ISY dimmed node: %s', self._id)
-        self.update(UPDATE_INTERVAL)
-        return True
-
-    def send_cmd(self, cmd, val):
-        """Send a command to the device to set the system heat setpoint."""
-        if not self._conn.node_send_cmd(self._id, cmd, str(val)):
-            self._log.warning('ISY could not send command: %s', self._id)
-            return False
-        self._log.info('ISY command sent: %s', self._id)
-        self.update(UPDATE_INTERVAL)
-        return True
-
-    def _fan_mode(self, mode):
-        """Send a command to the climate device to set the fan mode."""
-        if mode not in FAN_MODES:
-            self._log.warning('ISY received invalid fan mode: ' + mode)
-            return False
-        return self.send_cmd('CLIFS', FAN_MODES[mode])
-
-    def fan_by_mode(self, mode):
-        """Send a command to the climate device to set fan mode=auto."""
-        return self._fan_mode(mode)
-
-    def fan_auto(self):
-        """Send a command to the climate device to set fan mode=auto."""
-        return self._fan_mode(FAN_MODE_AUTO)
-
-    def fan_on(self):
-        """Send a command to the climate device to set fan mode=on."""
-        return self._fan_mode(FAN_MODE_ON)
-
-    def _climate_mode(self, mode):
-        """Send a command to the climate device to set the system mode."""
-        if mode not in CLIMATE_MODES:
-            self._log.warning('ISY received invalid climate mode: ' + mode)
-            return False
-        return self.send_cmd('CLIMD', CLIMATE_MODES[mode])
-
-    def climate_by_mode(self, mode):
-        """Send a command to the device to set the system to a given mode."""
-        return self._climate_mode(mode)
-
-    def climate_off(self):
-        """Send a command to the device to set the system mode=off."""
-        return self._climate_mode(CLIMATE_MODE_OFF)
-
-    def climate_auto(self):
-        """Send a command to the device to set the system mode=auto."""
-        return self._climate_mode(CLIMATE_MODE_AUTO)
-
-    def climate_heat(self):
-        """Send a command to the device to set the system mode=heat."""
-        return self._climate_mode(CLIMATE_MODE_HEAT)
-
-    def climate_cool(self):
-        """Send a command to the device to set the system mode=cool."""
-        return self._climate_mode(CLIMATE_MODE_COOL)
-
-    def climate_prog_auto(self):
-        """Send a command to the device to set the system mode=auto."""
-        return self._climate_mode(CLIMATE_MODE_PROG_AUTO)
-
-    def climate_prog_heat(self):
-        """Send a command to the device to set the system mode=heat."""
-        return self._climate_mode(CLIMATE_MODE_PROG_HEAT)
-
-    def climate_prog_cool(self):
-        """Send a command to the device to set the system mode=cool."""
-        return self._climate_mode(CLIMATE_MODE_PROG_COOL)
 
     def climate_setpoint(self, val):
         """Send a command to the device to set the system setpoints."""
@@ -428,54 +210,3 @@ class Node(object):
         if self.uom in ['101', 'degrees']:
             val = 2 * val
         return self.send_cmd('CLISPC', str(val))
-
-    def lock(self):
-        """Send a command via secure mode to z-wave locks."""
-        return self.send_cmd('SECMD', '1')
-
-    def unlock(self):
-        """Send a command via secure mode to z-wave locks."""
-        return self.send_cmd('SECMD', '0')
-
-    def _get_notes(self):
-        self._notes = self.parent.parseNotes(self._conn.getNodeNotes(self._id))
-
-    def get_groups(self, controller=True, responder=True):
-        """
-        Return the groups (scenes) of which this node is a member.
-
-        If controller is True, then the scene it controls is added to the list
-        If responder is True, then the scenes it is a responder of are added to
-        the list.
-        """
-        groups = []
-        for child in self.parent.parent.nodes.allLowerNodes:
-            if child[0] is 'group':
-                if responder:
-                    if self._id in self.parent.parent.nodes[child[2]].members:
-                        groups.append(child[2])
-                elif controller:
-                    if self._id in self.parent.parent.nodes[child[2]].controllers:
-                        groups.append(child[2])
-        return groups
-
-    @property
-    def parent_node(self):
-        """
-        Return the parent node object of this node.
-
-        Typically this is for devices that are represented as multiple nodes in
-        the ISY, such as door and leak sensors.
-        Return None if there is no parent.
-
-        """
-        try:
-            return self.parent.getByID(self.parent_nid)
-        except:
-            return None
-
-    @property
-    def spoken(self):
-        """Return the string of the Spoken property inside the node notes."""
-        self._get_notes()
-        return self._notes['spoken']

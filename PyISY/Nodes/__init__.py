@@ -2,11 +2,18 @@
 from time import sleep
 from xml.dom import minidom
 
+from ..constants import (ATTR_ACTION, ATTR_CONTROL, ATTR_FLAG, ATTR_FOLDER,
+                         ATTR_FORMATTED, ATTR_GROUP, ATTR_NAME, ATTR_NODE,
+                         ATTR_PREC, ATTR_TYPE, ATTR_UOM, ATTR_VALUE,
+                         VALUE_UNKNOWN, XML_PARSE_ERROR)
+from ..events import EventResult
+from ..helpers import (attr_from_element, attr_from_xml, parse_xml_properties,
+                       value_from_xml)
 from .group import Group
-from .node import EventResult, Node, parse_xml_properties
+from .node import Node
 
 
-class Nodes(object):
+class Nodes:
     """
     This class handles the ISY nodes.
 
@@ -15,7 +22,7 @@ class Nodes(object):
     :class:`~PyISY.Nodes.Node` and :class:`~PyISY.Nodes.Group` that represent
     objects on the controller.
 
-    |  parent: ISY class
+    |  isy: ISY class
     |  root: [optional] String representing the current navigation level's ID
     |  nids: [optional] list of node ids
     |  nnames: [optional] list of node names
@@ -24,7 +31,7 @@ class Nodes(object):
     |  ntypes: [optional] list of node types
     |  xml: [optional] String of xml data containing the configuration data
 
-    :ivar allLowerNodes: Return all nodes beneath current level
+    :ivar all_lower_nodes: Return all nodes beneath current level
     :ivar children: A list of the object's children.
     :ivar hasChildren: Indicates if object has children
     :ivar name: The name of the current folder in navigation.
@@ -36,9 +43,10 @@ class Nodes(object):
     nobjs = []
     ntypes = []
 
-    def __init__(self, parent, root=None, nids=None, nnames=None,
+    def __init__(self, isy, root=None, nids=None, nnames=None,
                  nparents=None, nobjs=None, ntypes=None, xml=None):
-        self.parent = parent
+        """Initialize the Nodes ISY Node Manager class."""
+        self.isy = isy
         self.root = root
 
         if nids is not None and nnames is not None and nparents is not None \
@@ -58,119 +66,110 @@ class Nodes(object):
         if self.root is None:
             return 'Folder <root>'
         ind = self.nids.index(self.root)
-        if self.ntypes[ind] == 'folder':
-            return 'Folder (' + self.root + ')'
-        elif self.ntypes[ind] == 'group':
-            return 'Group (' + self.root + ')'
-        return 'Node (' + self.root + ')'
+        if self.ntypes[ind] == ATTR_FOLDER:
+            return 'Folder ({})'.format(self.root)
+        if self.ntypes[ind] == ATTR_GROUP:
+            return 'Group ({})'.format(self.root)
+        return 'Node ({})'.format(self.root)
 
     def __repr__(self):
-        """Creates a pretty representation of the nodes/folders/groups."""
+        """Create a pretty representation of the nodes/folders/groups."""
         # get and sort children
         folders = []
         groups = []
         nodes = []
         for child in self.children:
-            if child[0] == 'folder':
+            if child[0] == ATTR_FOLDER:
                 folders.append(child)
-            elif child[0] == 'group':
+            elif child[0] == ATTR_GROUP:
                 groups.append(child)
-            elif child[0] == 'node':
+            elif child[0] == ATTR_NODE:
                 nodes.append(child)
 
         # initialize data
         folders.sort(key=lambda x: x[1])
         groups.sort(key=lambda x: x[1])
         nodes.sort(key=lambda x: x[1])
-        out = str(self) + '\n' + self.__reprFolders__(folders) + \
-            self.__reprGroups__(groups) + self.__reprNodes__(nodes)
+        out = '{!s}\n{}{}{}'.format(self,
+                                    self.__repr_folders__(folders),
+                                    self.__repr_groups__(groups),
+                                    self.__repr_nodes__(nodes)
+                                    )
         return out
 
-    def __reprFolders__(self, folders):
-        # format folders
-        out = ''
+    def __repr_folders__(self, folders):
+        """Return a representation of the folder structure."""
+        out = ""
         for fold in folders:
             fold_obj = self[fold[2]]
-            out += '  + ' + fold[1] + ': Folder(' + fold[2] + ')\n'
+            out += "  + {}: Folder({})\n".format(fold[1], fold[2])
             for line in repr(fold_obj).split('\n')[1:]:
-                if len(line) > 0:
-                    out += '  |   ' + line + '\n'
-            out += '  -\n'
+                out += "  |   {}\n".format(line)
+            out += "  -\n"
         return out
 
-    def __reprGroups__(self, groups):
-        # format groups
-        out = ''
+    @staticmethod
+    def __repr_groups__(groups):
+        """Return a representation of the groups structure."""
+        out = ""
         for group in groups:
-            out += '  ' + group[1] + ': Group(' + group[2] + ')\n'
+            out += "  {}: Group({})\n".format(group[1], group[2])
         return out
 
-    def __reprNodes__(self, nodes):
-        # format nodes
-        out = ''
+    def __repr_nodes__(self, nodes):
+        """Return a representation of the nodes structure."""
+        out = ""
         for node in nodes:
             node_obj = self[node[2]]
             if node_obj.hasChildren:
-                out += '  + '
+                out += "  + "
             else:
-                out += '  '
-            out += node[1] + ': Node(' + node[2] + ')\n'
+                out += "  "
+            out += "{}: Node({})\n".format(node[1], node[2])
             if node_obj.hasChildren:
                 for line in repr(node_obj).split('\n')[1:]:
-                    if len(line) > 0:
-                        out += '  |   ' + line + '\n'
-                out += '  -\n'
+                    out += "  |   {}\n".format(line)
+                out += "  -\n"
         return out
 
     def __iter__(self):
         """Return an iterator for each node below the current nav level."""
-        iter_data = self.allLowerNodes
+        iter_data = self.all_lower_nodes
         return NodeIterator(self, iter_data, delta=1)
 
     def __reversed__(self):
         """Return the iterator in reverse order."""
-        iter_data = self.allLowerNodes
+        iter_data = self.all_lower_nodes
         return NodeIterator(self, iter_data, delta=-1)
 
     def _upmsg(self, xmldoc):
-        """Updates nodes from event stream message."""
-        nid = xmldoc.getElementsByTagName('node')[0].firstChild.toxml()
-        nval = int(xmldoc.getElementsByTagName('action')[0].firstChild.toxml())
-        self.getByID(nid).status.update(nval, force=True, silent=True)
-        self.parent.log.debug('ISY Updated Node: ' + nid)
+        """Update nodes from event stream message."""
+        nid = value_from_xml(xmldoc, ATTR_NODE)
+        nval = int(value_from_xml(xmldoc, ATTR_ACTION))
+        self.get_by_id(nid).status.update(nval, force=True, silent=True)
+        self.isy.log.debug('ISY Updated Node: ' + nid)
 
     def _controlmsg(self, xmldoc):
-        """Passes Control events from an event stream message to nodes, for
-        sending out to subscribers."""
-        try:
-            nid = xmldoc.getElementsByTagName('node')[0].firstChild.toxml()
-            cntrl = xmldoc.getElementsByTagName('control')[0].firstChild.toxml()
-        except IndexError:
+        """
+        Pass Control events from an event stream message to nodes.
+
+        Used for sending out to subscribers.
+        """
+        nid = value_from_xml(xmldoc, ATTR_NODE)
+        cntrl = value_from_xml(xmldoc, ATTR_CONTROL)
+        if not (nid and cntrl):
             # If there is no node associated with the control message ignore it
             return
 
         # Process the action and value if provided in event data.
-        try:
-            nval = xmldoc.getElementsByTagName('action')[0].firstChild.toxml()
-        except IndexError:
-            nval = 0  # Error getting value, there might not be one.
+        nval = value_from_xml(xmldoc, ATTR_ACTION, 0)
+        prec = attr_from_xml(xmldoc, ATTR_ACTION, ATTR_PREC, None)
+        uom = attr_from_xml(xmldoc, ATTR_ACTION, ATTR_UOM, None)
 
-        try:
-            prec = xmldoc.getElementsByTagName('action')[0]. \
-                        attributes['prec'].value
-        except KeyError:
-            prec = None
-
-        try:
-            uom = xmldoc.getElementsByTagName('action')[0]. \
-                        attributes['uom'].value
-        except KeyError:
-            uom = None
-
-        self.getByID(nid).controlEvents.notify(EventResult(cntrl, nval,
-                                                           prec, uom))
-        self.parent.log.debug('ISY Node Control Event: %s %s %s',
-                              nid, cntrl, nval)
+        self.get_by_id(nid).controlEvents.notify(EventResult(cntrl, nval,
+                                                             prec, uom))
+        self.isy.log.debug('ISY Node Control Event: %s %s %s',
+                           nid, cntrl, nval)
 
     def parse(self, xml):
         """
@@ -181,37 +180,24 @@ class Nodes(object):
         try:
             xmldoc = minidom.parseString(xml)
         except:
-            self.parent.log.error('ISY Could not parse nodes, '
-                                  + 'poorly formatted XML.')
+            self.isy.log.error("%s: Nodes", XML_PARSE_ERROR)
         else:
             # get nodes
-            ntypes = ['folder', 'node', 'group']
+            ntypes = [ATTR_FOLDER, ATTR_NODE, ATTR_GROUP]
             for ntype in ntypes:
                 features = xmldoc.getElementsByTagName(ntype)
 
                 for feature in features:
-                    nid = feature.getElementsByTagName('address')[0] \
-                        .firstChild.toxml()
-                    nname = feature.getElementsByTagName('name')[0] \
-                        .firstChild.toxml()
-                    try:
-                        nparent = feature.getElementsByTagName('parent')[0] \
-                            .firstChild.toxml()
-                    except IndexError:
-                        nparent = None
+                    # Get Node Information
+                    nid = value_from_xml(feature, 'address')
+                    nname = value_from_xml(feature, ATTR_NAME)
+                    nparent = value_from_xml(feature, 'parent')
+                    parent_nid = value_from_xml(feature, 'pnode')
+                    dev_type = value_from_xml(feature, ATTR_TYPE)
+                    node_def_id = value_from_xml(feature, 'nodeDefId')
+                    enabled = value_from_xml(feature, 'enabled')
 
-                    try:
-                        parent_nid = feature.getElementsByTagName('pnode')[0] \
-                            .firstChild.toxml()
-                    except IndexError:
-                        parent_nid = None
-
-                    try:
-                        dev_type = feature.getElementsByTagName('type')[0] \
-                            .firstChild.toxml()
-                    except IndexError:
-                        dev_type = None
-
+                    # Get Z-Wave Device Type Category
                     devtype_cat = None
                     if dev_type is not None and dev_type.startswith('4.'):
                         try:
@@ -222,97 +208,82 @@ class Nodes(object):
                         except IndexError:
                             devtype_cat = None
 
-                    try:
-                        nodeDefId = feature.attributes['nodeDefId'].value
-                    except KeyError:
-                        nodeDefId = None
-
-                    if ntype == 'folder':
-                        self.insert(nid, nname, nparent, None, ntype)
-                    elif ntype == 'node':
-                        (state_val, state_uom, state_prec,
-                         aux_props) = parse_xml_properties(feature)
-
-                        dimmable = '%' in state_uom
-
-                        self.insert(nid, nname, nparent,
-                                    Node(self, nid, state_val, nname,
-                                         dimmable,
-                                         uom=state_uom, prec=state_prec,
-                                         aux_properties=aux_props,
-                                         devtype_cat=devtype_cat,
-                                         node_def_id=nodeDefId,
-                                         parent_nid=parent_nid,
-                                         dev_type=dev_type),
-                                    ntype)
-                    elif ntype == 'group':
-                        flag = feature.attributes['flag'].value
-                        # Ignore groups that contain 0x08 in the flag since that is a ISY scene that
-                        # contains every device/scene so it will contain some scenes we have not
-                        # seen yet so they are not defined and it includes the ISY MAC addrees in
-                        # newer versions of ISY 5.0.6+ ..
-                        if int(flag) & 0x08:
-                            self.parent.log.info('Skipping group flag=' + flag + " " + nid )
+                    # Process the different node types
+                    if ntype == ATTR_FOLDER:
+                        if nid not in self.nids:
+                            self.insert(nid, nname, nparent, None, ntype)
+                    elif ntype == ATTR_NODE:
+                        state, aux_props = parse_xml_properties(feature)
+                        if nid in self.nids:
+                            node = self.get_by_id(nid)
+                            node.uom = state.get(ATTR_UOM, '')
+                            node.prec = state.get(ATTR_PREC, '0')
+                            node.formatted = state.get(ATTR_FORMATTED,
+                                                       state.get(ATTR_VALUE,
+                                                                 VALUE_UNKNOWN)
+                                                       )
+                            node.update_aux_properties(aux_props)
+                            node.status.update(state.get(ATTR_VALUE,
+                                                         VALUE_UNKNOWN),
+                                               silent=True)
                         else:
-                            mems = feature.getElementsByTagName('link')
-                            # Build list of members
-                            members = [mem.firstChild.nodeValue for mem in mems]
-                            # Build list of controllers
-                            controllers = []
-                            for mem in mems:
-                                if int(mem.attributes['type'].value) == 16:
-                                    controllers.append(mem.firstChild.nodeValue)
                             self.insert(nid, nname, nparent,
-                                        Group(self, nid, nname, members, controllers), ntype)
+                                        Node(self, nid=nid, name=nname,
+                                             state=state,
+                                             aux_properties=aux_props,
+                                             devtype_cat=devtype_cat,
+                                             node_def_id=node_def_id,
+                                             parent_nid=parent_nid,
+                                             dev_type=dev_type,
+                                             enabled=enabled),
+                                        ntype)
 
-            self.parent.log.info('ISY Loaded Nodes')
+                    elif ntype == ATTR_GROUP:
+                        if nid not in self.nids:
+                            flag = attr_from_element(feature, ATTR_FLAG)
+                            # Ignore groups that contain 0x08 in the flag since
+                            # that is a ISY scene that contains every device/
+                            # scene so it will contain some scenes we have not
+                            # seen yet so they are not defined and it includes
+                            # the ISY MAC addrees in newer versions of
+                            # ISY firmwares > 5.0.6+ ..
+                            if int(flag) & 0x08:
+                                self.isy.log.info('Skipping group flag=%s %s',
+                                                  flag, nid)
+                            else:
+                                mems = feature.getElementsByTagName('link')
+                                # Build list of members
+                                members = [mem.firstChild.nodeValue
+                                           for mem in mems]
+                                # Build list of controllers
+                                controllers = []
+                                for mem in mems:
+                                    if int(attr_from_element(
+                                            mem, ATTR_TYPE, 0)) == 16:
+                                        controllers.append(
+                                            mem.firstChild.nodeValue)
+                                self.insert(nid, nname, nparent,
+                                            Group(self, nid, nname,
+                                                  members, controllers),
+                                            ntype)
+            self.isy.log.info('ISY Loaded Nodes')
 
-    def update(self, waitTime=0):
+    def update(self, wait_time=0):
         """
-        Updates the contents of the class
+        Update the contents of the class.
 
-        |  waitTime: [optional] Amount of seconds to wait before updating
+        |  wait_time: [optional] Amount of seconds to wait before updating
         """
-        sleep(waitTime)
-        xml = self.parent.conn.updateNodes()
+        sleep(wait_time)
+        xml = self.isy.conn.updateNodes()
         if xml is not None:
-            try:
-                xmldoc = minidom.parseString(xml)
-            except:
-                self.parent.log.error('ISY Could not parse nodes, '
-                                      + 'poorly formatted XML.')
-            else:
-                for feature in xmldoc.getElementsByTagName('node'):
-                    nid = feature.attributes['id'].value
-
-                    (state_val, state_uom, state_prec,
-                     aux_props) = parse_xml_properties(feature)
-
-                    dimmable = '%' in state_uom
-
-                    if nid in self.nids:
-                        node = self.getByID(nid)
-                        node.uom = state_uom
-                        node.prec = state_prec
-                        node.dimmable = dimmable
-
-                        node.update_aux_properties(aux_props)
-
-                        node.status.update(state_val, silent=True)
-                    else:
-                        node = Node(self, id, state_val, ' ', dimmable,
-                                    uom=state_uom, prec=state_prec,
-                                    aux_properties=aux_props)
-                        self.insert(id, ' ', None, node)
-
-                self.parent.log.info('ISY Updated Nodes')
-
+            self.parse(xml)
         else:
-            self.parent.log.warning('ISY Failed to update nodes.')
+            self.isy.log.warning('ISY Failed to update nodes.')
 
     def insert(self, nid, nname, nparent, nobj, ntype):
         """
-        Inserts a new node into the lists.
+        Insert a new node into the lists.
 
         |  nid: node id
         |  nname: node name
@@ -327,20 +298,18 @@ class Nodes(object):
         self.nobjs.append(nobj)
 
     def __getitem__(self, val):
-        """
-        Used for navigating through the node tree. Can take names or IDs.
-        """
+        """Navigate through the node tree. Can take names or IDs."""
         try:
             self.nids.index(val)
-            fun = self.getByID
+            fun = self.get_by_id
         except ValueError:
             try:
                 self.nnames.index(val)
-                fun = self.getByName
+                fun = self.get_by_name
             except ValueError:
                 try:
                     val = int(val)
-                    fun = self.getByInd
+                    fun = self.get_by_index
                 except ValueError:
                     fun = None
 
@@ -354,56 +323,58 @@ class Nodes(object):
                 return output
         raise KeyError('Unrecognized Key: [' + val + ']')
 
-    def __setitem__(self, val):
+    def __setitem__(self, item, value):
+        """Set item value."""
         return None
 
-    def getByName(self, val):
+    def get_by_name(self, val):
         """
-        Gets child object with the given name.
+        Get child object with the given name.
 
         |  val: String representing name to look for.
         """
         for i in range(len(self.nids)):
             if self.nparents[i] == self.root and self.nnames[i] == val:
-                return self.getByInd(i)
+                return self.get_by_index(i)
+        return None
 
-    def getByID(self, nid):
+    def get_by_id(self, nid):
         """
-        Gets object with the given ID.
+        Get object with the given ID.
 
         |  nid: Integer representing node/group/folder id.
         """
         i = self.nids.index(nid)
-        return self.getByInd(i)
+        return self.get_by_index(i)
 
-    def getByInd(self, i):
+    def get_by_index(self, i):
         """
         Return the object at the given index in the list.
 
         |  i: Integer representing index of node/group/folder.
         """
-        if self.ntypes[i] in ['group', 'node']:
+        if self.ntypes[i] in [ATTR_GROUP, ATTR_NODE]:
             return self.nobjs[i]
-        return Nodes(self.parent, self.nids[i], self.nids, self.nnames,
+        return Nodes(self.isy, self.nids[i], self.nids, self.nnames,
                      self.nparents, self.nobjs, self.ntypes)
 
-    def parseNotes(self, notes_xml):
+    def parse_notes(self, node_id):
+        """Parse the notes for a given node."""
+        notes_xml = self.isy.conn.get_node_notes(node_id)
         spoken = None
         if notes_xml is not None and notes_xml != "":
             try:
                 notesdom = minidom.parseString(notes_xml)
             except:
-                self.parent.log.error('ISY Could not parse node, notes '
-                                      + 'poorly formatted XML: ' + notes_xml)
+                self.isy.log.error("%s: Node Notes %s",
+                                   XML_PARSE_ERROR, notes_xml)
             else:
-                spoken_tag = notesdom.getElementsByTagName('spoken')
-                if spoken_tag and len(spoken_tag) > 0 and spoken_tag[0].firstChild is not None:
-                    spoken = spoken_tag[0].firstChild.toxml()
-        return { "spoken": spoken }
-
+                spoken = value_from_xml(notesdom, 'spoken')
+        return {"spoken": spoken}
 
     @property
     def children(self):
+        """Return the children of the class."""
         out = []
         for i in range(len(self.nids)):
             if self.nparents[i] == self.root:
@@ -412,6 +383,7 @@ class Nodes(object):
 
     @property
     def hasChildren(self):
+        """Return if the root has children."""
         try:
             self.nparents.index(self.root)
             return True
@@ -420,32 +392,35 @@ class Nodes(object):
 
     @property
     def name(self):
+        """Return the name of the root."""
         if self.root is None:
             return ''
-        else:
-            ind = self.nids.index(self.root)
-            return self.nnames[ind]
+        ind = self.nids.index(self.root)
+        return self.nnames[ind]
 
     @property
-    def allLowerNodes(self):
+    def all_lower_nodes(self):
+        """Return all nodes below the current root."""
         output = []
         myname = self.name + '/'
 
         for dtype, name, ident in self.children:
-            if dtype in ['group', 'node']:
+            if dtype in [ATTR_GROUP, ATTR_NODE]:
                 output.append((dtype, myname + name, ident))
 
             else:
                 output += [(dtype2, myname + name2, ident2)
                            for (dtype2, name2, ident2)
-                           in self[ident].allLowerNodes]
+                           in self[ident].all_lower_nodes]
         return output
 
-class NodeIterator(object):
-    """Iterates through a list of nodes, returning node objects."""
 
-    def __init__(self, parent, iter_data, delta=1):
-        self._parent = parent
+class NodeIterator:
+    """Iterate through a list of nodes, returning node objects."""
+
+    def __init__(self, nodes, iter_data, delta=1):
+        """Initialize a NodeIterator class."""
+        self._nodes = nodes
         self._iterdata = iter_data
         self._len = len(iter_data)
         self._delta = delta
@@ -456,11 +431,13 @@ class NodeIterator(object):
             self._ind = self._len - 1
 
     def __next__(self):
+        """Get the next element in the iteration."""
         if self._ind >= self._len or self._ind < 0:
             raise StopIteration
         _, path, ident = self._iterdata[self._ind]
         self._ind += self._delta
-        return (path, self._parent[ident])
+        return (path, self._nodes[ident])
 
     def __len__(self):
+        """Return the number of elements."""
         return self._len

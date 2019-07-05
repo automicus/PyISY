@@ -1,10 +1,13 @@
+"""ISY Configuration Lookup."""
 from xml.dom import minidom
 
+from .constants import ATTR_DESC, ATTR_ID
+from .helpers import value_from_xml
 
-class configuration(dict):
 
+class Configuration(dict):
     """
-    configuration class
+    ISY Configuration class.
 
     DESCRIPTION:
         This class handles the ISY configuration.
@@ -46,25 +49,26 @@ class configuration(dict):
         True
 
     ATTRIBUTES:
-        parent: The ISY device class
+        isy: The ISY device class
+
     """
 
-    def __init__(self, parent, xml=None):
+    def __init__(self, isy, xml=None):
         """
-        Initiates configuration class.
+        Initialize configuration class.
 
-        parent: ISY class
+        isy: ISY class
         xml: String of xml data containing the configuration data
         """
-        super(configuration, self).__init__()
-        self.parent = parent
+        super().__init__()
+        self.isy = isy
 
         if xml is not None:
             self.parse(xml)
 
     def parse(self, xml):
         """
-        Parses the xml data.
+        Parse the xml data.
 
         xml: String of the xml data
         """
@@ -72,12 +76,11 @@ class configuration(dict):
         features = xmldoc.getElementsByTagName('feature')
 
         for feature in features:
-            idnum = feature.getElementsByTagName('id')[0].firstChild.toxml()
-            desc = feature.getElementsByTagName('desc')[0].firstChild.toxml()
-            installed_raw = feature.getElementsByTagName('isInstalled')[0] \
-                .firstChild.toxml()
-            installed = True if installed_raw == 'true' else False
+            idnum = value_from_xml(feature, ATTR_ID)
+            desc = value_from_xml(feature, ATTR_DESC)
+            installed_raw = value_from_xml(feature, 'isInstalled')
+            installed = bool(installed_raw == 'true')
             self[idnum] = installed
             self[desc] = self[idnum]
 
-        self.parent.log.info('ISY Loaded Configuration')
+        self.isy.log.info('ISY Loaded Configuration')

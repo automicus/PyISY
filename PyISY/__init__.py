@@ -21,9 +21,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-from .ISY import ISY
+from .isy import ISY
 
-__version__ = '1.1.7'
+__version__ = '1.1.8'
 __author__ = 'Ryan M. Kraus'
 __email__ = 'rmkraus at gmail dot com'
 __date__ = 'September 2019'

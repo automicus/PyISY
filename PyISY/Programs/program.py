@@ -1,6 +1,6 @@
 from VarEvents import Property
 
-from ..constants import UPDATE_INTERVAL, EMPTY_TIME
+from ..constants import EMPTY_TIME, UPDATE_INTERVAL
 from .folder import Folder
 
 
@@ -8,7 +8,7 @@ class Program(Folder):
     """
     Class representing a program on the ISY controller.
 
-    |  parent: The program manager object.
+    |  programs: The program manager object.
     |  pid: The ID of the program.
     |  pname: The name of the program.
     |  pstatus: The current status of the program.
@@ -33,8 +33,8 @@ class Program(Folder):
                         finished running.
     :ivar enabled: Watched property representing if the program is enabled on
                    the controller.
-    :ivar runAtStartup: Watched property representing the if the program runs on
-                        controller start up.
+    :ivar runAtStartup: Watched property representing the if the program runs
+                        on controller start up.
     :ivar running: Watched property representing if the current program is
                    running on the controller.
     """
@@ -49,9 +49,10 @@ class Program(Folder):
     ranElse = Property(0, readonly=True)
     dtype = 'program'
 
-    def __init__(self, parent, pid, pname, pstatus, plastup, plastrun, plastfin,
-                 penabled, pstartrun, prunning):
-        super(Program, self).__init__(parent, pid, pname, pstatus)
+    def __init__(self, programs, pid, pname, pstatus, plastup, plastrun,
+                 plastfin, penabled, pstartrun, prunning):
+        """Initialize a Program class."""
+        super(Program, self).__init__(programs, pid, pname, pstatus)
         self.lastUpdate.update(plastup, force=True, silent=True)
         self.lastRun.update(plastrun, force=True, silent=True)
         self.lastFinished.update(plastfin, force=True, silent=True)
@@ -62,26 +63,27 @@ class Program(Folder):
         self.running.update(prunning, force=True, silent=True)
 
     def __str__(self):
-        """ Returns a string representation of the object. """
-        return 'Program(' + self._id + ')'
+        """Return a string representation of the object."""
+        return 'Program({})'.format(self._id)
 
     def __report_enabled__(self, val):
+        """Set the enabled flag."""
         self.noupdate = True
-        fun = self.enable if val else self.disable
-        fun()
+        self.send_pgrm_cmd('enable' if val else 'disable')
         self.noupdate = False
 
     def __report_startrun__(self, val):
+        """Set the run at startup flag."""
         self.noupdate = True
-        fun = self.enableRunAtStartup if val else self.disableRunAtStartup
-        fun()
+        self.send_pgrm_cmd('enableRunAtStartup' if val
+                           else 'disableRunAtStartup')
         self.noupdate = False
 
-    def update(self, waitTime=0, data=None):
+    def update(self, wait_time=0, data=None):
         """
         Update the program with values on the controller.
 
-        |  waitTime: [optional] Seconds to wait before updating.
+        |  wait_time: [optional] Seconds to wait before updating.
         |  data: [optional] Data to update the object with.
         """
         if not self.noupdate:
@@ -99,60 +101,4 @@ class Program(Folder):
                                          force=True, silent=True)
                 self.running.update(prunning, force=True, silent=True)
             else:
-                self.parent.update(waitTime, pid=self._id)
-
-    def enable(self):
-        """ Enable the program on the controller. """
-        response = self.parent.parent.conn.programEnable(self._id)
-
-        if response is None:
-            self.parent.parent.log.warning('ISY could not enable program: '
-                                           + self._id)
-            return False
-        else:
-            self.parent.parent.log.info('ISY enabled program: ' + self._id)
-            self.update(UPDATE_INTERVAL)
-            return True
-
-    def disable(self):
-        """ Disable the program on the controller. """
-        response = self.parent.parent.conn.programDisable(self._id)
-
-        if response is None:
-            self.parent.parent.log.warning('ISY could not disable program: '
-                                           + self._id)
-            return False
-        else:
-            self.parent.parent.log.info('ISY disabled program: ' + self._id)
-            self.update(UPDATE_INTERVAL)
-            return True
-
-    def enableRunAtStartup(self):
-        """ Enable running the program on controller start up. """
-        response = self.parent.parent.conn.programEnableRunAtStartup(self._id)
-
-        if response is None:
-            self.parent.parent.log.warning('ISY could not enable run at '
-                                           + 'startup for program: '
-                                           + self._id)
-            return False
-        else:
-            self.parent.parent.log.info('ISY enabled run at startup for '
-                                        + 'program: ' + self._id)
-            self.update(UPDATE_INTERVAL)
-            return True
-
-    def disableRunAtStartup(self):
-        """ Disable running the program on controller start up. """
-        response = self.parent.parent.conn.programDisableRunAtStartup(self._id)
-
-        if response is None:
-            self.parent.parent.log.warning('ISY could not disable run at '
-                                           + 'startup for program: '
-                                           + self._id)
-            return False
-        else:
-            self.parent.parent.log.info('ISY disabled run at startup for '
-                                        + 'program: ' + self._id)
-            self.update(UPDATE_INTERVAL)
-            return True
+                self._programs.update(wait_time, pid=self._id)

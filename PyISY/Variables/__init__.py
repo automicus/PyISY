@@ -1,17 +1,24 @@
+"""ISY Variables."""
 from datetime import datetime
 from time import sleep
 from xml.dom import minidom
 
+from ..constants import (ATTR_ID, ATTR_INIT, ATTR_NAME, ATTR_TS, ATTR_TYPE,
+                         ATTR_VAL, ATTR_VAR, XML_PARSE_ERROR)
+from ..helpers import attr_from_element, attr_from_xml, value_from_xml
 from .variable import Variable
 
 
-class Variables(object):
+class Variables:
     """
-    This class handles the ISY variables. This class can be used as a dictionary
-    to navigate through the controller's structure to objects of type
-    :class:`~PyISY.Variables.Variable` that represent objects on the controller.
+    This class handles the ISY variables.
 
-    |  parent: The ISY object.
+    This class can be used as a     dictionary to navigate through the
+    controller's structure to objects of type
+    :class:`~PyISY.Variables.Variable` that represent objects on the
+    controller.
+
+    |  isy: The ISY object.
     |  root: The ID of the current level of navigation.
     |  vids: List of variable IDs from the controller.
     |  vnames: List of variable names form the controller.
@@ -27,9 +34,10 @@ class Variables(object):
     vobjs = []
     vtypes = []
 
-    def __init__(self, parent, root=None, vids=None, vnames=None,
+    def __init__(self, isy, root=None, vids=None, vnames=None,
                  vobjs=None, vtypes=None, xml=None):
-        self.parent = parent
+        """Initialize a Variables ISY Variable Manager class."""
+        self.isy = isy
         self.root = root
 
         if vids is not None and vnames is not None \
@@ -43,86 +51,75 @@ class Variables(object):
             self.parse(xml)
 
     def __str__(self):
-        """ Returns a string representation of the variable manager. """
+        """Return a string representation of the variable manager."""
         if self.root is None:
             return 'Variable Collection'
-        elif self.root == 1:
-            return 'Variable Collection (Type: ' + str(self.root) + ')'
-        elif self.root == 2:
-            return 'Variable Collection (Type: ' + str(self.root) + ')'
+        return 'Variable Collection (Type: {!s})'.format(self.root)
 
     def __repr__(self):
-        """ Returns a string representing the children variables. """
+        """Return a string representing the children variables."""
         if self.root is None:
             return repr(self[1]) + repr(self[2])
-        else:
-            out = str(self) + '\n'
-            for child in self.children:
-                out += '  ' + child[1] + ': Variable(' + str(child[2]) + ')\n'
-            return out
+        out = str(self) + '\n'
+        for child in self.children:
+            out += '  {!s}: Variable({!s})\n'.format(child[1], child[2])
+        return out
 
     def parse(self, xmls):
-        """ Parse XML from the controller with details about the variables. """
+        """Parse XML from the controller with details about the variables."""
         try:
             xmldocs = [minidom.parseString(xml) for xml in xmls]
         except:
-            self.parent.log.error('ISY Could not parse variables, '
-                                  + 'poorly formatted XML.')
+            self.isy.log.error("%s: Variables", XML_PARSE_ERROR)
         else:
             # parse definitions
             for ind in range(2):
                 features = xmldocs[ind].getElementsByTagName('e')
                 for feature in features:
-                    self.vids.append(int(feature.attributes['id'].value))
-                    self.vnames.append(feature.attributes['name'].value)
+                    self.vids.append(int(attr_from_element(feature, ATTR_ID)))
+                    self.vnames.append(attr_from_element(feature, ATTR_NAME))
                     self.vtypes.append(ind + 1)
 
             # parse values
             count = 0
             for ind in range(2, 4):
-                features = xmldocs[ind].getElementsByTagName('var')
+                features = xmldocs[ind].getElementsByTagName(ATTR_VAR)
                 for feature in features:
-                    init = feature.getElementsByTagName('init')[0] \
-                        .firstChild.toxml()
-                    val = feature.getElementsByTagName('val')[0] \
-                        .firstChild.toxml()
-                    ts_raw = feature.getElementsByTagName('ts')[0] \
-                        .firstChild.toxml()
-                    ts = datetime.strptime(ts_raw, '%Y%m%d %H:%M:%S')
+                    init = value_from_xml(feature, ATTR_INIT)
+                    val = value_from_xml(feature, ATTR_VAL)
+                    ts_raw = value_from_xml(feature, ATTR_TS)
+                    t_s = datetime.strptime(ts_raw, '%Y%m%d %H:%M:%S')
                     self.vobjs.append(Variable(self, self.vids[count], ind - 1,
-                                               init, val, ts))
+                                               init, val, t_s))
                     count += 1
 
-            self.parent.log.info('ISY Loaded Variables')
+            self.isy.log.info('ISY Loaded Variables')
 
-    def update(self, waitTime=0):
+    def update(self, wait_time=0):
         """
         Update the variable objects with data from the controller.
 
-        |  waitTime: Seconds to wait before updating.
+        |  wait_time: Seconds to wait before updating.
         """
-        sleep(waitTime)
-        xml = self.parent.conn.updateVariables()
+        sleep(wait_time)
+        xml = self.isy.conn.updateVariables()
 
         if xml is not None:
             try:
                 xmldoc = minidom.parseString(xml)
 
-                features = xmldoc.getElementsByTagName('var')
+                features = xmldoc.getElementsByTagName(ATTR_VAR)
                 for feature in features:
-                    vid = int(feature.attributes['id'].value)
-                    vtype = int(feature.attributes['type'].value)
-                    init = feature.getElementsByTagName('init')[0] \
-                        .firstChild.toxml()
-                    val = feature.getElementsByTagName('val')[0] \
-                        .firstChild.toxml()
-                    ts_raw = feature.getElementsByTagName('ts')[0] \
-                        .firstChild.toxml()
-                    ts = datetime.strptime(ts_raw, '%Y%m%d %H:%M:%S')
+                    vid = int(attr_from_element(feature, ATTR_ID))
+                    vtype = int(attr_from_element(feature, ATTR_TYPE))
+                    init = value_from_xml(feature, ATTR_INIT)
+                    val = value_from_xml(feature, ATTR_VAL)
+                    ts_raw = value_from_xml(feature, ATTR_TS)
+                    t_s = datetime.strptime(ts_raw, '%Y%m%d %H:%M:%S')
 
                     vobj = self[vtype][vid]
                     if vobj is None:
-                        vobj = Variable(self, vid, vtype, init, val, ts)
+                        vobj = Variable(self, vid, vtype, init, val, t_s)
                         self.vtypes.append(vtype)
                         self.vids.append(vid)
                         self.vnames.append('')
@@ -130,21 +127,19 @@ class Variables(object):
                     else:
                         vobj.init.update(init, force=True, silent=True)
                         vobj.val.update(val, force=True, silent=True)
-                        vobj.lastEdit.update(ts, force=True, silent=True)
+                        vobj.lastEdit.update(t_s, force=True, silent=True)
 
             except:
-                self.parent.log.warning('ISY Failed to update variables, '
-                                        + 'recieved bad XML.')
+                self.isy.log.warning('ISY Failed to update variables, '
+                                     'recieved bad XML.')
 
         else:
-            self.parent.log.warning('ISY Failed to update variables.')
+            self.isy.log.warning('ISY Failed to update variables.')
 
     def _upmsg(self, xmldoc):
         xml = xmldoc.toxml()
-        vtype = int(xmldoc.getElementsByTagName('var')[0]
-                    .attributes['type'].value)
-        vid = int(xmldoc.getElementsByTagName('var')[0]
-                  .attributes['id'].value)
+        vtype = int(attr_from_xml(xmldoc, ATTR_VAR, ATTR_TYPE))
+        vid = int(attr_from_xml(xmldoc, ATTR_VAR, ATTR_ID))
         try:
             vobj = self[vtype][vid]
         except KeyError:
@@ -152,17 +147,16 @@ class Variables(object):
         else:
 
             if '<init>' in xml:
-                vobj.init.update(int(xmldoc.getElementsByTagName('init')[0]
-                                     .firstChild.toxml()),
+                vobj.init.update(int(value_from_xml(xmldoc, ATTR_INIT)),
                                  force=True, silent=True)
             else:
-                vobj.val.update(int(xmldoc.getElementsByTagName('val')[0]
-                                .firstChild.toxml()), force=True, silent=True)
-                ts_raw = xmldoc.getElementsByTagName('ts')[0].firstChild.toxml()
+                vobj.val.update(int(value_from_xml(xmldoc, ATTR_VAL)),
+                                force=True, silent=True)
+                ts_raw = value_from_xml(xmldoc, ATTR_TS)
                 vobj.lastEdit.update(datetime.strptime(ts_raw,
                                                        '%Y%m%d %H:%M:%S'),
                                      force=True, silent=True)
-            self.parent.log.debug('ISY Updated Variable: ' + str(vid))
+            self.isy.log.debug('ISY Updated Variable: %s', str(vid))
 
     def __getitem__(self, val):
         """
@@ -172,35 +166,34 @@ class Variables(object):
         """
         if self.root is None:
             if val in [1, 2]:
-                return Variables(self.parent, val, self.vids, self.vnames,
+                return Variables(self.isy, val, self.vids, self.vnames,
                                  self.vobjs, self.vtypes)
-            else:
-                raise KeyError('Unknown variable type: ' + str(val))
+            raise KeyError('Unknown variable type: {!s}'.format(val))
+        if isinstance(val, int):
+            search_arr = self.vids
         else:
-            if type(val) is int:
-                search_arr = self.vids
-            else:
-                search_arr = self.vnames
+            search_arr = self.vnames
 
-            notFound = True
-            ind = -1
-            while notFound:
-                try:
-                    ind = search_arr.index(val, ind + 1)
-                    if self.vtypes[ind] == self.root:
-                        notFound = False
-                except ValueError:
-                    break
-            if notFound:
-                raise KeyError('Unrecognized variable id: ' + str(val))
-            else:
-                return self.vobjs[ind]
+        not_found = True
+        ind = -1
+        while not_found:
+            try:
+                ind = search_arr.index(val, ind + 1)
+                if self.vtypes[ind] == self.root:
+                    not_found = False
+            except ValueError:
+                break
+        if not_found:
+            raise KeyError('Unrecognized variable id: {!s}'.format(val))
+        return self.vobjs[ind]
 
-    def __setitem__(self, val):
+    def __setitem__(self, val, value):
+        """Handle the setitem function for the Class."""
         return None
 
     @property
     def children(self):
+        """Get the children of the class."""
         if self.root is None:
             types = [1, 2]
         else:
