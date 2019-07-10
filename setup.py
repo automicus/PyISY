@@ -9,8 +9,8 @@ with open(path.join(this_directory, 'README.txt'), encoding='utf-8') as f:
     long_description = f.read()
 
 setup(
-    name='PyISY_beta',
-    version='1.1.8',
+    name='PyISY',
+    version='1.2.0',
     license='Apache License 2.0',
     url='http://automic.us/projects/pyisy',
     author='Ryan Kraus',
