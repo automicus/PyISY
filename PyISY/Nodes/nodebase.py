@@ -5,7 +5,6 @@ from VarEvents import Property
 
 from ..constants import COMMAND_FRIENDLY_NAME, UPDATE_INTERVAL, XML_PARSE_ERROR
 from ..helpers import value_from_xml
-from .group import Group
 
 
 class NodeBase:
@@ -78,7 +77,7 @@ class NodeBase:
 
         |  [optional] val: The value brightness value (0-255) for the node.
         """
-        if val is None or isinstance(self, Group):
+        if val is None or type(self).__name__ == "Group":
             cmd = 'DON'
         elif int(val) > 0:
             cmd = 'DON'

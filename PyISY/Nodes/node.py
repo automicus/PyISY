@@ -37,6 +37,7 @@ class Node(NodeBase):
                  aux_properties=None, devtype_cat=None, node_def_id=None,
                  parent_nid=None, dev_type=None, enabled=None):
         """Initialize a Node class."""
+        super().__init__(nodes, nid, name)
         self._aux_properties = aux_properties \
             if aux_properties is not None else {}
         self._devtype_cat = devtype_cat
@@ -49,7 +50,6 @@ class Node(NodeBase):
         self._formatted = state.get(ATTR_FORMATTED, str(self.status))
         self.status = state.get(ATTR_VALUE, VALUE_UNKNOWN)
         self.controlEvents = EventEmitter()
-        super().__init__(nodes, nid, name)
 
     @property
     def aux_properties(self):

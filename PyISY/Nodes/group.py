@@ -23,6 +23,7 @@ class Group(NodeBase):
     def __init__(self, nodes, nid, name, members=None,
                  controllers=None):
         """Initialize a Group class."""
+        super().__init__(nodes, nid, name)
         self._members = members or []
         self._controllers = controllers or []
 
@@ -30,8 +31,6 @@ class Group(NodeBase):
         self._members_handlers = [
             self._nodes[m].status.subscribe('changed', self.update)
             for m in self.members]
-
-        super().__init__(nodes, nid, name)
 
     def __del__(self):
         """Cleanup event handlers before deleting."""
