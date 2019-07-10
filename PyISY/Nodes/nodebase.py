@@ -69,9 +69,9 @@ class NodeBase:
 
     def off(self):
         """Turn off the nodes/group in the ISY."""
-        self.send_cmd('DOF')
+        return self.send_cmd('DOF')
 
-    def on(self, val=255):
+    def on(self, val=None):
         """
         Turn the node on.
 
@@ -96,7 +96,8 @@ class NodeBase:
         value = str(val) if val is not None else None
         req = ['nodes', str(self._id), 'cmd', cmd]
         if value:
-            req.append(val)
+            req.append(value)
+        self.isy.log.warning("COMMAND: %s", req)
         req_url = self.isy.conn.compile_url(req)
         if not self.isy.conn.request(req_url):
             self.isy.log.warning('ISY could not send %s command to %s.',

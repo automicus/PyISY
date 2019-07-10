@@ -189,7 +189,7 @@ class ISY:
         NOTE: `on` and climate setpoints are special and are still defined
         explicitly in the Node class.
         """
-        commands = ['DOF', 'DFON', 'DFOF', 'BRT', 'DIM', 'BEEP',
+        commands = ['DFON', 'DFOF', 'BRT', 'DIM', 'BEEP',
                     ('SECMD', '84'), ('CLIMD', '98'), ('CLIFS', '99')]
         cmd_names = []
         for command in commands:

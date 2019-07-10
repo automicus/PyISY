@@ -23,9 +23,9 @@ class Group(NodeBase):
     def __init__(self, nodes, nid, name, members=None,
                  controllers=None):
         """Initialize a Group class."""
-        super().__init__(nodes, nid, name)
         self._members = members or []
         self._controllers = controllers or []
+        super().__init__(nodes, nid, name)
 
         # listen for changes in children
         self._members_handlers = [
