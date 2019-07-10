@@ -97,7 +97,6 @@ class NodeBase:
         req = ['nodes', str(self._id), 'cmd', cmd]
         if value:
             req.append(value)
-        self.isy.log.warning("COMMAND: %s", req)
         req_url = self.isy.conn.compile_url(req)
         if not self.isy.conn.request(req_url):
             self.isy.log.warning('ISY could not send %s command to %s.',
