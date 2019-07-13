@@ -104,7 +104,13 @@ class NodeBase:
             return False
         self.isy.log.info('ISY command %s sent to %s.',
                           COMMAND_FRIENDLY_NAME.get(cmd), self._id)
-        # Special hint case for DON command.
-        val = val if not (val is None and cmd == 'DON') else 255
-        self.update(UPDATE_INTERVAL, hint=val)
+
+        # Calculate hint to use if status is updated
+        hint = None
+        if cmd in ['DON', 'DFON']:
+            hint = val if val is not None else 255
+        if cmd in ['DOF', 'DFOF']:
+            hint = 0
+
+        self.update(UPDATE_INTERVAL, hint=hint)
         return True
