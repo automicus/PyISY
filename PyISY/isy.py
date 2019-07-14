@@ -78,7 +78,9 @@ class ISY:
             self._add_commands()
             self.nodes = Nodes(self, xml=self.conn.get_nodes())
             self.programs = Programs(self, xml=self.conn.get_programs())
-            self.variables = Variables(self, xml=self.conn.get_variables())
+            self.variables = Variables(self,
+                                       def_xml=self.conn.get_variable_defs(),
+                                       var_xml=self.conn.get_variables())
 
             if self.configuration.get('Weather Information'):
                 self.climate = Climate(self, xml=self.conn.get_climate())

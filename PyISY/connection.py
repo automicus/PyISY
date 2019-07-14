@@ -169,17 +169,16 @@ class Connection:
         result = self.request(req_url)
         return result
 
-    def get_variables(self):
+    def get_variable_defs(self):
         """Fetch the list of variables from the ISY."""
         req_list = [[ATTR_VARS, 'definitions', VAR_INTEGER],
-                    [ATTR_VARS, 'definitions', VAR_STATE],
-                    [ATTR_VARS, ATTR_GET, VAR_INTEGER],
-                    [ATTR_VARS, ATTR_GET, VAR_STATE]]
+                    [ATTR_VARS, 'definitions', VAR_STATE]]
         req_urls = [self.compile_url(req) for req in req_list]
         results = [self.request(req_url) for req_url in req_urls]
         return results
 
-    def updateVariables(self):
+    def get_variables(self):
+        """Fetch the variable details from the ISY to update local copy."""
         req_list = [[ATTR_VARS, ATTR_GET, VAR_INTEGER],
                     [ATTR_VARS, ATTR_GET, VAR_STATE]]
         req_urls = [self.compile_url(req) for req in req_list]

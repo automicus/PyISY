@@ -28,7 +28,7 @@ class Variable:
     val = Property(0)
     lastEdit = Property(EMPTY_TIME, readonly=True)
 
-    def __init__(self, variables, vid, vtype, init, val, ts):
+    def __init__(self, variables, vid, vtype, vname, init, val, ts):
         """Initialize a Variable class."""
         super(Variable, self).__init__()
         self.noupdate = False
@@ -36,6 +36,7 @@ class Variable:
         self.isy = variables.isy
         self._id = vid
         self._type = vtype
+        self._name = vname
 
         self.init.update(init, force=True, silent=True)
         self.init.reporter = self.__report_init__
@@ -64,14 +65,28 @@ class Variable:
         self.setValue(val)
         self.noupdate = False
 
+    @property
+    def vid(self):
+        """Return the Variable ID."""
+        return self._id
+
+    @property
+    def nid(self):
+        """Return the formatted Variable Type and ID."""
+        return '{!s}.{!s}'.format(self._type, self._id)
+
+    @property
+    def name(self):
+        """Return the Variable Name."""
+        return self._name
+
     def update(self, wait_time=0):
         """
         Update the object with the variable's parameters from the controller.
 
         |  wait_time: Seconds to wait before updating.
         """
-        # TODO: Update this method to only update this variable and to use autoupdate.
-        if not self.noupdate:
+        if not self.isy.auto_update and not self.noupdate:
             self._variables.update(wait_time)
 
     def setInit(self, val):
