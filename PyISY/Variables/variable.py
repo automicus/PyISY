@@ -95,6 +95,8 @@ class Variable:
 
         |  val: The value to have the variable initialize to.
         """
+        if val is None:
+            raise ValueError('Variable init must be an integer. Got None.')
         self.setValue(val, True)
 
     def setValue(self, val, init=False):
@@ -103,6 +105,8 @@ class Variable:
 
         |  val: The value to set the variable to.
         """
+        if val is None:
+            raise ValueError('Variable value must be an integer. Got None.')
         req_url = self.isy.conn.compile_url([ATTR_VARS,
                                              ATTR_INIT if init else ATTR_SET,
                                              str(self._type),
