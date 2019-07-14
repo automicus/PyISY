@@ -96,5 +96,5 @@ class Program(Folder):
                 self.runAtStartup.update(data['pstartrun'],
                                          force=True, silent=True)
                 self.running.update(prunning, force=True, silent=True)
-            else:
+            elif not self.isy.auto_update:
                 self._programs.update(wait_time, pid=self._id)

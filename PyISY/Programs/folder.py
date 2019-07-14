@@ -54,7 +54,7 @@ class Folder:
         if not self.noupdate:
             if data is not None:
                 self.status.update(data['pstatus'], force=True, silent=True)
-            else:
+            elif not self.isy.auto_update:
                 self._programs.update(wait_time, pid=self._id)
 
     def send_pgrm_cmd(self, command):
