@@ -21,9 +21,6 @@ class NodeBase:
         self._name = name
         self._notes = None
 
-        # get and update the status
-        self.update()
-
         # respond to non-silent changes in status
         self.status.reporter = self.__report_status__
 

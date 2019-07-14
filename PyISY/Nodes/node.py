@@ -47,7 +47,8 @@ class Node(NodeBase):
         self._uom = state.get(ATTR_UOM, '')
         self._prec = state.get(ATTR_PREC, '0')
         self._formatted = state.get(ATTR_FORMATTED, str(self.status))
-        self.status = state.get(ATTR_VALUE, VALUE_UNKNOWN)
+        self.status.update(state.get(ATTR_VALUE, VALUE_UNKNOWN),
+                           force=True, silent=True)
         self.controlEvents = EventEmitter()
         super().__init__(nodes, nid, name)
 

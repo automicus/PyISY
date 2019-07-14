@@ -32,6 +32,9 @@ class Group(NodeBase):
             self._nodes[m].status.subscribe('changed', self.update)
             for m in self.members]
 
+        # get and update the status
+        self.update()
+
     def __del__(self):
         """Cleanup event handlers before deleting."""
         for handler in self._members_handlers:
@@ -63,7 +66,7 @@ class Group(NodeBase):
         """Get the controller nodes of the scene/group."""
         return self._controllers
 
-    def update(self, wait_time=0, hint=None):
+    def update(self, wait_time=0, hint=None, xmldoc=None):
         """Update the group with values from the controller."""
         for node in self.members:
             if self._nodes[node].status is None:
