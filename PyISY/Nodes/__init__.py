@@ -252,7 +252,7 @@ class Nodes:
                                 Group(self, nid, nname,
                                       members, controllers),
                                 ntype)
-            self.isy.log.info('ISY Loaded Nodes')
+            self.isy.log.info('ISY Loaded {}'.format(ntype))
 
     def update(self, wait_time=0):
         """
