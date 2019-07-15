@@ -18,6 +18,7 @@ def parse_xml_properties(xmldoc):
     """
     aux_props = {}
     state_set = False
+    state = {}
 
     props = xmldoc.getElementsByTagName('property')
     if not props:
