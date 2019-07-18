@@ -58,7 +58,7 @@ class EventStream(socket.socket):
         except xml.parsers.expat.ExpatError:
             self.parent.log.warning('ISY Received Malformed XML:\n' + msg)
             return
-        self.parent.log.debug('ISY Update Received:\n' + msg)
+        self.parent.log.debug('ISY data Received:\n' + msg)
 
         # direct the event message
         try:
@@ -197,7 +197,24 @@ class EventStream(socket.socket):
                 # poll socket for new data
                 inready, _, _ = select.select([self], [], [], POLL_TIME)
                 if self in inready:
-                    data = self.read()
-                    if data.startswith('<?xml'):
-                        data = data.strip().replace('POST reuse HTTP/1.1', '')
-                        self._routemsg(data)
+                   try:
+                     self.parent.log.debug('PyISY: data in buffer')
+                     tmp_buff =  self._reader.read()
+                   except socket.error:
+                     self.parent.log.error('PyISY: could not read from event stream.')
+                     continue
+                   currPos  = tmp_buff.find('</s:Envelope>') + 13
+                   if currPos == -1:
+                     currPos = 0
+                   while currPos < len(tmp_buff):
+                     eventStart = tmp_buff.find('<?xml', currPos)
+                     eventEnd   = tmp_buff.find('</Event>', currPos) + 8
+                     if eventStart > -1 and eventEnd > eventStart:
+                       data = tmp_buff[eventStart : eventEnd]
+                       self.parent.log.debug('PyISY: routing data')
+                       self._routemsg(data)
+                       currPos = eventEnd + 1
+                     else:
+                       self.parent.log.warning('PyISY: Malformed event data: '+tmp_buff[currPos:])
+                       currPos = len(tmp_buff)
+                   self.parent.log.debug('PyISY: Buffer processed\n')
