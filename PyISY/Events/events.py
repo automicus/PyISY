@@ -9,6 +9,8 @@ from xml.dom import minidom
 from . import strings
 
 POLL_TIME = 5
+SOCKET_BUFFER_SIZE = 4096
+
 
 class EventStream(object):
 
@@ -119,18 +121,20 @@ class EventStream(object):
             self.disconnect()
 
     def read(self):
+        """Read data from the socket."""
         loop = True
         output = ''
         while loop:
             try:
-                new_data = self.socket.recv(4096)
+                new_data = self.socket.recv(SOCKET_BUFFER_SIZE)
             except socket.error:
                 loop = False
             else:
+                siz = sys.getsizeof(new_data)
                 if sys.version_info.major == 3:
                     new_data = new_data.decode('utf-8')
                 output += new_data
-                if len(new_data) * 8 < 4096:
+                if siz < SOCKET_BUFFER_SIZE:
                     loop = False
 
         return output.split('\n')
