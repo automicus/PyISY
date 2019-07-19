@@ -145,16 +145,15 @@ class EventStream(object):
     def connect(self):
         if not self._connected:
             try:
-                super(EventStream, self).connect((self.data['addr'],
-                                                self.data['port']))
+                self.socket.connect((self.data['addr'], self.data['port']))
             except OSError:
                 self.parent.log.error('PyISY could not connect to ISY ' +
                                       'event stream.')
                 if self._lostfun is not None:
                     self._lostfun()
                 return False
-            self.setblocking(0)
-            self._writer = self.makefile("w")
+            self.socket.setblocking(0)
+            self._writer = self.socket.makefile("w")
             self._connected = True
             return True
         else:
@@ -162,7 +161,7 @@ class EventStream(object):
 
     def disconnect(self):
         if self._connected:
-            self.close()
+            self.socket.close()
             self._connected = False
             self._subscribed = False
             self._running = False
