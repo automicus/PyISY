@@ -20,7 +20,6 @@ class EventStream:
         """Initializze the EventStream class."""
         self.isy = isy
         self._running = False
-        self._reader = None
         self._writer = None
         self._thread = None
         self._subscribed = False
@@ -163,7 +162,6 @@ class EventStream:
                     self._on_lost_function()
                 return False
             self.socket.setblocking(0)
-            self._reader = self.socket.makefile("r")
             self._writer = self.socket.makefile("w")
             self._connected = True
             return True
