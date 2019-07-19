@@ -81,11 +81,13 @@ class EventStream:
         elif cntrl == '_11':  # WEATHER UPDATE
             if self.isy.configuration['Weather Information']:
                 self.isy.climate._upmsg(xmldoc)
-        elif cntrl == '_1':  # VARIABLE OR PROGRAM UPDATE
+        elif cntrl == '_1':  # Trigger Update
             if '<var' in msg:  # VARIABLE
                 self.isy.variables._upmsg(xmldoc)
             elif '<id>' in msg:  # PROGRAM
                 self.isy.programs._upmsg(xmldoc)
+            elif '<node>' in msg and '[' in msg:  # Node Server Update
+                pass  # This is most likely a duplicate node update.
             else:  # SOMETHING HAPPENED WITH A PROGRAM FOLDER
                 # but they ISY didn't tell us what, so...
                 self.isy.programs.update()
