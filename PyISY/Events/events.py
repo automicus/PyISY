@@ -130,7 +130,7 @@ class EventStream(object):
             except socket.error:
                 loop = False
             else:
-                siz = sys.getsizeof(new_data)
+                siz = len(new_data)
                 if sys.version_info.major == 3:
                     new_data = new_data.decode('utf-8')
                 output += new_data
