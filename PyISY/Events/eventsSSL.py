@@ -14,10 +14,8 @@ POLL_TIME = 5
 class SSLEventStream(object):
 
     def __init__(self, parent, lost_fun=None):
-        #super(EventStream, self).__init__(socket.AF_INET, socket.SOCK_STREAM)
         self.parent = parent
         self._running = False
-        self._reader = None
         self._writer = None
         self._thread = None
         self._subscribed = False
@@ -135,26 +133,23 @@ class SSLEventStream(object):
             self.disconnect()
 
     def read(self):
-        if self._reader is None:
-            self._NIYerror()
-        else:
-            loop = True
-            output = ''
-            while loop:
-                try:
-                    new_data = self.socket.recv(4096)
-                except ssl.SSLWantReadError:
-                    pass
-                except socket.error:
+        loop = True
+        output = ''
+        while loop:
+            try:
+                new_data = self.socket.recv(4096)
+            except ssl.SSLWantReadError:
+                pass
+            except socket.error:
+                loop = False
+            else:
+                if sys.version_info.major == 3:
+                    new_data = new_data.decode('utf-8')
+                output += new_data
+                if len(new_data) * 8 < 4096:
                     loop = False
-                else:
-                    if sys.version_info.major == 3:
-                        new_data = new_data.decode('utf-8')
-                    output += new_data
-                    if len(new_data) * 8 < 4096:
-                        loop = False
 
-            return output.split('\n')
+        return output.split('\n')
 
     def write(self, msg):
         if self._writer is None:
@@ -229,7 +224,6 @@ class SSLEventStream(object):
                 inready, _, _ = \
                     select.select([self.socket], [], [], POLL_TIME)
 
-                #if self.socket in inready:
                 if self.socket in inready:
                     for data in self.read():
                         if data.startswith('<?xml'):
