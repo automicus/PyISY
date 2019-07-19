@@ -5,6 +5,7 @@ UPDATE_INTERVAL = 0.5
 EMPTY_TIME = datetime.datetime(year=1, month=1, day=1)
 
 POLL_TIME = 5
+SOCKET_BUFFER_SIZE = 4096
 THREAD_SLEEP_TIME = 30.0
 
 VALUE_UNKNOWN = -1 * float('inf')
