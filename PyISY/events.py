@@ -123,14 +123,6 @@ class EventStream:
 
     def read(self):
         """Read data from the socket."""
-        if self._reader is None:
-            raise NotImplementedError('Function not available while '
-                                      'socket is closed.')
-        if not self.data.get('tls'):
-            try:
-                return self._reader.readline()
-            except socket.error:
-                return ''
         loop = True
         output = ''
         while loop:
@@ -226,18 +218,11 @@ class EventStream:
                 # poll socket for new data
                 inready, _, _ = select.select([self.socket], [], [], POLL_TIME)
                 if self.socket in inready:
-                    if not self.data.get('tls'):
-                        data = self.read()
+                    for data in self.read():
                         if data.startswith('<?xml'):
                             data = data.strip(). \
-                                    replace('POST reuse HTTP/1.1', '')
+                                        replace('POST reuse HTTP/1.1', '')
                             self._routemsg(data)
-                    else:
-                        for data in self.read():
-                            if data.startswith('<?xml'):
-                                data = data.strip(). \
-                                            replace('POST reuse HTTP/1.1', '')
-                                self._routemsg(data)
 
 
 class EventEmitter:
