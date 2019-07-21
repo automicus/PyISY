@@ -6,7 +6,7 @@ from ..constants import (ATTR_FORMATTED, ATTR_GET, ATTR_GROUP, ATTR_PREC,
                          ATTR_UOM, ATTR_VALUE, CLIMATE_SETPOINT_MIN_GAP,
                          STATE_PROPERTY, VALUE_UNKNOWN, XML_PARSE_ERROR)
 from ..helpers import parse_xml_properties
-from . import EventEmitter
+from .handlers import EventEmitter
 from .nodebase import NodeBase
 
 
