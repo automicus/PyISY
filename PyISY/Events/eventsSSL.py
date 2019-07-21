@@ -146,12 +146,11 @@ class SSLEventStream(object):
             except socket.error:
                 loop = False
             else:
-                siz = len(new_data)
+                if len(new_data) < SOCKET_BUFFER_SIZE:
+                    loop = False
                 if sys.version_info.major == 3:
                     new_data = new_data.decode('utf-8')
                 output += new_data
-                if siz < SOCKET_BUFFER_SIZE:
-                    loop = False
 
         return output.split('\n')
 
