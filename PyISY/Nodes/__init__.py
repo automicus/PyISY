@@ -5,7 +5,6 @@ from xml.dom import minidom
 from ..constants import (ATTR_ACTION, ATTR_CONTROL, ATTR_FLAG, ATTR_FOLDER,
                          ATTR_GROUP, ATTR_NAME, ATTR_NODE, ATTR_PREC,
                          ATTR_TYPE, ATTR_UOM, XML_PARSE_ERROR)
-from ..events import EventResult
 from ..helpers import (attr_from_element, attr_from_xml, parse_xml_properties,
                        value_from_xml)
 from .group import Group
@@ -413,3 +412,77 @@ class NodeIterator:
     def __len__(self):
         """Return the number of elements."""
         return self._len
+
+
+class EventEmitter:
+    """Event Emitter class."""
+
+    def __init__(self):
+        """Initialize a new Event Emitter class."""
+        self._subscribers = []
+
+    def subscribe(self, callback):
+        """Subscribe to the events."""
+        listener = EventListener(self, callback)
+        self._subscribers.append(listener)
+        return listener
+
+    def unsubscribe(self, listener):
+        """Unsubscribe from the events."""
+        self._subscribers.remove(listener)
+
+    def notify(self, event):
+        """Notify a listener."""
+        for subscriber in self._subscribers:
+            subscriber.callback(event)
+
+
+class EventListener:
+    """Event Listener class."""
+
+    def __init__(self, emitter, callback):
+        """Initialize a new Event Listener class."""
+        self._emitter = emitter
+        self.callback = callback
+
+    def unsubscribe(self):
+        """Unsubscribe from the events."""
+        self._emitter.unsubscribe(self)
+
+
+class EventResult(dict):
+    """Class to hold result of a command event."""
+
+    def __init__(self, event, nval=None, prec=None, uom=None):
+        """Initialize an event result."""
+        super().__init__(self, event=event, nval=nval, prec=prec, uom=uom)
+        self._event = event
+        self._nval = nval
+        self._prec = prec
+        self._uom = uom
+
+    @property
+    def event(self):
+        """Report the event control string."""
+        return self._event
+
+    @property
+    def nval(self):
+        """Report the value, if there was one."""
+        return self._nval
+
+    @property
+    def prec(self):
+        """Report the precision, if there was one."""
+        return self._prec
+
+    @property
+    def uom(self):
+        """Report the unit of measure, if there was one."""
+        return self._uom
+
+    def __str__(self):
+        """Return just the event title to prevent breaking changes."""
+        return str(self.event)
+
+    __repr__ = __str__

@@ -191,13 +191,11 @@ class ISY:
         NOTE: `on` and climate setpoints are special and are still defined
         explicitly in the Node class.
         """
-        commands = ['DFON', 'DFOF', 'BRT', 'DIM', 'BEEP',
+        commands = [('DFON', None), ('DFOF', None), ('BRT', None),
+                    ('DIM', None), ('BEEP', None),
                     ('SECMD', '84'), ('CLIMD', '98'), ('CLIFS', '99')]
         cmd_names = []
-        for command in commands:
-            values = None
-            if isinstance(command, tuple):
-                command, values = command
+        for command, values in commands:
             cmd_name = COMMAND_FRIENDLY_NAME.get(command)
             self._add_node_command(cmd_name, command)
             cmd_names.append(cmd_name)
