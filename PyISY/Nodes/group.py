@@ -43,11 +43,11 @@ class Group(NodeBase):
     def __report_status__(self, new_val):
         """Report the status of the scene."""
         # first clean the status input
-        if self.status > 0:
+        if int(self.status) > 0:
             clean_status = 255
-        elif self.status <= 0:
+        elif int(self.status) <= 0:
             clean_status = 0
-        if self.status != clean_status:
+        if int(self.status) != clean_status:
             self.status.update(clean_status, force=True, silent=True)
 
         # now update the nodes
@@ -71,7 +71,7 @@ class Group(NodeBase):
         for node in self.members:
             if self._nodes[node].status is None:
                 continue
-            elif self._nodes[node].status > 0:
+            elif int(self._nodes[node].status) > 0:
                 self.status.update(255, force=True, silent=True)
                 return
         self.status.update(0, force=True, silent=True)
