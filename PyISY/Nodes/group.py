@@ -1,5 +1,6 @@
 """Representation of groups (scenes) from an ISY."""
 from .nodebase import NodeBase
+from ..constants import VALUE_UNKNOWN
 
 
 class Group(NodeBase):
@@ -69,7 +70,8 @@ class Group(NodeBase):
     def update(self, wait_time=0, hint=None, xmldoc=None):
         """Update the group with values from the controller."""
         for node in self.members:
-            if self._nodes[node].status is None:
+            if self._nodes[node].status is None or \
+                    self._nodes[node].status == VALUE_UNKNOWN:
                 continue
             elif int(self._nodes[node].status) > 0:
                 self.status.update(255, force=True, silent=True)
