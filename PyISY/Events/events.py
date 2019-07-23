@@ -217,7 +217,7 @@ class EventStream(socket.socket):
                           self.parent.log.debug('PyISY: skipped subscription confirmation')
                         tmp_buff = tmp_buff[currPos:] + newData      # purge old data in buffer, add new one
                         currPos = 0                                  # and move marker to beginning
-                    eventStart = tmp_buff.find('<?xml', currPos)     # look for a new massage start
+                    eventStart = tmp_buff.find('<?xml', currPos)     # look for a new message start
                     eventEnd   = tmp_buff.find('</Event>', currPos)  # and its end
                     #self.parent.log.debug('PyISY: size: '+str(len(tmp_buff))+' pos: '+str(currPos)+' start: '+str(eventStart)+' end: '+str(eventEnd))
                     #self.parent.log.debug('PyISY: buffer:\n'+tmp_buff[currPos:])
