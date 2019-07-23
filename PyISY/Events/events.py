@@ -196,25 +196,51 @@ class EventStream(socket.socket):
 
                 # poll socket for new data
                 inready, _, _ = select.select([self], [], [], POLL_TIME)
-                if self in inready:
-                   try:
-                     self.parent.log.debug('PyISY: data in buffer')
-                     tmp_buff =  self._reader.read()
-                   except socket.error:
-                     self.parent.log.error('PyISY: could not read from event stream.')
-                     continue
-                   currPos  = tmp_buff.find('</s:Envelope>') + 13
-                   if currPos == -1:
-                     currPos = 0
-                   while currPos < len(tmp_buff):
-                     eventStart = tmp_buff.find('<?xml', currPos)
-                     eventEnd   = tmp_buff.find('</Event>', currPos) + 8
-                     if eventStart > -1 and eventEnd > eventStart:
-                       data = tmp_buff[eventStart : eventEnd]
-                       self.parent.log.debug('PyISY: routing data')
-                       self._routemsg(data)
-                       currPos = eventEnd + 1
+                   self.parent.log.debug('PyISY: about to process incoming messages')
+                   loop     = True
+                   currPos  = 0
+                   tmp_buff = ''
+                   retries  = 5
+                   while loop:
+                     try:
+                       newData = self.recv(4096).decode("utf-8")      # See if we can retrieve the data 
+                       self.parent.log.debug('PyISY: appended ' + str(len(newData)) + ' chars to buffer')
+                     except socket.error:
+                       self.parent.log.debug('PyISY: no additional data') 
+                     else:                    
+                       if len(newData) > 0:                           # if new data was found,
+                         subsConf = newData.find('</s:Envelope>')     # check if it has a subs confirmation
+                         if subsConf > -1:                            # and remove it, as we don't use it
+                           newData = newData[subsConf+13:]
+                           self.parent.log.debug('PyISY: skipped subscription confirmation')
+                         tmp_buff = tmp_buff[currPos:] + newData      # purge old data in buffer, add new one
+                         currPos = 0                                  # and move marker to beginning
+                     eventStart = tmp_buff.find('<?xml', currPos)     # look for a new massage start
+                     eventEnd   = tmp_buff.find('</Event>', currPos)  # and its end
+                     #self.parent.log.debug('PyISY: size: '+str(len(tmp_buff))+' pos: '+str(currPos)+' start: '+str(eventStart)+' end: '+str(eventEnd))
+                     #self.parent.log.debug('PyISY: buffer:\n'+tmp_buff[currPos:])
+                     if eventStart > -1:                              
+                        if eventEnd > eventStart:                     # if we got a complete message
+                           data = tmp_buff[eventStart : eventEnd + 8] # then get it and 
+                           self.parent.log.debug('PyISY: routing data')
+                           self._routemsg(data)                       # send it for processing, 
+                           currPos = eventEnd + 8                     # then move our marker to the
+                           retries = 5                                # message end, allowing for 5 retries
+                        elif eventEnd == -1:                          #  
+                           retries -= 1                               # if we're missing the end, then try again
+                           if retries == 0:                           # but if we're out of chances, just abort 
+                             self.parent.log.warning('PyISY: Malformed event data: '+tmp_buff[currPos:])
+                             break
                      else:
-                       self.parent.log.warning('PyISY: Malformed event data: '+tmp_buff[currPos:])
-                       currPos = len(tmp_buff)
-                   self.parent.log.debug('PyISY: Buffer processed\n')
+                         if eventEnd > -1:                            # if just found a message end but so start
+                            self.parent.log.warning('PyISY: Malformed event data: '+tmp_buff[currPos:])
+                            currPos = eventEnd + 8                    # inform and skip it
+                     if currPos < len(tmp_buff):                      # Have we done the whole buffer?
+                        if eventStart == -1 and eventEnd == -1:       #   if not, allow for rest of buffer to arrive 
+                           retries -= 1                               #   and retry 
+                           if retries == 0:                           #   until we run out of chances
+                             self.parent.log.debug('PyISY: no more events in buffer')
+                             break
+                     else:
+                        break
+                   self.parent.log.debug('PyISY: No more messages in batch\n')
