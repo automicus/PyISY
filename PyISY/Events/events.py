@@ -227,20 +227,20 @@ class EventStream(socket.socket):
                           self.parent.log.debug('PyISY: routing data')
                           self._routemsg(data)                       # send it for processing, 
                           currPos = eventEnd + 8                     # then move our marker to the
-                          retries = 5                                # message end, allowing for 5 retries
+                          retries = 5                                # message end and allow 5 retries again
                        elif eventEnd == -1:                          #  
                           retries -= 1                               # if we're missing the end, then try again
                           if retries == 0:                           # but if we're out of chances, just abort 
                             self.parent.log.warning('PyISY: Malformed event data: '+tmp_buff[currPos:])
                             break
                     else:
-                      if eventEnd > -1:                            # if just found a message end but so start
+                      if eventEnd > -1:                               # Found a message end with no start
                             self.parent.log.warning('PyISY: Malformed event data: '+tmp_buff[currPos:])
-                            currPos = eventEnd + 8                    # inform and skip it
-                      if currPos < len(tmp_buff):                      # Have we done the whole buffer?
-                        if eventStart == -1 and eventEnd == -1:       #   if not, allow for rest of buffer to arrive 
-                           retries -= 1                               #   and retry 
-                           if retries == 0:                           #   until we run out of chances
+                            currPos = eventEnd + 8                    #   inform and skip it
+                      if currPos < len(tmp_buff):                     # More stuff in the buffer?
+                        if eventStart == -1 and eventEnd == -1:       #   if buffer left, but no message, allow it to arrive 
+                           retries -= 1                               #     and retry 
+                           if retries == 0:                           #     until we run out of chances
                              self.parent.log.debug('PyISY: no more events in buffer')
                              break
                       else:
