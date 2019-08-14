@@ -213,7 +213,7 @@ class Nodes:
                     self.insert(nid, nname, nparent, None, ntype)
                 elif ntype == ATTR_NODE:
                     if nid in self.nids:
-                        self.get_by_id(nid).update(feature)
+                        self.get_by_id(nid).update(xmldoc=feature)
                         continue
                     state, aux_props = parse_xml_properties(feature)
                     self.insert(nid, nname, nparent,
