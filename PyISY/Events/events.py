@@ -2,20 +2,21 @@ import base64
 import datetime
 import socket
 import select
+import sys
 from threading import Thread
 import xml
 from xml.dom import minidom
 from . import strings
 
 POLL_TIME = 5
+SOCKET_BUFFER_SIZE = 4096
 
-class EventStream(socket.socket):
+
+class EventStream(object):
 
     def __init__(self, parent, lost_fun=None):
-        super(EventStream, self).__init__(socket.AF_INET, socket.SOCK_STREAM)
         self.parent = parent
         self._running = False
-        self._reader = None
         self._writer = None
         self._thread = None
         self._subscribed = False
@@ -38,6 +39,8 @@ class EventStream(socket.socket):
         self.data['addr'] = self.parent.conn._address
         self.data['port'] = int(self.parent.conn._port)
         self.data['passwd'] = self.parent.conn._password
+
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
     def _NIYerror(self):
         raise NotImplementedError('Function not available while '
@@ -118,13 +121,22 @@ class EventStream(socket.socket):
             self.disconnect()
 
     def read(self):
-        if self._reader is None:
-            self._NIYerror()
-        else:
+        """Read data from the socket."""
+        loop = True
+        output = ''
+        while loop:
             try:
-                return self._reader.readline()
+                new_data = self.socket.recv(SOCKET_BUFFER_SIZE)
             except socket.error:
-                return ''
+                loop = False
+            else:
+                if len(new_data) < SOCKET_BUFFER_SIZE:
+                    loop = False
+                if sys.version_info.major == 3:
+                    new_data = new_data.decode('utf-8')
+                output += new_data
+
+        return output.split('\n')
 
     def write(self, msg):
         if self._writer is None:
@@ -136,17 +148,15 @@ class EventStream(socket.socket):
     def connect(self):
         if not self._connected:
             try:
-                super(EventStream, self).connect((self.data['addr'],
-                                                self.data['port']))
+                self.socket.connect((self.data['addr'], self.data['port']))
             except OSError:
                 self.parent.log.error('PyISY could not connect to ISY ' +
                                       'event stream.')
                 if self._lostfun is not None:
                     self._lostfun()
                 return False
-            self.setblocking(0)
-            self._reader = self.makefile("r")
-            self._writer = self.makefile("w")
+            self.socket.setblocking(0)
+            self._writer = self.socket.makefile("w")
             self._connected = True
             return True
         else:
@@ -154,7 +164,7 @@ class EventStream(socket.socket):
 
     def disconnect(self):
         if self._connected:
-            self.close()
+            self.socket.close()
             self._connected = False
             self._subscribed = False
             self._running = False
@@ -195,9 +205,11 @@ class EventStream(socket.socket):
                         self._lostfun()
 
                 # poll socket for new data
-                inready, _, _ = select.select([self], [], [], POLL_TIME)
-                if self in inready:
-                    data = self.read()
-                    if data.startswith('<?xml'):
-                        data = data.strip().replace('POST reuse HTTP/1.1', '')
-                        self._routemsg(data)
+                inready, _, _ = \
+                    select.select([self.socket], [], [], POLL_TIME)
+
+                if self.socket in inready:
+                    for data in self.read():
+                        if data.startswith('<?xml'):
+                            data = data.strip().replace('POST reuse HTTP/1.1', '')
+                            self._routemsg(data)

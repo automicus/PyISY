@@ -10,14 +10,14 @@ from xml.dom import minidom
 from PyISY.Events import strings
 
 POLL_TIME = 5
+SOCKET_BUFFER_SIZE = 4096
+
 
 class SSLEventStream(object):
 
     def __init__(self, parent, lost_fun=None):
-        #super(EventStream, self).__init__(socket.AF_INET, socket.SOCK_STREAM)
         self.parent = parent
         self._running = False
-        self._reader = None
         self._writer = None
         self._thread = None
         self._subscribed = False
@@ -135,26 +135,24 @@ class SSLEventStream(object):
             self.disconnect()
 
     def read(self):
-        if self._reader is None:
-            self._NIYerror()
-        else:
-            loop = True
-            output = ''
-            while loop:
-                try:
-                    new_data = self.socket.recv(4096)
-                except ssl.SSLWantReadError:
-                    pass
-                except socket.error:
+        """Read data from the socket."""
+        loop = True
+        output = ''
+        while loop:
+            try:
+                new_data = self.socket.recv(SOCKET_BUFFER_SIZE)
+            except ssl.SSLWantReadError:
+                pass
+            except socket.error:
+                loop = False
+            else:
+                if len(new_data) < SOCKET_BUFFER_SIZE:
                     loop = False
-                else:
-                    if sys.version_info.major == 3:
-                        new_data = new_data.decode('utf-8')
-                    output += new_data
-                    if len(new_data) * 8 < 4096:
-                        loop = False
+                if sys.version_info.major == 3:
+                    new_data = new_data.decode('utf-8')
+                output += new_data
 
-            return output.split('\n')
+        return output.split('\n')
 
     def write(self, msg):
         if self._writer is None:
@@ -229,7 +227,6 @@ class SSLEventStream(object):
                 inready, _, _ = \
                     select.select([self.socket], [], [], POLL_TIME)
 
-                #if self.socket in inready:
                 if self.socket in inready:
                     for data in self.read():
                         if data.startswith('<?xml'):
