@@ -192,7 +192,9 @@ class Programs(object):
                             plastrun = _empty_time
                         else:
                             plastrun = datetime.strptime(
-                                plastrun.toxml(), '%Y/%m/%d %I:%M:%S %p')
+                                plastrun.toxml(), '%Y/%m/%d %I:%M:%S %p'
+                                if plastrun.toxml().count(' ') == 2
+                                else '%Y/%m/%d %H:%M:%S')
                     except:
                         plastrun = _empty_time
 
@@ -205,7 +207,9 @@ class Programs(object):
                             plastfin = _empty_time
                         else:
                             plastfin = datetime.strptime(
-                                plastfin.toxml(), '%Y/%m/%d %I:%M:%S %p')
+                                plastfin.toxml(), '%Y/%m/%d %I:%M:%S %p'
+                                if plastfin.toxml().count(' ') == 2
+                                else '%Y/%m/%d %H:%M:%S')
                     except:
                         plastfin = _empty_time
 
