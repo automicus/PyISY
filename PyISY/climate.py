@@ -247,9 +247,7 @@ class Climate:
     def _parse_val_dir(val):
         """Return the bearing for a given direction."""
         direction = CARDINAL_DIRECTIONS.get(val, None)
-        if not direction:
-            return None
-        return (direction, 'deg')
+        return (direction, "deg")
 
     def update(self, wait_time=0):
         """
