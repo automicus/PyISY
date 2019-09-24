@@ -302,6 +302,20 @@ class Node(object):
             self.update(_change2update_interval, hint=0)
             return True
 
+    def fdstop(self):
+        """ Slow fade down"""
+        response = self.parent.parent.conn.nodeFadeStop(self._id)
+
+        if response is None:
+            self.parent.parent.log.warning('ISY could not fade stop node: ' +
+                                           self._id)
+            return False
+        else:
+            self.parent.parent.log.info('ISY turned did a fade stop with node: '
+                                        + self._id)
+            self.update(_change2update_interval, hint=0)
+            return True
+
 
     def bright(self):
         """ Brightens the node by one step. """

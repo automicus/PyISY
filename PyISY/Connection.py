@@ -206,6 +206,11 @@ class Connection(object):
         response = self.request(req_url)
         return response
 
+    def nodeFadeStop(self, nid):
+        req_url = self.compileURL(['nodes', nid, 'cmd', 'FDSTOP'])
+        response = self.request(req_url)
+        return response
+
     def nodeBright(self, nid):
         req_url = self.compileURL(['nodes', nid, 'cmd', 'BRT'])
         response = self.request(req_url)
