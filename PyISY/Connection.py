@@ -196,6 +196,16 @@ class Connection(object):
         response = self.request(req_url)
         return response
 
+    def nodeSlowFadeUp(self, nid):
+        req_url = self.compileURL(['nodes', nid, 'cmd', 'FDUP'])
+        response = self.request(req_url)
+        return response
+
+    def nodeSlowFadeDown(self, nid):
+        req_url = self.compileURL(['nodes', nid, 'cmd', 'FDDOWN'])
+        response = self.request(req_url)
+        return response
+
     def nodeBright(self, nid):
         req_url = self.compileURL(['nodes', nid, 'cmd', 'BRT'])
         response = self.request(req_url)

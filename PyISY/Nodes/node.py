@@ -274,6 +274,35 @@ class Node(object):
             self.update(_change2update_interval, hint=255)
             return True
 
+    def fdup(self):
+        """ Slow fade up"""
+        response = self.parent.parent.conn.nodeSlowFadeUp(self._id)
+
+        if response is None:
+            self.parent.parent.log.warning('ISY could not fade up node: ' +
+                                           self._id)
+            return False
+        else:
+            self.parent.parent.log.info('ISY turned did a fade up with node: '
+                                        + self._id)
+            self.update(_change2update_interval, hint=0)
+            return True
+
+    def fddown(self):
+        """ Slow fade down"""
+        response = self.parent.parent.conn.nodeSlowFadeDown(self._id)
+
+        if response is None:
+            self.parent.parent.log.warning('ISY could not fade down node: ' +
+                                           self._id)
+            return False
+        else:
+            self.parent.parent.log.info('ISY turned did a fade down with node: '
+                                        + self._id)
+            self.update(_change2update_interval, hint=0)
+            return True
+
+
     def bright(self):
         """ Brightens the node by one step. """
         response = self.parent.parent.conn.nodeBright(self._id)
