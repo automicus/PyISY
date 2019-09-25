@@ -283,7 +283,7 @@ class Node(object):
                                            self._id)
             return False
         else:
-            self.parent.parent.log.info('ISY turned did a fade up with node: '
+            self.parent.parent.log.info('ISY  did fade up with node: '
                                         + self._id)
             self.update(_change2update_interval, hint=0)
             return True
@@ -297,13 +297,13 @@ class Node(object):
                                            self._id)
             return False
         else:
-            self.parent.parent.log.info('ISY turned did a fade down with node: '
+            self.parent.parent.log.info('ISY did  fade down with node: '
                                         + self._id)
             self.update(_change2update_interval, hint=0)
             return True
 
     def fdstop(self):
-        """ Slow fade down"""
+        """ Fade stop"""
         response = self.parent.parent.conn.nodeFadeStop(self._id)
 
         if response is None:
@@ -311,7 +311,7 @@ class Node(object):
                                            self._id)
             return False
         else:
-            self.parent.parent.log.info('ISY turned did a fade stop with node: '
+            self.parent.parent.log.info('ISY performed a fade stop with node: '
                                         + self._id)
             self.update(_change2update_interval, hint=0)
             return True
