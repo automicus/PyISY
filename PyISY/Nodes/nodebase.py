@@ -57,8 +57,8 @@ class NodeBase:
     @property
     def spoken(self):
         """Return the text of the Spoken property inside the group notes."""
-        self._notes = self._nodes.parse_notes()
-        return self._notes['spoken']
+        self._notes = self.parse_notes()
+        return self._notes["spoken"]
 
     def __report_status__(self, new_val):
         """Report the status of the node."""
