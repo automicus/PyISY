@@ -186,30 +186,26 @@ class Programs(object):
                     # last run time
                     try:
                         tag = 'lastRunTime'
-                        plastrun = feature.getElementsByTagName(tag)
-                        plastrun = plastrun[0].firstChild
-                        if plastrun is None:
-                            plastrun = _empty_time
+                        plastrun_str = feature.getElementsByTagName(tag)[0].firstChild.toxml()
+                        # ISY in Military Time uses 1 space in string, 12-hr Clock has 2 spaces
+                        if plastrun_str.count(' ') == 2:
+                            plastrun_fmt = '%Y/%m/%d %I:%M:%S %p'
                         else:
-                            plastrun = datetime.strptime(
-                                plastrun.toxml(), '%Y/%m/%d %I:%M:%S %p'
-                                if plastrun.toxml().count(' ') == 2
-                                else '%Y/%m/%d %H:%M:%S')
+                            plastrun_fmt = '%Y/%m/%d %H:%M:%S'
+                        plastrun = datetime.strptime(plastrun_str, plastrun_fmt)
                     except:
                         plastrun = _empty_time
 
                     # last finish time
                     try:
                         tag = 'lastFinishTime'
-                        plastfin = feature.getElementsByTagName(tag)
-                        plastfin = plastfin[0].firstChild
-                        if plastfin is None:
-                            plastfin = _empty_time
+                        plastfin_str = feature.getElementsByTagName(tag)[0].firstChild.toxml()
+                        # ISY in Military Time uses 1 space in string, 12-hr Clock has 2 spaces
+                        if plastfin_str.count(' ') == 2:
+                            plastfin_fmt = '%Y/%m/%d %I:%M:%S %p'
                         else:
-                            plastfin = datetime.strptime(
-                                plastfin.toxml(), '%Y/%m/%d %I:%M:%S %p'
-                                if plastfin.toxml().count(' ') == 2
-                                else '%Y/%m/%d %H:%M:%S')
+                            plastfin_fmt = '%Y/%m/%d %H:%M:%S'
+                        plastfin = datetime.strptime(plastfin_str, plastfin_fmt)
                     except:
                         plastfin = _empty_time
 
