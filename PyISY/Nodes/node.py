@@ -101,10 +101,20 @@ class Node(NodeBase):
         """Return the unit of measurement for the device."""
         return self._uom
 
+    @uom.setter
+    def uom(self,value):
+        """Set the unit of measurement if not provided initially."""
+        self._uom = value
+
     @property
     def prec(self):
         """Return the precision of the raw device value."""
         return self._prec
+
+    @prec.setter
+    def prec(self,value):
+        """Set the unit of measurement if not provided initially."""
+        self._prec = value
 
     @property
     def formatted(self):

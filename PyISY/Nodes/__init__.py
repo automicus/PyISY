@@ -174,6 +174,14 @@ class Nodes:
         """Update nodes from event stream message."""
         nid = value_from_xml(xmldoc, ATTR_NODE)
         nval = int(value_from_xml(xmldoc, ATTR_ACTION))
+        prec = attr_from_xml(xmldoc, ATTR_ACTION, ATTR_PREC, "0")
+        uom = attr_from_xml(xmldoc, ATTR_ACTION, ATTR_UOM, "")
+        node = self.get_by_id(nid)
+        # Check if UOM/PREC have changed or were not set:
+        if prec and prec != node.prec:
+            node.prec = prec
+        if uom and uom != node.uom:
+            node.uom = uom
         self.get_by_id(nid).status.update(nval, force=True, silent=True)
         self.isy.log.debug("ISY Updated Node: " + nid)
 
@@ -191,8 +199,8 @@ class Nodes:
 
         # Process the action and value if provided in event data.
         nval = value_from_xml(xmldoc, ATTR_ACTION, 0)
-        prec = attr_from_xml(xmldoc, ATTR_ACTION, ATTR_PREC, None)
-        uom = attr_from_xml(xmldoc, ATTR_ACTION, ATTR_UOM, None)
+        prec = attr_from_xml(xmldoc, ATTR_ACTION, ATTR_PREC, "0")
+        uom = attr_from_xml(xmldoc, ATTR_ACTION, ATTR_UOM, "")
 
         self.get_by_id(nid).controlEvents.notify(EventResult(cntrl, nval, prec, uom))
         self.isy.log.debug("ISY Node Control Event: %s %s %s", nid, cntrl, nval)
