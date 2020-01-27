@@ -77,7 +77,7 @@ class NodeBase:
             cmd = "DON"
         elif int(val) > 0:
             cmd = "DON"
-            val = str(val) if int(val) < 255 else None
+            val = str(val) if int(val) <= 255 else None
         else:
             cmd = "DOF"
             val = None
