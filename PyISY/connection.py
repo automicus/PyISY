@@ -37,29 +37,27 @@ class Connection:
         self.req_session = requests.Session()
 
         # setup proper HTTPS handling for the ISY
-        if use_https and can_https(self.isy.log, tls_ver):
-            self.use_https = True
-            self._tls_ver = tls_ver
-            # Most SSL certs will not be valid. Let's not warn about them.
-            requests.packages.urllib3.disable_warnings()
+        if use_https:
+            if can_https(self.isy.log, tls_ver):
+                self.use_https = True
+                self._tls_ver = tls_ver
+                # Most SSL certs will not be valid. Let's not warn about them.
+                requests.packages.urllib3.disable_warnings()
 
-            # ISY uses TLS1 and not SSL
-            self.req_session.mount(self.compile_url(None),
-                                   TLSHttpAdapter(tls_ver))
+                # ISY uses TLS1 and not SSL
+                self.req_session.mount(self.compile_url(None),
+                                       TLSHttpAdapter(tls_ver))
+            else:
+                raise(ValueError('PyISY could not connect to the ISY. '
+                                 'Check log for SSL/TLS error.'))
         else:
             self.use_https = False
             self._tls_ver = None
 
         # test settings
         if not self.ping():
-            # try turning off HTTPS
-            self.use_https = False
-            if self.ping():
-                self.isy.log.warn('PyISY could not connect with the '
-                                  'controller. Trying again with HTTP.')
-            else:
-                raise(ValueError('PyISY could not connect to the ISY '
-                                 'controller with the provided attributes.'))
+            raise(ValueError('PyISY could not connect to the ISY '
+                             'controller with the provided attributes.'))
 
     @property
     def connection_info(self):
@@ -130,10 +128,9 @@ class Connection:
         self.isy.log.warning('Bad ISY Request: %s %s: retry #%s',
                              url, req.status_code, retries)
 
-        # sleep for one second to allow the ISY to catch up
-        time.sleep(1)
-
         if retries < MAX_RETRIES:
+            # sleep for one second to allow the ISY to catch up
+            time.sleep(1)
             # recurse to try again
             return self.request(url, retries+1, ok404=False)
         # fail for good

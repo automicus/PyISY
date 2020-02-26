@@ -3,7 +3,7 @@ from datetime import datetime
 from time import sleep
 from xml.dom import minidom
 
-from ..constants import (ATTR_FOLDER, ATTR_ID, ATTR_NAME, EMPTY_TIME,
+from ..constants import (ATTR_FOLDER, ATTR_PROGRAM, ATTR_ID, ATTR_NAME, EMPTY_TIME,
                          XML_PARSE_ERROR)
 from ..helpers import attr_from_element, value_from_xml
 from ..Nodes import NodeIterator as ProgramIterator
@@ -68,7 +68,7 @@ class Programs:
         ind = self.pids.index(self.root)
         if self.ptypes[ind] == ATTR_FOLDER:
             return 'Folder ({})'.format(self.root)
-        if self.ptypes[ind] == 'program':
+        if self.ptypes[ind] == ATTR_PROGRAM:
             return 'Program ({})'.format(self.root)
         return ''
 
@@ -80,7 +80,7 @@ class Programs:
         for child in self.children:
             if child[0] == ATTR_FOLDER:
                 folders.append(child)
-            elif child[0] == 'program':
+            elif child[0] == ATTR_PROGRAM:
                 programs.append(child)
 
         # initialize data
@@ -167,7 +167,7 @@ class Programs:
             plastup = datetime.now()
 
             # get nodes
-            features = xmldoc.getElementsByTagName('program')
+            features = xmldoc.getElementsByTagName(ATTR_PROGRAM)
             for feature in features:
                 # id, name, and status
                 pid = attr_from_element(feature, ATTR_ID)
@@ -182,7 +182,7 @@ class Programs:
 
                 else:
                     # program specific parsing
-                    ptype = 'program'
+                    ptype = ATTR_PROGRAM
 
                     # last run time
                     plastrun = value_from_xml(feature, 'lastRunTime',
@@ -350,7 +350,7 @@ class Programs:
         myname = self.name + '/'
 
         for dtype, name, ident in self.children:
-            if dtype == 'program':
+            if dtype == ATTR_PROGRAM:
                 output.append((dtype, myname + name, ident))
 
             else:
