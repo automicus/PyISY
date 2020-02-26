@@ -2,6 +2,8 @@
 from ..constants import VALUE_UNKNOWN
 from .nodebase import NodeBase
 
+from VarEvents import Property
+
 
 class Group(NodeBase):
     """
@@ -19,7 +21,10 @@ class Group(NodeBase):
     :ivar controllers: List of the controllers of this group.
     :ivar name: The name of this group.
     :ivar status: Watched property indicating the status of the group.
+    :ivar group_all_on: Watched property indicating if all devices in group are on.
     """
+
+    group_all_on = Property(False)
 
     def __init__(self, nodes, nid, name, members=None, controllers=None):
         """Initialize a Group class."""
@@ -70,13 +75,19 @@ class Group(NodeBase):
 
     def update(self, wait_time=0, hint=None, xmldoc=None):
         """Update the group with values from the controller."""
-        for node in self.members:
+        valid_nodes = [
+            node
+            for node in self.members
             if (
-                self._nodes[node].status is None
-                or self._nodes[node].status == VALUE_UNKNOWN
-            ):
-                continue
-            elif int(self._nodes[node].status) > 0:
-                self.status.update(255, force=True, silent=True)
-                return
+                self._nodes[node].status is not None
+                and self._nodes[node].status != VALUE_UNKNOWN
+            )
+        ]
+        on_nodes = [node for node in valid_nodes if int(self._nodes[node].status) > 0]
+
+        if on_nodes:
+            self.group_all_on.update(len(on_nodes) == len(valid_nodes), silent=True)
+            self.status.update(255, force=True, silent=True)
+            return
         self.status.update(0, force=True, silent=True)
+        self.group_all_on.update(False, silent=True)
