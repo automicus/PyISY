@@ -87,12 +87,15 @@ class NodeBase:
         """Update the group with values from the controller."""
         pass
 
-    def send_cmd(self, cmd, val=None):
+    def send_cmd(self, cmd, val=None, uom=None):
         """Send a command to the device."""
         value = str(val) if val is not None else None
+        _uom = str(uom) if uom is not None else None
         req = ["nodes", str(self._id), "cmd", cmd]
         if value:
             req.append(value)
+        if _uom:
+            req.append(_uom)
         req_url = self.isy.conn.compile_url(req)
         if not self.isy.conn.request(req_url):
             self.isy.log.warning(

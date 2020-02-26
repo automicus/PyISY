@@ -218,11 +218,17 @@ class Node(NodeBase):
         # For some reason, wants 2 times the temperature for Insteon
         if self._uom in ["101", "degrees"]:
             val = 2 * val
-        return self.send_cmd("CLISPH", str(val))
+        return self.send_cmd("CLISPH", str(val), self.get_setpoint_uom("CLISPH"))
 
     def climate_setpoint_cool(self, val):
         """Send a command to the device to set the system heat setpoint."""
         # For some reason, wants 2 times the temperature for Insteon
         if self._uom in ["101", "degrees"]:
             val = 2 * val
-        return self.send_cmd("CLISPC", str(val))
+        return self.send_cmd("CLISPC", str(val), self.get_setpoint_uom("CLISPC"))
+
+    def get_setpoint_uom(self, prop):
+        """Get the Unit of Measurement for Z-Wave Climate Settings."""
+        if self._devtype_cat and self._aux_properties.get(prop):
+            return self._aux_properties.get(prop).get('uom')
+        return None
