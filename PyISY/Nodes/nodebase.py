@@ -106,7 +106,7 @@ class NodeBase:
         )
 
         # Calculate hint to use if status is updated
-        hint = None
+        hint = self.status._val
         if cmd in ["DON", "DFON"]:
             hint = val if val is not None else 255
         if cmd in ["DOF", "DFOF"]:
