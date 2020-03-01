@@ -194,7 +194,10 @@ class Nodes:
         prec = attr_from_xml(xmldoc, ATTR_ACTION, ATTR_PREC, None)
         uom = attr_from_xml(xmldoc, ATTR_ACTION, ATTR_UOM, None)
 
-        self.get_by_id(nid).controlEvents.notify(EventResult(cntrl, nval, prec, uom))
+        node = self.get_by_id(nid)
+        if not node: return
+
+        node.controlEvents.notify(EventResult(cntrl, nval, prec, uom))
         self.isy.log.debug("ISY Node Control Event: %s %s %s", nid, cntrl, nval)
 
     def parse(self, xml):
@@ -367,8 +370,12 @@ class Nodes:
 
         |  nid: Integer representing node/group/folder id.
         """
-        i = self.nids.index(nid)
-        return self.get_by_index(i)
+        try:
+            i = self.nids.index(nid)
+        except ValueError:
+            return None
+        else:
+            return self.get_by_index(i)
 
     def get_by_index(self, i):
         """
