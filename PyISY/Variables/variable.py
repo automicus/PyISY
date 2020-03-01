@@ -1,13 +1,15 @@
-from ..constants import _change2update_interval
-from ..constants import _empty_time
+"""Manage variables from the ISY."""
 from VarEvents import Property
 
+from ..constants import (ATTR_INIT, ATTR_SET, ATTR_VARS, EMPTY_TIME,
+                         UPDATE_INTERVAL)
 
-class Variable(object):
+
+class Variable:
     """
     Object representing a variable on the controller.
 
-    |  parent: The variable manager object.
+    |  variables: The variable manager object.
     |  vid: List of variable IDs.
     |  vtype: List of variable types.
     |  init: List of values that variables initialize to when the controller
@@ -24,14 +26,17 @@ class Variable(object):
 
     init = Property(0)
     val = Property(0)
-    lastEdit = Property(_empty_time, readonly=True)
+    lastEdit = Property(EMPTY_TIME, readonly=True)
 
-    def __init__(self, parent, vid, vtype, init, val, ts):
+    def __init__(self, variables, vid, vtype, vname, init, val, ts):
+        """Initialize a Variable class."""
         super(Variable, self).__init__()
         self.noupdate = False
-        self.parent = parent
+        self._variables = variables
+        self.isy = variables.isy
         self._id = vid
         self._type = vtype
+        self._name = vname
 
         self.init.update(init, force=True, silent=True)
         self.init.reporter = self.__report_init__
@@ -40,64 +45,79 @@ class Variable(object):
         self.lastEdit.update(ts, force=True, silent=True)
 
     def __str__(self):
-        """ Returns a string representation of the variable. """
-        return 'Variable(type=' + str(self._type) + ', id=' + str(self._id) \
-            + ', val=' + str(self.val) + ')'
+        """Return a string representation of the variable."""
+        return 'Variable(type={!s}, id={!s}, val={!s})'. \
+            format(self._type, self._id, self.val)
 
     def __repr__(self):
-        """ Returns a string representation of the variable. """
+        """Return a string representation of the variable."""
         return str(self)
 
     def __report_init__(self, val):
+        """Report the init value for the variable."""
         self.noupdate = True
         self.setInit(val)
         self.noupdate = False
 
     def __report_val__(self, val):
+        """Report the current value for the variable."""
         self.noupdate = True
         self.setValue(val)
         self.noupdate = False
 
-    def update(self, waitTime=0):
-        """
-        Updates the object with the variable's parameters from the controller.
+    @property
+    def vid(self):
+        """Return the Variable ID."""
+        return self._id
 
-        |  waitTime: Seconds to wait before updating.
+    @property
+    def nid(self):
+        """Return the formatted Variable Type and ID."""
+        return '{!s}.{!s}'.format(self._type, self._id)
+
+    @property
+    def name(self):
+        """Return the Variable Name."""
+        return self._name
+
+    def update(self, wait_time=0):
         """
-        if not self.noupdate:
-            self.parent.update(waitTime)
+        Update the object with the variable's parameters from the controller.
+
+        |  wait_time: Seconds to wait before updating.
+        """
+        if not self.isy.auto_update and not self.noupdate:
+            self._variables.update(wait_time)
 
     def setInit(self, val):
         """
-        Sets the initial value for the variable after the controller boots.
+        Set the initial value for the variable after the controller boots.
 
         |  val: The value to have the variable initialize to.
         """
-        response = self.parent.parent.conn.initVariable(self._type,
-                                                        self._id, val)
-        if response is None:
-            self.parent.parent.log.warning('ISY could not set variable init '
-                                           + 'value: ' + str(self._type) + ', '
-                                           + str(self._id))
-        else:
-            self.parent.parent.log.info('ISY set variable init value: '
-                                        + str(self._type) + ', '
-                                        + str(self._id))
-            self.update(_change2update_interval)
+        if val is None:
+            raise ValueError('Variable init must be an integer. Got None.')
+        self.setValue(val, True)
 
-    def setValue(self, val):
+    def setValue(self, val, init=False):
         """
-        Sets the value of the variable.
+        Set the value of the variable.
 
         |  val: The value to set the variable to.
         """
-        response = self.parent.parent.conn.setVariable(self._type,
-                                                       self._id, val)
-        if response is None:
-            self.parent.parent.log.warning('ISY could not set variable: '
-                                           + str(self._type) + ', '
-                                           + str(self._id))
-        else:
-            self.parent.parent.log.info('ISY set variable: ' + str(self._type)
-                                        + ', ' + str(self._id))
-            self.update(_change2update_interval)
+        if val is None:
+            raise ValueError('Variable value must be an integer. Got None.')
+        req_url = self.isy.conn.compile_url([ATTR_VARS,
+                                             ATTR_INIT if init else ATTR_SET,
+                                             str(self._type),
+                                             str(self._id),
+                                             str(val)])
+        if not self.isy.conn.request(req_url):
+            self.isy.log.warning("ISY could not set variable%s: %s.%s",
+                                 " init value" if init else "",
+                                 str(self._type), str(self._id))
+            return
+        self.isy.log.info("ISY set variable%s: %s.%s",
+                          " init value" if init else "",
+                          str(self._type), str(self._id))
+        self.update(UPDATE_INTERVAL)

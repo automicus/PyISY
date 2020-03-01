@@ -1,5 +1,5 @@
 """
-PyISY - Python Library for the ISY Controller
+PyISY - Python Library for the ISY Controller.
 
 This module is a set of Python bindings for the ISY's REST API. The
 ISY is developed by Universal Devices and is a home automation
@@ -21,9 +21,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-from .ISY import ISY
+import pkg_resources
+from .isy import ISY
 
-__version__ = '1.1.2'
-__author__ = 'Ryan M. Kraus'
-__email__ = 'rmkraus at gmail dot com'
-__date__ = 'September 2019'
+try:
+    __version__ = pkg_resources.get_distribution("PyISY").version
+except Exception:
+    __version__ = "unknown"
+
+__author__ = "Ryan M. Kraus"
+__email__ = "rmkraus at gmail dot com"
+__date__ = "February 2020"
