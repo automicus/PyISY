@@ -66,6 +66,6 @@ class Folder:
                 'ISY could not call "%s" on program: %s', command, self._id
             )
             return False
-        self.isy.log.info('ISY ran "%s" on program: %s', command, self._id)
+        self.isy.log.debug('ISY ran "%s" on program: %s', command, self._id)
         self.update(UPDATE_INTERVAL)
         return True

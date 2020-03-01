@@ -124,7 +124,7 @@ class Variable:
                 str(self._id),
             )
             return
-        self.isy.log.info(
+        self.isy.log.debug(
             "ISY set variable%s: %s.%s",
             " init value" if init else "",
             str(self._type),

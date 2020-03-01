@@ -170,4 +170,4 @@ class NetworkCommand:
                 "ISY could not run networking command: %s", str(self._id)
             )
             return
-        self.isy.log.info("ISY ran networking command: %s", str(self._id))
+        self.isy.log.debug("ISY ran networking command: %s", str(self._id))

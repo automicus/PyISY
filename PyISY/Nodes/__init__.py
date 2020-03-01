@@ -288,7 +288,7 @@ class Nodes:
                         Group(self, nid, nname, members, controllers),
                         ntype,
                     )
-            self.isy.log.info("ISY Loaded {}".format(ntype))
+            self.isy.log.debug("ISY Loaded {}".format(ntype))
 
     def update(self, wait_time=0):
         """
