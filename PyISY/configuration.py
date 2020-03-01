@@ -73,14 +73,14 @@ class Configuration(dict):
         xml: String of the xml data
         """
         xmldoc = minidom.parseString(xml)
-        features = xmldoc.getElementsByTagName('feature')
+        features = xmldoc.getElementsByTagName("feature")
 
         for feature in features:
             idnum = value_from_xml(feature, ATTR_ID)
             desc = value_from_xml(feature, ATTR_DESC)
-            installed_raw = value_from_xml(feature, 'isInstalled')
-            installed = bool(installed_raw == 'true')
+            installed_raw = value_from_xml(feature, "isInstalled")
+            installed = bool(installed_raw == "true")
             self[idnum] = installed
             self[desc] = self[idnum]
 
-        self.isy.log.info('ISY Loaded Configuration')
+        self.isy.log.info("ISY Loaded Configuration")

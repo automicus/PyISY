@@ -47,10 +47,21 @@ class Program(Folder):
     running = Property(False, readonly=True)
     ranThen = Property(0, readonly=True)
     ranElse = Property(0, readonly=True)
-    dtype = 'program'
+    dtype = "program"
 
-    def __init__(self, programs, pid, pname, pstatus, plastup, plastrun,
-                 plastfin, penabled, pstartrun, prunning):
+    def __init__(
+        self,
+        programs,
+        pid,
+        pname,
+        pstatus,
+        plastup,
+        plastrun,
+        plastfin,
+        penabled,
+        pstartrun,
+        prunning,
+    ):
         """Initialize a Program class."""
         super(Program, self).__init__(programs, pid, pname, pstatus)
         self.lastUpdate.update(plastup, force=True, silent=True)
@@ -65,14 +76,13 @@ class Program(Folder):
     def __report_enabled__(self, val):
         """Set the enabled flag."""
         self.noupdate = True
-        self.send_pgrm_cmd('enable' if val else 'disable')
+        self.send_pgrm_cmd("enable" if val else "disable")
         self.noupdate = False
 
     def __report_startrun__(self, val):
         """Set the run at startup flag."""
         self.noupdate = True
-        self.send_pgrm_cmd('enableRunAtStartup' if val
-                           else 'disableRunAtStartup')
+        self.send_pgrm_cmd("enableRunAtStartup" if val else "disableRunAtStartup")
         self.noupdate = False
 
     def update(self, wait_time=0, data=None):
@@ -84,17 +94,13 @@ class Program(Folder):
         """
         if not self.noupdate:
             if data is not None:
-                prunning = (data['plastrun'] >= data['plastup']) or \
-                    data['prunning']
-                self.status.update(data['pstatus'], force=True, silent=True)
-                self.lastUpdate.update(data['plastup'],
-                                       force=True, silent=True)
-                self.lastRun.update(data['plastrun'], force=True, silent=True)
-                self.lastFinished.update(data['plastfin'],
-                                         force=True, silent=True)
-                self.enabled.update(data['penabled'], force=True, silent=True)
-                self.runAtStartup.update(data['pstartrun'],
-                                         force=True, silent=True)
+                prunning = (data["plastrun"] >= data["plastup"]) or data["prunning"]
+                self.status.update(data["pstatus"], force=True, silent=True)
+                self.lastUpdate.update(data["plastup"], force=True, silent=True)
+                self.lastRun.update(data["plastrun"], force=True, silent=True)
+                self.lastFinished.update(data["plastfin"], force=True, silent=True)
+                self.enabled.update(data["penabled"], force=True, silent=True)
+                self.runAtStartup.update(data["pstartrun"], force=True, silent=True)
                 self.running.update(prunning, force=True, silent=True)
             elif not self.isy.auto_update:
                 self._programs.update(wait_time, pid=self._id)

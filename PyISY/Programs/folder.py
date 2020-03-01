@@ -32,7 +32,7 @@ class Folder:
 
     def __str__(self):
         """Return a string representation of the node."""
-        return '{}({})'.format(type(self).__name__, self._id)
+        return "{}({})".format(type(self).__name__, self._id)
 
     @property
     def nid(self):
@@ -53,17 +53,18 @@ class Folder:
         """
         if not self.noupdate:
             if data is not None:
-                self.status.update(data['pstatus'], force=True, silent=True)
+                self.status.update(data["pstatus"], force=True, silent=True)
             elif not self.isy.auto_update:
                 self._programs.update(wait_time, pid=self._id)
 
     def send_pgrm_cmd(self, command):
         """Run the appropriate clause of the object."""
-        req_url = self.isy.conn.compile_url(['programs', str(self._id),
-                                             command])
+        req_url = self.isy.conn.compile_url(["programs", str(self._id), command])
         result = self.isy.conn.request(req_url)
         if not result:
-            self.isy.log.warning('ISY could not call "%s" on program: %s', command, self._id)
+            self.isy.log.warning(
+                'ISY could not call "%s" on program: %s', command, self._id
+            )
             return False
         self.isy.log.info('ISY ran "%s" on program: %s', command, self._id)
         self.update(UPDATE_INTERVAL)

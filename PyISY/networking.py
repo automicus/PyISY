@@ -58,7 +58,7 @@ class NetworkResources:
         except:
             self.isy.log.error("%s: NetworkResources", XML_PARSE_ERROR)
         else:
-            features = xmldoc.getElementsByTagName('NetRule')
+            features = xmldoc.getElementsByTagName("NetRule")
             for feature in features:
                 nid = int(value_from_xml(feature, ATTR_ID))
                 if nid not in self.nids:
@@ -68,7 +68,7 @@ class NetworkResources:
                     self.nnames.append(nname)
                     self.nobjs.append(nobj)
 
-            self.isy.log.info('ISY Loaded Network Resources Commands')
+            self.isy.log.info("ISY Loaded Network Resources Commands")
 
     def update(self, wait_time=0):
         """
@@ -163,11 +163,11 @@ class NetworkCommand:
 
     def run(self):
         """Execute the networking command."""
-        req_url = self.isy.conn.compile_url(['networking', 'resources',
-                                             str(self._id)])
+        req_url = self.isy.conn.compile_url(["networking", "resources", str(self._id)])
 
         if not self.isy.conn.request(req_url, ok404=True):
-            self.isy.log.warning('ISY could not run networking command: %s',
-                                 str(self._id))
+            self.isy.log.warning(
+                "ISY could not run networking command: %s", str(self._id)
+            )
             return
-        self.isy.log.info('ISY ran networking command: %s', str(self._id))
+        self.isy.log.info("ISY ran networking command: %s", str(self._id))

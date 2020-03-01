@@ -1,6 +1,6 @@
 """Representation of groups (scenes) from an ISY."""
-from .nodebase import NodeBase
 from ..constants import VALUE_UNKNOWN
+from .nodebase import NodeBase
 
 
 class Group(NodeBase):
@@ -21,8 +21,7 @@ class Group(NodeBase):
     :ivar status: Watched property indicating the status of the group.
     """
 
-    def __init__(self, nodes, nid, name, members=None,
-                 controllers=None):
+    def __init__(self, nodes, nid, name, members=None, controllers=None):
         """Initialize a Group class."""
         self._members = members or []
         self._controllers = controllers or []
@@ -30,8 +29,9 @@ class Group(NodeBase):
 
         # listen for changes in children
         self._members_handlers = [
-            self._nodes[m].status.subscribe('changed', self.update)
-            for m in self.members]
+            self._nodes[m].status.subscribe("changed", self.update)
+            for m in self.members
+        ]
 
         # get and update the status
         self.update()
@@ -71,8 +71,10 @@ class Group(NodeBase):
     def update(self, wait_time=0, hint=None, xmldoc=None):
         """Update the group with values from the controller."""
         for node in self.members:
-            if self._nodes[node].status is None or \
-                    self._nodes[node].status == VALUE_UNKNOWN:
+            if (
+                self._nodes[node].status is None
+                or self._nodes[node].status == VALUE_UNKNOWN
+            ):
                 continue
             elif int(self._nodes[node].status) > 0:
                 self.status.update(255, force=True, silent=True)

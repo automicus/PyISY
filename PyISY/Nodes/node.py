@@ -2,9 +2,18 @@
 from time import sleep
 from xml.dom import minidom
 
-from ..constants import (ATTR_FORMATTED, ATTR_GET, ATTR_GROUP, ATTR_PREC,
-                         ATTR_UOM, ATTR_VALUE, CLIMATE_SETPOINT_MIN_GAP,
-                         STATE_PROPERTY, VALUE_UNKNOWN, XML_PARSE_ERROR)
+from ..constants import (
+    ATTR_FORMATTED,
+    ATTR_GET,
+    ATTR_GROUP,
+    ATTR_PREC,
+    ATTR_UOM,
+    ATTR_VALUE,
+    CLIMATE_SETPOINT_MIN_GAP,
+    STATE_PROPERTY,
+    VALUE_UNKNOWN,
+    XML_PARSE_ERROR,
+)
 from ..helpers import parse_xml_properties
 from .handlers import EventEmitter
 from .nodebase import NodeBase
@@ -33,22 +42,32 @@ class Node(NodeBase):
     :ivar hasChildren: Property indicating that there are no more children.
     """
 
-    def __init__(self, nodes, nid, name, state,
-                 aux_properties=None, devtype_cat=None, node_def_id=None,
-                 parent_nid=None, dev_type=None, enabled=None):
+    def __init__(
+        self,
+        nodes,
+        nid,
+        name,
+        state,
+        aux_properties=None,
+        devtype_cat=None,
+        node_def_id=None,
+        parent_nid=None,
+        dev_type=None,
+        enabled=None,
+    ):
         """Initialize a Node class."""
-        self._aux_properties = aux_properties \
-            if aux_properties is not None else {}
+        self._aux_properties = aux_properties if aux_properties is not None else {}
         self._devtype_cat = devtype_cat
         self._node_def_id = node_def_id
         self._type = dev_type
         self._enabled = enabled if enabled is not None else True
         self._parent_nid = parent_nid if parent_nid != nid else None
-        self._uom = state.get(ATTR_UOM, '')
-        self._prec = state.get(ATTR_PREC, '0')
+        self._uom = state.get(ATTR_UOM, "")
+        self._prec = state.get(ATTR_PREC, "0")
         self._formatted = state.get(ATTR_FORMATTED, str(self.status))
-        self.status.update(state.get(ATTR_VALUE, VALUE_UNKNOWN),
-                           force=True, silent=True)
+        self.status.update(
+            state.get(ATTR_VALUE, VALUE_UNKNOWN), force=True, silent=True
+        )
         self.controlEvents = EventEmitter()
         super().__init__(nodes, nid, name)
 
@@ -99,18 +118,20 @@ class Node(NodeBase):
 
         Check ISYv4 UOM, then Insteon and Z-Wave Types for dimmable types.
         """
-        dimmable = '%' in str(self._uom) or \
-            (isinstance(self._type, str) and self._type.startswith("1.")) or \
-            (self._devtype_cat is not None and
-             self._devtype_cat in ['109', '119'])
+        dimmable = (
+            "%" in str(self._uom)
+            or (isinstance(self._type, str) and self._type.startswith("1."))
+            or (self._devtype_cat is not None and self._devtype_cat in ["109", "119"])
+        )
         return dimmable
 
     def update(self, wait_time=0, hint=None, xmldoc=None):
         """Update the value of the node from the controller."""
         if not self.isy.auto_update and not xmldoc:
             sleep(wait_time)
-            req_url = self.isy.conn.compile_url(['nodes', self._id,
-                                                 ATTR_GET, STATE_PROPERTY])
+            req_url = self.isy.conn.compile_url(
+                ["nodes", self._id, ATTR_GET, STATE_PROPERTY]
+            )
             xml = self.isy.conn.request(req_url)
             try:
                 xmldoc = minidom.parseString(xml)
@@ -120,11 +141,11 @@ class Node(NodeBase):
         elif hint is not None:
             # assume value was set correctly, auto update will correct errors
             self.status.update(hint, silent=True)
-            self.isy.log.debug('ISY updated node: %s', self._id)
+            self.isy.log.debug("ISY updated node: %s", self._id)
             return
 
         if xmldoc is None:
-            self.isy.log.warning('ISY could not update node: %s', self._id)
+            self.isy.log.warning("ISY could not update node: %s", self._id)
             return
 
         state, aux_props = parse_xml_properties(xmldoc)
@@ -134,7 +155,7 @@ class Node(NodeBase):
         value = state.get(ATTR_VALUE, VALUE_UNKNOWN)
         self._formatted = state.get(ATTR_FORMATTED, value)
         self.status.update(value, silent=True)
-        self.isy.log.debug('ISY updated node: %s', self._id)
+        self.isy.log.debug("ISY updated node: %s", self._id)
 
     def get_groups(self, controller=True, responder=True):
         """
@@ -151,8 +172,7 @@ class Node(NodeBase):
                     if self._id in self._nodes[child[2]].members:
                         groups.append(child[2])
                 elif controller:
-                    if self._id in self._nodes[child[2]] \
-                            .controllers:
+                    if self._id in self._nodes[child[2]].controllers:
                         groups.append(child[2])
         return groups
 
@@ -175,6 +195,7 @@ class Node(NodeBase):
 
     Most are added dynamically, these are special cases.
     """
+
     def climate_setpoint(self, val):
         """Send a command to the device to set the system setpoints."""
         adjustment = int(CLIMATE_SETPOINT_MIN_GAP / 2.0)
@@ -185,13 +206,13 @@ class Node(NodeBase):
     def climate_setpoint_heat(self, val):
         """Send a command to the device to set the system heat setpoint."""
         # For some reason, wants 2 times the temperature for Insteon
-        if self._uom in ['101', 'degrees']:
+        if self._uom in ["101", "degrees"]:
             val = 2 * val
-        return self.send_cmd('CLISPH', str(val))
+        return self.send_cmd("CLISPH", str(val))
 
     def climate_setpoint_cool(self, val):
         """Send a command to the device to set the system heat setpoint."""
         # For some reason, wants 2 times the temperature for Insteon
-        if self._uom in ['101', 'degrees']:
+        if self._uom in ["101", "degrees"]:
             val = 2 * val
-        return self.send_cmd('CLISPC', str(val))
+        return self.send_cmd("CLISPC", str(val))

@@ -9,8 +9,13 @@ from threading import Thread
 from xml.dom import minidom
 
 from . import strings
-from .constants import (ATTR_ACTION, ATTR_CONTROL, POLL_TIME,
-                        SOCKET_BUFFER_SIZE, STATE_PROPERTY)
+from .constants import (
+    ATTR_ACTION,
+    ATTR_CONTROL,
+    POLL_TIME,
+    SOCKET_BUFFER_SIZE,
+    STATE_PROPERTY,
+)
 from .helpers import attr_from_xml, value_from_xml
 
 
@@ -32,21 +37,22 @@ class EventStream:
         self.data = connection_info
 
         # create TLS encrypted socket if we're using HTTPS
-        if self.data.get('tls') is not None:
-            if self.data['tls'] == 1.1:
+        if self.data.get("tls") is not None:
+            if self.data["tls"] == 1.1:
                 context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_1)
             else:
                 context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
             context.check_hostname = False
             self.socket = context.wrap_socket(
                 socket.socket(socket.AF_INET, socket.SOCK_STREAM),
-                server_hostname='https://{}'.format(self.data['addr']))
+                server_hostname="https://{}".format(self.data["addr"]),
+            )
         else:
             self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
     def _mkmsg(self, msg):
-        head = msg['head']
-        body = msg['body']
+        head = msg["head"]
+        body = msg["body"]
         body = body.format(**self.data)
         length = len(body)
         head = head.format(length=length, **self.data)
@@ -57,36 +63,35 @@ class EventStream:
         try:
             xmldoc = minidom.parseString(msg)
         except xml.parsers.expat.ExpatError:
-            self.isy.log.warning('ISY Received Malformed XML:\n' + msg)
+            self.isy.log.warning("ISY Received Malformed XML:\n" + msg)
             return
-        self.isy.log.debug('ISY Update Received:\n' + msg)
+        self.isy.log.debug("ISY Update Received:\n" + msg)
 
         # A wild stream id appears!
-        if 'sid=' in msg and 'sid' not in self.data:
+        if "sid=" in msg and "sid" not in self.data:
             self._upmsg(xmldoc)
 
         # direct the event message
         cntrl = value_from_xml(xmldoc, ATTR_CONTROL)
         if not cntrl:
             return
-        if cntrl == '_0':  # ISY HEARTBEAT
+        if cntrl == "_0":  # ISY HEARTBEAT
             self._lasthb = datetime.datetime.now()
             self._hbwait = int(value_from_xml(xmldoc, ATTR_ACTION))
-            self.isy.log.debug('ISY HEARTBEAT: %s',
-                               self._lasthb.isoformat())
+            self.isy.log.debug("ISY HEARTBEAT: %s", self._lasthb.isoformat())
         elif cntrl == STATE_PROPERTY:  # NODE UPDATE
             self.isy.nodes._upmsg(xmldoc)
-        elif cntrl[0] != '_':  # NODE CONTROL EVENT
+        elif cntrl[0] != "_":  # NODE CONTROL EVENT
             self.isy.nodes._controlmsg(xmldoc)
-        elif cntrl == '_11':  # WEATHER UPDATE
-            if self.isy.configuration['Weather Information']:
+        elif cntrl == "_11":  # WEATHER UPDATE
+            if self.isy.configuration["Weather Information"]:
                 self.isy.climate._upmsg(xmldoc)
-        elif cntrl == '_1':  # Trigger Update
-            if '<var' in msg:  # VARIABLE
+        elif cntrl == "_1":  # Trigger Update
+            if "<var" in msg:  # VARIABLE
                 self.isy.variables._upmsg(xmldoc)
-            elif '<id>' in msg:  # PROGRAM
+            elif "<id>" in msg:  # PROGRAM
                 self.isy.programs._upmsg(xmldoc)
-            elif '<node>' in msg and '[' in msg:  # Node Server Update
+            elif "<node>" in msg and "[" in msg:  # Node Server Update
                 pass  # This is most likely a duplicate node update.
             else:  # SOMETHING HAPPENED WITH A PROGRAM FOLDER
                 # but they ISY didn't tell us what, so...
@@ -94,8 +99,8 @@ class EventStream:
 
     def _upmsg(self, xmldoc):
         """Set the socket ID."""
-        self.data['sid'] = attr_from_xml(xmldoc, 'Event', 'sid')
-        self.isy.log.debug('ISY Updated Events Stream ID')
+        self.data["sid"] = attr_from_xml(xmldoc, "Event", "sid")
+        self.isy.log.debug("ISY Updated Events Stream ID")
 
     @property
     def running(self):
@@ -108,7 +113,7 @@ class EventStream:
     @running.setter
     def running(self, val):
         if val and not self.running:
-            self.isy.log.info('ISY Starting Updates')
+            self.isy.log.info("ISY Starting Updates")
             if self.connect():
                 self.subscribe()
                 self._running = True
@@ -116,7 +121,7 @@ class EventStream:
                 self._thread.daemon = True
                 self._thread.start()
         else:
-            self.isy.log.info('ISY Stopping Updates')
+            self.isy.log.info("ISY Stopping Updates")
             self._running = False
             self.unsubscribe()
             self.disconnect()
@@ -124,7 +129,7 @@ class EventStream:
     def read(self):
         """Read data from the socket."""
         loop = True
-        output = ''
+        output = ""
         while loop:
             try:
                 new_data = self.socket.recv(SOCKET_BUFFER_SIZE)
@@ -136,16 +141,17 @@ class EventStream:
                 if len(new_data) < SOCKET_BUFFER_SIZE:
                     loop = False
                 if sys.version_info.major == 3:
-                    new_data = new_data.decode('utf-8')
+                    new_data = new_data.decode("utf-8")
                 output += new_data
 
-        return output.split('\n')
+        return output.split("\n")
 
     def write(self, msg):
         """Write data back to the socket."""
         if self._writer is None:
-            raise NotImplementedError('Function not available while '
-                                      'socket is closed.')
+            raise NotImplementedError(
+                "Function not available while " "socket is closed."
+            )
         self._writer.write(msg)
         self._writer.flush()
 
@@ -153,12 +159,11 @@ class EventStream:
         """Connect to the event stream socket."""
         if not self._connected:
             try:
-                self.socket.connect((self.data['addr'], self.data['port']))
-                if self.data.get('tls'):
+                self.socket.connect((self.data["addr"], self.data["port"]))
+                if self.data.get("tls"):
                     self.cert = self.socket.getpeercert()
             except OSError:
-                self.isy.log.error('PyISY could not connect to ISY '
-                                   'event stream.')
+                self.isy.log.error("PyISY could not connect to ISY " "event stream.")
                 if self._on_lost_function is not None:
                     self._on_lost_function()
                 return False
@@ -179,7 +184,7 @@ class EventStream:
     def subscribe(self):
         """Subscribe to the Event Stream."""
         if not self._subscribed and self._connected:
-            if 'sid' not in self.data:
+            if "sid" not in self.data:
                 msg = self._mkmsg(strings.sub_msg)
                 self.write(msg)
             else:
@@ -200,7 +205,7 @@ class EventStream:
         """Return the last ISY Heartbeat time."""
         if self._lasthb is not None:
             return (datetime.datetime.now() - self._lasthb).seconds
-        return 0.
+        return 0.0
 
     def watch(self):
         """Watch the subscription connection and report if dead."""
@@ -209,8 +214,9 @@ class EventStream:
                 # verify connection is still alive
                 if self.heartbeat_time > self._hbwait:
                     self.disconnect()
-                    self.isy.log.warning('PyISY lost connection to '
-                                         'the ISY event stream.')
+                    self.isy.log.warning(
+                        "PyISY lost connection to " "the ISY event stream."
+                    )
                     if self._on_lost_function is not None:
                         self._on_lost_function()
 
@@ -218,7 +224,6 @@ class EventStream:
                 inready, _, _ = select.select([self.socket], [], [], POLL_TIME)
                 if self.socket in inready:
                     for data in self.read():
-                        if data.startswith('<?xml'):
-                            data = data.strip(). \
-                                        replace('POST reuse HTTP/1.1', '')
+                        if data.startswith("<?xml"):
+                            data = data.strip().replace("POST reuse HTTP/1.1", "")
                             self._routemsg(data)

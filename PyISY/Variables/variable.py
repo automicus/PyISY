@@ -1,8 +1,7 @@
 """Manage variables from the ISY."""
 from VarEvents import Property
 
-from ..constants import (ATTR_INIT, ATTR_SET, ATTR_VARS, EMPTY_TIME,
-                         UPDATE_INTERVAL)
+from ..constants import ATTR_INIT, ATTR_SET, ATTR_VARS, EMPTY_TIME, UPDATE_INTERVAL
 
 
 class Variable:
@@ -46,8 +45,9 @@ class Variable:
 
     def __str__(self):
         """Return a string representation of the variable."""
-        return 'Variable(type={!s}, id={!s}, val={!s})'. \
-            format(self._type, self._id, self.val)
+        return "Variable(type={!s}, id={!s}, val={!s})".format(
+            self._type, self._id, self.val
+        )
 
     def __repr__(self):
         """Return a string representation of the variable."""
@@ -73,7 +73,7 @@ class Variable:
     @property
     def nid(self):
         """Return the formatted Variable Type and ID."""
-        return '{!s}.{!s}'.format(self._type, self._id)
+        return "{!s}.{!s}".format(self._type, self._id)
 
     @property
     def name(self):
@@ -96,7 +96,7 @@ class Variable:
         |  val: The value to have the variable initialize to.
         """
         if val is None:
-            raise ValueError('Variable init must be an integer. Got None.')
+            raise ValueError("Variable init must be an integer. Got None.")
         self.setValue(val, True)
 
     def setValue(self, val, init=False):
@@ -106,18 +106,28 @@ class Variable:
         |  val: The value to set the variable to.
         """
         if val is None:
-            raise ValueError('Variable value must be an integer. Got None.')
-        req_url = self.isy.conn.compile_url([ATTR_VARS,
-                                             ATTR_INIT if init else ATTR_SET,
-                                             str(self._type),
-                                             str(self._id),
-                                             str(val)])
+            raise ValueError("Variable value must be an integer. Got None.")
+        req_url = self.isy.conn.compile_url(
+            [
+                ATTR_VARS,
+                ATTR_INIT if init else ATTR_SET,
+                str(self._type),
+                str(self._id),
+                str(val),
+            ]
+        )
         if not self.isy.conn.request(req_url):
-            self.isy.log.warning("ISY could not set variable%s: %s.%s",
-                                 " init value" if init else "",
-                                 str(self._type), str(self._id))
+            self.isy.log.warning(
+                "ISY could not set variable%s: %s.%s",
+                " init value" if init else "",
+                str(self._type),
+                str(self._id),
+            )
             return
-        self.isy.log.info("ISY set variable%s: %s.%s",
-                          " init value" if init else "",
-                          str(self._type), str(self._id))
+        self.isy.log.info(
+            "ISY set variable%s: %s.%s",
+            " init value" if init else "",
+            str(self._type),
+            str(self._id),
+        )
         self.update(UPDATE_INTERVAL)
