@@ -3,6 +3,7 @@ import logging
 from threading import Thread
 
 from .climate import Climate
+from .clock import Clock
 from .configuration import Configuration
 from .connection import Connection
 from .constants import COMMAND_FRIENDLY_NAME, UOM_TO_STATES, X10_COMMANDS
@@ -76,6 +77,7 @@ class ISY:
         else:
             self._connected = True
             self.configuration = Configuration(self, xml=self.conn.get_config())
+            self.clock = Clock(self, xml=self.conn.get_time())
             self._add_commands()
             self.nodes = Nodes(self, xml=self.conn.get_nodes())
             self.programs = Programs(self, xml=self.conn.get_programs())

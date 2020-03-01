@@ -212,6 +212,12 @@ class Connection:
         result = self.request(req_url)
         return result
 
+    def get_time(self):
+        """Fetch the system time info from the ISY."""
+        req_url = self.compile_url(["time"])
+        result = self.request(req_url)
+        return result
+
 
 class TLSHttpAdapter(HTTPAdapter):
     """Transport adapter that uses TLS1."""

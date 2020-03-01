@@ -12,6 +12,7 @@ from ..constants import (
     ATTR_VAL,
     ATTR_VAR,
     XML_PARSE_ERROR,
+    XML_STRPTIME,
 )
 from ..helpers import attr_from_element, attr_from_xml, value_from_xml
 from .variable import Variable
@@ -110,7 +111,7 @@ class Variables:
             init = value_from_xml(feature, ATTR_INIT)
             val = value_from_xml(feature, ATTR_VAL)
             ts_raw = value_from_xml(feature, ATTR_TS)
-            t_s = datetime.strptime(ts_raw, "%Y%m%d %H:%M:%S")
+            t_s = datetime.strptime(ts_raw, XML_STRPTIME)
             vname = self.vnames[vtype].get(vid, "")
 
             vobj = self.vobjs[vtype].get(vid)
@@ -154,7 +155,7 @@ class Variables:
             )
             ts_raw = value_from_xml(xmldoc, ATTR_TS)
             vobj.lastEdit.update(
-                datetime.strptime(ts_raw, "%Y%m%d %H:%M:%S"), force=True, silent=True
+                datetime.strptime(ts_raw, XML_STRPTIME), force=True, silent=True
             )
         self.isy.log.debug("ISY Updated Variable: %s", str(vid))
 
