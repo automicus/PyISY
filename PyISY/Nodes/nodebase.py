@@ -26,7 +26,7 @@ class NodeBase:
 
     def __str__(self):
         """Return a string representation of the node."""
-        return '{}({})'.format(type(self).__name__, self._id)
+        return "{}({})".format(type(self).__name__, self._id)
 
     @property
     def nid(self):
@@ -41,17 +41,16 @@ class NodeBase:
     def parse_notes(self):
         """Parse the notes for a given node."""
         notes_xml = self.isy.conn.request(
-            self.isy.conn.compile_url(['nodes', self._id, 'notes']),
-            ok404=True)
+            self.isy.conn.compile_url(["nodes", self._id, "notes"]), ok404=True
+        )
         spoken = None
         if notes_xml is not None and notes_xml != "":
             try:
                 notesdom = minidom.parseString(notes_xml)
             except:
-                self.isy.log.error("%s: Node Notes %s",
-                                   XML_PARSE_ERROR, notes_xml)
+                self.isy.log.error("%s: Node Notes %s", XML_PARSE_ERROR, notes_xml)
             else:
-                spoken = value_from_xml(notesdom, 'spoken')
+                spoken = value_from_xml(notesdom, "spoken")
         return {"spoken": spoken}
 
     @property
@@ -66,7 +65,7 @@ class NodeBase:
 
     def off(self):
         """Turn off the nodes/group in the ISY."""
-        return self.send_cmd('DOF')
+        return self.send_cmd("DOF")
 
     def on(self, val=None):
         """
@@ -75,12 +74,12 @@ class NodeBase:
         |  [optional] val: The value brightness value (0-255) for the node.
         """
         if val is None or type(self).__name__ == "Group":
-            cmd = 'DON'
+            cmd = "DON"
         elif int(val) > 0:
-            cmd = 'DON'
+            cmd = "DON"
             val = str(val) if int(val) < 255 else None
         else:
-            cmd = 'DOF'
+            cmd = "DOF"
             val = None
         return self.send_cmd(cmd, val)
 
@@ -91,23 +90,26 @@ class NodeBase:
     def send_cmd(self, cmd, val=None):
         """Send a command to the device."""
         value = str(val) if val is not None else None
-        req = ['nodes', str(self._id), 'cmd', cmd]
+        req = ["nodes", str(self._id), "cmd", cmd]
         if value:
             req.append(value)
         req_url = self.isy.conn.compile_url(req)
         if not self.isy.conn.request(req_url):
-            self.isy.log.warning('ISY could not send %s command to %s.',
-                                 COMMAND_FRIENDLY_NAME.get(cmd), self._id)
+            self.isy.log.warning(
+                "ISY could not send %s command to %s.",
+                COMMAND_FRIENDLY_NAME.get(cmd),
+                self._id,
+            )
             return False
-        self.isy.log.info('ISY command %s sent to %s.',
-                          COMMAND_FRIENDLY_NAME.get(cmd), self._id)
+        self.isy.log.debug(
+            "ISY command %s sent to %s.", COMMAND_FRIENDLY_NAME.get(cmd), self._id
+        )
 
         # Calculate hint to use if status is updated
         hint = None
-        if cmd in ['DON', 'DFON']:
+        if cmd in ["DON", "DFON"]:
             hint = val if val is not None else 255
-        if cmd in ['DOF', 'DFOF']:
+        if cmd in ["DOF", "DFOF"]:
             hint = 0
-
         self.update(UPDATE_INTERVAL, hint=hint)
         return True

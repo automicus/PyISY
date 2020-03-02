@@ -4,8 +4,7 @@ from xml.dom import minidom
 
 from VarEvents import Property, Var
 
-from .constants import (ATTR_ACTION, ATTR_VALUE, CARDINAL_DIRECTIONS,
-                        XML_PARSE_ERROR)
+from .constants import ATTR_ACTION, ATTR_VALUE, CARDINAL_DIRECTIONS, XML_PARSE_ERROR
 from .helpers import value_from_xml
 
 
@@ -73,20 +72,59 @@ class Climate:
     """
 
     # Values
-    _id2name = ['Temperature', 'Temperature_High', 'Temperature_Low',
-                'Feels_Like', 'Temperature_Average', 'Humidity', None,
-                'Pressure', None, 'Dew_Point', 'Wind_Speed', None,
-                'Wind_Direction', None, 'Gust_Speed', None, 'Total_Rain_Today',
-                'Light', None, None, None, 'Evapotranspiration',
-                'Irrigation_Requirement', 'Water_Deficit_Yesterday',
-                'Elevation', None, None, None, None,
-                'Average_Temperature_Tomorrow', 'High_Temperature_Tomorrow',
-                'Low_Temperature_Tomorrow', 'Humidity_Tomorrow',
-                'Wind_Speed_Tomorrow', 'Gust_Speed_Tomorrow', 'Rain_Tomorrow',
-                'Snow_Tomorrow', None, None, None, None,
-                'Forecast_Average_Temperature', 'Forecast_High_Temperature',
-                'Forecast_Low_Temperature', 'Forecast_Humidity',
-                'Forecast_Rain', 'Forecast_Snow', None, None, None, None]
+    _id2name = [
+        "Temperature",
+        "Temperature_High",
+        "Temperature_Low",
+        "Feels_Like",
+        "Temperature_Average",
+        "Humidity",
+        None,
+        "Pressure",
+        None,
+        "Dew_Point",
+        "Wind_Speed",
+        None,
+        "Wind_Direction",
+        None,
+        "Gust_Speed",
+        None,
+        "Total_Rain_Today",
+        "Light",
+        None,
+        None,
+        None,
+        "Evapotranspiration",
+        "Irrigation_Requirement",
+        "Water_Deficit_Yesterday",
+        "Elevation",
+        None,
+        None,
+        None,
+        None,
+        "Average_Temperature_Tomorrow",
+        "High_Temperature_Tomorrow",
+        "Low_Temperature_Tomorrow",
+        "Humidity_Tomorrow",
+        "Wind_Speed_Tomorrow",
+        "Gust_Speed_Tomorrow",
+        "Rain_Tomorrow",
+        "Snow_Tomorrow",
+        None,
+        None,
+        None,
+        None,
+        "Forecast_Average_Temperature",
+        "Forecast_High_Temperature",
+        "Forecast_Low_Temperature",
+        "Forecast_Humidity",
+        "Forecast_Rain",
+        "Forecast_Snow",
+        None,
+        None,
+        None,
+        None,
+    ]
 
     # value properties
     Temperature = Property(0, readonly=True)
@@ -134,45 +172,45 @@ class Climate:
     # Forecast_Cloud_Condition = Property(0, readonly=True)
 
     # unit properties
-    Temperature_units = ''
-    Temperature_High_units = ''
-    Temperature_Low_units = ''
-    Feels_Like_units = ''
-    Temperature_Average_units = ''
-    Humidity_units = ''
-    Pressure_units = ''
-    Dew_Point_units = ''
-    Wind_Speed_units = ''
-    Wind_Direction_units = ''
-    Gust_Speed_units = ''
-    Total_Rain_Today_units = ''
-    Light_units = ''
-    Evapotranspiration_units = ''
-    Irrigation_Requirement_units = ''
-    Water_Deficit_Yesterday_units = ''
-    Elevation_units = ''
+    Temperature_units = ""
+    Temperature_High_units = ""
+    Temperature_Low_units = ""
+    Feels_Like_units = ""
+    Temperature_Average_units = ""
+    Humidity_units = ""
+    Pressure_units = ""
+    Dew_Point_units = ""
+    Wind_Speed_units = ""
+    Wind_Direction_units = ""
+    Gust_Speed_units = ""
+    Total_Rain_Today_units = ""
+    Light_units = ""
+    Evapotranspiration_units = ""
+    Irrigation_Requirement_units = ""
+    Water_Deficit_Yesterday_units = ""
+    Elevation_units = ""
     # Coverage_units = ''
     # Intensity_units = ''
     # Weather_Condition_units = ''
     # Cloud_Condition_units = ''
-    Average_Temperature_Tomorrow_units = ''
-    High_Temperature_Tomorrow_units = ''
-    Low_Temperature_Tomorrow_units = ''
-    Humidity_Tomorrow_units = ''
-    Wind_Speed_Tomorrow_units = ''
-    Gust_Speed_Tomorrow_units = ''
-    Rain_Tomorrow_units = ''
-    Snow_Tomorrow_units = ''
+    Average_Temperature_Tomorrow_units = ""
+    High_Temperature_Tomorrow_units = ""
+    Low_Temperature_Tomorrow_units = ""
+    Humidity_Tomorrow_units = ""
+    Wind_Speed_Tomorrow_units = ""
+    Gust_Speed_Tomorrow_units = ""
+    Rain_Tomorrow_units = ""
+    Snow_Tomorrow_units = ""
     # Coverage_Tomorrow_units = ''
     # Intensity_Tomorrow_units = ''
     # Weather_Condition_Tomorrow_units = ''
     # Cloud_Condition_Tomorrow_units = ''
-    Forecast_Average_Temperature_units = ''
-    Forecast_High_Temperature_units = ''
-    Forecast_Low_Temperature_units = ''
-    Forecast_Humidity_units = ''
-    Forecast_Rain_units = ''
-    Forecast_Snow_units = ''
+    Forecast_Average_Temperature_units = ""
+    Forecast_High_Temperature_units = ""
+    Forecast_Low_Temperature_units = ""
+    Forecast_Humidity_units = ""
+    Forecast_Rain_units = ""
+    Forecast_Snow_units = ""
     # Forecast_Coverage_units = ''
     # Forecast_Intensity_units = ''
     # Forecast_Weather_Condition_units = ''
@@ -185,17 +223,16 @@ class Climate:
 
     def __str__(self):
         """Return a string representing the climate manager."""
-        return 'Climate Module'
+        return "Climate Module"
 
     def __repr__(self):
         """Return a long string showing all the climate values."""
-        out = 'Climate Module\n'
+        out = "Climate Module\n"
         for attr_name in dir(self):
             attr = getattr(self, attr_name)
             if isinstance(attr, Var):
-                units = getattr(self, attr_name + '_units')
-                out += '  ' + attr_name + ' = ' + str(attr) \
-                    + ' ' + units + '\n'
+                units = getattr(self, attr_name + "_units")
+                out += "  " + attr_name + " = " + str(attr) + " " + units + "\n"
         return out
 
     def parse(self, xml):
@@ -210,7 +247,7 @@ class Climate:
             self.isy.log.error("%s: Climate", XML_PARSE_ERROR)
         else:
             # parse definitions
-            feature = xmldoc.getElementsByTagName('climate')[0]
+            feature = xmldoc.getElementsByTagName("climate")[0]
 
             for node in feature.childNodes:
                 (val, unit) = self._parse_val(node.firstChild.toxml())
@@ -218,11 +255,11 @@ class Climate:
                 try:
                     prop = getattr(self, name)
                     prop.update(val, force=True, silent=True)
-                    setattr(self, name + '_units', unit)
+                    setattr(self, name + "_units", unit)
                 except:
                     pass
 
-            self.isy.log.info('ISY Loaded Environment Data')
+            self.isy.log.info("ISY Loaded Environment Data")
 
     def _parse_val(self, val):
         """Parse values and split units."""
@@ -241,7 +278,7 @@ class Climate:
         if len(split_val) == 2:
             return (float(split_val[0]), split_val[1])
         # probably elevation, assume feet
-        return (float(split_val[0]), 'feet')
+        return (float(split_val[0]), "feet")
 
     @staticmethod
     def _parse_val_dir(val):
@@ -261,15 +298,15 @@ class Climate:
 
     def _upmsg(self, xmldoc):
         cid = int(value_from_xml(xmldoc, ATTR_ACTION)) - 1
-        val_raw = value_from_xml(xmldoc, ATTR_VALUE, '').strip()
-        unit_raw = value_from_xml(xmldoc, 'unit', '').strip()
+        val_raw = value_from_xml(xmldoc, ATTR_VALUE, "").strip()
+        unit_raw = value_from_xml(xmldoc, "unit", "").strip()
 
         if cid < len(self._id2name):
-            (val, unit) = self._parse_val((val_raw + ' ' + unit_raw).strip())
+            (val, unit) = self._parse_val((val_raw + " " + unit_raw).strip())
             cname = self._id2name[cid]
             if cname is not None:
                 attr = getattr(self, cname)
                 attr.update(val, force=True, silent=True)
-                setattr(self, cname + '_units', unit)
+                setattr(self, cname + "_units", unit)
 
-                self.isy.log.debug('ISY Updated Climate Value: ' + cname)
+                self.isy.log.debug("ISY Updated Climate Value: " + cname)

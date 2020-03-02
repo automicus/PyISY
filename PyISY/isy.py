@@ -49,8 +49,9 @@ class ISY:
 
     auto_reconnect = True
 
-    def __init__(self, address, port, username, password,
-                 use_https=False, tls_ver=1.1, log=None):
+    def __init__(
+        self, address, port, username, password, use_https=False, tls_ver=1.1, log=None
+    ):
         """Initialize the primary ISY Class."""
         self._events = None  # create this JIT so no socket reuse
         self._reconnect_thread = None
@@ -62,8 +63,9 @@ class ISY:
             self.log = log
 
         try:
-            self.conn = Connection(self, address, port, username,
-                                   password, use_https, tls_ver)
+            self.conn = Connection(
+                self, address, port, username, password, use_https, tls_ver
+            )
         except ValueError as err:
             self._connected = False
             try:
@@ -73,16 +75,17 @@ class ISY:
 
         else:
             self._connected = True
-            self.configuration = Configuration(
-                self, xml=self.conn.get_config())
+            self.configuration = Configuration(self, xml=self.conn.get_config())
             self._add_commands()
             self.nodes = Nodes(self, xml=self.conn.get_nodes())
             self.programs = Programs(self, xml=self.conn.get_programs())
-            self.variables = Variables(self,
-                                       def_xml=self.conn.get_variable_defs(),
-                                       var_xml=self.conn.get_variables())
+            self.variables = Variables(
+                self,
+                def_xml=self.conn.get_variable_defs(),
+                var_xml=self.conn.get_variables(),
+            )
 
-            if self.configuration.get('Weather Information'):
+            if self.configuration.get("Weather Information"):
                 self.climate = Climate(self, xml=self.conn.get_climate())
             else:
                 self.climate = None
@@ -116,8 +119,9 @@ class ISY:
         """Set the auto_update property."""
         if val and not self.auto_update:
             # create new event stream socket
-            self._events = EventStream(self, self.conn.connection_info,
-                                       self._on_lost_event_stream)
+            self._events = EventStream(
+                self, self.conn.connection_info, self._on_lost_event_stream
+            )
         if self._events is not None:
             self._events.running = val
 
@@ -135,18 +139,19 @@ class ISY:
     def _auto_reconnecter(self):
         """Auto-reconnect to the event stream."""
         while self.auto_reconnect and not self.auto_update:
-            self.log.warning('PyISY attempting stream reconnect.')
+            self.log.warning("PyISY attempting stream reconnect.")
             del self._events
-            self._events = EventStream(self, self.conn.connection_info,
-                                       self._on_lost_event_stream)
+            self._events = EventStream(
+                self, self.conn.connection_info, self._on_lost_event_stream
+            )
             self._events.running = True
 
         if not self.auto_update:
             del self._events
             self._events = None
-            self.log.warning('PyISY could not reconnect to the event stream.')
+            self.log.warning("PyISY could not reconnect to the event stream.")
         else:
-            self.log.warning('PyISY reconnected to the event stream.')
+            self.log.warning("PyISY reconnected to the event stream.")
 
         self._reconnect_thread = None
 
@@ -154,11 +159,15 @@ class ISY:
     def _add_node_command(cmd_name, command, value=None):
         doc = "Send {} command to ISY".format(command)
         if value is None:
+
             def cmd(self, val=None):
                 return self.send_cmd(command, val)
+
         else:
+
             def cmd(self):
                 return self.send_cmd(command, value)
+
             doc = "{} with value {}".format(doc, value)
 
         cmd.__name__ = cmd_name
@@ -191,9 +200,16 @@ class ISY:
         NOTE: `on` and climate setpoints are special and are still defined
         explicitly in the Node class.
         """
-        commands = [('DFON', None), ('DFOF', None), ('BRT', None),
-                    ('DIM', None), ('BEEP', None),
-                    ('SECMD', '84'), ('CLIMD', '98'), ('CLIFS', '99')]
+        commands = [
+            ("DFON", None),
+            ("DFOF", None),
+            ("BRT", None),
+            ("DIM", None),
+            ("BEEP", None),
+            ("SECMD", "84"),
+            ("CLIMD", "98"),
+            ("CLIFS", "99"),
+        ]
         cmd_names = []
         for command, values in commands:
             cmd_name = COMMAND_FRIENDLY_NAME.get(command)
@@ -201,20 +217,17 @@ class ISY:
             cmd_names.append(cmd_name)
             if values:
                 for val, cmd in UOM_TO_STATES[values].items():
-                    cmd_val_name = "{}_{}".format(cmd_name,
-                                                  cmd.replace(' ', '_'))
+                    cmd_val_name = "{}_{}".format(cmd_name, cmd.replace(" ", "_"))
                     self._add_node_command(cmd_val_name, command, val)
                     cmd_names.append(cmd_val_name)
         self.log.debug("ISY Added Node commands: %s", cmd_names)
 
-        folder_commands = ['run', 'runThen', 'runElse', 'stop', 'enable',
-                           'disable']
+        folder_commands = ["run", "runThen", "runElse", "stop", "enable", "disable"]
         for command in folder_commands:
             self._add_pgrm_command(command, Folder)
-        self.log.debug("ISY Added Program/Folder commands: %s",
-                       folder_commands)
+        self.log.debug("ISY Added Program/Folder commands: %s", folder_commands)
 
-        prgm_commands = ['enableRunAtStartup', 'disableRunAtStartup']
+        prgm_commands = ["enableRunAtStartup", "disableRunAtStartup"]
         for command in folder_commands:
             self._add_pgrm_command(command, Program)
         self.log.debug("ISY Added Program commands: %s", prgm_commands)
@@ -228,14 +241,14 @@ class ISY:
         """
         if cmd in X10_COMMANDS:
             command = X10_COMMANDS.get(cmd)
-            req_url = self.conn.compile_url(['X10', address, str(command)])
+            req_url = self.conn.compile_url(["X10", address, str(command)])
             result = self.conn.request(req_url)
             if result is not None:
-                self.log.info('ISY Sent X10 Command: %s To: %s',
-                              cmd, address)
+                self.log.info("ISY Sent X10 Command: %s To: %s", cmd, address)
             else:
-                self.log.error('ISY Failed to send X10 Command: %s To: %s',
-                               cmd, address)
+                self.log.error(
+                    "ISY Failed to send X10 Command: %s To: %s", cmd, address
+                )
 
 
 class NullHandler(logging.Handler):

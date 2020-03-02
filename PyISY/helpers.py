@@ -1,8 +1,15 @@
 """Helper functions for the PyISY Module."""
 
-from .constants import (ATTR_FORMATTED, ATTR_ID, ATTR_PREC, ATTR_UOM,
-                        ATTR_VALUE, BATLVL_PROPERTY, STATE_PROPERTY,
-                        VALUE_UNKNOWN)
+from .constants import (
+    ATTR_FORMATTED,
+    ATTR_ID,
+    ATTR_PREC,
+    ATTR_UOM,
+    ATTR_VALUE,
+    BATLVL_PROPERTY,
+    STATE_PROPERTY,
+    VALUE_UNKNOWN,
+)
 
 
 def parse_xml_properties(xmldoc):
@@ -20,22 +27,22 @@ def parse_xml_properties(xmldoc):
     state_set = False
     state = {}
 
-    props = xmldoc.getElementsByTagName('property')
+    props = xmldoc.getElementsByTagName("property")
     if not props:
         return {}, {}
 
     for prop in props:
         prop_id = attr_from_element(prop, ATTR_ID)
-        uom = attr_from_element(prop, ATTR_UOM, '')
-        val = attr_from_element(prop, ATTR_VALUE, '').strip()
-        prec = attr_from_element(prop, ATTR_PREC, '0')
+        uom = attr_from_element(prop, ATTR_UOM, "")
+        val = attr_from_element(prop, ATTR_VALUE, "").strip()
+        prec = attr_from_element(prop, ATTR_PREC, "0")
         formatted = attr_from_element(prop, ATTR_FORMATTED, val)
 
         # ISY firmwares < 5 return a list of possible units.
         # ISYv5+ returns a UOM string which is checked against the SDK.
         # Only return a list if the UOM should be a list.
-        if '/' in uom and uom != 'n/a':
-            uom = uom.split('/')
+        if "/" in uom and uom != "n/a":
+            uom = uom.split("/")
 
         val = int(val) if val != "" else VALUE_UNKNOWN
 
@@ -44,7 +51,7 @@ def parse_xml_properties(xmldoc):
             ATTR_VALUE: val,
             ATTR_PREC: prec,
             ATTR_UOM: uom,
-            ATTR_FORMATTED: formatted
+            ATTR_FORMATTED: formatted,
         }
 
         if prop_id == STATE_PROPERTY:

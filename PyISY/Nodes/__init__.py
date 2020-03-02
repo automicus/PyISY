@@ -2,11 +2,25 @@
 from time import sleep
 from xml.dom import minidom
 
-from ..constants import (ATTR_ACTION, ATTR_CONTROL, ATTR_FLAG, ATTR_FOLDER,
-                         ATTR_GROUP, ATTR_NAME, ATTR_NODE, ATTR_PREC,
-                         ATTR_TYPE, ATTR_UOM, XML_PARSE_ERROR)
-from ..helpers import (attr_from_element, attr_from_xml, parse_xml_properties,
-                       value_from_xml)
+from ..constants import (
+    ATTR_ACTION,
+    ATTR_CONTROL,
+    ATTR_FLAG,
+    ATTR_FOLDER,
+    ATTR_GROUP,
+    ATTR_NAME,
+    ATTR_NODE,
+    ATTR_PREC,
+    ATTR_TYPE,
+    ATTR_UOM,
+    XML_PARSE_ERROR,
+)
+from ..helpers import (
+    attr_from_element,
+    attr_from_xml,
+    parse_xml_properties,
+    value_from_xml,
+)
 from .group import Group
 from .handlers import EventResult
 from .node import Node
@@ -42,14 +56,28 @@ class Nodes:
     nobjs = []
     ntypes = []
 
-    def __init__(self, isy, root=None, nids=None, nnames=None,
-                 nparents=None, nobjs=None, ntypes=None, xml=None):
+    def __init__(
+        self,
+        isy,
+        root=None,
+        nids=None,
+        nnames=None,
+        nparents=None,
+        nobjs=None,
+        ntypes=None,
+        xml=None,
+    ):
         """Initialize the Nodes ISY Node Manager class."""
         self.isy = isy
         self.root = root
 
-        if nids is not None and nnames is not None and nparents is not None \
-                and nobjs is not None and ntypes is not None:
+        if (
+            nids is not None
+            and nnames is not None
+            and nparents is not None
+            and nobjs is not None
+            and ntypes is not None
+        ):
 
             self.nids = nids
             self.nnames = nnames
@@ -63,13 +91,13 @@ class Nodes:
     def __str__(self):
         """Return string representation of the nodes/folders/groups."""
         if self.root is None:
-            return 'Folder <root>'
+            return "Folder <root>"
         ind = self.nids.index(self.root)
         if self.ntypes[ind] == ATTR_FOLDER:
-            return 'Folder ({})'.format(self.root)
+            return "Folder ({})".format(self.root)
         if self.ntypes[ind] == ATTR_GROUP:
-            return 'Group ({})'.format(self.root)
-        return 'Node ({})'.format(self.root)
+            return "Group ({})".format(self.root)
+        return "Node ({})".format(self.root)
 
     def __repr__(self):
         """Create a pretty representation of the nodes/folders/groups."""
@@ -89,11 +117,12 @@ class Nodes:
         folders.sort(key=lambda x: x[1])
         groups.sort(key=lambda x: x[1])
         nodes.sort(key=lambda x: x[1])
-        out = '{!s}\n{}{}{}'.format(self,
-                                    self.__repr_folders__(folders),
-                                    self.__repr_groups__(groups),
-                                    self.__repr_nodes__(nodes)
-                                    )
+        out = "{!s}\n{}{}{}".format(
+            self,
+            self.__repr_folders__(folders),
+            self.__repr_groups__(groups),
+            self.__repr_nodes__(nodes),
+        )
         return out
 
     def __repr_folders__(self, folders):
@@ -102,7 +131,7 @@ class Nodes:
         for fold in folders:
             fold_obj = self[fold[2]]
             out += "  + {}: Folder({})\n".format(fold[1], fold[2])
-            for line in repr(fold_obj).split('\n')[1:]:
+            for line in repr(fold_obj).split("\n")[1:]:
                 out += "  |   {}\n".format(line)
             out += "  -\n"
         return out
@@ -126,7 +155,7 @@ class Nodes:
                 out += "  "
             out += "{}: Node({})\n".format(node[1], node[2])
             if node_obj.hasChildren:
-                for line in repr(node_obj).split('\n')[1:]:
+                for line in repr(node_obj).split("\n")[1:]:
                     out += "  |   {}\n".format(line)
                 out += "  -\n"
         return out
@@ -146,7 +175,7 @@ class Nodes:
         nid = value_from_xml(xmldoc, ATTR_NODE)
         nval = int(value_from_xml(xmldoc, ATTR_ACTION))
         self.get_by_id(nid).status.update(nval, force=True, silent=True)
-        self.isy.log.debug('ISY Updated Node: ' + nid)
+        self.isy.log.debug("ISY Updated Node: " + nid)
 
     def _controlmsg(self, xmldoc):
         """
@@ -165,10 +194,8 @@ class Nodes:
         prec = attr_from_xml(xmldoc, ATTR_ACTION, ATTR_PREC, None)
         uom = attr_from_xml(xmldoc, ATTR_ACTION, ATTR_UOM, None)
 
-        self.get_by_id(nid).controlEvents.notify(EventResult(cntrl, nval,
-                                                             prec, uom))
-        self.isy.log.debug('ISY Node Control Event: %s %s %s',
-                           nid, cntrl, nval)
+        self.get_by_id(nid).controlEvents.notify(EventResult(cntrl, nval, prec, uom))
+        self.isy.log.debug("ISY Node Control Event: %s %s %s", nid, cntrl, nval)
 
     def parse(self, xml):
         """
@@ -189,22 +216,23 @@ class Nodes:
 
             for feature in features:
                 # Get Node Information
-                nid = value_from_xml(feature, 'address')
+                nid = value_from_xml(feature, "address")
                 nname = value_from_xml(feature, ATTR_NAME)
-                nparent = value_from_xml(feature, 'parent')
-                parent_nid = value_from_xml(feature, 'pnode')
+                nparent = value_from_xml(feature, "parent")
+                parent_nid = value_from_xml(feature, "pnode")
                 dev_type = value_from_xml(feature, ATTR_TYPE)
                 node_def_id = attr_from_element(feature, "nodeDefId")
-                enabled = value_from_xml(feature, "enabled") == 'true'
+                enabled = value_from_xml(feature, "enabled") == "true"
 
                 # Get Z-Wave Device Type Category
                 devtype_cat = None
-                if dev_type is not None and dev_type.startswith('4.'):
+                if dev_type is not None and dev_type.startswith("4."):
                     try:
-                        devtype_cat = feature \
-                            .getElementsByTagName('devtype')[0] \
-                            .getElementsByTagName('cat')[0] \
+                        devtype_cat = (
+                            feature.getElementsByTagName("devtype")[0]
+                            .getElementsByTagName("cat")[0]
                             .firstChild.toxml()
+                        )
                     except IndexError:
                         devtype_cat = None
 
@@ -216,16 +244,24 @@ class Nodes:
                         self.get_by_id(nid).update(xmldoc=feature)
                         continue
                     state, aux_props = parse_xml_properties(feature)
-                    self.insert(nid, nname, nparent,
-                                Node(self, nid=nid, name=nname,
-                                     state=state,
-                                     aux_properties=aux_props,
-                                     devtype_cat=devtype_cat,
-                                     node_def_id=node_def_id,
-                                     parent_nid=parent_nid,
-                                     dev_type=dev_type,
-                                     enabled=enabled),
-                                ntype)
+                    self.insert(
+                        nid,
+                        nname,
+                        nparent,
+                        Node(
+                            self,
+                            nid=nid,
+                            name=nname,
+                            state=state,
+                            aux_properties=aux_props,
+                            devtype_cat=devtype_cat,
+                            node_def_id=node_def_id,
+                            parent_nid=parent_nid,
+                            dev_type=dev_type,
+                            enabled=enabled,
+                        ),
+                        ntype,
+                    )
                 elif ntype == ATTR_GROUP and nid not in self.nids:
                     flag = attr_from_element(feature, ATTR_FLAG)
                     # Ignore groups that contain 0x08 in the flag since
@@ -235,24 +271,24 @@ class Nodes:
                     # the ISY MAC addrees in newer versions of
                     # ISY firmwares > 5.0.6+ ..
                     if int(flag) & 0x08:
-                        self.isy.log.info('Skipping group flag=%s %s',
-                                          flag, nid)
+                        self.isy.log.info("Skipping group flag=%s %s", flag, nid)
                         continue
-                    mems = feature.getElementsByTagName('link')
+                    mems = feature.getElementsByTagName("link")
                     # Build list of members
-                    members = [mem.firstChild.nodeValue
-                               for mem in mems]
+                    members = [mem.firstChild.nodeValue for mem in mems]
                     # Build list of controllers
                     controllers = []
                     for mem in mems:
-                        if int(attr_from_element(
-                                mem, ATTR_TYPE, 0)) == 16:
+                        if int(attr_from_element(mem, ATTR_TYPE, 0)) == 16:
                             controllers.append(mem.firstChild.nodeValue)
-                    self.insert(nid, nname, nparent,
-                                Group(self, nid, nname,
-                                      members, controllers),
-                                ntype)
-            self.isy.log.info('ISY Loaded {}'.format(ntype))
+                    self.insert(
+                        nid,
+                        nname,
+                        nparent,
+                        Group(self, nid, nname, members, controllers),
+                        ntype,
+                    )
+            self.isy.log.debug("ISY Loaded {}".format(ntype))
 
     def update(self, wait_time=0):
         """
@@ -261,11 +297,11 @@ class Nodes:
         |  wait_time: [optional] Amount of seconds to wait before updating
         """
         sleep(wait_time)
-        xml = self.isy.conn.request(self.isy.conn.compile_url(['status']))
+        xml = self.isy.conn.request(self.isy.conn.compile_url(["status"]))
         if xml is not None:
             self.parse(xml)
         else:
-            self.isy.log.warning('ISY Failed to update nodes.')
+            self.isy.log.warning("ISY Failed to update nodes.")
 
     def insert(self, nid, nname, nparent, nobj, ntype):
         """
@@ -342,8 +378,15 @@ class Nodes:
         """
         if self.ntypes[i] in [ATTR_GROUP, ATTR_NODE]:
             return self.nobjs[i]
-        return Nodes(self.isy, self.nids[i], self.nids, self.nnames,
-                     self.nparents, self.nobjs, self.ntypes)
+        return Nodes(
+            self.isy,
+            self.nids[i],
+            self.nids,
+            self.nnames,
+            self.nparents,
+            self.nobjs,
+            self.ntypes,
+        )
 
     @property
     def children(self):
@@ -367,7 +410,7 @@ class Nodes:
     def name(self):
         """Return the name of the root."""
         if self.root is None:
-            return ''
+            return ""
         ind = self.nids.index(self.root)
         return self.nnames[ind]
 
@@ -375,16 +418,17 @@ class Nodes:
     def all_lower_nodes(self):
         """Return all nodes below the current root."""
         output = []
-        myname = self.name + '/'
+        myname = self.name + "/"
 
         for dtype, name, ident in self.children:
             if dtype in [ATTR_GROUP, ATTR_NODE]:
                 output.append((dtype, myname + name, ident))
 
             else:
-                output += [(dtype2, myname + name2, ident2)
-                           for (dtype2, name2, ident2)
-                           in self[ident].all_lower_nodes]
+                output += [
+                    (dtype2, myname + name2, ident2)
+                    for (dtype2, name2, ident2) in self[ident].all_lower_nodes
+                ]
         return output
 
 

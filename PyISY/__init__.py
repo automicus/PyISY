@@ -22,6 +22,7 @@ limitations under the License.
 """
 
 import pkg_resources
+
 from .isy import ISY
 
 try:
