@@ -195,7 +195,14 @@ class Nodes:
         uom = attr_from_xml(xmldoc, ATTR_ACTION, ATTR_UOM, None)
 
         node = self.get_by_id(nid)
-        if not node: return
+        if not node:
+            self.isy.log.debug(
+                "Received a node update for node %s but could not find an record of this "
+                "node. Please try restarting the module if the problem persists, this "
+                "may be due to a new node being added to the ISY since last restart.",
+                nid,
+            )
+            return
 
         node.controlEvents.notify(EventResult(cntrl, nval, prec, uom))
         self.isy.log.debug("ISY Node Control Event: %s %s %s", nid, cntrl, nval)
