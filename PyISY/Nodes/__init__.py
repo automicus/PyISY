@@ -197,7 +197,7 @@ class Nodes:
         node = self.get_by_id(nid)
         if not node:
             self.isy.log.debug(
-                "Received a node update for node %s but could not find an record of this "
+                "Received a node update for node %s but could not find a record of this "
                 "node. Please try restarting the module if the problem persists, this "
                 "may be due to a new node being added to the ISY since last restart.",
                 nid,
