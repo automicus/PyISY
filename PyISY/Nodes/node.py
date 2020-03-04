@@ -65,7 +65,6 @@ class Node(NodeBase):
         family_id=None,
     ):
         """Initialize a Node class."""
-        self._aux_properties = aux_properties if aux_properties is not None else {}
         self._devtype_cat = devtype_cat
         self._node_def_id = node_def_id
         self._type = device_type
