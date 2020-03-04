@@ -208,12 +208,18 @@ class Programs:
                     # last run time
                     plastrun = value_from_xml(feature, "lastRunTime", EMPTY_TIME)
                     if plastrun != EMPTY_TIME:
-                        plastrun = datetime.strptime(plastrun, "%Y/%m/%d %I:%M:%S %p")
+                        plastrun = datetime.strptime(
+                            plastrun,
+                            MILITARY_TIME if self.isy.clock.military else STANDARD_TIME,
+                        )
 
                     # last finish time
                     plastfin = value_from_xml(feature, "lastFinishTime", EMPTY_TIME)
                     if plastfin != EMPTY_TIME:
-                        plastfin = datetime.strptime(plastfin, "%Y/%m/%d %I:%M:%S %p")
+                        plastfin = datetime.strptime(
+                            plastfin,
+                            MILITARY_TIME if self.isy.clock.military else STANDARD_TIME,
+                        )
 
                     # enabled, run at startup, running
                     penabled = bool(attr_from_element(feature, "enabled") == "true")

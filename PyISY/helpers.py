@@ -1,4 +1,6 @@
 """Helper functions for the PyISY Module."""
+import datetime
+import time
 
 from .constants import (
     ATTR_FORMATTED,
@@ -7,6 +9,7 @@ from .constants import (
     ATTR_UOM,
     ATTR_VALUE,
     BATLVL_PROPERTY,
+    ISY_EPOCH_OFFSET,
     STATE_PROPERTY,
     VALUE_UNKNOWN,
 )
@@ -92,3 +95,25 @@ def attr_from_element(element, attr_name, default=None):
     if attr_name in element.attributes.keys():
         value = element.attributes[attr_name].value
     return value
+
+
+def ntp_to_system_time(timestamp):
+    """Convert a ISY NTP time to system UTC time.
+
+    Adapted from Python ntplib module.
+    https://pypi.org/project/ntplib/
+
+    Parameters:
+    timestamp -- timestamp in NTP time
+
+    Returns:
+    corresponding system time
+
+    Note: The ISY uses a EPOCH_OFFSET in addition to standard NTP.
+
+    """
+    _system_epoch = datetime.date(*time.gmtime(0)[0:3])
+    _ntp_epoch = datetime.date(1900, 1, 1)
+    ntp_delta = ((_system_epoch - _ntp_epoch).days * 24 * 3600) - ISY_EPOCH_OFFSET
+
+    return datetime.datetime.fromtimestamp(timestamp - ntp_delta)
