@@ -75,6 +75,7 @@ class ISY:
                 self.log.error(err.args[0])
 
         else:
+            self._hostname = address
             self._connected = True
             self.configuration = Configuration(self, xml=self.conn.get_config())
             self.clock = Clock(self, xml=self.conn.get_time())
@@ -115,6 +116,11 @@ class ISY:
         if self._events is not None:
             return self._events.running
         return False
+
+    @property
+    def hostname(self):
+        """Return the hostname."""
+        return self._hostname
 
     @auto_update.setter
     def auto_update(self, val):
