@@ -140,7 +140,7 @@ class Programs:
         iter_data = self.all_lower_programs
         return ProgramIterator(self, iter_data, delta=-1)
 
-    def _upmsg(self, xmldoc):
+    def update_received(self, xmldoc):
         """Update programs from EventStream message."""
         xml = xmldoc.toxml()
         pid = value_from_xml(xmldoc, ATTR_ID).zfill(4)

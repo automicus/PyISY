@@ -296,7 +296,7 @@ class Climate:
         xml = self.isy.conn.get_climate()
         self.parse(xml)
 
-    def _upmsg(self, xmldoc):
+    def update_received(self, xmldoc):
         cid = int(value_from_xml(xmldoc, ATTR_ACTION)) - 1
         val_raw = value_from_xml(xmldoc, ATTR_VALUE, "").strip()
         unit_raw = value_from_xml(xmldoc, "unit", "").strip()

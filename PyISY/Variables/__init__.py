@@ -136,7 +136,8 @@ class Variables:
         xml = self.isy.conn.get_variables()
         self.parse(xml)
 
-    def _upmsg(self, xmldoc):
+    def update_received(self, xmldoc):
+        """Process an update received from the event stream."""
         xml = xmldoc.toxml()
         vtype = int(attr_from_xml(xmldoc, ATTR_VAR, ATTR_TYPE))
         vid = int(attr_from_xml(xmldoc, ATTR_VAR, ATTR_ID))
