@@ -141,6 +141,9 @@ COMMAND_FRIENDLY_NAME = {
     "DIM": "dim",
     "BUSY": "busy",
     "SECMD": "secure",
+    "FDUP": "fade_up",
+    "FDDOWN": "fade_down",
+    "FDSTOP": "fade_stop"
 }
 
 COMMAND_NAME = {val: key for key, val in COMMAND_FRIENDLY_NAME.items()}
