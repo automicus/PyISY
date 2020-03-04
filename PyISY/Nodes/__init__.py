@@ -170,7 +170,7 @@ class Nodes:
         iter_data = self.all_lower_nodes
         return NodeIterator(self, iter_data, delta=-1)
 
-    def _upmsg(self, xmldoc):
+    def update_received(self, xmldoc):
         """Update nodes from event stream message."""
         nid = value_from_xml(xmldoc, ATTR_NODE)
         nval = int(value_from_xml(xmldoc, ATTR_ACTION))
@@ -185,7 +185,7 @@ class Nodes:
         self.get_by_id(nid).status.update(nval, force=True, silent=True)
         self.isy.log.debug("ISY Updated Node: " + nid)
 
-    def _controlmsg(self, xmldoc):
+    def control_message_received(self, xmldoc):
         """
         Pass Control events from an event stream message to nodes.
 

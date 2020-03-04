@@ -50,7 +50,8 @@ class EventStream:
         else:
             self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-    def _mkmsg(self, msg):
+    def _create_message(self, msg):
+        """Prepare a message for sending."""
         head = msg["head"]
         body = msg["body"]
         body = body.format(**self.data)
@@ -58,7 +59,8 @@ class EventStream:
         head = head.format(length=length, **self.data)
         return head + body
 
-    def _routemsg(self, msg):
+    def _route_message(self, msg):
+        """Route a received message from the event stream."""
         # check xml formatting
         try:
             xmldoc = minidom.parseString(msg)
@@ -69,7 +71,7 @@ class EventStream:
 
         # A wild stream id appears!
         if "sid=" in msg and "sid" not in self.data:
-            self._upmsg(xmldoc)
+            self.update_received(xmldoc)
 
         # direct the event message
         cntrl = value_from_xml(xmldoc, ATTR_CONTROL)
@@ -80,24 +82,24 @@ class EventStream:
             self._hbwait = int(value_from_xml(xmldoc, ATTR_ACTION))
             self.isy.log.debug("ISY HEARTBEAT: %s", self._lasthb.isoformat())
         elif cntrl == STATE_PROPERTY:  # NODE UPDATE
-            self.isy.nodes._upmsg(xmldoc)
+            self.isy.nodes.update_received(xmldoc)
         elif cntrl[0] != "_":  # NODE CONTROL EVENT
-            self.isy.nodes._controlmsg(xmldoc)
+            self.isy.nodes.control_message_received(xmldoc)
         elif cntrl == "_11":  # WEATHER UPDATE
             if self.isy.configuration["Weather Information"]:
-                self.isy.climate._upmsg(xmldoc)
+                self.isy.climate.update_received(xmldoc)
         elif cntrl == "_1":  # Trigger Update
             if "<var" in msg:  # VARIABLE
-                self.isy.variables._upmsg(xmldoc)
+                self.isy.variables.update_received(xmldoc)
             elif "<id>" in msg:  # PROGRAM
-                self.isy.programs._upmsg(xmldoc)
+                self.isy.programs.update_received(xmldoc)
             elif "<node>" in msg and "[" in msg:  # Node Server Update
                 pass  # This is most likely a duplicate node update.
             else:  # SOMETHING HAPPENED WITH A PROGRAM FOLDER
                 # but they ISY didn't tell us what, so...
                 self.isy.programs.update()
 
-    def _upmsg(self, xmldoc):
+    def update_received(self, xmldoc):
         """Set the socket ID."""
         self.data["sid"] = attr_from_xml(xmldoc, "Event", "sid")
         self.isy.log.debug("ISY Updated Events Stream ID")
@@ -226,4 +228,4 @@ class EventStream:
                     for data in self.read():
                         if data.startswith("<?xml"):
                             data = data.strip().replace("POST reuse HTTP/1.1", "")
-                            self._routemsg(data)
+                            self._route_message(data)
