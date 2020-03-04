@@ -31,6 +31,7 @@ V2 is a significant refactoring and cleanup of the original PyISY code, with the
 - Dynamically adds control functions to the Node and Program class--this is for future expansion to only add the appropriate commands to a given Node Type (e.g. don't add climate_mode to a light).
 - Adding retries for failed REST calls to the ISY #46
 - Adds increased Z-Wave support by storing the `devtype` category (since `type` is useless for Z-Wave)
+- Expose UUID, Firmware, and Hostname properties for referencing inside the `isy` object.
 
 #### Fixes:
 
