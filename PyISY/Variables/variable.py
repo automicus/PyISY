@@ -76,6 +76,11 @@ class Variable:
         return "{!s}.{!s}".format(self._type, self._id)
 
     @property
+    def protocol(self):
+        """Return the protocol for this entity."""
+        return "{} variable".format("integer" if self._type == "1" else "state")
+
+    @property
     def name(self):
         """Return the Variable Name."""
         return self._name

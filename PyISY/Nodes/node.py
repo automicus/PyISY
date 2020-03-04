@@ -36,6 +36,8 @@ class Node(NodeBase):
     |  node_def_id: Node Definition ID (used for ISY firmwares >=v5)
     |  parent_nid: Node ID of the parent node
     |  dev_type: device type.
+    |  node_server: the parent node server slot used
+    |  protocol: the device protocol used (z-wave, zigbee, insteon, node server)
 
     :ivar status: A watched property that indicates the current status of the
                   node.
@@ -54,6 +56,8 @@ class Node(NodeBase):
         parent_nid=None,
         dev_type=None,
         enabled=None,
+        node_server=None,
+        protocol=None,
     ):
         """Initialize a Node class."""
         self._aux_properties = aux_properties if aux_properties is not None else {}
@@ -65,6 +69,8 @@ class Node(NodeBase):
         self._uom = state.get(ATTR_UOM, "")
         self._prec = state.get(ATTR_PREC, "0")
         self._formatted = state.get(ATTR_FORMATTED, str(self.status))
+        self._node_server = node_server
+        self._protocol = protocol
         self.status.update(
             state.get(ATTR_VALUE, VALUE_UNKNOWN), force=True, silent=True
         )
@@ -75,6 +81,16 @@ class Node(NodeBase):
     def aux_properties(self):
         """Return the aux properties that were in the Node Definition."""
         return self._aux_properties
+
+    @property
+    def protocol(self):
+        """Return the device standard used (Z-Wave, Zigbee, Insteon, Node Server)."""
+        return self._protocol
+
+    @property
+    def node_server(self):
+        """Return the node server parent slot (used for v5 Node Server devices)."""
+        return self._node_server
 
     @property
     def devtype_cat(self):

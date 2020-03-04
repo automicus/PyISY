@@ -69,3 +69,8 @@ class Folder:
         self.isy.log.debug('ISY ran "%s" on program: %s', command, self._id)
         self.update(UPDATE_INTERVAL)
         return True
+
+    @property
+    def protocol(self):
+        """Return the protocol for this entity."""
+        return "program folder"

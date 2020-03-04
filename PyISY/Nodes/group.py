@@ -69,6 +69,11 @@ class Group(NodeBase):
         return self._members
 
     @property
+    def protocol(self):
+        """Return the protocol for this entity."""
+        return "group"
+
+    @property
     def controllers(self):
         """Get the controller nodes of the scene/group."""
         return self._controllers

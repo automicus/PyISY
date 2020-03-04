@@ -7,6 +7,8 @@ from ..constants import (
     ATTR_CONTROL,
     ATTR_FLAG,
     ATTR_FOLDER,
+    ATTR_FAMILY,
+    ATTR_INSTANCE,
     ATTR_GROUP,
     ATTR_NAME,
     ATTR_NODE,
@@ -238,21 +240,35 @@ class Nodes:
                 nname = value_from_xml(feature, ATTR_NAME)
                 nparent = value_from_xml(feature, "parent")
                 parent_nid = value_from_xml(feature, "pnode")
+                family = value_from_xml(feature, ATTR_FAMILY)
                 dev_type = value_from_xml(feature, ATTR_TYPE)
                 node_def_id = attr_from_element(feature, "nodeDefId")
                 enabled = value_from_xml(feature, "enabled") == "true"
+                protocol = "insteon"  # Assume Insteon, update as confirmed otherwise
 
                 # Get Z-Wave Device Type Category
                 devtype_cat = None
-                if dev_type is not None and dev_type.startswith("4."):
-                    try:
-                        devtype_cat = (
-                            feature.getElementsByTagName("devtype")[0]
-                            .getElementsByTagName("cat")[0]
-                            .firstChild.toxml()
-                        )
-                    except IndexError:
-                        devtype_cat = None
+                if family is not None:
+                    if family == "4":
+                        protocol = "z-wave"
+                        try:
+                            devtype_cat = (
+                                feature.getElementsByTagName("devtype")[0]
+                                .getElementsByTagName("cat")[0]
+                                .firstChild.toxml()
+                            )
+                        except IndexError:
+                            devtype_cat = None
+                    elif family == "3":
+                        protocol = "zigbee"
+
+                # Check for Node Server (v5 Node Servers)
+                node_server = None
+                if family and family == "10":
+                    # Node Server Slot is stored with family:
+                    node_server = attr_from_xml(feature, ATTR_FAMILY, ATTR_INSTANCE)
+                if node_server:
+                    protocol = "node server slot {!s}".format(node_server)
 
                 # Process the different node types
                 if ntype == ATTR_FOLDER and nid not in self.nids:
@@ -277,6 +293,8 @@ class Nodes:
                             parent_nid=parent_nid,
                             dev_type=dev_type,
                             enabled=enabled,
+                            node_server=node_server,
+                            protocol=protocol,
                         ),
                         ntype,
                     )
