@@ -25,7 +25,7 @@ from ..constants import (
     XML_TRUE,
 )
 from ..helpers import attr_from_element, value_from_xml
-from ..Nodes import NodeIterator as ProgramIterator
+from ..nodes import NodeIterator as ProgramIterator
 from .folder import Folder
 from .program import Program
 

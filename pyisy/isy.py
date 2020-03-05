@@ -16,12 +16,12 @@ from .constants import (
     X10_COMMANDS,
 )
 from .events import EventStream
-from .Nodes import Nodes
+from .nodes import Nodes
 from .nodes.node import Node
-from .Programs import Programs
+from .programs import Programs
 from .programs.folder import Folder
 from .programs.program import Program
-from .Variables import Variables
+from .variables import Variables
 
 
 class ISY:
