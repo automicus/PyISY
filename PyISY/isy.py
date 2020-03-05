@@ -6,7 +6,14 @@ from .climate import Climate
 from .clock import Clock
 from .configuration import Configuration
 from .connection import Connection
-from .constants import COMMAND_FRIENDLY_NAME, UOM_TO_STATES, X10_COMMANDS
+from .constants import (
+    COMMAND_FRIENDLY_NAME,
+    COMMANDS_FOLDERS,
+    COMMANDS_NODES,
+    COMMANDS_PROGRAMS,
+    UOM_TO_STATES,
+    X10_COMMANDS,
+)
 from .events import EventStream
 from .Nodes import Nodes
 from .Nodes.node import Node
@@ -208,21 +215,8 @@ class ISY:
         NOTE: `on` and climate setpoints are special and are still defined
         explicitly in the Node class.
         """
-        commands = [
-            ("DFON", None),
-            ("DFOF", None),
-            ("BRT", None),
-            ("DIM", None),
-            ("BEEP", None),
-            ("FDUP", None),
-            ("FDDOWN", None),
-            ("FDSTOP", None),
-            ("SECMD", "84"),
-            ("CLIMD", "98"),
-            ("CLIFS", "99"),
-        ]
         cmd_names = []
-        for command, values in commands:
+        for command, values in COMMANDS_NODES:
             cmd_name = COMMAND_FRIENDLY_NAME.get(command)
             self._add_node_command(cmd_name, command)
             cmd_names.append(cmd_name)
@@ -233,15 +227,13 @@ class ISY:
                     cmd_names.append(cmd_val_name)
         self.log.debug("ISY Added Node commands: %s", cmd_names)
 
-        folder_commands = ["run", "runThen", "runElse", "stop", "enable", "disable"]
-        for command in folder_commands:
+        for command in COMMANDS_FOLDERS:
             self._add_pgrm_command(command, Folder)
-        self.log.debug("ISY Added Program/Folder commands: %s", folder_commands)
+        self.log.debug("ISY Added Program/Folder commands: %s", COMMANDS_FOLDERS)
 
-        prgm_commands = ["enableRunAtStartup", "disableRunAtStartup"]
-        for command in folder_commands:
+        for command in COMMANDS_PROGRAMS:
             self._add_pgrm_command(command, Program)
-        self.log.debug("ISY Added Program commands: %s", prgm_commands)
+        self.log.debug("ISY Added Program commands: %s", COMMANDS_PROGRAMS)
 
     def sendX10(self, address, cmd):
         """

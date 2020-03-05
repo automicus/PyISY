@@ -2,7 +2,15 @@
 from time import sleep
 from xml.dom import minidom
 
-from .constants import ATTR_ID, ATTR_NAME, THREAD_SLEEP_TIME, XML_PARSE_ERROR
+from .constants import (
+    ATTR_ID,
+    TAG_NAME,
+    TAG_NET_RULE,
+    THREAD_SLEEP_TIME,
+    URL_NETWORK,
+    URL_RESOURCES,
+    XML_PARSE_ERROR,
+)
 from .helpers import value_from_xml
 
 
@@ -58,11 +66,11 @@ class NetworkResources:
         except:
             self.isy.log.error("%s: NetworkResources", XML_PARSE_ERROR)
         else:
-            features = xmldoc.getElementsByTagName("NetRule")
+            features = xmldoc.getElementsByTagName(TAG_NET_RULE)
             for feature in features:
                 nid = int(value_from_xml(feature, ATTR_ID))
                 if nid not in self.nids:
-                    nname = value_from_xml(feature, ATTR_NAME)
+                    nname = value_from_xml(feature, TAG_NAME)
                     nobj = NetworkCommand(self, nid)
                     self.nids.append(nid)
                     self.nnames.append(nname)
@@ -163,7 +171,7 @@ class NetworkCommand:
 
     def run(self):
         """Execute the networking command."""
-        req_url = self.isy.conn.compile_url(["networking", "resources", str(self._id)])
+        req_url = self.isy.conn.compile_url([URL_NETWORK, URL_RESOURCES, str(self._id)])
 
         if not self.isy.conn.request(req_url, ok404=True):
             self.isy.log.warning(

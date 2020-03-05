@@ -4,15 +4,25 @@ from time import sleep
 from xml.dom import minidom
 
 from ..constants import (
-    ATTR_FOLDER,
     ATTR_ID,
-    ATTR_NAME,
-    ATTR_PROGRAM,
+    ATTR_PARENT,
+    ATTR_STATUS,
     EMPTY_TIME,
     MILITARY_TIME,
     STANDARD_TIME,
+    TAG_ENABLED,
+    TAG_FOLDER,
+    TAG_NAME,
+    TAG_PRGM_FINISH,
+    TAG_PRGM_RUN,
+    TAG_PRGM_RUNNING,
+    TAG_PRGM_STATUS,
+    TAG_PROGRAM,
+    XML_OFF,
+    XML_ON,
     XML_PARSE_ERROR,
     XML_STRPTIME_YY,
+    XML_TRUE,
 )
 from ..helpers import attr_from_element, value_from_xml
 from ..Nodes import NodeIterator as ProgramIterator
@@ -89,9 +99,9 @@ class Programs:
         if self.root is None:
             return "Folder <root>"
         ind = self.pids.index(self.root)
-        if self.ptypes[ind] == ATTR_FOLDER:
+        if self.ptypes[ind] == TAG_FOLDER:
             return "Folder ({})".format(self.root)
-        if self.ptypes[ind] == ATTR_PROGRAM:
+        if self.ptypes[ind] == TAG_PROGRAM:
             return "Program ({})".format(self.root)
         return ""
 
@@ -101,9 +111,9 @@ class Programs:
         folders = []
         programs = []
         for child in self.children:
-            if child[0] == ATTR_FOLDER:
+            if child[0] == TAG_FOLDER:
                 folders.append(child)
-            elif child[0] == ATTR_PROGRAM:
+            elif child[0] == TAG_PROGRAM:
                 programs.append(child)
 
         # initialize data
@@ -150,8 +160,8 @@ class Programs:
             pobj = None  # this is a new program that hasn't been registered
 
         if isinstance(pobj, Program):
-            if "<s>" in xml:
-                status = value_from_xml(xmldoc, "s")
+            if f"<{TAG_PRGM_STATUS}>" in xml:
+                status = value_from_xml(xmldoc, TAG_PRGM_STATUS)
                 if status == "21":
                     pobj.ranThen.update(pobj.ranThen + 1, force=True, silent=True)
                     pobj.status.update(True, force=True, silent=True)
@@ -159,18 +169,18 @@ class Programs:
                     pobj.ranElse.update(pobj.ranElse + 1, force=True, silent=True)
                     pobj.status.update(False, force=True, silent=True)
 
-            if "<r>" in xml:
-                plastrun = value_from_xml(xmldoc, "r")
+            if f"<{TAG_PRGM_RUN}>" in xml:
+                plastrun = value_from_xml(xmldoc, TAG_PRGM_RUN)
                 plastrun = datetime.strptime(plastrun, XML_STRPTIME_YY)
                 pobj.lastRun.update(plastrun, force=True, silent=True)
 
-            if "<f>" in xml:
-                plastfin = value_from_xml(xmldoc, "f")
+            if f"<{TAG_PRGM_FINISH}>" in xml:
+                plastfin = value_from_xml(xmldoc, TAG_PRGM_FINISH)
                 plastfin = datetime.strptime(plastfin, XML_STRPTIME_YY)
                 pobj.lastFinished.update(plastfin, force=True, silent=True)
 
-            if "<on />" in xml or "<off />" in xml:
-                pobj.enabled.update("<on />" in xml, force=True, silent=True)
+            if XML_ON in xml or XML_OFF in xml:
+                pobj.enabled.update(XML_ON in xml, force=True, silent=True)
 
         self.isy.log.debug("ISY Updated Program: " + pid)
 
@@ -188,22 +198,22 @@ class Programs:
             plastup = datetime.now()
 
             # get nodes
-            features = xmldoc.getElementsByTagName(ATTR_PROGRAM)
+            features = xmldoc.getElementsByTagName(TAG_PROGRAM)
             for feature in features:
                 # id, name, and status
                 pid = attr_from_element(feature, ATTR_ID)
-                pname = value_from_xml(feature, ATTR_NAME)
-                pparent = attr_from_element(feature, "parentId")
-                pstatus = attr_from_element(feature, "status") == "true"
+                pname = value_from_xml(feature, TAG_NAME)
+                pparent = attr_from_element(feature, ATTR_PARENT)
+                pstatus = attr_from_element(feature, ATTR_STATUS) == XML_TRUE
 
-                if attr_from_element(feature, ATTR_FOLDER) == "true":
+                if attr_from_element(feature, TAG_FOLDER) == XML_TRUE:
                     # folder specific parsing
-                    ptype = ATTR_FOLDER
+                    ptype = TAG_FOLDER
                     data = {"pstatus": pstatus}
 
                 else:
                     # program specific parsing
-                    ptype = ATTR_PROGRAM
+                    ptype = TAG_PROGRAM
 
                     # last run time
                     plastrun = value_from_xml(feature, "lastRunTime", EMPTY_TIME)
@@ -222,13 +232,16 @@ class Programs:
                         )
 
                     # enabled, run at startup, running
-                    penabled = bool(attr_from_element(feature, "enabled") == "true")
+                    penabled = bool(attr_from_element(feature, TAG_ENABLED) == XML_TRUE)
                     pstartrun = bool(
-                        attr_from_element(feature, "runAtStartup") == "true"
+                        attr_from_element(feature, "runAtStartup") == XML_TRUE
                     )
-                    prunning = bool(attr_from_element(feature, "running") != "idle")
+                    prunning = bool(
+                        attr_from_element(feature, TAG_PRGM_RUNNING) != "idle"
+                    )
 
                     # create data dictionary
+                    # TODO: Unpack into proper properties.
                     data = {
                         "pstatus": pstatus,
                         "plastrun": plastrun,
@@ -241,7 +254,7 @@ class Programs:
 
                 # add or update object if it already exists
                 if pid not in self.pids:
-                    if ptype == ATTR_FOLDER:
+                    if ptype == TAG_FOLDER:
                         pobj = Folder(self, pid, pname, **data)
                     else:
                         pobj = Program(self, pid, pname, **data)
@@ -338,7 +351,7 @@ class Programs:
 
         |  i: The program/folder index.
         """
-        if self.ptypes[i] == ATTR_FOLDER:
+        if self.ptypes[i] == TAG_FOLDER:
             return Programs(
                 self.isy,
                 self.pids[i],
@@ -383,7 +396,7 @@ class Programs:
         myname = self.name + "/"
 
         for dtype, name, ident in self.children:
-            if dtype == ATTR_PROGRAM:
+            if dtype == TAG_PROGRAM:
                 output.append((dtype, myname + name, ident))
 
             else:

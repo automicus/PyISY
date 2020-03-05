@@ -1,7 +1,16 @@
 """Manage variables from the ISY."""
 from VarEvents import Property
 
-from ..constants import ATTR_INIT, ATTR_SET, ATTR_VARS, EMPTY_TIME, UPDATE_INTERVAL
+from ..constants import (
+    ATTR_INIT,
+    ATTR_SET,
+    EMPTY_TIME,
+    PROTO_INT_VAR,
+    PROTO_STATE_VAR,
+    UPDATE_INTERVAL,
+    URL_VARIABLES,
+    VAR_INTEGER,
+)
 
 
 class Variable:
@@ -45,9 +54,7 @@ class Variable:
 
     def __str__(self):
         """Return a string representation of the variable."""
-        return "Variable(type={!s}, id={!s}, val={!s})".format(
-            self._type, self._id, self.val
-        )
+        return f"Variable(type={self._type}, id={self._id}, value={str(self.val)}, init={str(self.init)})"
 
     def __repr__(self):
         """Return a string representation of the variable."""
@@ -74,6 +81,11 @@ class Variable:
     def nid(self):
         """Return the formatted Variable Type and ID."""
         return "{!s}.{!s}".format(self._type, self._id)
+
+    @property
+    def protocol(self):
+        """Return the protocol for this entity."""
+        return PROTO_INT_VAR if self._type == VAR_INTEGER else PROTO_STATE_VAR
 
     @property
     def name(self):
@@ -109,7 +121,7 @@ class Variable:
             raise ValueError("Variable value must be an integer. Got None.")
         req_url = self.isy.conn.compile_url(
             [
-                ATTR_VARS,
+                URL_VARIABLES,
                 ATTR_INIT if init else ATTR_SET,
                 str(self._type),
                 str(self._id),

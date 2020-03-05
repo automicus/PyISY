@@ -1,6 +1,15 @@
+"""Representation of a program from the ISY."""
 from VarEvents import Property
 
-from ..constants import EMPTY_TIME, UPDATE_INTERVAL
+from ..constants import (
+    CMD_DISABLE,
+    CMD_DISABLE_RUN_AT_STARTUP,
+    CMD_ENABLE,
+    CMD_ENABLE_RUN_AT_STARTUP,
+    EMPTY_TIME,
+    PROTO_PROGRAM,
+    TAG_PROGRAM,
+)
 from .folder import Folder
 
 
@@ -47,7 +56,7 @@ class Program(Folder):
     running = Property(False, readonly=True)
     ranThen = Property(0, readonly=True)
     ranElse = Property(0, readonly=True)
-    dtype = "program"
+    dtype = TAG_PROGRAM
 
     def __init__(
         self,
@@ -76,13 +85,15 @@ class Program(Folder):
     def __report_enabled__(self, val):
         """Set the enabled flag."""
         self.noupdate = True
-        self.send_pgrm_cmd("enable" if val else "disable")
+        self.send_pgrm_cmd(CMD_ENABLE if val else CMD_DISABLE)
         self.noupdate = False
 
     def __report_startrun__(self, val):
         """Set the run at startup flag."""
         self.noupdate = True
-        self.send_pgrm_cmd("enableRunAtStartup" if val else "disableRunAtStartup")
+        self.send_pgrm_cmd(
+            CMD_ENABLE_RUN_AT_STARTUP if val else CMD_DISABLE_RUN_AT_STARTUP
+        )
         self.noupdate = False
 
     def update(self, wait_time=0, data=None):
@@ -104,3 +115,8 @@ class Program(Folder):
                 self.running.update(prunning, force=True, silent=True)
             elif not self.isy.auto_update:
                 self._programs.update(wait_time, pid=self._id)
+
+    @property
+    def protocol(self):
+        """Return the protocol for this entity."""
+        return PROTO_PROGRAM

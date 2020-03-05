@@ -4,13 +4,17 @@ from xml.dom import minidom
 
 from ..constants import (
     ATTR_FORMATTED,
-    ATTR_GET,
-    ATTR_GROUP,
-    ATTR_PREC,
-    ATTR_UOM,
+    ATTR_PRECISION,
+    ATTR_UNIT_OF_MEASURE,
     ATTR_VALUE,
     CLIMATE_SETPOINT_MIN_GAP,
-    STATE_PROPERTY,
+    METHOD_GET,
+    PROP_SETPOINT_COOL,
+    PROP_SETPOINT_HEAT,
+    PROP_STATUS,
+    PROP_UNIT_OF_MEASUREMENT,
+    TAG_GROUP,
+    URL_NODES,
     VALUE_UNKNOWN,
     XML_PARSE_ERROR,
 )
@@ -35,7 +39,9 @@ class Node(NodeBase):
     |  devtype_cat: Device Type Category (used for Z-Wave Nodes.)
     |  node_def_id: Node Definition ID (used for ISY firmwares >=v5)
     |  parent_nid: Node ID of the parent node
-    |  dev_type: device type.
+    |  device_type: device type.
+    |  node_server: the parent node server slot used
+    |  protocol: the device protocol used (z-wave, zigbee, insteon, node server)
 
     :ivar status: A watched property that indicates the current status of the
                   node.
@@ -52,29 +58,44 @@ class Node(NodeBase):
         devtype_cat=None,
         node_def_id=None,
         parent_nid=None,
-        dev_type=None,
+        device_type=None,
         enabled=None,
+        node_server=None,
+        protocol=None,
+        family_id=None,
     ):
         """Initialize a Node class."""
         self._aux_properties = aux_properties if aux_properties is not None else {}
         self._devtype_cat = devtype_cat
         self._node_def_id = node_def_id
-        self._type = dev_type
+        self._type = device_type
         self._enabled = enabled if enabled is not None else True
         self._parent_nid = parent_nid if parent_nid != nid else None
-        self._uom = state.get(ATTR_UOM, "")
-        self._prec = state.get(ATTR_PREC, "0")
+        self._uom = state.get(ATTR_UNIT_OF_MEASURE, "")
+        self._prec = state.get(ATTR_PRECISION, "0")
         self._formatted = state.get(ATTR_FORMATTED, str(self.status))
+        self._node_server = node_server
+        self._protocol = protocol
         self.status.update(
             state.get(ATTR_VALUE, VALUE_UNKNOWN), force=True, silent=True
         )
         self.controlEvents = EventEmitter()
-        super().__init__(nodes, nid, name)
+        super().__init__(nodes, nid, name, family_id)
 
     @property
     def aux_properties(self):
         """Return the aux properties that were in the Node Definition."""
         return self._aux_properties
+
+    @property
+    def protocol(self):
+        """Return the device standard used (Z-Wave, Zigbee, Insteon, Node Server)."""
+        return self._protocol
+
+    @property
+    def node_server(self):
+        """Return the node server parent slot (used for v5 Node Server devices)."""
+        return self._node_server
 
     @property
     def devtype_cat(self):
@@ -102,7 +123,7 @@ class Node(NodeBase):
         return self._uom
 
     @uom.setter
-    def uom(self,value):
+    def uom(self, value):
         """Set the unit of measurement if not provided initially."""
         self._uom = value
 
@@ -112,7 +133,7 @@ class Node(NodeBase):
         return self._prec
 
     @prec.setter
-    def prec(self,value):
+    def prec(self, value):
         """Set the unit of measurement if not provided initially."""
         self._prec = value
 
@@ -140,7 +161,7 @@ class Node(NodeBase):
         if not self.isy.auto_update and not xmldoc:
             sleep(wait_time)
             req_url = self.isy.conn.compile_url(
-                ["nodes", self._id, ATTR_GET, STATE_PROPERTY]
+                [URL_NODES, self._id, METHOD_GET, PROP_STATUS]
             )
             xml = self.isy.conn.request(req_url)
             try:
@@ -160,8 +181,8 @@ class Node(NodeBase):
 
         state, aux_props = parse_xml_properties(xmldoc)
         self._aux_properties.update(aux_props)
-        self._uom = state.get(ATTR_UOM, self._uom)
-        self._prec = state.get(ATTR_PREC, self._prec)
+        self._uom = state.get(ATTR_UNIT_OF_MEASURE, self._uom)
+        self._prec = state.get(ATTR_PRECISION, self._prec)
         value = state.get(ATTR_VALUE, VALUE_UNKNOWN)
         self._formatted = state.get(ATTR_FORMATTED, value)
         self.status.update(value, silent=True)
@@ -177,7 +198,7 @@ class Node(NodeBase):
         """
         groups = []
         for child in self._nodes.all_lower_nodes:
-            if child[0] == ATTR_GROUP:
+            if child[0] == TAG_GROUP:
                 if responder:
                     if self._id in self._nodes[child[2]].members:
                         groups.append(child[2])
@@ -218,17 +239,21 @@ class Node(NodeBase):
         # For some reason, wants 2 times the temperature for Insteon
         if self._uom in ["101", "degrees"]:
             val = 2 * val
-        return self.send_cmd("CLISPH", str(val), self.get_setpoint_uom("CLISPH"))
+        return self.send_cmd(
+            PROP_SETPOINT_HEAT, str(val), self.get_setpoint_uom(PROP_SETPOINT_HEAT)
+        )
 
     def climate_setpoint_cool(self, val):
         """Send a command to the device to set the system heat setpoint."""
         # For some reason, wants 2 times the temperature for Insteon
         if self._uom in ["101", "degrees"]:
             val = 2 * val
-        return self.send_cmd("CLISPC", str(val), self.get_setpoint_uom("CLISPC"))
+        return self.send_cmd(
+            PROP_SETPOINT_COOL, str(val), self.get_setpoint_uom(PROP_SETPOINT_COOL)
+        )
 
     def get_setpoint_uom(self, prop):
         """Get the Unit of Measurement for Z-Wave Climate Settings."""
         if self._devtype_cat and self._aux_properties.get(prop):
-            return self._aux_properties.get(prop).get('uom')
+            return self._aux_properties.get(prop).get(ATTR_UNIT_OF_MEASURE)
         return None

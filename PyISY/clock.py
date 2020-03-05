@@ -2,7 +2,19 @@
 from time import sleep
 from xml.dom import minidom
 
-from .constants import EMPTY_TIME, XML_PARSE_ERROR
+from .constants import (
+    EMPTY_TIME,
+    TAG_DST,
+    TAG_LATITUDE,
+    TAG_LONGITUDE,
+    TAG_MILIATRY_TIME,
+    TAG_NTP,
+    TAG_SUNRISE,
+    TAG_SUNSET,
+    TAG_TZ_OFFSET,
+    XML_PARSE_ERROR,
+    XML_TRUE,
+)
 from .helpers import ntp_to_system_time, value_from_xml
 
 
@@ -70,15 +82,15 @@ class Clock:
         except (TypeError, KeyError):
             self.isy.log.error("%s: Clock", XML_PARSE_ERROR)
         else:
-            tz_offset_sec = int(value_from_xml(xmldoc, "TMZOffset"))
+            tz_offset_sec = int(value_from_xml(xmldoc, TAG_TZ_OFFSET))
             self._tz_offset = tz_offset_sec / 3600
-            self._dst = value_from_xml(xmldoc, "DST") == "true"
-            self._latitude = float(value_from_xml(xmldoc, "Lat"))
-            self._longitude = float(value_from_xml(xmldoc, "Long"))
-            self._military = value_from_xml(xmldoc, "IsMilitary") == "true"
-            self._last_called = ntp_to_system_time(int(value_from_xml(xmldoc, "NTP")))
-            self._sunrise = ntp_to_system_time(int(value_from_xml(xmldoc, "Sunrise")))
-            self._sunset = ntp_to_system_time(int(value_from_xml(xmldoc, "Sunset")))
+            self._dst = value_from_xml(xmldoc, TAG_DST) == XML_TRUE
+            self._latitude = float(value_from_xml(xmldoc, TAG_LATITUDE))
+            self._longitude = float(value_from_xml(xmldoc, TAG_LONGITUDE))
+            self._military = value_from_xml(xmldoc, TAG_MILIATRY_TIME) == XML_TRUE
+            self._last_called = ntp_to_system_time(int(value_from_xml(xmldoc, TAG_NTP)))
+            self._sunrise = ntp_to_system_time(int(value_from_xml(xmldoc, TAG_SUNRISE)))
+            self._sunset = ntp_to_system_time(int(value_from_xml(xmldoc, TAG_SUNSET)))
 
             self.isy.log.info("ISY Loaded Clock Information")
 

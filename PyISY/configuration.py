@@ -1,7 +1,14 @@
 """ISY Configuration Lookup."""
 from xml.dom import minidom
 
-from .constants import ATTR_DESC, ATTR_ID
+from .constants import (
+    ATTR_DESC,
+    ATTR_ID,
+    TAG_FEATURE,
+    TAG_FIRMWARE,
+    TAG_INSTALLED,
+    XML_TRUE,
+)
 from .helpers import value_from_xml
 
 
@@ -75,7 +82,7 @@ class Configuration(dict):
         """
         xmldoc = minidom.parseString(xml)
 
-        self["firmware"] = value_from_xml(xmldoc, "app_full_version")
+        self["firmware"] = value_from_xml(xmldoc, TAG_FIRMWARE)
 
         try:
             self["uuid"] = (
@@ -86,13 +93,13 @@ class Configuration(dict):
         except IndexError:
             self["uuid"] = None
 
-        features = xmldoc.getElementsByTagName("feature")
+        features = xmldoc.getElementsByTagName(TAG_FEATURE)
 
         for feature in features:
             idnum = value_from_xml(feature, ATTR_ID)
             desc = value_from_xml(feature, ATTR_DESC)
-            installed_raw = value_from_xml(feature, "isInstalled")
-            installed = bool(installed_raw == "true")
+            installed_raw = value_from_xml(feature, TAG_INSTALLED)
+            installed = bool(installed_raw == XML_TRUE)
             self[idnum] = installed
             self[desc] = self[idnum]
 

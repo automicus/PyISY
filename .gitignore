@@ -62,3 +62,5 @@ docs/_build/
 target/
 .AppleDouble
 
+# Temporarily Ignore pylintrc
+pylintrc

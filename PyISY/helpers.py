@@ -5,12 +5,13 @@ import time
 from .constants import (
     ATTR_FORMATTED,
     ATTR_ID,
-    ATTR_PREC,
-    ATTR_UOM,
+    ATTR_PRECISION,
+    ATTR_UNIT_OF_MEASURE,
     ATTR_VALUE,
-    BATLVL_PROPERTY,
     ISY_EPOCH_OFFSET,
-    STATE_PROPERTY,
+    PROP_BATTERY_LEVEL,
+    PROP_STATUS,
+    TAG_PROPERTY,
     VALUE_UNKNOWN,
 )
 
@@ -30,15 +31,15 @@ def parse_xml_properties(xmldoc):
     state_set = False
     state = {}
 
-    props = xmldoc.getElementsByTagName("property")
+    props = xmldoc.getElementsByTagName(TAG_PROPERTY)
     if not props:
         return {}, {}
 
     for prop in props:
         prop_id = attr_from_element(prop, ATTR_ID)
-        uom = attr_from_element(prop, ATTR_UOM, "")
+        uom = attr_from_element(prop, ATTR_UNIT_OF_MEASURE, "")
         val = attr_from_element(prop, ATTR_VALUE, "").strip()
-        prec = attr_from_element(prop, ATTR_PREC, "0")
+        prec = attr_from_element(prop, ATTR_PRECISION, "0")
         formatted = attr_from_element(prop, ATTR_FORMATTED, val)
 
         # ISY firmwares < 5 return a list of possible units.
@@ -52,15 +53,15 @@ def parse_xml_properties(xmldoc):
         result = {
             ATTR_ID: prop_id,
             ATTR_VALUE: val,
-            ATTR_PREC: prec,
-            ATTR_UOM: uom,
+            ATTR_PRECISION: prec,
+            ATTR_UNIT_OF_MEASURE: uom,
             ATTR_FORMATTED: formatted,
         }
 
-        if prop_id == STATE_PROPERTY:
+        if prop_id == PROP_STATUS:
             state = result
             state_set = True
-        elif prop_id == BATLVL_PROPERTY and not state_set:
+        elif prop_id == PROP_BATTERY_LEVEL and not state_set:
             state = result
         else:
             aux_props[prop_id] = result

@@ -12,9 +12,10 @@ from . import strings
 from .constants import (
     ATTR_ACTION,
     ATTR_CONTROL,
+    ATTR_STREAM_ID,
     POLL_TIME,
+    PROP_STATUS,
     SOCKET_BUFFER_SIZE,
-    STATE_PROPERTY,
 )
 from .helpers import attr_from_xml, value_from_xml
 
@@ -70,7 +71,7 @@ class EventStream:
         self.isy.log.debug("ISY Update Received:\n" + msg)
 
         # A wild stream id appears!
-        if "sid=" in msg and "sid" not in self.data:
+        if f"{ATTR_STREAM_ID}=" in msg and ATTR_STREAM_ID not in self.data:
             self.update_received(xmldoc)
 
         # direct the event message
@@ -81,7 +82,7 @@ class EventStream:
             self._lasthb = datetime.datetime.now()
             self._hbwait = int(value_from_xml(xmldoc, ATTR_ACTION))
             self.isy.log.debug("ISY HEARTBEAT: %s", self._lasthb.isoformat())
-        elif cntrl == STATE_PROPERTY:  # NODE UPDATE
+        elif cntrl == PROP_STATUS:  # NODE UPDATE
             self.isy.nodes.update_received(xmldoc)
         elif cntrl[0] != "_":  # NODE CONTROL EVENT
             self.isy.nodes.control_message_received(xmldoc)
@@ -101,7 +102,7 @@ class EventStream:
 
     def update_received(self, xmldoc):
         """Set the socket ID."""
-        self.data["sid"] = attr_from_xml(xmldoc, "Event", "sid")
+        self.data[ATTR_STREAM_ID] = attr_from_xml(xmldoc, "Event", ATTR_STREAM_ID)
         self.isy.log.debug("ISY Updated Events Stream ID")
 
     @property
@@ -186,7 +187,7 @@ class EventStream:
     def subscribe(self):
         """Subscribe to the Event Stream."""
         if not self._subscribed and self._connected:
-            if "sid" not in self.data:
+            if ATTR_STREAM_ID not in self.data:
                 msg = self._mkmsg(strings.sub_msg)
                 self.write(msg)
             else:
