@@ -112,6 +112,7 @@ PROTO_ZWAVE = "zwave"
 PROP_BATTERY_LEVEL = "BATLVL"
 PROP_BUSY = "BUSY"
 PROP_ON_LEVEL = "OL"
+PROP_RAMP_RATE = "RR"
 PROP_SETPOINT_COOL = "CLISPC"
 PROP_SETPOINT_HEAT = "CLISPH"
 PROP_STATUS = "ST"
@@ -550,4 +551,40 @@ UOM_TO_STATES = {
         "7": "program_cool",
     },
     "99": {"7": "on", "8": "auto"},  # Insteon Thermostat Fan Mode
+}
+
+# Translate the "RR" Property to Seconds
+INSTEON_RAMP_RATES = {
+    "0": 540,
+    "1": 480,
+    "2": 420,
+    "3": 360,
+    "4": 300,
+    "5": 270,
+    "6": 240,
+    "7": 210,
+    "8": 180,
+    "9": 150,
+    "10": 120,
+    "11": 90,
+    "12": 60,
+    "13": 47,
+    "14": 43,
+    "15": 38.5,
+    "16": 34,
+    "17": 32,
+    "18": 30,
+    "19": 28,
+    "20": 26,
+    "21": 23.5,
+    "22": 21.5,
+    "23": 19,
+    "24": 8.5,
+    "25": 6.5,
+    "26": 4.5,
+    "27": 2,
+    "28": 0.5,
+    "29": 0.3,
+    "30": 0.2,
+    "31": 0.1,
 }

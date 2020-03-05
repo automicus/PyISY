@@ -8,10 +8,12 @@ from .constants import (
     ATTR_PRECISION,
     ATTR_UNIT_OF_MEASURE,
     ATTR_VALUE,
+    INSTEON_RAMP_RATES,
     ISY_EPOCH_OFFSET,
     PROP_BATTERY_LEVEL,
     PROP_STATUS,
     TAG_PROPERTY,
+    PROP_RAMP_RATE,
     VALUE_UNKNOWN,
 )
 
@@ -63,6 +65,8 @@ def parse_xml_properties(xmldoc):
             state_set = True
         elif prop_id == PROP_BATTERY_LEVEL and not state_set:
             state = result
+        elif prop_id == PROP_RAMP_RATE:
+            result[ATTR_VALUE] = INSTEON_RAMP_RATES.get(val, val)
         else:
             aux_props[prop_id] = result
 

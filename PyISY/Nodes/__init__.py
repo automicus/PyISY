@@ -33,6 +33,7 @@ from ..constants import (
     TAG_PRIMARY_NODE,
     TAG_TYPE,
     URL_STATUS,
+    PROP_RAMP_RATE,
     XML_PARSE_ERROR,
     XML_TRUE,
 )
@@ -233,6 +234,8 @@ class Nodes:
             )
             return
 
+        if cntrl == PROP_RAMP_RATE:
+            nval = INSTEON_RAMP_RATES.get(nval, nval)
         if cntrl not in EVENT_PROPS_IGNORED:
             node._aux_properties[cntrl] = {
                 ATTR_ID: cntrl,
