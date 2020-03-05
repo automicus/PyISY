@@ -113,7 +113,7 @@ class EventStream:
         """Return the running state of the thread."""
         try:
             return self._thread.isAlive()
-        except (RuntimeError, ThreadError):
+        except (AttributeError, RuntimeError, ThreadError):
             return False
 
     @running.setter
