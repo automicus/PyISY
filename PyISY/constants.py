@@ -6,10 +6,14 @@ UPDATE_INTERVAL = 0.5
 # Time Constants / Strings
 EMPTY_TIME = datetime.datetime(year=1, month=1, day=1)
 ISY_EPOCH_OFFSET = 36524
-STANDARD_TIME = "%Y/%m/%d %I:%M:%S %p"
 MILITARY_TIME = "%Y/%m/%d %H:%M:%S"
+STANDARD_TIME = "%Y/%m/%d %I:%M:%S %p"
 XML_STRPTIME = "%Y%m%d %H:%M:%S"
 XML_STRPTIME_YY = "%y%m%d %H:%M:%S"
+XML_TRUE = "true"
+XML_FALSE = "false"
+XML_ON = "<on />"
+XML_OFF = "<off />"
 
 POLL_TIME = 5
 SOCKET_BUFFER_SIZE = 4096
@@ -42,33 +46,91 @@ CARDINAL_DIRECTIONS = {
     "N/A": None,
 }
 
-STATE_PROPERTY = "ST"
-BATLVL_PROPERTY = "BATLVL"
-
+ATTR_ACTION = "action"
+ATTR_CONTROL = "control"
+ATTR_DESC = "desc"
+ATTR_FLAG = "flag"
+ATTR_FORMATTED = "formatted"
 ATTR_ID = "id"
-ATTR_NAME = "name"
 ATTR_INIT = "init"
-ATTR_UOM = "uom"
+ATTR_INSTANCE = "instance"
+ATTR_NODE_DEF_ID = "nodeDefId"
+ATTR_PARENT = "parentId"
+ATTR_PRECISION = "prec"
+ATTR_SET = "set"
+ATTR_STATUS = "status"
+ATTR_STREAM_ID = "sid"
+ATTR_TS = "ts"
+ATTR_UNIT_OF_MEASURE = "uom"
 ATTR_VAL = "val"  # Used for Variables.
 ATTR_VALUE = "value"  # Used for everything else.
 ATTR_VAR = "var"
-ATTR_VARS = "vars"
-ATTR_SET = "set"
-ATTR_GET = "get"
-ATTR_PREC = "prec"
-ATTR_FORMATTED = "formatted"
-ATTR_NODE = "node"
-ATTR_GROUP = "group"
-ATTR_FAMILY = "family"
-ATTR_INSTANCE = "instance"
-ATTR_FOLDER = "folder"
-ATTR_ACTION = "action"
-ATTR_PROGRAM = "program"
-ATTR_TYPE = "type"
-ATTR_TS = "ts"
-ATTR_DESC = "desc"
-ATTR_FLAG = "flag"
-ATTR_CONTROL = "control"
+
+TAG_ADDRESS = "address"
+TAG_CATEGORY = "cat"
+TAG_DEVICE_TYPE = "devtype"
+TAG_DST = "DST"
+TAG_ENABLED = "enabled"
+TAG_FAMILY = "family"
+TAG_FEATURE = "feature"
+TAG_FOLDER = "folder"
+TAG_GROUP = "group"
+TAG_INSTALLED = "isInstalled"
+TAG_LATITUDE = "Lat"
+TAG_LINK = "link"
+TAG_LONGITUDE = "Long"
+TAG_MILIATRY_TIME = "IsMilitary"
+TAG_NAME = "name"
+TAG_NET_RULE = "NetRule"
+TAG_NODE = "node"
+TAG_NTP = "NTP"
+TAG_PARENT = "parent"
+TAG_PRGM_FINISH = "f"
+TAG_PRGM_RUN = "r"
+TAG_PRGM_RUNNING = "running"
+TAG_PRGM_STATUS = "s"
+TAG_PRIMARY_NODE = "pnode"
+TAG_PROGRAM = "program"
+TAG_PROPERTY = "property"
+TAG_SPOKEN = "spoken"
+TAG_SUNRISE = "Sunrise"
+TAG_SUNSET = "Sunset"
+TAG_TYPE = "type"
+TAG_TZ_OFFSET = "TMZOffset"
+TAG_VARIABLE = "e"
+
+PROTO_FOLDER = "program_folder"
+PROTO_GROUP = "group"
+PROTO_INSTEON = "insteon"
+PROTO_INT_VAR = "integer_variable"
+PROTO_NODE_SERVER = "node_server"
+PROTO_PROGRAM = "program"
+PROTO_STATE_VAR = "state_variable"
+PROTO_ZIGBEE = "zigbee"
+PROTO_ZWAVE = "zwave"
+
+PROP_STATUS = "ST"
+PROP_BATTERY_LEVEL = "BATLVL"
+PROP_SETPOINT_HEAT = "CLISPH"
+PROP_SETPOINT_COOL = "CLISPC"
+
+METHOD_GET = "get"
+METHOD_COMMAND = "cmd"
+
+URL_CLIMATE = "climate"
+URL_CLOCK = "time"
+URL_CONFIG = "config"
+URL_DEFINITIONS = "definitions"
+URL_MEMBERS = "members"
+URL_NETWORK = "networking"
+URL_NODES = "nodes"
+URL_NOTES = "notes"
+URL_PING = "ping"
+URL_PROGRAMS = "programs"
+URL_RESOURCES = "resources"
+URL_STATUS = "status"
+URL_SUBFOLDERS = "subfolders"
+URL_VARIABLES = "vars"
 
 VAR_INTEGER = "1"
 VAR_STATE = "2"
@@ -76,79 +138,140 @@ VAR_STATE = "2"
 
 CLIMATE_SETPOINT_MIN_GAP = 2
 
+CMD_BEEP = "BEEP"
+CMD_BRIGHTEN = "BRT"
+CMD_CLIMATE_FAN_SPEED = "CLIFS"
+CMD_CLIMATE_MODE = "CLIMD"
+CMD_DIM = "DIM"
+CMD_DISABLE = "disable"
+CMD_DISABLE_RUN_AT_STARTUP = "disableRunAtStartup"
+CMD_ENABLE = "enable"
+CMD_ENABLE_RUN_AT_STARTUP = "enableRunAtStartup"
+CMD_FADE_DOWN = "FDDOWN"
+CMD_FADE_STOP = "FDSTOP"
+CMD_FADE_UP = "FDUP"
+CMD_OFF = "DOF"
+CMD_OFF_FAST = "DFOF"
+CMD_ON = "DON"
+CMD_ON_FAST = "DFON"
+CMD_RUN = "run"
+CMD_RUN_ELSE = "runElse"
+CMD_RUN_THEN = "runThen"
+CMD_SECURE = "SECMD"
+CMD_STOP = "stop"
+
 COMMAND_FRIENDLY_NAME = {
-    "OL": "on_level",
-    "RR": "ramp_rate",
-    "CLISPH": "heat_setpoint",
-    "CLISPC": "cool_setpoint",
-    "CLIFS": "fan_state",
-    "CLIHUM": "humidity",
-    "CLIHCS": "heat_cool_state",
-    "CLIEMD": "energy_saving_mode",
-    "ERR": "device_communication_errors",
-    "UOM": "unit_of_measure",
-    "TPW": "total_kw_power",
-    "PPW": "polarized_power",
-    "PF": "power_factor",
-    "CC": "current",
-    "CV": "voltage",
     "AIRFLOW": "air_flow",
     "ALARM": "alarm",
     "ANGLE": "angle_position",
     "ATMPRES": "atmospheric_pressure",
     "BARPRES": "barometric_pressure",
     "BATLVL": "battery_level",
-    "CLIMD": "climate_mode",
+    "BMAN": "brighten_manual",
+    "BUSY": "busy",
+    "CC": "current",
+    "CLIEMD": "energy_saving_mode",
+    "CLIHCS": "heat_cool_state",
+    "CLIHUM": "humidity",
     "CLISMD": "schedule_mode",
     "CLITEMP": "temperature",
     "CO2LVL": "co2_level",
     "CPW": "power",
+    "CV": "voltage",
     "DISTANC": "distance",
-    "ELECRES": "electrical_resistivity",
     "ELECCON": "electrical_conductivity",
+    "ELECRES": "electrical_resistivity",
+    "ERR": "device_communication_errors",
     "GPV": "general_purpose",
     "GVOL": "gas_volume",
     "LUMIN": "luminance",
     "MOIST": "moisture",
+    "OL": "on_level",
     "PCNT": "pulse_count",
+    "PF": "power_factor",
+    "PPW": "polarized_power",
     "PULSCNT": "pulse_count",
     "RAINRT": "rain_rate",
+    "RESET": "reset",
     "ROTATE": "rotation",
+    "RR": "ramp_rate",
     "SEISINT": "seismic_intensity",
     "SEISMAG": "seismic_magnitude",
+    "SMAN": "stop_manual",
     "SOLRAD": "solar_radiation",
     "SPEED": "speed",
     "SVOL": "sound_volume",
     "TANKCAP": "tank_capacity",
     "TIDELVL": "tide_level",
     "TIMEREM": "time_remaining",
+    "TPW": "total_kw_power",
     "UAC": "user_number",
-    "UV": "uv_light",
+    "UOM": "unit_of_measure",
     "USRNUM": "user_number",
+    "UV": "uv_light",
     "VOCLVL": "voc_level",
     "WEIGHT": "weight",
     "WINDDIR": "wind_direction",
     "WVOL": "water_volume",
-    "DON": "on",
-    "ST": "status",
-    "DFON": "faston",
-    "DOF": "off",
-    "DFOF": "fastoff",
-    "BEEP": "beep",
-    "RESET": "reset",
     "X10": "x10_command",
-    "BMAN": "brighten_manual",
-    "SMAN": "stop_manual",
-    "BRT": "bright",
-    "DIM": "dim",
-    "BUSY": "busy",
-    "SECMD": "secure",
-    "FDUP": "fade_up",
-    "FDDOWN": "fade_down",
-    "FDSTOP": "fade_stop"
+    CMD_BEEP: "beep",
+    CMD_BRIGHTEN: "bright",
+    CMD_CLIMATE_FAN_SPEED: "fan_state",
+    CMD_CLIMATE_MODE: "climate_mode",
+    CMD_DIM: "dim",
+    CMD_FADE_DOWN: "fade_down",
+    CMD_FADE_STOP: "fade_stop",
+    CMD_FADE_UP: "fade_up",
+    CMD_OFF: "off",
+    CMD_OFF_FAST: "fastoff",
+    CMD_ON: "on",
+    CMD_ON_FAST: "faston",
+    CMD_SECURE: "secure",
+    PROP_SETPOINT_COOL: "cool_setpoint",
+    PROP_SETPOINT_HEAT: "heat_setpoint",
+    PROP_STATUS: "status",
 }
 
 COMMAND_NAME = {val: key for key, val in COMMAND_FRIENDLY_NAME.items()}
+
+COMMANDS_PROGRAMS = [CMD_ENABLE_RUN_AT_STARTUP, CMD_DISABLE_RUN_AT_STARTUP]
+COMMANDS_FOLDERS = [
+    CMD_RUN,
+    CMD_RUN_THEN,
+    CMD_RUN_ELSE,
+    CMD_STOP,
+    CMD_ENABLE,
+    CMD_DISABLE,
+]
+
+COMMANDS_NODES = [
+    (CMD_BEEP, None),
+    (CMD_BRIGHTEN, None),
+    (CMD_CLIMATE_FAN_SPEED, "99"),
+    (CMD_CLIMATE_MODE, "98"),
+    (CMD_DIM, None),
+    (CMD_FADE_DOWN, None),
+    (CMD_FADE_STOP, None),
+    (CMD_FADE_UP, None),
+    (CMD_OFF_FAST, None),
+    (CMD_ON_FAST, None),
+    (CMD_SECURE, "84"),
+]
+
+# Referenced from ISY-WSDK-5.0.4\WSDL\family.xsd
+NODE_FAMILY_ID = {
+    "0": "Default",
+    "1": "Insteon",
+    "2": "UPB",
+    "3": "RCS",
+    "4": "ZWave",
+    "5": "Auto DR",
+    "6": "Group",
+    "7": "UDI",
+    "8": "Brultech",
+    "9": "NCD",
+    "10": "Node Server",
+}
 
 UOM_FRIENDLY_NAME = {
     "1": "A",

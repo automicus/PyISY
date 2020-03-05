@@ -16,7 +16,25 @@ import requests
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.poolmanager import PoolManager
 
-from .constants import ATTR_GET, ATTR_INIT, ATTR_SET, ATTR_VARS, VAR_INTEGER, VAR_STATE
+from .constants import (
+    METHOD_GET,
+    URL_CLIMATE,
+    URL_CLOCK,
+    URL_CONFIG,
+    URL_DEFINITIONS,
+    URL_MEMBERS,
+    URL_NETWORK,
+    URL_NODES,
+    URL_PING,
+    URL_PROGRAMS,
+    URL_RESOURCES,
+    URL_SUBFOLDERS,
+    URL_VARIABLES,
+    VAR_INTEGER,
+    VAR_STATE,
+    XML_FALSE,
+    XML_TRUE,
+)
 
 MAX_RETRIES = 5
 
@@ -151,36 +169,36 @@ class Connection:
 
     def ping(self):
         """Test connection to the ISY and return True if alive."""
-        req_url = self.compile_url(["ping"])
+        req_url = self.compile_url([URL_PING])
         result = self.request(req_url, ok404=True)
         return result is not None
 
     def get_config(self):
         """Fetch the configuration from the ISY."""
-        req_url = self.compile_url(["config"])
+        req_url = self.compile_url([URL_CONFIG])
         result = self.request(req_url)
         return result
 
     def get_programs(self, pid=None):
         """Fetch the list of programs from the ISY."""
-        addr = ["programs"]
+        addr = [URL_PROGRAMS]
         if pid is not None:
             addr.append(str(pid))
-        req_url = self.compile_url(addr, {"subfolders": "true"})
+        req_url = self.compile_url(addr, {URL_SUBFOLDERS: XML_TRUE})
         result = self.request(req_url)
         return result
 
     def get_nodes(self):
         """Fetch the list of nodes/groups/scenes from the ISY."""
-        req_url = self.compile_url(["nodes"], {"members": "false"})
+        req_url = self.compile_url([URL_NODES], {URL_MEMBERS: XML_FALSE})
         result = self.request(req_url)
         return result
 
     def get_variable_defs(self):
         """Fetch the list of variables from the ISY."""
         req_list = [
-            [ATTR_VARS, "definitions", VAR_INTEGER],
-            [ATTR_VARS, "definitions", VAR_STATE],
+            [URL_VARIABLES, URL_DEFINITIONS, VAR_INTEGER],
+            [URL_VARIABLES, URL_DEFINITIONS, VAR_STATE],
         ]
         req_urls = [self.compile_url(req) for req in req_list]
         results = [self.request(req_url) for req_url in req_urls]
@@ -189,8 +207,8 @@ class Connection:
     def get_variables(self):
         """Fetch the variable details from the ISY to update local copy."""
         req_list = [
-            [ATTR_VARS, ATTR_GET, VAR_INTEGER],
-            [ATTR_VARS, ATTR_GET, VAR_STATE],
+            [URL_VARIABLES, METHOD_GET, VAR_INTEGER],
+            [URL_VARIABLES, METHOD_GET, VAR_STATE],
         ]
         req_urls = [self.compile_url(req) for req in req_list]
         results = [self.request(req_url) for req_url in req_urls]
@@ -202,19 +220,19 @@ class Connection:
 
     def get_climate(self):
         """Fetch the list of climate information from the ISY."""
-        req_url = self.compile_url(["climate"])
+        req_url = self.compile_url([URL_CLIMATE])
         result = self.request(req_url)
         return result
 
     def get_network(self):
         """Fetch the list of network resources from the ISY."""
-        req_url = self.compile_url(["networking", "resources"])
+        req_url = self.compile_url([URL_NETWORK, URL_RESOURCES])
         result = self.request(req_url)
         return result
 
     def get_time(self):
         """Fetch the system time info from the ISY."""
-        req_url = self.compile_url(["time"])
+        req_url = self.compile_url([URL_CLOCK])
         result = self.request(req_url)
         return result
 

@@ -1,7 +1,7 @@
 """ISY Program Folders."""
 from VarEvents import Property
 
-from ..constants import ATTR_FOLDER, UPDATE_INTERVAL
+from ..constants import PROTO_FOLDER, TAG_FOLDER, UPDATE_INTERVAL, URL_PROGRAMS
 
 
 class Folder:
@@ -19,7 +19,7 @@ class Folder:
     """
 
     status = Property(0, readonly=True)
-    dtype = ATTR_FOLDER
+    dtype = TAG_FOLDER
 
     def __init__(self, programs, pid, pname, pstatus):
         """Intialize the Folder class."""
@@ -59,7 +59,7 @@ class Folder:
 
     def send_pgrm_cmd(self, command):
         """Run the appropriate clause of the object."""
-        req_url = self.isy.conn.compile_url(["programs", str(self._id), command])
+        req_url = self.isy.conn.compile_url([URL_PROGRAMS, str(self._id), command])
         result = self.isy.conn.request(req_url)
         if not result:
             self.isy.log.warning(
@@ -73,4 +73,4 @@ class Folder:
     @property
     def protocol(self):
         """Return the protocol for this entity."""
-        return "program folder"
+        return PROTO_FOLDER

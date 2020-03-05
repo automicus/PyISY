@@ -6,16 +6,31 @@ from ..constants import (
     ATTR_ACTION,
     ATTR_CONTROL,
     ATTR_FLAG,
-    ATTR_FOLDER,
-    ATTR_FAMILY,
     ATTR_INSTANCE,
-    ATTR_GROUP,
-    ATTR_NAME,
-    ATTR_NODE,
-    ATTR_PREC,
-    ATTR_TYPE,
-    ATTR_UOM,
+    ATTR_NODE_DEF_ID,
+    ATTR_PRECISION,
+    ATTR_UNIT_OF_MEASURE,
+    PROTO_GROUP,
+    PROTO_INSTEON,
+    PROTO_NODE_SERVER,
+    PROTO_ZIGBEE,
+    PROTO_ZWAVE,
+    TAG_ADDRESS,
+    TAG_CATEGORY,
+    TAG_DEVICE_TYPE,
+    TAG_ENABLED,
+    TAG_FAMILY,
+    TAG_FOLDER,
+    TAG_GROUP,
+    TAG_LINK,
+    TAG_NAME,
+    TAG_NODE,
+    TAG_PARENT,
+    TAG_PRIMARY_NODE,
+    TAG_TYPE,
     XML_PARSE_ERROR,
+    XML_TRUE,
+    URL_STATUS,
 )
 from ..helpers import (
     attr_from_element,
@@ -95,9 +110,9 @@ class Nodes:
         if self.root is None:
             return "Folder <root>"
         ind = self.nids.index(self.root)
-        if self.ntypes[ind] == ATTR_FOLDER:
+        if self.ntypes[ind] == TAG_FOLDER:
             return "Folder ({})".format(self.root)
-        if self.ntypes[ind] == ATTR_GROUP:
+        if self.ntypes[ind] == TAG_GROUP:
             return "Group ({})".format(self.root)
         return "Node ({})".format(self.root)
 
@@ -108,11 +123,11 @@ class Nodes:
         groups = []
         nodes = []
         for child in self.children:
-            if child[0] == ATTR_FOLDER:
+            if child[0] == TAG_FOLDER:
                 folders.append(child)
-            elif child[0] == ATTR_GROUP:
+            elif child[0] == TAG_GROUP:
                 groups.append(child)
-            elif child[0] == ATTR_NODE:
+            elif child[0] == TAG_NODE:
                 nodes.append(child)
 
         # initialize data
@@ -174,10 +189,10 @@ class Nodes:
 
     def update_received(self, xmldoc):
         """Update nodes from event stream message."""
-        nid = value_from_xml(xmldoc, ATTR_NODE)
+        nid = value_from_xml(xmldoc, TAG_NODE)
         nval = int(value_from_xml(xmldoc, ATTR_ACTION))
-        prec = attr_from_xml(xmldoc, ATTR_ACTION, ATTR_PREC, "0")
-        uom = attr_from_xml(xmldoc, ATTR_ACTION, ATTR_UOM, "")
+        prec = attr_from_xml(xmldoc, ATTR_ACTION, ATTR_PRECISION, "0")
+        uom = attr_from_xml(xmldoc, ATTR_ACTION, ATTR_UNIT_OF_MEASURE, "")
         node = self.get_by_id(nid)
         # Check if UOM/PREC have changed or were not set:
         if prec and prec != node.prec:
@@ -193,7 +208,7 @@ class Nodes:
 
         Used for sending out to subscribers.
         """
-        nid = value_from_xml(xmldoc, ATTR_NODE)
+        nid = value_from_xml(xmldoc, TAG_NODE)
         cntrl = value_from_xml(xmldoc, ATTR_CONTROL)
         if not (nid and cntrl):
             # If there is no node associated with the control message ignore it
@@ -201,8 +216,8 @@ class Nodes:
 
         # Process the action and value if provided in event data.
         nval = value_from_xml(xmldoc, ATTR_ACTION, 0)
-        prec = attr_from_xml(xmldoc, ATTR_ACTION, ATTR_PREC, "0")
-        uom = attr_from_xml(xmldoc, ATTR_ACTION, ATTR_UOM, "")
+        prec = attr_from_xml(xmldoc, ATTR_ACTION, ATTR_PRECISION, "0")
+        uom = attr_from_xml(xmldoc, ATTR_ACTION, ATTR_UNIT_OF_MEASURE, "")
 
         node = self.get_by_id(nid)
         if not node:
@@ -230,50 +245,48 @@ class Nodes:
             return False
 
         # get nodes
-        ntypes = [ATTR_FOLDER, ATTR_NODE, ATTR_GROUP]
+        ntypes = [TAG_FOLDER, TAG_NODE, TAG_GROUP]
         for ntype in ntypes:
             features = xmldoc.getElementsByTagName(ntype)
 
             for feature in features:
                 # Get Node Information
-                nid = value_from_xml(feature, "address")
-                nname = value_from_xml(feature, ATTR_NAME)
-                nparent = value_from_xml(feature, "parent")
-                parent_nid = value_from_xml(feature, "pnode")
-                family = value_from_xml(feature, ATTR_FAMILY)
-                dev_type = value_from_xml(feature, ATTR_TYPE)
-                node_def_id = attr_from_element(feature, "nodeDefId")
-                enabled = value_from_xml(feature, "enabled") == "true"
-                protocol = "insteon"  # Assume Insteon, update as confirmed otherwise
+                nid = value_from_xml(feature, TAG_ADDRESS)
+                nname = value_from_xml(feature, TAG_NAME)
+                nparent = value_from_xml(feature, TAG_PARENT)
+                parent_nid = value_from_xml(feature, TAG_PRIMARY_NODE)
+                family = value_from_xml(feature, TAG_FAMILY)
+                device_type = value_from_xml(feature, TAG_TYPE)
+                node_def_id = attr_from_element(feature, ATTR_NODE_DEF_ID)
+                enabled = value_from_xml(feature, TAG_ENABLED) == XML_TRUE
 
-                # Get Z-Wave Device Type Category
+                # Assume Insteon, update as confirmed otherwise
+                protocol = PROTO_INSTEON
                 devtype_cat = None
+                node_server = None
                 if family is not None:
                     if family == "4":
-                        protocol = "z-wave"
+                        protocol = PROTO_ZWAVE
                         try:
                             devtype_cat = (
-                                feature.getElementsByTagName("devtype")[0]
-                                .getElementsByTagName("cat")[0]
+                                feature.getElementsByTagName(TAG_DEVICE_TYPE)[0]
+                                .getElementsByTagName(TAG_CATEGORY)[0]
                                 .firstChild.toxml()
                             )
                         except IndexError:
                             devtype_cat = None
-                    elif family == "3":
-                        protocol = "zigbee"
-
-                # Check for Node Server (v5 Node Servers)
-                node_server = None
-                if family and family == "10":
-                    # Node Server Slot is stored with family:
-                    node_server = attr_from_xml(feature, ATTR_FAMILY, ATTR_INSTANCE)
-                if node_server:
-                    protocol = "node server slot {!s}".format(node_server)
+                    elif family in ("3", "8"):
+                        protocol = PROTO_ZIGBEE
+                    elif family == "10":
+                        # Node Server Slot is stored with family as text:
+                        node_server = attr_from_xml(feature, TAG_FAMILY, ATTR_INSTANCE)
+                        if node_server:
+                            protocol = f"{PROTO_NODE_SERVER}_{node_server}"
 
                 # Process the different node types
-                if ntype == ATTR_FOLDER and nid not in self.nids:
+                if ntype == TAG_FOLDER and nid not in self.nids:
                     self.insert(nid, nname, nparent, None, ntype)
-                elif ntype == ATTR_NODE:
+                elif ntype == TAG_NODE:
                     if nid in self.nids:
                         self.get_by_id(nid).update(xmldoc=feature)
                         continue
@@ -291,14 +304,15 @@ class Nodes:
                             devtype_cat=devtype_cat,
                             node_def_id=node_def_id,
                             parent_nid=parent_nid,
-                            dev_type=dev_type,
+                            device_type=device_type,
                             enabled=enabled,
                             node_server=node_server,
                             protocol=protocol,
+                            family_id=family,
                         ),
                         ntype,
                     )
-                elif ntype == ATTR_GROUP and nid not in self.nids:
+                elif ntype == TAG_GROUP and nid not in self.nids:
                     flag = attr_from_element(feature, ATTR_FLAG)
                     # Ignore groups that contain 0x08 in the flag since
                     # that is a ISY scene that contains every device/
@@ -309,13 +323,13 @@ class Nodes:
                     if int(flag) & 0x08:
                         self.isy.log.info("Skipping group flag=%s %s", flag, nid)
                         continue
-                    mems = feature.getElementsByTagName("link")
+                    mems = feature.getElementsByTagName(TAG_LINK)
                     # Build list of members
                     members = [mem.firstChild.nodeValue for mem in mems]
                     # Build list of controllers
                     controllers = []
                     for mem in mems:
-                        if int(attr_from_element(mem, ATTR_TYPE, 0)) == 16:
+                        if int(attr_from_element(mem, TAG_TYPE, 0)) == 16:
                             controllers.append(mem.firstChild.nodeValue)
                     self.insert(
                         nid,
@@ -333,7 +347,7 @@ class Nodes:
         |  wait_time: [optional] Amount of seconds to wait before updating
         """
         sleep(wait_time)
-        xml = self.isy.conn.request(self.isy.conn.compile_url(["status"]))
+        xml = self.isy.conn.request(self.isy.conn.compile_url([URL_STATUS]))
         if xml is not None:
             self.parse(xml)
         else:
@@ -416,7 +430,7 @@ class Nodes:
 
         |  i: Integer representing index of node/group/folder.
         """
-        if self.ntypes[i] in [ATTR_GROUP, ATTR_NODE]:
+        if self.ntypes[i] in [TAG_GROUP, TAG_NODE]:
             return self.nobjs[i]
         return Nodes(
             self.isy,
@@ -461,7 +475,7 @@ class Nodes:
         myname = self.name + "/"
 
         for dtype, name, ident in self.children:
-            if dtype in [ATTR_GROUP, ATTR_NODE]:
+            if dtype in [TAG_GROUP, TAG_NODE]:
                 output.append((dtype, myname + name, ident))
 
             else:

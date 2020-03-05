@@ -1,5 +1,5 @@
 """Representation of groups (scenes) from an ISY."""
-from ..constants import VALUE_UNKNOWN
+from ..constants import PROTO_GROUP, VALUE_UNKNOWN
 from .nodebase import NodeBase
 
 from VarEvents import Property
@@ -30,7 +30,7 @@ class Group(NodeBase):
         """Initialize a Group class."""
         self._members = members or []
         self._controllers = controllers or []
-        super().__init__(nodes, nid, name)
+        super().__init__(nodes, nid, name, "6")
 
         # listen for changes in children
         self._members_handlers = [
@@ -71,7 +71,7 @@ class Group(NodeBase):
     @property
     def protocol(self):
         """Return the protocol for this entity."""
-        return "group"
+        return PROTO_GROUP
 
     @property
     def controllers(self):

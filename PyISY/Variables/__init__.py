@@ -6,11 +6,12 @@ from xml.dom import minidom
 from ..constants import (
     ATTR_ID,
     ATTR_INIT,
-    ATTR_NAME,
     ATTR_TS,
-    ATTR_TYPE,
     ATTR_VAL,
     ATTR_VAR,
+    TAG_NAME,
+    TAG_TYPE,
+    TAG_VARIABLE,
     XML_PARSE_ERROR,
     XML_STRPTIME,
 )
@@ -91,10 +92,10 @@ class Variables:
 
         # parse definitions
         for ind in range(2):
-            features = xmldocs[ind].getElementsByTagName("e")
+            features = xmldocs[ind].getElementsByTagName(TAG_VARIABLE)
             for feature in features:
                 vid = int(attr_from_element(feature, ATTR_ID))
-                self.vnames[ind + 1][vid] = attr_from_element(feature, ATTR_NAME)
+                self.vnames[ind + 1][vid] = attr_from_element(feature, TAG_NAME)
 
     def parse(self, xml):
         """Parse XML from the controller with details about the variables."""
@@ -107,7 +108,7 @@ class Variables:
         features = xmldoc.getElementsByTagName(ATTR_VAR)
         for feature in features:
             vid = int(attr_from_element(feature, ATTR_ID))
-            vtype = int(attr_from_element(feature, ATTR_TYPE))
+            vtype = int(attr_from_element(feature, TAG_TYPE))
             init = value_from_xml(feature, ATTR_INIT)
             val = value_from_xml(feature, ATTR_VAL)
             ts_raw = value_from_xml(feature, ATTR_TS)
@@ -139,14 +140,14 @@ class Variables:
     def update_received(self, xmldoc):
         """Process an update received from the event stream."""
         xml = xmldoc.toxml()
-        vtype = int(attr_from_xml(xmldoc, ATTR_VAR, ATTR_TYPE))
+        vtype = int(attr_from_xml(xmldoc, ATTR_VAR, TAG_TYPE))
         vid = int(attr_from_xml(xmldoc, ATTR_VAR, ATTR_ID))
         try:
             vobj = self.vobjs[vtype][vid]
         except KeyError:
             return  # this is a new variable that hasn't been loaded
 
-        if "<init>" in xml:
+        if f"<{ATTR_INIT}>" in xml:
             vobj.init.update(
                 int(value_from_xml(xmldoc, ATTR_INIT)), force=True, silent=True
             )

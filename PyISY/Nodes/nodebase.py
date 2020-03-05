@@ -3,7 +3,20 @@ from xml.dom import minidom
 
 from VarEvents import Property
 
-from ..constants import COMMAND_FRIENDLY_NAME, UPDATE_INTERVAL, XML_PARSE_ERROR
+from ..constants import (
+    CMD_OFF,
+    CMD_OFF_FAST,
+    CMD_ON,
+    CMD_ON_FAST,
+    COMMAND_FRIENDLY_NAME,
+    METHOD_COMMAND,
+    NODE_FAMILY_ID,
+    TAG_SPOKEN,
+    UPDATE_INTERVAL,
+    URL_NODES,
+    URL_NOTES,
+    XML_PARSE_ERROR,
+)
 from ..helpers import value_from_xml
 
 
@@ -13,20 +26,21 @@ class NodeBase:
     status = Property(0)
     hasChildren = False
 
-    def __init__(self, nodes, nid, name):
+    def __init__(self, nodes, nid, name, family_id):
         """Initialize a Group class."""
         self._nodes = nodes
         self.isy = nodes.isy
         self._id = nid
         self._name = name
         self._notes = None
+        self._family = NODE_FAMILY_ID.get(family_id)
 
         # respond to non-silent changes in status
         self.status.reporter = self.__report_status__
 
     def __str__(self):
         """Return a string representation of the node."""
-        return "{}({})".format(type(self).__name__, self._id)
+        return f"{type(self).__name__}({self._id})"
 
     @property
     def nid(self):
@@ -38,10 +52,15 @@ class NodeBase:
         """Return the name of the Node."""
         return self._name
 
+    @property
+    def family(self):
+        """Return the ISY Family category."""
+        return self._family
+
     def parse_notes(self):
         """Parse the notes for a given node."""
         notes_xml = self.isy.conn.request(
-            self.isy.conn.compile_url(["nodes", self._id, "notes"]), ok404=True
+            self.isy.conn.compile_url([URL_NODES, self._id, URL_NOTES]), ok404=True
         )
         spoken = None
         if notes_xml is not None and notes_xml != "":
@@ -50,14 +69,14 @@ class NodeBase:
             except:
                 self.isy.log.error("%s: Node Notes %s", XML_PARSE_ERROR, notes_xml)
             else:
-                spoken = value_from_xml(notesdom, "spoken")
-        return {"spoken": spoken}
+                spoken = value_from_xml(notesdom, TAG_SPOKEN)
+        return {TAG_SPOKEN: spoken}
 
     @property
     def spoken(self):
         """Return the text of the Spoken property inside the group notes."""
         self._notes = self.parse_notes()
-        return self._notes["spoken"]
+        return self._notes[TAG_SPOKEN]
 
     def __report_status__(self, new_val):
         """Report the status of the node."""
@@ -65,7 +84,7 @@ class NodeBase:
 
     def off(self):
         """Turn off the nodes/group in the ISY."""
-        return self.send_cmd("DOF")
+        return self.send_cmd(CMD_OFF)
 
     def on(self, val=None):
         """
@@ -74,12 +93,12 @@ class NodeBase:
         |  [optional] val: The value brightness value (0-255) for the node.
         """
         if val is None or type(self).__name__ == "Group":
-            cmd = "DON"
+            cmd = CMD_ON
         elif int(val) > 0:
-            cmd = "DON"
+            cmd = CMD_ON
             val = str(val) if int(val) <= 255 else None
         else:
-            cmd = "DOF"
+            cmd = CMD_OFF
             val = None
         return self.send_cmd(cmd, val)
 
@@ -91,7 +110,7 @@ class NodeBase:
         """Send a command to the device."""
         value = str(val) if val is not None else None
         _uom = str(uom) if uom is not None else None
-        req = ["nodes", str(self._id), "cmd", cmd]
+        req = [URL_NODES, str(self._id), METHOD_COMMAND, cmd]
         if value:
             req.append(value)
         if _uom:
@@ -110,9 +129,9 @@ class NodeBase:
 
         # Calculate hint to use if status is updated
         hint = self.status._val
-        if cmd in ["DON", "DFON"]:
+        if cmd in [CMD_ON, CMD_ON_FAST]:
             hint = val if val is not None else 255
-        if cmd in ["DOF", "DFOF"]:
+        if cmd in [CMD_OFF, CMD_OFF_FAST]:
             hint = 0
         self.update(UPDATE_INTERVAL, hint=hint)
         return True
