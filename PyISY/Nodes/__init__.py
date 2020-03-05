@@ -69,7 +69,7 @@ class Nodes:
 
     :ivar all_lower_nodes: Return all nodes beneath current level
     :ivar children: A list of the object's children.
-    :ivar hasChildren: Indicates if object has children
+    :ivar has_children: Indicates if object has children
     :ivar name: The name of the current folder in navigation.
     """
 
@@ -172,12 +172,12 @@ class Nodes:
         out = ""
         for node in nodes:
             node_obj = self[node[2]]
-            if node_obj.hasChildren:
+            if node_obj.has_children:
                 out += "  + "
             else:
                 out += "  "
             out += "{}: Node({})\n".format(node[1], node[2])
-            if node_obj.hasChildren:
+            if node_obj.has_children:
                 for line in repr(node_obj).split("\n")[1:]:
                     out += "  |   {}\n".format(line)
                 out += "  -\n"
@@ -257,7 +257,7 @@ class Nodes:
         """
         try:
             xmldoc = minidom.parseString(xml)
-        except:
+        except (AttributeError, KeyError, ValueError, TypeError, IndexError):
             self.isy.log.error("%s: Nodes", XML_PARSE_ERROR)
             return False
 
@@ -406,7 +406,7 @@ class Nodes:
             output = None
             try:
                 output = fun(val)
-            except:
+            except ValueError:
                 pass
 
             if output:
@@ -469,12 +469,12 @@ class Nodes:
         return out
 
     @property
-    def hasChildren(self):
+    def has_children(self):
         """Return if the root has children."""
         try:
             self.nparents.index(self.root)
             return True
-        except:
+        except ValueError:
             return False
 
     @property

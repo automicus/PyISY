@@ -63,13 +63,13 @@ class Variable:
     def __report_init__(self, val):
         """Report the init value for the variable."""
         self.noupdate = True
-        self.setInit(val)
+        self.set_init(val)
         self.noupdate = False
 
     def __report_val__(self, val):
         """Report the current value for the variable."""
         self.noupdate = True
-        self.setValue(val)
+        self.set_value(val)
         self.noupdate = False
 
     @property
@@ -101,7 +101,7 @@ class Variable:
         if not self.isy.auto_update and not self.noupdate:
             self._variables.update(wait_time)
 
-    def setInit(self, val):
+    def set_init(self, val):
         """
         Set the initial value for the variable after the controller boots.
 
@@ -109,9 +109,9 @@ class Variable:
         """
         if val is None:
             raise ValueError("Variable init must be an integer. Got None.")
-        self.setValue(val, True)
+        self.set_value(val, True)
 
-    def setValue(self, val, init=False):
+    def set_value(self, val, init=False):
         """
         Set the value of the variable.
 

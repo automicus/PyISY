@@ -22,7 +22,12 @@ V2 is a significant refactoring and cleanup of the original PyISY code, with the
     
 - Node.lock() and Node.unlock() methods are now Node.secure_lock() and Node.secure_unlock().
 - Most functions *that should be internal only* have been renamed to snake_case from CamelCase.
+- Property `node.hasChildren` has been renamed to `node.has_children`.
 - Node Parent property has been renamed. Internal property is `node._parent_nid`, but externally accessible property is `node.parent_node`.
+- `node.controlEvents` has been renamed to `node.control_events`.
+- `variable.setInit` and `variable.set_value` have been renamed to `variable.set_init` and `variable.set_value`.
+- `ISY.sendX10` has been renamed to `ISY.send_x10_cmd`.
+- Network Resources `updateThread` function has been renamed to `update_threaded`.
 
 #### New:
 

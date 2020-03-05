@@ -25,7 +25,7 @@ class NodeBase:
     """Base Object for Nodes and Groups/Scenes."""
 
     status = Property(0)
-    hasChildren = False
+    has_children = False
 
     def __init__(self, nodes, nid, name, family_id=None, aux_properties=None):
         """Initialize a Group class."""

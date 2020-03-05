@@ -236,7 +236,7 @@ class ISY:
             self._add_pgrm_command(command, Program)
         self.log.debug("ISY Added Program commands: %s", COMMANDS_PROGRAMS)
 
-    def sendX10(self, address, cmd):
+    def send_x10_cmd(self, address, cmd):
         """
         Send an X10 command.
 

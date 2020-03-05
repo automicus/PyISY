@@ -188,17 +188,17 @@ class EventStream:
         """Subscribe to the Event Stream."""
         if not self._subscribed and self._connected:
             if ATTR_STREAM_ID not in self.data:
-                msg = self._create_message(strings.sub_msg)
+                msg = self._create_message(strings.SUB_MSG)
                 self.write(msg)
             else:
-                msg = self._create_message(strings.resub_msg)
+                msg = self._create_message(strings.RESUB_MSG)
                 self.write(msg)
             self._subscribed = True
 
     def unsubscribe(self):
         """Unsubscribe from the Event Stream."""
         if self._subscribed and self._connected:
-            msg = self._create_message(strings.unsub_msg)
+            msg = self._create_message(strings.UNSUB_MSG)
             self.write(msg)
             self._subscribed = False
             self.disconnect()

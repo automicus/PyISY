@@ -1,5 +1,7 @@
-# event stream subscribe request
-sub_msg = {
+"""Strings for Event Stream Requests."""
+
+# Subscribe Message
+SUB_MSG = {
     "head": """POST /services HTTP/1.1\r
 Host: {addr}:{port}\r
 Authorization: Basic {auth}\r
@@ -16,8 +18,8 @@ charset="utf-8"\r
 </u:Subscribe></s:Body></s:Envelope>""",
 }
 
-# event stream unsubscribe request
-unsub_msg = {
+# Unsubscribe Message
+UNSUB_MSG = {
     "head": """POST /services HTTP/1.1\r
 Host: {addr}:{port}\r
 Authorization: Basic {auth}\r
@@ -33,8 +35,8 @@ charset="utf-8"\r
 </u:Subscribe></s:Body></s:Envelope>""",
 }
 
-# event stream resubscribe request
-resub_msg = {
+# Resubscribe Message
+RESUB_MSG = {
     "head": """POST /services HTTP/1.1\r
 Host: {addr}:{port}\r
 Authorization: Basic {auth}\r

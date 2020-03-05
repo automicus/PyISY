@@ -192,7 +192,7 @@ class Programs:
         """
         try:
             xmldoc = minidom.parseString(xml)
-        except:
+        except (AttributeError, KeyError, ValueError, TypeError, IndexError):
             self.isy.log.error("%s: Programs", XML_PARSE_ERROR)
         else:
             plastup = datetime.now()
@@ -305,11 +305,11 @@ class Programs:
         try:
             self.pids.index(val)
             fun = self.get_by_id
-        except:
+        except ValueError:
             try:
                 self.pnames.index(val)
                 fun = self.get_by_name
-            except:
+            except ValueError:
                 try:
                     val = int(val)
                     fun = self.get_by_index
@@ -318,7 +318,7 @@ class Programs:
 
         try:
             return fun(val)
-        except:
+        except (ValueError, KeyError, IndexError):
             return None
 
     def __setitem__(self, val, value):
