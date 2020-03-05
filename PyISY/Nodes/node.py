@@ -12,7 +12,6 @@ from ..constants import (
     PROP_SETPOINT_COOL,
     PROP_SETPOINT_HEAT,
     PROP_STATUS,
-    PROP_UNIT_OF_MEASUREMENT,
     TAG_GROUP,
     URL_NODES,
     VALUE_UNKNOWN,

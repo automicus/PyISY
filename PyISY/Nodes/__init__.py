@@ -14,6 +14,8 @@ from ..constants import (
     ATTR_UNIT_OF_MEASURE,
     ATTR_VALUE,
     EVENT_PROPS_IGNORED,
+    INSTEON_RAMP_RATES,
+    PROP_RAMP_RATE,
     PROTO_GROUP,
     PROTO_INSTEON,
     PROTO_NODE_SERVER,
@@ -33,7 +35,6 @@ from ..constants import (
     TAG_PRIMARY_NODE,
     TAG_TYPE,
     URL_STATUS,
-    PROP_RAMP_RATE,
     XML_PARSE_ERROR,
     XML_TRUE,
 )
@@ -223,6 +224,7 @@ class Nodes:
         nval = value_from_xml(xmldoc, ATTR_ACTION, 0)
         prec = attr_from_xml(xmldoc, ATTR_ACTION, ATTR_PRECISION, "0")
         uom = attr_from_xml(xmldoc, ATTR_ACTION, ATTR_UNIT_OF_MEASURE, "")
+        formatted = attr_from_xml(xmldoc, ATTR_FORMATTED, nval)
 
         node = self.get_by_id(nid)
         if not node:
@@ -245,7 +247,7 @@ class Nodes:
                 ATTR_FORMATTED: formatted,
             }
         node.control_events.notify(EventResult(cntrl, nval, prec, uom, formatted))
-        self.isy.log.debug("ISY Node Control Event: %s %s %s", address, cntrl, nval)
+        self.isy.log.debug("ISY Node Control Event: %s %s %s", nid, cntrl, nval)
 
     def parse(self, xml):
         """
