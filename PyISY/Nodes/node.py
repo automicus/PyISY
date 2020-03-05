@@ -12,7 +12,6 @@ from ..constants import (
     PROP_SETPOINT_COOL,
     PROP_SETPOINT_HEAT,
     PROP_STATUS,
-    PROP_UNIT_OF_MEASUREMENT,
     TAG_GROUP,
     URL_NODES,
     VALUE_UNKNOWN,
@@ -65,7 +64,6 @@ class Node(NodeBase):
         family_id=None,
     ):
         """Initialize a Node class."""
-        self._aux_properties = aux_properties if aux_properties is not None else {}
         self._devtype_cat = devtype_cat
         self._node_def_id = node_def_id
         self._type = device_type
@@ -80,12 +78,9 @@ class Node(NodeBase):
             state.get(ATTR_VALUE, VALUE_UNKNOWN), force=True, silent=True
         )
         self.controlEvents = EventEmitter()
-        super().__init__(nodes, nid, name, family_id)
-
-    @property
-    def aux_properties(self):
-        """Return the aux properties that were in the Node Definition."""
-        return self._aux_properties
+        super().__init__(
+            nodes, nid, name, family_id=family_id, aux_properties=aux_properties
+        )
 
     @property
     def protocol(self):

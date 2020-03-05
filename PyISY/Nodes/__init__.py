@@ -6,10 +6,16 @@ from ..constants import (
     ATTR_ACTION,
     ATTR_CONTROL,
     ATTR_FLAG,
+    ATTR_FORMATTED,
+    ATTR_ID,
     ATTR_INSTANCE,
     ATTR_NODE_DEF_ID,
     ATTR_PRECISION,
     ATTR_UNIT_OF_MEASURE,
+    ATTR_VALUE,
+    EVENT_PROPS_IGNORED,
+    INSTEON_RAMP_RATES,
+    PROP_RAMP_RATE,
     PROTO_GROUP,
     PROTO_INSTEON,
     PROTO_NODE_SERVER,
@@ -28,9 +34,9 @@ from ..constants import (
     TAG_PARENT,
     TAG_PRIMARY_NODE,
     TAG_TYPE,
+    URL_STATUS,
     XML_PARSE_ERROR,
     XML_TRUE,
-    URL_STATUS,
 )
 from ..helpers import (
     attr_from_element,
@@ -218,6 +224,7 @@ class Nodes:
         nval = value_from_xml(xmldoc, ATTR_ACTION, 0)
         prec = attr_from_xml(xmldoc, ATTR_ACTION, ATTR_PRECISION, "0")
         uom = attr_from_xml(xmldoc, ATTR_ACTION, ATTR_UNIT_OF_MEASURE, "")
+        formatted = attr_from_xml(xmldoc, ATTR_FORMATTED, nval)
 
         node = self.get_by_id(nid)
         if not node:
@@ -229,7 +236,17 @@ class Nodes:
             )
             return
 
-        node.controlEvents.notify(EventResult(cntrl, nval, prec, uom))
+        if cntrl == PROP_RAMP_RATE:
+            nval = INSTEON_RAMP_RATES.get(nval, nval)
+        if cntrl not in EVENT_PROPS_IGNORED:
+            node._aux_properties[cntrl] = {
+                ATTR_ID: cntrl,
+                ATTR_VALUE: nval,
+                ATTR_PRECISION: prec,
+                ATTR_UNIT_OF_MEASURE: uom,
+                ATTR_FORMATTED: formatted,
+            }
+        node.control_events.notify(EventResult(cntrl, nval, prec, uom, formatted))
         self.isy.log.debug("ISY Node Control Event: %s %s %s", nid, cntrl, nval)
 
     def parse(self, xml):

@@ -13,6 +13,7 @@ from .constants import (
     COMMANDS_PROGRAMS,
     UOM_TO_STATES,
     X10_COMMANDS,
+    CMD_X10,
 )
 from .events import EventStream
 from .Nodes import Nodes
@@ -244,7 +245,7 @@ class ISY:
         """
         if cmd in X10_COMMANDS:
             command = X10_COMMANDS.get(cmd)
-            req_url = self.conn.compile_url(["X10", address, str(command)])
+            req_url = self.conn.compile_url([CMD_X10, address, str(command)])
             result = self.conn.request(req_url)
             if result is not None:
                 self.log.info("ISY Sent X10 Command: %s To: %s", cmd, address)

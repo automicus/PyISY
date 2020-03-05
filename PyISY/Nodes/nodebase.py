@@ -11,6 +11,7 @@ from ..constants import (
     COMMAND_FRIENDLY_NAME,
     METHOD_COMMAND,
     NODE_FAMILY_ID,
+    PROP_ON_LEVEL,
     TAG_SPOKEN,
     UPDATE_INTERVAL,
     URL_NODES,
@@ -26,13 +27,14 @@ class NodeBase:
     status = Property(0)
     hasChildren = False
 
-    def __init__(self, nodes, nid, name, family_id):
+    def __init__(self, nodes, nid, name, family_id=None, aux_properties=None):
         """Initialize a Group class."""
         self._nodes = nodes
         self.isy = nodes.isy
         self._id = nid
         self._name = name
         self._notes = None
+        self._aux_properties = aux_properties if aux_properties is not None else {}
         self._family = NODE_FAMILY_ID.get(family_id)
 
         # respond to non-silent changes in status
@@ -41,6 +43,11 @@ class NodeBase:
     def __str__(self):
         """Return a string representation of the node."""
         return f"{type(self).__name__}({self._id})"
+
+    @property
+    def aux_properties(self):
+        """Return the aux properties that were in the Node Definition."""
+        return self._aux_properties
 
     @property
     def nid(self):
@@ -129,10 +136,16 @@ class NodeBase:
 
         # Calculate hint to use if status is updated
         hint = self.status._val
-        if cmd in [CMD_ON, CMD_ON_FAST]:
-            hint = val if val is not None else 255
-        if cmd in [CMD_OFF, CMD_OFF_FAST]:
+        if cmd == CMD_ON:
+            if val is not None:
+                hint = val
+            elif PROP_ON_LEVEL in self._aux_properties:
+                hint = self._aux_properties[PROP_ON_LEVEL].get("value")
+            else:
+                hint = 255
+        elif cmd == CMD_ON_FAST:
+            hint = 255
+        elif cmd in [CMD_OFF, CMD_OFF_FAST]:
             hint = 0
         self.update(UPDATE_INTERVAL, hint=hint)
         return True
-

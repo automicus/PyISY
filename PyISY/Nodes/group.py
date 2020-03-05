@@ -30,7 +30,7 @@ class Group(NodeBase):
         """Initialize a Group class."""
         self._members = members or []
         self._controllers = controllers or []
-        super().__init__(nodes, nid, name, "6")
+        super().__init__(nodes, nid, name, family_id="6")
 
         # listen for changes in children
         self._members_handlers = [

@@ -73,6 +73,7 @@ TAG_DST = "DST"
 TAG_ENABLED = "enabled"
 TAG_FAMILY = "family"
 TAG_FEATURE = "feature"
+TAG_FIRMWARE = "app_full_version"
 TAG_FOLDER = "folder"
 TAG_GROUP = "group"
 TAG_INSTALLED = "isInstalled"
@@ -109,10 +110,13 @@ PROTO_STATE_VAR = "state_variable"
 PROTO_ZIGBEE = "zigbee"
 PROTO_ZWAVE = "zwave"
 
-PROP_STATUS = "ST"
 PROP_BATTERY_LEVEL = "BATLVL"
-PROP_SETPOINT_HEAT = "CLISPH"
+PROP_BUSY = "BUSY"
+PROP_ON_LEVEL = "OL"
+PROP_RAMP_RATE = "RR"
 PROP_SETPOINT_COOL = "CLISPC"
+PROP_SETPOINT_HEAT = "CLISPH"
+PROP_STATUS = "ST"
 
 METHOD_GET = "get"
 METHOD_COMMAND = "cmd"
@@ -135,7 +139,6 @@ URL_VARIABLES = "vars"
 VAR_INTEGER = "1"
 VAR_STATE = "2"
 
-
 CLIMATE_SETPOINT_MIN_GAP = 2
 
 CMD_BEEP = "BEEP"
@@ -150,15 +153,19 @@ CMD_ENABLE_RUN_AT_STARTUP = "enableRunAtStartup"
 CMD_FADE_DOWN = "FDDOWN"
 CMD_FADE_STOP = "FDSTOP"
 CMD_FADE_UP = "FDUP"
+CMD_MANUAL_DIM_BEGIN = "BMAN"
+CMD_MANUAL_DIM_STOP = "SMAN"
 CMD_OFF = "DOF"
 CMD_OFF_FAST = "DFOF"
 CMD_ON = "DON"
 CMD_ON_FAST = "DFON"
+CMD_RESET = "RESET"
 CMD_RUN = "run"
 CMD_RUN_ELSE = "runElse"
 CMD_RUN_THEN = "runThen"
 CMD_SECURE = "SECMD"
 CMD_STOP = "stop"
+CMD_X10 = "X10"
 
 COMMAND_FRIENDLY_NAME = {
     "AIRFLOW": "air_flow",
@@ -166,9 +173,6 @@ COMMAND_FRIENDLY_NAME = {
     "ANGLE": "angle_position",
     "ATMPRES": "atmospheric_pressure",
     "BARPRES": "barometric_pressure",
-    "BATLVL": "battery_level",
-    "BMAN": "brighten_manual",
-    "BUSY": "busy",
     "CC": "current",
     "CLIEMD": "energy_saving_mode",
     "CLIHCS": "heat_cool_state",
@@ -186,18 +190,15 @@ COMMAND_FRIENDLY_NAME = {
     "GVOL": "gas_volume",
     "LUMIN": "luminance",
     "MOIST": "moisture",
-    "OL": "on_level",
     "PCNT": "pulse_count",
     "PF": "power_factor",
     "PPW": "polarized_power",
     "PULSCNT": "pulse_count",
     "RAINRT": "rain_rate",
-    "RESET": "reset",
     "ROTATE": "rotation",
     "RR": "ramp_rate",
     "SEISINT": "seismic_intensity",
     "SEISMAG": "seismic_magnitude",
-    "SMAN": "stop_manual",
     "SOLRAD": "solar_radiation",
     "SPEED": "speed",
     "SVOL": "sound_volume",
@@ -213,7 +214,6 @@ COMMAND_FRIENDLY_NAME = {
     "WEIGHT": "weight",
     "WINDDIR": "wind_direction",
     "WVOL": "water_volume",
-    "X10": "x10_command",
     CMD_BEEP: "beep",
     CMD_BRIGHTEN: "bright",
     CMD_CLIMATE_FAN_SPEED: "fan_state",
@@ -222,15 +222,41 @@ COMMAND_FRIENDLY_NAME = {
     CMD_FADE_DOWN: "fade_down",
     CMD_FADE_STOP: "fade_stop",
     CMD_FADE_UP: "fade_up",
+    CMD_MANUAL_DIM_BEGIN: "brighten_manual",
+    CMD_MANUAL_DIM_STOP: "stop_manual",
     CMD_OFF: "off",
     CMD_OFF_FAST: "fastoff",
     CMD_ON: "on",
     CMD_ON_FAST: "faston",
+    CMD_RESET: "reset",
     CMD_SECURE: "secure",
+    CMD_X10: "x10_command",
+    PROP_BATTERY_LEVEL: "battery_level",
+    PROP_BUSY: "busy",
+    PROP_ON_LEVEL: "on_level",
     PROP_SETPOINT_COOL: "cool_setpoint",
     PROP_SETPOINT_HEAT: "heat_setpoint",
     PROP_STATUS: "status",
 }
+
+EVENT_PROPS_IGNORED = [
+    CMD_BEEP,
+    CMD_BRIGHTEN,
+    CMD_DIM,
+    CMD_MANUAL_DIM_BEGIN,
+    CMD_MANUAL_DIM_STOP,
+    CMD_FADE_UP,
+    CMD_FADE_DOWN,
+    CMD_FADE_STOP,
+    CMD_OFF,
+    CMD_OFF_FAST,
+    CMD_ON,
+    CMD_ON_FAST,
+    CMD_RESET,
+    CMD_X10,
+    PROP_BUSY,
+    PROP_STATUS,
+]
 
 COMMAND_NAME = {val: key for key, val in COMMAND_FRIENDLY_NAME.items()}
 
@@ -526,4 +552,40 @@ UOM_TO_STATES = {
         "7": "program_cool",
     },
     "99": {"7": "on", "8": "auto"},  # Insteon Thermostat Fan Mode
+}
+
+# Translate the "RR" Property to Seconds
+INSTEON_RAMP_RATES = {
+    "0": 540,
+    "1": 480,
+    "2": 420,
+    "3": 360,
+    "4": 300,
+    "5": 270,
+    "6": 240,
+    "7": 210,
+    "8": 180,
+    "9": 150,
+    "10": 120,
+    "11": 90,
+    "12": 60,
+    "13": 47,
+    "14": 43,
+    "15": 38.5,
+    "16": 34,
+    "17": 32,
+    "18": 30,
+    "19": 28,
+    "20": 26,
+    "21": 23.5,
+    "22": 21.5,
+    "23": 19,
+    "24": 8.5,
+    "25": 6.5,
+    "26": 4.5,
+    "27": 2,
+    "28": 0.5,
+    "29": 0.3,
+    "30": 0.2,
+    "31": 0.1,
 }

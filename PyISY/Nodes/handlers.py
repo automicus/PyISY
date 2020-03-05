@@ -40,13 +40,16 @@ class EventListener:
 class EventResult(dict):
     """Class to hold result of a command event."""
 
-    def __init__(self, event, nval=None, prec=None, uom=None):
+    def __init__(self, event, nval=None, prec=None, uom=None, formatted=None):
         """Initialize an event result."""
-        super().__init__(self, event=event, nval=nval, prec=prec, uom=uom)
+        super().__init__(
+            self, event=event, nval=nval, prec=prec, uom=uom, formatted=formatted
+        )
         self._event = event
         self._nval = nval
         self._prec = prec
         self._uom = uom
+        self._formatted = formatted
 
     @property
     def event(self):
@@ -67,6 +70,11 @@ class EventResult(dict):
     def uom(self):
         """Report the unit of measure, if there was one."""
         return self._uom
+
+    @property
+    def formatted(self):
+        """Report the formatted value, if there was one."""
+        return self._formatted
 
     def __str__(self):
         """Return just the event title to prevent breaking changes."""
