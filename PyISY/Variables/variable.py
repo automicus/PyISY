@@ -78,7 +78,7 @@ class Variable:
         return self._id
 
     @property
-    def nid(self):
+    def address(self):
         """Return the formatted Variable Type and ID."""
         return "{!s}.{!s}".format(self._type, self._id)
 

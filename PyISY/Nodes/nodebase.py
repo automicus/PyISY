@@ -27,11 +27,11 @@ class NodeBase:
     status = Property(0)
     has_children = False
 
-    def __init__(self, nodes, nid, name, family_id=None, aux_properties=None):
+    def __init__(self, nodes, address, name, family_id=None, aux_properties=None):
         """Initialize a Group class."""
         self._nodes = nodes
         self.isy = nodes.isy
-        self._id = nid
+        self._id = address
         self._name = name
         self._notes = None
         self._aux_properties = aux_properties if aux_properties is not None else {}
@@ -50,7 +50,7 @@ class NodeBase:
         return self._aux_properties
 
     @property
-    def nid(self):
+    def address(self):
         """Return the Node ID."""
         return self._id
 
@@ -87,13 +87,13 @@ class NodeBase:
 
     def __report_status__(self, new_val):
         """Report the status of the node."""
-        self.on(new_val)
+        self.turn_on(new_val)
 
-    def off(self):
+    def turn_off(self):
         """Turn off the nodes/group in the ISY."""
         return self.send_cmd(CMD_OFF)
 
-    def on(self, val=None):
+    def turn_on(self, val=None):
         """
         Turn the node on.
 

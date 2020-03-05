@@ -9,7 +9,7 @@ class Folder:
     Object representing a program folder on the ISY device.
 
     |  programs: The folder manager object.
-    |  pid: The folder ID.
+    |  address: The folder ID.
     |  pname: The folder name.
     |  pstatus: The current folder status.
 
@@ -21,13 +21,13 @@ class Folder:
     status = Property(0, readonly=True)
     dtype = TAG_FOLDER
 
-    def __init__(self, programs, pid, pname, pstatus):
+    def __init__(self, programs, address, pname, pstatus):
         """Intialize the Folder class."""
         self.noupdate = False
         self._programs = programs
         self.isy = programs.isy
         self.name = pname
-        self._id = pid
+        self._id = address
         self.status.update(pstatus, force=True, silent=True)
 
     def __str__(self):
@@ -35,7 +35,7 @@ class Folder:
         return "{}({})".format(type(self).__name__, self._id)
 
     @property
-    def nid(self):
+    def address(self):
         """Return the program or folder ID."""
         return self._id
 
@@ -55,7 +55,7 @@ class Folder:
             if data is not None:
                 self.status.update(data["pstatus"], force=True, silent=True)
             elif not self.isy.auto_update:
-                self._programs.update(wait_time, pid=self._id)
+                self._programs.update(wait_time, address=self._id)
 
     def send_pgrm_cmd(self, command):
         """Run the appropriate clause of the object."""

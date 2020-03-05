@@ -60,7 +60,7 @@ class Nodes:
 
     |  isy: ISY class
     |  root: [optional] String representing the current navigation level's ID
-    |  nids: [optional] list of node ids
+    |  addresses: [optional] list of node ids
     |  nnames: [optional] list of node names
     |  nparents: [optional] list of node parents
     |  nobjs: [optional] list of node objects
@@ -73,7 +73,7 @@ class Nodes:
     :ivar name: The name of the current folder in navigation.
     """
 
-    nids = []
+    addresses = []
     nnames = []
     nparents = []
     nobjs = []
@@ -83,7 +83,7 @@ class Nodes:
         self,
         isy,
         root=None,
-        nids=None,
+        addresses=None,
         nnames=None,
         nparents=None,
         nobjs=None,
@@ -95,14 +95,14 @@ class Nodes:
         self.root = root
 
         if (
-            nids is not None
+            addresses is not None
             and nnames is not None
             and nparents is not None
             and nobjs is not None
             and ntypes is not None
         ):
 
-            self.nids = nids
+            self.addresses = addresses
             self.nnames = nnames
             self.nparents = nparents
             self.nobjs = nobjs
@@ -115,7 +115,7 @@ class Nodes:
         """Return string representation of the nodes/folders/groups."""
         if self.root is None:
             return "Folder <root>"
-        ind = self.nids.index(self.root)
+        ind = self.addresses.index(self.root)
         if self.ntypes[ind] == TAG_FOLDER:
             return "Folder ({})".format(self.root)
         if self.ntypes[ind] == TAG_GROUP:
@@ -195,18 +195,20 @@ class Nodes:
 
     def update_received(self, xmldoc):
         """Update nodes from event stream message."""
-        nid = value_from_xml(xmldoc, TAG_NODE)
+        address = value_from_xml(xmldoc, TAG_NODE)
         nval = int(value_from_xml(xmldoc, ATTR_ACTION))
         prec = attr_from_xml(xmldoc, ATTR_ACTION, ATTR_PRECISION, "0")
         uom = attr_from_xml(xmldoc, ATTR_ACTION, ATTR_UNIT_OF_MEASURE, "")
-        node = self.get_by_id(nid)
+        node = self.get_by_id(address)
+        if not node:
+            return
         # Check if UOM/PREC have changed or were not set:
         if prec and prec != node.prec:
             node.prec = prec
         if uom and uom != node.uom:
             node.uom = uom
-        self.get_by_id(nid).status.update(nval, force=True, silent=True)
-        self.isy.log.debug("ISY Updated Node: " + nid)
+        node.status.update(nval, force=True, silent=True)
+        self.isy.log.debug("ISY Updated Node: " + address)
 
     def control_message_received(self, xmldoc):
         """
@@ -214,9 +216,9 @@ class Nodes:
 
         Used for sending out to subscribers.
         """
-        nid = value_from_xml(xmldoc, TAG_NODE)
+        address = value_from_xml(xmldoc, TAG_NODE)
         cntrl = value_from_xml(xmldoc, ATTR_CONTROL)
-        if not (nid and cntrl):
+        if not (address and cntrl):
             # If there is no node associated with the control message ignore it
             return
 
@@ -226,13 +228,13 @@ class Nodes:
         uom = attr_from_xml(xmldoc, ATTR_ACTION, ATTR_UNIT_OF_MEASURE, "")
         formatted = attr_from_xml(xmldoc, ATTR_FORMATTED, nval)
 
-        node = self.get_by_id(nid)
+        node = self.get_by_id(address)
         if not node:
             self.isy.log.debug(
                 "Received a node update for node %s but could not find a record of this "
                 "node. Please try restarting the module if the problem persists, this "
                 "may be due to a new node being added to the ISY since last restart.",
-                nid,
+                address,
             )
             return
 
@@ -247,7 +249,7 @@ class Nodes:
                 ATTR_FORMATTED: formatted,
             }
         node.control_events.notify(EventResult(cntrl, nval, prec, uom, formatted))
-        self.isy.log.debug("ISY Node Control Event: %s %s %s", nid, cntrl, nval)
+        self.isy.log.debug("ISY Node Control Event: %s %s %s", address, cntrl, nval)
 
     def parse(self, xml):
         """
@@ -268,7 +270,7 @@ class Nodes:
 
             for feature in features:
                 # Get Node Information
-                nid = value_from_xml(feature, TAG_ADDRESS)
+                address = value_from_xml(feature, TAG_ADDRESS)
                 nname = value_from_xml(feature, TAG_NAME)
                 nparent = value_from_xml(feature, TAG_PARENT)
                 parent_nid = value_from_xml(feature, TAG_PRIMARY_NODE)
@@ -301,20 +303,20 @@ class Nodes:
                             protocol = f"{PROTO_NODE_SERVER}_{node_server}"
 
                 # Process the different node types
-                if ntype == TAG_FOLDER and nid not in self.nids:
-                    self.insert(nid, nname, nparent, None, ntype)
+                if ntype == TAG_FOLDER and address not in self.addresses:
+                    self.insert(address, nname, nparent, None, ntype)
                 elif ntype == TAG_NODE:
-                    if nid in self.nids:
-                        self.get_by_id(nid).update(xmldoc=feature)
+                    if address in self.addresses:
+                        self.get_by_id(address).update(xmldoc=feature)
                         continue
                     state, aux_props = parse_xml_properties(feature)
                     self.insert(
-                        nid,
+                        address,
                         nname,
                         nparent,
                         Node(
                             self,
-                            nid=nid,
+                            address=address,
                             name=nname,
                             state=state,
                             aux_properties=aux_props,
@@ -329,7 +331,7 @@ class Nodes:
                         ),
                         ntype,
                     )
-                elif ntype == TAG_GROUP and nid not in self.nids:
+                elif ntype == TAG_GROUP and address not in self.addresses:
                     flag = attr_from_element(feature, ATTR_FLAG)
                     # Ignore groups that contain 0x08 in the flag since
                     # that is a ISY scene that contains every device/
@@ -338,7 +340,7 @@ class Nodes:
                     # the ISY MAC addrees in newer versions of
                     # ISY firmwares > 5.0.6+ ..
                     if int(flag) & 0x08:
-                        self.isy.log.info("Skipping group flag=%s %s", flag, nid)
+                        self.isy.log.info("Skipping group flag=%s %s", flag, address)
                         continue
                     mems = feature.getElementsByTagName(TAG_LINK)
                     # Build list of members
@@ -349,10 +351,10 @@ class Nodes:
                         if int(attr_from_element(mem, TAG_TYPE, 0)) == 16:
                             controllers.append(mem.firstChild.nodeValue)
                     self.insert(
-                        nid,
+                        address,
                         nname,
                         nparent,
-                        Group(self, nid, nname, members, controllers),
+                        Group(self, address, nname, members, controllers),
                         ntype,
                     )
             self.isy.log.debug("ISY Loaded {}".format(ntype))
@@ -370,17 +372,17 @@ class Nodes:
         else:
             self.isy.log.warning("ISY Failed to update nodes.")
 
-    def insert(self, nid, nname, nparent, nobj, ntype):
+    def insert(self, address, nname, nparent, nobj, ntype):
         """
         Insert a new node into the lists.
 
-        |  nid: node id
+        |  address: node id
         |  nname: node name
         |  nparent: node parent
         |  nobj: node object
         |  ntype: node type
         """
-        self.nids.append(nid)
+        self.addresses.append(address)
         self.nnames.append(nname)
         self.nparents.append(nparent)
         self.ntypes.append(ntype)
@@ -389,7 +391,7 @@ class Nodes:
     def __getitem__(self, val):
         """Navigate through the node tree. Can take names or IDs."""
         try:
-            self.nids.index(val)
+            self.addresses.index(val)
             fun = self.get_by_id
         except ValueError:
             try:
@@ -423,19 +425,19 @@ class Nodes:
 
         |  val: String representing name to look for.
         """
-        for i in range(len(self.nids)):
+        for i in range(len(self.addresses)):
             if self.nparents[i] == self.root and self.nnames[i] == val:
                 return self.get_by_index(i)
         return None
 
-    def get_by_id(self, nid):
+    def get_by_id(self, address):
         """
         Get object with the given ID.
 
-        |  nid: Integer representing node/group/folder id.
+        |  address: Integer representing node/group/folder id.
         """
         try:
-            i = self.nids.index(nid)
+            i = self.addresses.index(address)
         except ValueError:
             return None
         else:
@@ -451,8 +453,8 @@ class Nodes:
             return self.nobjs[i]
         return Nodes(
             self.isy,
-            self.nids[i],
-            self.nids,
+            self.addresses[i],
+            self.addresses,
             self.nnames,
             self.nparents,
             self.nobjs,
@@ -463,9 +465,9 @@ class Nodes:
     def children(self):
         """Return the children of the class."""
         out = []
-        for i in range(len(self.nids)):
+        for i in range(len(self.addresses)):
             if self.nparents[i] == self.root:
-                out.append((self.ntypes[i], self.nnames[i], self.nids[i]))
+                out.append((self.ntypes[i], self.nnames[i], self.addresses[i]))
         return out
 
     @property
@@ -482,7 +484,7 @@ class Nodes:
         """Return the name of the root."""
         if self.root is None:
             return ""
-        ind = self.nids.index(self.root)
+        ind = self.addresses.index(self.root)
         return self.nnames[ind]
 
     @property

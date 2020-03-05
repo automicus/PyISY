@@ -41,7 +41,7 @@ class Programs:
 
     |  isy: The ISY device class
     |  root: Program/Folder ID representing the current level of navigation.
-    |  pids: List of program and folder IDs.
+    |  addresses: List of program and folder IDs.
     |  pnames: List of the program and folder names.
     |  pparents: List of the program and folder parent IDs.
     |  pobjs: List of program and folder objects.
@@ -57,7 +57,7 @@ class Programs:
     :ivar name: The name of the program at the current level of navigation.
     """
 
-    pids = []
+    addresses = []
     pnames = []
     pparents = []
     pobjs = []
@@ -67,7 +67,7 @@ class Programs:
         self,
         isy,
         root=None,
-        pids=None,
+        addresses=None,
         pnames=None,
         pparents=None,
         pobjs=None,
@@ -79,13 +79,13 @@ class Programs:
         self.root = root
 
         if (
-            pids is not None
+            addresses is not None
             and pnames is not None
             and pparents is not None
             and pobjs is not None
             and ptypes is not None
         ):
-            self.pids = pids
+            self.addresses = addresses
             self.pnames = pnames
             self.pparents = pparents
             self.pobjs = pobjs
@@ -98,7 +98,7 @@ class Programs:
         """Return a string representation of the program manager."""
         if self.root is None:
             return "Folder <root>"
-        ind = self.pids.index(self.root)
+        ind = self.addresses.index(self.root)
         if self.ptypes[ind] == TAG_FOLDER:
             return "Folder ({})".format(self.root)
         if self.ptypes[ind] == TAG_PROGRAM:
@@ -153,9 +153,9 @@ class Programs:
     def update_received(self, xmldoc):
         """Update programs from EventStream message."""
         xml = xmldoc.toxml()
-        pid = value_from_xml(xmldoc, ATTR_ID).zfill(4)
+        address = value_from_xml(xmldoc, ATTR_ID).zfill(4)
         try:
-            pobj = self.get_by_id(pid).leaf
+            pobj = self.get_by_id(address).leaf
         except ValueError:
             pobj = None  # this is a new program that hasn't been registered
 
@@ -182,7 +182,7 @@ class Programs:
             if XML_ON in xml or XML_OFF in xml:
                 pobj.enabled.update(XML_ON in xml, force=True, silent=True)
 
-        self.isy.log.debug("ISY Updated Program: " + pid)
+        self.isy.log.debug("ISY Updated Program: " + address)
 
     def parse(self, xml):
         """
@@ -201,7 +201,7 @@ class Programs:
             features = xmldoc.getElementsByTagName(TAG_PROGRAM)
             for feature in features:
                 # id, name, and status
-                pid = attr_from_element(feature, ATTR_ID)
+                address = attr_from_element(feature, ATTR_ID)
                 pname = value_from_xml(feature, TAG_NAME)
                 pparent = attr_from_element(feature, ATTR_PARENT)
                 pstatus = attr_from_element(feature, ATTR_STATUS) == XML_TRUE
@@ -253,44 +253,44 @@ class Programs:
                     }
 
                 # add or update object if it already exists
-                if pid not in self.pids:
+                if address not in self.addresses:
                     if ptype == TAG_FOLDER:
-                        pobj = Folder(self, pid, pname, **data)
+                        pobj = Folder(self, address, pname, **data)
                     else:
-                        pobj = Program(self, pid, pname, **data)
-                    self.insert(pid, pname, pparent, pobj, ptype)
+                        pobj = Program(self, address, pname, **data)
+                    self.insert(address, pname, pparent, pobj, ptype)
                 else:
-                    pobj = self.get_by_id(pid).leaf
+                    pobj = self.get_by_id(address).leaf
                     pobj.update(data=data)
 
             self.isy.log.info("ISY Loaded/Updated Programs")
 
-    def update(self, wait_time=0, pid=None):
+    def update(self, wait_time=0, address=None):
         """
         Update the status of the programs and folders.
 
         |  wait_time: How long to wait before updating.
-        |  pid: The program ID to update.
+        |  address: The program ID to update.
         """
         sleep(wait_time)
-        xml = self.isy.conn.get_programs(pid)
+        xml = self.isy.conn.get_programs(address)
 
         if xml is not None:
             self.parse(xml)
         else:
             self.isy.log.warning("ISY Failed to update programs.")
 
-    def insert(self, pid, pname, pparent, pobj, ptype):
+    def insert(self, address, pname, pparent, pobj, ptype):
         """
         Insert a new program or folder into the manager.
 
-        |  pid: The ID of the program or folder.
+        |  address: The ID of the program or folder.
         |  pname: The name of the program or folder.
         |  pparent: The parent of the program or folder.
         |  pobj: The object representing the program or folder.
         |  ptype: The type of the item being added (program/folder).
         """
-        self.pids.append(pid)
+        self.addresses.append(address)
         self.pnames.append(pname)
         self.pparents.append(pparent)
         self.ptypes.append(ptype)
@@ -303,7 +303,7 @@ class Programs:
         |  val: Name or ID to navigate to.
         """
         try:
-            self.pids.index(val)
+            self.addresses.index(val)
             fun = self.get_by_id
         except ValueError:
             try:
@@ -331,18 +331,18 @@ class Programs:
 
         |  val: The name of the child program/folder to look for.
         """
-        for i in range(len(self.pids)):
+        for i in range(len(self.addresses)):
             if self.pparents[i] == self.root and self.pnames[i] == val:
                 return self.get_by_index(i)
         return None
 
-    def get_by_id(self, pid):
+    def get_by_id(self, address):
         """
         Get a program/folder with the given ID.
 
-        |  pid: The program/folder ID to look for.
+        |  address: The program/folder ID to look for.
         """
-        i = self.pids.index(pid)
+        i = self.addresses.index(address)
         return self.get_by_index(i)
 
     def get_by_index(self, i):
@@ -354,8 +354,8 @@ class Programs:
         if self.ptypes[i] == TAG_FOLDER:
             return Programs(
                 self.isy,
-                self.pids[i],
-                self.pids,
+                self.addresses[i],
+                self.addresses,
                 self.pnames,
                 self.pparents,
                 self.pobjs,
@@ -369,14 +369,14 @@ class Programs:
         out = []
         for ind in range(len(self.pnames)):
             if self.pparents[ind] == self.root:
-                out.append((self.ptypes[ind], self.pnames[ind], self.pids[ind]))
+                out.append((self.ptypes[ind], self.pnames[ind], self.addresses[ind]))
         return out
 
     @property
     def leaf(self):
         """Return the leaf property."""
         if self.root is not None:
-            ind = self.pids.index(self.root)
+            ind = self.addresses.index(self.root)
             if self.pobjs[ind] is not None:
                 return self.pobjs[ind]
         return self
@@ -385,7 +385,7 @@ class Programs:
     def name(self):
         """Return the name of the path."""
         if self.root is not None:
-            ind = self.pids.index(self.root)
+            ind = self.addresses.index(self.root)
             return self.pnames[ind]
         return ""
 

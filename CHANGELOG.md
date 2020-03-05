@@ -28,6 +28,8 @@ V2 is a significant refactoring and cleanup of the original PyISY code, with the
 - `variable.setInit` and `variable.set_value` have been renamed to `variable.set_init` and `variable.set_value`.
 - `ISY.sendX10` has been renamed to `ISY.send_x10_cmd`.
 - Network Resources `updateThread` function has been renamed to `update_threaded`.
+- Properties `nid`, `pid`, `nids`, `pids` have been renamed to `address` and `addresses` for consisitency. Variables still use `vid`; however, they also include an `address` property of the form `type.id`.
+- Node Functions `on()` and `off()` have been renamed to `turn_on()` and `turn_off()`
 
 #### New:
 

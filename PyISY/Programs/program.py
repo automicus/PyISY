@@ -18,7 +18,7 @@ class Program(Folder):
     Class representing a program on the ISY controller.
 
     |  programs: The program manager object.
-    |  pid: The ID of the program.
+    |  address: The ID of the program.
     |  pname: The name of the program.
     |  pstatus: The current status of the program.
     |  plastup: The last time the program was updated.
@@ -61,7 +61,7 @@ class Program(Folder):
     def __init__(
         self,
         programs,
-        pid,
+        address,
         pname,
         pstatus,
         plastup,
@@ -72,7 +72,7 @@ class Program(Folder):
         prunning,
     ):
         """Initialize a Program class."""
-        super(Program, self).__init__(programs, pid, pname, pstatus)
+        super(Program, self).__init__(programs, address, pname, pstatus)
         self.lastUpdate.update(plastup, force=True, silent=True)
         self.lastRun.update(plastrun, force=True, silent=True)
         self.lastFinished.update(plastfin, force=True, silent=True)
@@ -114,7 +114,7 @@ class Program(Folder):
                 self.runAtStartup.update(data["pstartrun"], force=True, silent=True)
                 self.running.update(prunning, force=True, silent=True)
             elif not self.isy.auto_update:
-                self._programs.update(wait_time, pid=self._id)
+                self._programs.update(wait_time, address=self._id)
 
     @property
     def protocol(self):
