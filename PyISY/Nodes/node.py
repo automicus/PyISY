@@ -78,12 +78,9 @@ class Node(NodeBase):
             state.get(ATTR_VALUE, VALUE_UNKNOWN), force=True, silent=True
         )
         self.controlEvents = EventEmitter()
-        super().__init__(nodes, nid, name, family_id)
-
-    @property
-    def aux_properties(self):
-        """Return the aux properties that were in the Node Definition."""
-        return self._aux_properties
+        super().__init__(
+            nodes, nid, name, family_id=family_id, aux_properties=aux_properties
+        )
 
     @property
     def protocol(self):
