@@ -121,6 +121,8 @@ PROP_STATUS = "ST"
 METHOD_GET = "get"
 METHOD_COMMAND = "cmd"
 
+UOM_SECONDS = "57"
+
 URL_CLIMATE = "climate"
 URL_CLOCK = "time"
 URL_CONFIG = "config"
