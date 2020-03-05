@@ -25,7 +25,7 @@ class Variables:
 
     This class can be used as a     dictionary to navigate through the
     controller's structure to objects of type
-    :class:`~PyISY.Variables.Variable` that represent objects on the
+    :class:`~PyISY.variables.Variable` that represent objects on the
     controller.
 
     |  isy: The ISY object.

@@ -55,7 +55,7 @@ class Nodes:
 
     This class can be used as a dictionary to
     navigate through the controller's structure to objects of type
-    :class:`~PyISY.Nodes.Node` and :class:`~PyISY.Nodes.Group` that represent
+    :class:`~PyISY.nodes.Node` and :class:`~PyISY.Nodes.Group` that represent
     objects on the controller.
 
     |  isy: ISY class
