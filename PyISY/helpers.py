@@ -11,9 +11,9 @@ from .constants import (
     INSTEON_RAMP_RATES,
     ISY_EPOCH_OFFSET,
     PROP_BATTERY_LEVEL,
+    PROP_RAMP_RATE,
     PROP_STATUS,
     TAG_PROPERTY,
-    PROP_RAMP_RATE,
     VALUE_UNKNOWN,
 )
 

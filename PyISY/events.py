@@ -5,17 +5,20 @@ import socket
 import ssl
 import sys
 import xml
-from threading import Thread
+from threading import Thread, ThreadError
 from xml.dom import minidom
 
 from . import strings
 from .constants import (
     ATTR_ACTION,
     ATTR_CONTROL,
+    ATTR_ID,
     ATTR_STREAM_ID,
+    ATTR_VAR,
     POLL_TIME,
     PROP_STATUS,
     SOCKET_BUFFER_SIZE,
+    TAG_NODE,
 )
 from .helpers import attr_from_xml, value_from_xml
 
@@ -90,11 +93,11 @@ class EventStream:
             if self.isy.configuration["Weather Information"]:
                 self.isy.climate.update_received(xmldoc)
         elif cntrl == "_1":  # Trigger Update
-            if "<var" in msg:  # VARIABLE
+            if f"<{ATTR_VAR}" in msg:  # VARIABLE
                 self.isy.variables.update_received(xmldoc)
-            elif "<id>" in msg:  # PROGRAM
+            elif f"<{ATTR_ID}>" in msg:  # PROGRAM
                 self.isy.programs.update_received(xmldoc)
-            elif "<node>" in msg and "[" in msg:  # Node Server Update
+            elif f"<{TAG_NODE}>" in msg and "[" in msg:  # Node Server Update
                 pass  # This is most likely a duplicate node update.
             else:  # SOMETHING HAPPENED WITH A PROGRAM FOLDER
                 # but they ISY didn't tell us what, so...
@@ -110,7 +113,7 @@ class EventStream:
         """Return the running state of the thread."""
         try:
             return self._thread.isAlive()
-        except:
+        except (RuntimeError, ThreadError):
             return False
 
     @running.setter
@@ -202,6 +205,11 @@ class EventStream:
             self.write(msg)
             self._subscribed = False
             self.disconnect()
+
+    @property
+    def connected(self):
+        """Return if the module is connnected to the ISY or not."""
+        return self._connected
 
     @property
     def heartbeat_time(self):

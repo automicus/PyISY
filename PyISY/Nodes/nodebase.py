@@ -73,7 +73,7 @@ class NodeBase:
         if notes_xml is not None and notes_xml != "":
             try:
                 notesdom = minidom.parseString(notes_xml)
-            except:
+            except (AttributeError, KeyError, ValueError, TypeError, IndexError):
                 self.isy.log.error("%s: Node Notes %s", XML_PARSE_ERROR, notes_xml)
             else:
                 spoken = value_from_xml(notesdom, TAG_SPOKEN)

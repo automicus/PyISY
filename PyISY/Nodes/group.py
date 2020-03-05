@@ -4,8 +4,6 @@ from VarEvents import Property
 from ..constants import PROTO_GROUP, VALUE_UNKNOWN
 from .nodebase import NodeBase
 
-from VarEvents import Property
-
 
 class Group(NodeBase):
     """

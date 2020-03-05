@@ -117,20 +117,20 @@ class Node(NodeBase):
         """Return the unit of measurement for the device."""
         return self._uom
 
-    @uom.setter
-    def uom(self, value):
+    def update_uom(self, value):
         """Set the unit of measurement if not provided initially."""
-        self._uom = value
+        if value and self._uom != value:
+            self._uom = value
 
     @property
     def prec(self):
         """Return the precision of the raw device value."""
         return self._prec
 
-    @prec.setter
-    def prec(self, value):
+    def update_precision(self, value):
         """Set the unit of measurement if not provided initially."""
-        self._prec = value
+        if value and self._prec != value:
+            self._prec = value
 
     @property
     def formatted(self):
@@ -161,7 +161,7 @@ class Node(NodeBase):
             xml = self.isy.conn.request(req_url)
             try:
                 xmldoc = minidom.parseString(xml)
-            except:
+            except (AttributeError, KeyError, ValueError, TypeError, IndexError):
                 self.isy.log.error("%s: Nodes", XML_PARSE_ERROR)
                 return
         elif hint is not None:

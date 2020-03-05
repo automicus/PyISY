@@ -203,10 +203,8 @@ class Nodes:
         if not node:
             return
         # Check if UOM/PREC have changed or were not set:
-        if prec and prec != node.prec:
-            node.prec = prec
-        if uom and uom != node.uom:
-            node.uom = uom
+        node.update_precision(prec)
+        node.update_uom(uom)
         node.status.update(nval, force=True, silent=True)
         self.isy.log.debug("ISY Updated Node: " + address)
 
@@ -241,7 +239,7 @@ class Nodes:
         if cntrl == PROP_RAMP_RATE:
             nval = INSTEON_RAMP_RATES.get(nval, nval)
         if cntrl not in EVENT_PROPS_IGNORED:
-            node._aux_properties[cntrl] = {
+            node.aux_properties[cntrl] = {
                 ATTR_ID: cntrl,
                 ATTR_VALUE: nval,
                 ATTR_PRECISION: prec,

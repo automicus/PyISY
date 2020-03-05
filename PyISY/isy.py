@@ -7,13 +7,13 @@ from .clock import Clock
 from .configuration import Configuration
 from .connection import Connection
 from .constants import (
+    CMD_X10,
     COMMAND_FRIENDLY_NAME,
     COMMANDS_FOLDERS,
     COMMANDS_NODES,
     COMMANDS_PROGRAMS,
     UOM_TO_STATES,
     X10_COMMANDS,
-    CMD_X10,
 )
 from .events import EventStream
 from .Nodes import Nodes
