@@ -19,7 +19,7 @@ POLL_TIME = 5
 SOCKET_BUFFER_SIZE = 4096
 THREAD_SLEEP_TIME = 30.0
 
-VALUE_UNKNOWN = -1 * float("inf")
+ISY_VALUE_UNKNOWN = -1 * float("inf")
 
 XML_PARSE_ERROR = "ISY Could not parse response, poorly formatted XML."
 
@@ -112,11 +112,17 @@ PROTO_ZWAVE = "zwave"
 
 PROP_BATTERY_LEVEL = "BATLVL"
 PROP_BUSY = "BUSY"
+PROP_ENERGY_MODE = "CLIEMD"
+PROP_HEAT_COOL_STATE = "CLIHCS"
+PROP_HUMIDITY = "CLIHUM"
 PROP_ON_LEVEL = "OL"
 PROP_RAMP_RATE = "RR"
+PROP_SCHEDULE_MODE = "CLISMD"
 PROP_SETPOINT_COOL = "CLISPC"
 PROP_SETPOINT_HEAT = "CLISPH"
 PROP_STATUS = "ST"
+PROP_TEMPERATURE = "CLITEMP"
+PROP_UOM = "UOM"
 
 METHOD_GET = "get"
 METHOD_COMMAND = "cmd"
@@ -176,11 +182,6 @@ COMMAND_FRIENDLY_NAME = {
     "ATMPRES": "atmospheric_pressure",
     "BARPRES": "barometric_pressure",
     "CC": "current",
-    "CLIEMD": "energy_saving_mode",
-    "CLIHCS": "heat_cool_state",
-    "CLIHUM": "humidity",
-    "CLISMD": "schedule_mode",
-    "CLITEMP": "temperature",
     "CO2LVL": "co2_level",
     "CPW": "power",
     "CV": "voltage",
@@ -209,7 +210,6 @@ COMMAND_FRIENDLY_NAME = {
     "TIMEREM": "time_remaining",
     "TPW": "total_kw_power",
     "UAC": "user_number",
-    "UOM": "unit_of_measure",
     "USRNUM": "user_number",
     "UV": "uv_light",
     "VOCLVL": "voc_level",
@@ -235,10 +235,16 @@ COMMAND_FRIENDLY_NAME = {
     CMD_X10: "x10_command",
     PROP_BATTERY_LEVEL: "battery_level",
     PROP_BUSY: "busy",
+    PROP_ENERGY_MODE: "energy_saving_mode",
+    PROP_HEAT_COOL_STATE: "heat_cool_state",
+    PROP_HUMIDITY: "humidity",
     PROP_ON_LEVEL: "on_level",
+    PROP_SCHEDULE_MODE: "schedule_mode",
     PROP_SETPOINT_COOL: "cool_setpoint",
     PROP_SETPOINT_HEAT: "heat_setpoint",
     PROP_STATUS: "status",
+    PROP_TEMPERATURE: "temperature",
+    PROP_UOM: "unit_of_measure",
 }
 
 EVENT_PROPS_IGNORED = [

@@ -1,7 +1,7 @@
 """Representation of groups (scenes) from an ISY."""
 from VarEvents import Property
 
-from ..constants import PROTO_GROUP, VALUE_UNKNOWN
+from ..constants import PROTO_GROUP, ISY_VALUE_UNKNOWN
 from .nodebase import NodeBase
 
 
@@ -85,7 +85,7 @@ class Group(NodeBase):
             for node in self.members
             if (
                 self._nodes[node].status is not None
-                and self._nodes[node].status != VALUE_UNKNOWN
+                and self._nodes[node].status != ISY_VALUE_UNKNOWN
             )
         ]
         on_nodes = [node for node in valid_nodes if int(self._nodes[node].status) > 0]

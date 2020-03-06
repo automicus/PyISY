@@ -3,10 +3,7 @@ from time import sleep
 from xml.dom import minidom
 
 from ..constants import (
-    ATTR_FORMATTED,
-    ATTR_PRECISION,
     ATTR_UNIT_OF_MEASURE,
-    ATTR_VALUE,
     CLIMATE_SETPOINT_MIN_GAP,
     CMD_CLIMATE_FAN_SPEED,
     CMD_CLIMATE_MODE,
@@ -25,7 +22,6 @@ from ..constants import (
     UOM_FAN_SPEEDS,
     UOM_TO_STATES,
     URL_NODES,
-    VALUE_UNKNOWN,
     XML_PARSE_ERROR,
 )
 from ..helpers import parse_xml_properties
@@ -39,7 +35,7 @@ class Node(NodeBase):
 
     |  parent: The node manager object.
     |  address: The Node ID.
-    |  nval: The current Node value.
+    |  value: The current Node value.
     |  name: The node name.
     |  spoken: The string of the Notes Spoken field.
     |  notes: Notes from the ISY
@@ -80,14 +76,12 @@ class Node(NodeBase):
         self._type = device_type
         self._enabled = enabled if enabled is not None else True
         self._parent_nid = parent_nid if parent_nid != address else None
-        self._uom = state.get(ATTR_UNIT_OF_MEASURE, "")
-        self._prec = state.get(ATTR_PRECISION, "0")
-        self._formatted = state.get(ATTR_FORMATTED, str(self.status))
+        self._uom = state.uom
+        self._prec = state.prec
+        self._formatted = state.formatted
         self._node_server = node_server
         self._protocol = protocol
-        self.status.update(
-            state.get(ATTR_VALUE, VALUE_UNKNOWN), force=True, silent=True
-        )
+        self.status.update(state.value, force=True, silent=True)
         self.control_events = EventEmitter()
         super().__init__(
             nodes, address, name, family_id=family_id, aux_properties=aux_properties
@@ -201,11 +195,10 @@ class Node(NodeBase):
 
         state, aux_props = parse_xml_properties(xmldoc)
         self._aux_properties.update(aux_props)
-        self._uom = state.get(ATTR_UNIT_OF_MEASURE, self._uom)
-        self._prec = state.get(ATTR_PRECISION, self._prec)
-        value = state.get(ATTR_VALUE, VALUE_UNKNOWN)
-        self._formatted = state.get(ATTR_FORMATTED, value)
-        self.status.update(value, silent=True)
+        self._uom = state.uom if state.uom != "" else self._uom
+        self._prec = state.prec if state.prec != "0" else self._prec
+        self._formatted = state.formatted
+        self.status.update(state.value, silent=True)
         self.isy.log.debug("ISY updated node: %s", self._id)
 
     def get_groups(self, controller=True, responder=True):
