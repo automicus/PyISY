@@ -27,6 +27,7 @@ from ..constants import (
     TAG_ENABLED,
     TAG_FAMILY,
     TAG_FOLDER,
+    TAG_FORMATTED,
     TAG_GROUP,
     TAG_LINK,
     TAG_NAME,
@@ -34,6 +35,7 @@ from ..constants import (
     TAG_PARENT,
     TAG_PRIMARY_NODE,
     TAG_TYPE,
+    UOM_SECONDS,
     URL_STATUS,
     XML_PARSE_ERROR,
     XML_TRUE,
@@ -224,7 +226,7 @@ class Nodes:
         value = value_from_xml(xmldoc, ATTR_ACTION, 0)
         prec = attr_from_xml(xmldoc, ATTR_ACTION, ATTR_PRECISION, "0")
         uom = attr_from_xml(xmldoc, ATTR_ACTION, ATTR_UNIT_OF_MEASURE, "")
-        formatted = attr_from_xml(xmldoc, ATTR_FORMATTED, value)
+        formatted = value_from_xml(xmldoc, TAG_FORMATTED)
 
         node = self.get_by_id(address)
         if not node:
@@ -238,6 +240,7 @@ class Nodes:
 
         if cntrl == PROP_RAMP_RATE:
             value = INSTEON_RAMP_RATES.get(value, value)
+            uom = UOM_SECONDS
         node_property = NodeProperty(cntrl, value, prec, uom, formatted)
         if cntrl not in EVENT_PROPS_IGNORED:
             node.aux_properties[cntrl] = node_property
