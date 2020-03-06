@@ -135,6 +135,7 @@ class NodeBase:
         )
 
         # Calculate hint to use if status is updated
+        # pylint: disable=protected-access
         hint = self.status._val
         if cmd == CMD_ON:
             if val is not None:
