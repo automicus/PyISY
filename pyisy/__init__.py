@@ -26,7 +26,7 @@ import pkg_resources
 from .isy import ISY
 
 try:
-    __version__ = pkg_resources.get_distribution("PyISY").version
+    __version__ = pkg_resources.get_distribution("pyisy").version
 except Exception:
     __version__ = "unknown"
 

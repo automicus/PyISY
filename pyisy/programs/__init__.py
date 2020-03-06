@@ -36,7 +36,7 @@ class Programs:
 
     This class can be used as a dictionary
     to navigate through the controller's structure to objects of type
-    :class:`~PyISY.programs.Program` and :class:`~PyISY.Programs.Folder`
+    :class:`pyisy.programs.Program` and :class:`pyisy.programs.Folder`
     (when requested) that represent objects on the controller.
 
     |  isy: The ISY device class

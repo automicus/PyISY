@@ -8,6 +8,9 @@ V2 is a significant refactoring and cleanup of the original PyISY code, with the
 
 #### Breaking Changes:
 
+- **CRITICAL** All module and folder names are now lower-case.
+  + All `import PyISY` and `from PyISY import *` must be updated to `import pyisy` and `from pyisy import *`.
+  + All class imports (e.g. `from PyISY.Nodes import Node` is now `from pyisy.nodes import Node`). Class names are still capitalized / CamelCase.
 - A node Event is now returned as an object. In most cases this is a benefit because it returns more details than just the received command (value, uom, precision, etc), and it represents itself in string from the same as previously; however, direct comparisons will now fail unless updated:
     - "`event == "DON"`" must be replaced with "`event.event == "DON"`" or "`str(event) == "DON"`"
 - Node Unit of Measure is returned as a string if it is not a list of UOMs, otherwise it is returned as a list. Previously this was returned as a 1-item list if there was only 1 UOM.

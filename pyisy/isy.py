@@ -49,7 +49,7 @@ class ISY:
     :ivar connected: Read only boolean value indicating if the class is
                      connected to the controller.
     :ivar log: Logger used by the class and its children.
-    :ivar nodes: :class:`~PyISY.nodes.Nodes` manager that interacts with
+    :ivar nodes: :class:`pyisy.nodes.Nodes` manager that interacts with
                  Insteon nodes and groups.
     :ivar programs: Program manager that interacts with ISY programs and i
                     folders.
