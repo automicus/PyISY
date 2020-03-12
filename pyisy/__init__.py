@@ -26,8 +26,8 @@ import pkg_resources
 from .isy import ISY
 
 try:
-    __version__ = pkg_resources.get_distribution("PyISY").version
-except Exception:
+    __version__ = pkg_resources.get_distribution("pyisy").version
+except (pkg_resources.ResolutionError, pkg_resources.ExtractionError):
     __version__ = "unknown"
 
 __author__ = "Ryan M. Kraus"

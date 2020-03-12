@@ -25,13 +25,13 @@ class NodeBase:
     """Base Object for Nodes and Groups/Scenes."""
 
     status = Property(0)
-    hasChildren = False
+    has_children = False
 
-    def __init__(self, nodes, nid, name, family_id=None, aux_properties=None):
+    def __init__(self, nodes, address, name, family_id=None, aux_properties=None):
         """Initialize a Group class."""
         self._nodes = nodes
         self.isy = nodes.isy
-        self._id = nid
+        self._id = address
         self._name = name
         self._notes = None
         self._aux_properties = aux_properties if aux_properties is not None else {}
@@ -50,7 +50,7 @@ class NodeBase:
         return self._aux_properties
 
     @property
-    def nid(self):
+    def address(self):
         """Return the Node ID."""
         return self._id
 
@@ -73,7 +73,7 @@ class NodeBase:
         if notes_xml is not None and notes_xml != "":
             try:
                 notesdom = minidom.parseString(notes_xml)
-            except:
+            except (AttributeError, KeyError, ValueError, TypeError, IndexError):
                 self.isy.log.error("%s: Node Notes %s", XML_PARSE_ERROR, notes_xml)
             else:
                 spoken = value_from_xml(notesdom, TAG_SPOKEN)
@@ -87,13 +87,13 @@ class NodeBase:
 
     def __report_status__(self, new_val):
         """Report the status of the node."""
-        self.on(new_val)
+        self.turn_on(new_val)
 
-    def off(self):
+    def turn_off(self):
         """Turn off the nodes/group in the ISY."""
         return self.send_cmd(CMD_OFF)
 
-    def on(self, val=None):
+    def turn_on(self, val=None):
         """
         Turn the node on.
 
@@ -135,6 +135,7 @@ class NodeBase:
         )
 
         # Calculate hint to use if status is updated
+        # pylint: disable=protected-access
         hint = self.status._val
         if cmd == CMD_ON:
             if val is not None:

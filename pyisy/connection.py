@@ -179,11 +179,11 @@ class Connection:
         result = self.request(req_url)
         return result
 
-    def get_programs(self, pid=None):
+    def get_programs(self, address=None):
         """Fetch the list of programs from the ISY."""
         addr = [URL_PROGRAMS]
-        if pid is not None:
-            addr.append(str(pid))
+        if address is not None:
+            addr.append(str(address))
         req_url = self.compile_url(addr, {URL_SUBFOLDERS: XML_TRUE})
         result = self.request(req_url)
         return result

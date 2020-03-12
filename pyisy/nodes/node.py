@@ -27,7 +27,7 @@ class Node(NodeBase):
     This class handles ISY nodes.
 
     |  parent: The node manager object.
-    |  nid: The Node ID.
+    |  address: The Node ID.
     |  nval: The current Node value.
     |  name: The node name.
     |  spoken: The string of the Notes Spoken field.
@@ -44,13 +44,13 @@ class Node(NodeBase):
 
     :ivar status: A watched property that indicates the current status of the
                   node.
-    :ivar hasChildren: Property indicating that there are no more children.
+    :ivar has_children: Property indicating that there are no more children.
     """
 
     def __init__(
         self,
         nodes,
-        nid,
+        address,
         name,
         state,
         aux_properties=None,
@@ -68,7 +68,7 @@ class Node(NodeBase):
         self._node_def_id = node_def_id
         self._type = device_type
         self._enabled = enabled if enabled is not None else True
-        self._parent_nid = parent_nid if parent_nid != nid else None
+        self._parent_nid = parent_nid if parent_nid != address else None
         self._uom = state.get(ATTR_UNIT_OF_MEASURE, "")
         self._prec = state.get(ATTR_PRECISION, "0")
         self._formatted = state.get(ATTR_FORMATTED, str(self.status))
@@ -77,9 +77,9 @@ class Node(NodeBase):
         self.status.update(
             state.get(ATTR_VALUE, VALUE_UNKNOWN), force=True, silent=True
         )
-        self.controlEvents = EventEmitter()
+        self.control_events = EventEmitter()
         super().__init__(
-            nodes, nid, name, family_id=family_id, aux_properties=aux_properties
+            nodes, address, name, family_id=family_id, aux_properties=aux_properties
         )
 
     @property
@@ -117,20 +117,20 @@ class Node(NodeBase):
         """Return the unit of measurement for the device."""
         return self._uom
 
-    @uom.setter
-    def uom(self, value):
+    def update_uom(self, value):
         """Set the unit of measurement if not provided initially."""
-        self._uom = value
+        if value and self._uom != value:
+            self._uom = value
 
     @property
     def prec(self):
         """Return the precision of the raw device value."""
         return self._prec
 
-    @prec.setter
-    def prec(self, value):
+    def update_precision(self, value):
         """Set the unit of measurement if not provided initially."""
-        self._prec = value
+        if value and self._prec != value:
+            self._prec = value
 
     @property
     def formatted(self):
@@ -161,7 +161,7 @@ class Node(NodeBase):
             xml = self.isy.conn.request(req_url)
             try:
                 xmldoc = minidom.parseString(xml)
-            except:
+            except (AttributeError, KeyError, ValueError, TypeError, IndexError):
                 self.isy.log.error("%s: Nodes", XML_PARSE_ERROR)
                 return
         elif hint is not None:

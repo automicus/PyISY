@@ -7,7 +7,7 @@ HERE = pathlib.Path(__file__).parent
 README = (HERE / "README.md").read_text()
 
 setup(
-    name="PyISY",
+    name="pyisy",
     version_format="{tag}",
     license="Apache License 2.0",
     url="https://github.com/automicus/PyISY",

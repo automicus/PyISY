@@ -7,21 +7,21 @@ from .clock import Clock
 from .configuration import Configuration
 from .connection import Connection
 from .constants import (
+    CMD_X10,
     COMMAND_FRIENDLY_NAME,
     COMMANDS_FOLDERS,
     COMMANDS_NODES,
     COMMANDS_PROGRAMS,
     UOM_TO_STATES,
     X10_COMMANDS,
-    CMD_X10,
 )
 from .events import EventStream
-from .Nodes import Nodes
-from .Nodes.node import Node
-from .Programs import Programs
-from .Programs.folder import Folder
-from .Programs.program import Program
-from .Variables import Variables
+from .nodes import Nodes
+from .nodes.node import Node
+from .programs import Programs
+from .programs.folder import Folder
+from .programs.program import Program
+from .variables import Variables
 
 
 class ISY:
@@ -49,7 +49,7 @@ class ISY:
     :ivar connected: Read only boolean value indicating if the class is
                      connected to the controller.
     :ivar log: Logger used by the class and its children.
-    :ivar nodes: :class:`~PyISY.Nodes.Nodes` manager that interacts with
+    :ivar nodes: :class:`pyisy.nodes.Nodes` manager that interacts with
                  Insteon nodes and groups.
     :ivar programs: Program manager that interacts with ISY programs and i
                     folders.
@@ -236,7 +236,7 @@ class ISY:
             self._add_pgrm_command(command, Program)
         self.log.debug("ISY Added Program commands: %s", COMMANDS_PROGRAMS)
 
-    def sendX10(self, address, cmd):
+    def send_x10_cmd(self, address, cmd):
         """
         Send an X10 command.
 

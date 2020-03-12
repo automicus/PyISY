@@ -11,9 +11,9 @@ from .constants import (
     INSTEON_RAMP_RATES,
     ISY_EPOCH_OFFSET,
     PROP_BATTERY_LEVEL,
+    PROP_RAMP_RATE,
     PROP_STATUS,
     TAG_PROPERTY,
-    PROP_RAMP_RATE,
     VALUE_UNKNOWN,
 )
 
@@ -78,7 +78,7 @@ def value_from_xml(xml, tag_name, default=None):
     value = default
     try:
         value = xml.getElementsByTagName(tag_name)[0].firstChild.toxml()
-    except (IndexError, AttributeError):
+    except (AttributeError, KeyError, ValueError, TypeError, IndexError):
         pass
     return value
 
@@ -89,7 +89,7 @@ def attr_from_xml(xml, tag_name, attr_name, default=None):
     try:
         root = xml.getElementsByTagName(tag_name)[0]
         value = attr_from_element(root, attr_name, default)
-    except (IndexError, AttributeError):
+    except (AttributeError, KeyError, ValueError, TypeError, IndexError):
         pass
     return value
 

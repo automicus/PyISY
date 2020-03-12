@@ -1,8 +1,8 @@
 """Representation of groups (scenes) from an ISY."""
+from VarEvents import Property
+
 from ..constants import PROTO_GROUP, VALUE_UNKNOWN
 from .nodebase import NodeBase
-
-from VarEvents import Property
 
 
 class Group(NodeBase):
@@ -10,13 +10,13 @@ class Group(NodeBase):
     Interact with ISY groups (scenes).
 
     |  nodes: The node manager object.
-    |  nid: The node ID.
+    |  address: The node ID.
     |  name: The node name.
     |  members: List of the members in this group.
     |  controllers: List of the controllers in this group.
     |  spoken: The string of the Notes Spoken field.
 
-    :ivar hasChildren: Boolean value indicating that group has no children.
+    :ivar has_children: Boolean value indicating that group has no children.
     :ivar members: List of the members of this group.
     :ivar controllers: List of the controllers of this group.
     :ivar name: The name of this group.
@@ -26,11 +26,11 @@ class Group(NodeBase):
 
     group_all_on = Property(False)
 
-    def __init__(self, nodes, nid, name, members=None, controllers=None):
+    def __init__(self, nodes, address, name, members=None, controllers=None):
         """Initialize a Group class."""
         self._members = members or []
         self._controllers = controllers or []
-        super().__init__(nodes, nid, name, family_id="6")
+        super().__init__(nodes, address, name, family_id="6")
 
         # listen for changes in children
         self._members_handlers = [
@@ -59,9 +59,9 @@ class Group(NodeBase):
 
         # now update the nodes
         if clean_status > 0:
-            self.on()
+            self.turn_on()
         else:
-            self.off()
+            self.turn_off()
 
     @property
     def members(self):

@@ -8,6 +8,9 @@ V2 is a significant refactoring and cleanup of the original PyISY code, with the
 
 #### Breaking Changes:
 
+- **CRITICAL** All module and folder names are now lower-case.
+  + All `import PyISY` and `from PyISY import *` must be updated to `import pyisy` and `from pyisy import *`.
+  + All class imports (e.g. `from PyISY.Nodes import Node` is now `from pyisy.nodes import Node`). Class names are still capitalized / CamelCase.
 - A node Event is now returned as an object. In most cases this is a benefit because it returns more details than just the received command (value, uom, precision, etc), and it represents itself in string from the same as previously; however, direct comparisons will now fail unless updated:
     - "`event == "DON"`" must be replaced with "`event.event == "DON"`" or "`str(event) == "DON"`"
 - Node Unit of Measure is returned as a string if it is not a list of UOMs, otherwise it is returned as a list. Previously this was returned as a 1-item list if there was only 1 UOM.
@@ -22,7 +25,14 @@ V2 is a significant refactoring and cleanup of the original PyISY code, with the
     
 - Node.lock() and Node.unlock() methods are now Node.secure_lock() and Node.secure_unlock().
 - Most functions *that should be internal only* have been renamed to snake_case from CamelCase.
+- Property `node.hasChildren` has been renamed to `node.has_children`.
 - Node Parent property has been renamed. Internal property is `node._parent_nid`, but externally accessible property is `node.parent_node`.
+- `node.controlEvents` has been renamed to `node.control_events`.
+- `variable.setInit` and `variable.set_value` have been renamed to `variable.set_init` and `variable.set_value`.
+- `ISY.sendX10` has been renamed to `ISY.send_x10_cmd`.
+- Network Resources `updateThread` function has been renamed to `update_threaded`.
+- Properties `nid`, `pid`, `nids`, `pids` have been renamed to `address` and `addresses` for consisitency. Variables still use `vid`; however, they also include an `address` property of the form `type.id`.
+- Node Functions `on()` and `off()` have been renamed to `turn_on()` and `turn_off()`
 
 #### New:
 
