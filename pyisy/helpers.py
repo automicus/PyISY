@@ -60,10 +60,10 @@ def parse_xml_properties(xmldoc):
             state_set = True
         elif prop_id == PROP_BATTERY_LEVEL and not state_set:
             state = result
-        elif prop_id == PROP_RAMP_RATE:
-            result[ATTR_VALUE] = INSTEON_RAMP_RATES.get(value, value)
-            result[ATTR_UNIT_OF_MEASURE] = UOM_SECONDS
         else:
+            if prop_id == PROP_RAMP_RATE:
+                result.value = INSTEON_RAMP_RATES.get(value, value)
+                result.uom = UOM_SECONDS
             aux_props[prop_id] = result
 
     return state, aux_props
