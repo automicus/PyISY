@@ -14,6 +14,7 @@ from .constants import (
     PROP_RAMP_RATE,
     PROP_STATUS,
     TAG_PROPERTY,
+    UOM_SECONDS,
     VALUE_UNKNOWN,
 )
 

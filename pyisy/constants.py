@@ -260,30 +260,6 @@ EVENT_PROPS_IGNORED = [
 
 COMMAND_NAME = {val: key for key, val in COMMAND_FRIENDLY_NAME.items()}
 
-COMMANDS_PROGRAMS = [CMD_ENABLE_RUN_AT_STARTUP, CMD_DISABLE_RUN_AT_STARTUP]
-COMMANDS_FOLDERS = [
-    CMD_RUN,
-    CMD_RUN_THEN,
-    CMD_RUN_ELSE,
-    CMD_STOP,
-    CMD_ENABLE,
-    CMD_DISABLE,
-]
-
-COMMANDS_NODES = [
-    (CMD_BEEP, None),
-    (CMD_BRIGHTEN, None),
-    (CMD_CLIMATE_FAN_SPEED, "99"),
-    (CMD_CLIMATE_MODE, "98"),
-    (CMD_DIM, None),
-    (CMD_FADE_DOWN, None),
-    (CMD_FADE_STOP, None),
-    (CMD_FADE_UP, None),
-    (CMD_OFF_FAST, None),
-    (CMD_ON_FAST, None),
-    (CMD_SECURE, "84"),
-]
-
 # Referenced from ISY-WSDK-5.0.4\WSDL\family.xsd
 NODE_FAMILY_ID = {
     "0": "Default",
@@ -298,6 +274,10 @@ NODE_FAMILY_ID = {
     "9": "NCD",
     "10": "Node Server",
 }
+
+UOM_SECONDS = "57"
+UOM_FAN_SPEEDS = "99"
+UOM_CLIMATE_MODES = "98"
 
 UOM_FRIENDLY_NAME = {
     "1": "A",
@@ -589,3 +569,8 @@ INSTEON_RAMP_RATES = {
     "30": 0.2,
     "31": 0.1,
 }
+
+# Thermostat Types/Categories. 4.8 Trane, 5.3 venstar, 5.10 Insteon Wireless,
+#  5.11 Insteon, 5.17 Insteon (EU), 5.18 Insteon (Aus/NZ)
+THERMOSTAT_TYPES = ["4.8", "5.3", "5.10", "5.11", "5.17", "5.18"]
+THERMOSTAT_ZWAVE_CAT = ["140"]

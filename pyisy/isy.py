@@ -6,21 +6,10 @@ from .climate import Climate
 from .clock import Clock
 from .configuration import Configuration
 from .connection import Connection
-from .constants import (
-    CMD_X10,
-    COMMAND_FRIENDLY_NAME,
-    COMMANDS_FOLDERS,
-    COMMANDS_NODES,
-    COMMANDS_PROGRAMS,
-    UOM_TO_STATES,
-    X10_COMMANDS,
-)
+from .constants import CMD_X10, X10_COMMANDS
 from .events import EventStream
 from .nodes import Nodes
-from .nodes.node import Node
 from .programs import Programs
-from .programs.folder import Folder
-from .programs.program import Program
 from .variables import Variables
 
 
@@ -87,7 +76,6 @@ class ISY:
             self._connected = True
             self.configuration = Configuration(self, xml=self.conn.get_config())
             self.clock = Clock(self, xml=self.conn.get_time())
-            self._add_commands()
             self.nodes = Nodes(self, xml=self.conn.get_nodes())
             self.programs = Programs(self, xml=self.conn.get_programs())
             self.variables = Variables(
@@ -170,71 +158,6 @@ class ISY:
             self.log.warning("PyISY reconnected to the event stream.")
 
         self._reconnect_thread = None
-
-    @staticmethod
-    def _add_node_command(cmd_name, command, value=None):
-        doc = "Send {} command to ISY".format(command)
-        if value is None:
-
-            def cmd(self, val=None):
-                return self.send_cmd(command, val)
-
-        else:
-
-            def cmd(self):
-                return self.send_cmd(command, value)
-
-            doc = "{} with value {}".format(doc, value)
-
-        cmd.__name__ = cmd_name
-        cmd.__doc__ = doc
-        setattr(Node, cmd_name, cmd)
-
-    @staticmethod
-    def _add_pgrm_command(command, cls):
-        doc = "Send program {} command to ISY".format(command)
-
-        def cmd(self):
-            return self.send_pgrm_cmd(command)
-
-        cmd.__name__ = command
-        cmd.__doc__ = doc
-        setattr(cls, command, cmd)
-
-    def _add_commands(self):
-        """
-        Dynamically add functions for the commands listed.
-
-        The function names are translated according to COMMAND_FRIENDLY_NAME
-        in the constants file (e.g. DOF will be available at self.off())
-
-        Any tuple of a command and a UOM value will add all possible commands
-        from the UOM list in constants.
-
-        FUTURE: Only add the commands needed depending on Node type.
-
-        NOTE: `on` and climate setpoints are special and are still defined
-        explicitly in the Node class.
-        """
-        cmd_names = []
-        for command, values in COMMANDS_NODES:
-            cmd_name = COMMAND_FRIENDLY_NAME.get(command)
-            self._add_node_command(cmd_name, command)
-            cmd_names.append(cmd_name)
-            if values:
-                for val, cmd in UOM_TO_STATES[values].items():
-                    cmd_val_name = "{}_{}".format(cmd_name, cmd.replace(" ", "_"))
-                    self._add_node_command(cmd_val_name, command, val)
-                    cmd_names.append(cmd_val_name)
-        self.log.debug("ISY Added Node commands: %s", cmd_names)
-
-        for command in COMMANDS_FOLDERS:
-            self._add_pgrm_command(command, Folder)
-        self.log.debug("ISY Added Program/Folder commands: %s", COMMANDS_FOLDERS)
-
-        for command in COMMANDS_PROGRAMS:
-            self._add_pgrm_command(command, Program)
-        self.log.debug("ISY Added Program commands: %s", COMMANDS_PROGRAMS)
 
     def send_x10_cmd(self, address, cmd):
         """
