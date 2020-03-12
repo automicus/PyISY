@@ -136,7 +136,7 @@ class Connection:
             )
             return None
         except requests.exceptions.Timeout:
-            self.isy.log.error("Timed out waiting for response from the " "ISY device.")
+            self.isy.log.error("Timed out waiting for response from the ISY device.")
             return None
 
         if req.status_code == 200:
@@ -160,7 +160,7 @@ class Connection:
             return self.request(url, retries + 1, ok404=False)
         # fail for good
         self.isy.log.error(
-            "Bad ISY Request: %s %s: " "Failed after %s retries",
+            "Bad ISY Request: %s %s: Failed after %s retries",
             url,
             req.status_code,
             retries,
