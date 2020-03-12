@@ -1,7 +1,7 @@
 """Representation of groups (scenes) from an ISY."""
 from VarEvents import Property
 
-from ..constants import PROTO_GROUP, ISY_VALUE_UNKNOWN
+from ..constants import ISY_VALUE_UNKNOWN, PROTO_GROUP
 from .nodebase import NodeBase
 
 

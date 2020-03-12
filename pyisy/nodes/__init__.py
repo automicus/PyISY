@@ -41,11 +41,11 @@ from ..constants import (
     XML_TRUE,
 )
 from ..helpers import (
+    NodeProperty,
     attr_from_element,
     attr_from_xml,
     parse_xml_properties,
     value_from_xml,
-    NodeProperty,
 )
 from .group import Group
 from .node import Node
