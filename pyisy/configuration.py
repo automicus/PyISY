@@ -8,8 +8,14 @@ from .constants import (
     TAG_FIRMWARE,
     TAG_INSTALLED,
     XML_TRUE,
+    TAG_ROOT,
+    TAG_NAME,
+    TAG_DESC,
+    TAG_PRODUCT,
+    TAG_NODE_DEFS,
+    TAG_VARIABLES,
 )
-from .helpers import value_from_xml
+from .helpers import value_from_xml, value_from_nested_xml
 
 
 class Configuration(dict):
@@ -83,18 +89,13 @@ class Configuration(dict):
         xmldoc = minidom.parseString(xml)
 
         self["firmware"] = value_from_xml(xmldoc, TAG_FIRMWARE)
-
-        try:
-            self["uuid"] = (
-                xmldoc.getElementsByTagName("root")[0]
-                .getElementsByTagName(ATTR_ID)[0]
-                .firstChild.toxml()
-            )
-        except IndexError:
-            self["uuid"] = None
+        self["uuid"] = value_from_nested_xml(xmldoc, [TAG_ROOT, ATTR_ID])
+        self["name"] = value_from_nested_xml(xmldoc, [TAG_ROOT, TAG_NAME])
+        self["model"] = value_from_nested_xml(xmldoc, [TAG_PRODUCT, TAG_DESC], "ISY")
+        self["variables"] = bool(value_from_xml(xmldoc, TAG_VARIABLES) == XML_TRUE)
+        self["nodedefs"] = bool(value_from_xml(xmldoc, TAG_NODE_DEFS) == XML_TRUE)
 
         features = xmldoc.getElementsByTagName(TAG_FEATURE)
-
         for feature in features:
             idnum = value_from_xml(feature, ATTR_ID)
             desc = value_from_xml(feature, ATTR_DESC)
