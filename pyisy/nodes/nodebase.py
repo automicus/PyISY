@@ -33,13 +33,16 @@ class NodeBase:
     status = Property(0)
     has_children = False
 
-    def __init__(self, nodes, address, name, family_id=None, aux_properties=None):
+    def __init__(
+        self, nodes, address, name, family_id=None, aux_properties=None, pnode=None
+    ):
         """Initialize a Group class."""
         self._nodes = nodes
         self.isy = nodes.isy
         self._id = address
         self._name = name
         self._notes = None
+        self._primary_node = pnode
         self._aux_properties = aux_properties if aux_properties is not None else {}
         self._family = NODE_FAMILY_ID.get(family_id)
 
@@ -84,6 +87,16 @@ class NodeBase:
             else:
                 spoken = value_from_xml(notesdom, TAG_SPOKEN)
         return {TAG_SPOKEN: spoken}
+
+    @property
+    def primary_node(self):
+        """Return just the parent/primary node address.
+
+        This is similar to Node.parent_node but does not return the whole Node
+        class, and will return itself if it is the primary node/group.
+
+        """
+        return self._primary_node
 
     @property
     def spoken(self):

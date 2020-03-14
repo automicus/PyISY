@@ -269,7 +269,7 @@ class Nodes:
                 address = value_from_xml(feature, TAG_ADDRESS)
                 nname = value_from_xml(feature, TAG_NAME)
                 nparent = value_from_xml(feature, TAG_PARENT)
-                parent_nid = value_from_xml(feature, TAG_PRIMARY_NODE)
+                pnode = value_from_xml(feature, TAG_PRIMARY_NODE)
                 family = value_from_xml(feature, TAG_FAMILY)
                 device_type = value_from_xml(feature, TAG_TYPE)
                 node_def_id = attr_from_element(feature, ATTR_NODE_DEF_ID)
@@ -318,7 +318,7 @@ class Nodes:
                             aux_properties=aux_props,
                             devtype_cat=devtype_cat,
                             node_def_id=node_def_id,
-                            parent_nid=parent_nid,
+                            pnode=pnode,
                             device_type=device_type,
                             enabled=enabled,
                             node_server=node_server,
@@ -350,7 +350,15 @@ class Nodes:
                         address,
                         nname,
                         nparent,
-                        Group(self, address, nname, members, controllers),
+                        Group(
+                            self,
+                            address=address,
+                            name=nname,
+                            members=members,
+                            controllers=controllers,
+                            family_id=family,
+                            pnode=pnode,
+                        ),
                         ntype,
                     )
             self.isy.log.debug("ISY Loaded {}".format(ntype))
