@@ -128,47 +128,47 @@ class NodeProperty(dict):
     ):
         """Initialize an control result or aux property."""
         super().__init__(
-            self, control=control, value=value, prec=prec, uom=uom, formatted=formatted
+            self,
+            control=control,
+            value=value,
+            prec=prec,
+            uom=uom,
+            formatted=(formatted if formatted is not None else value),
         )
-        self._control = control
-        self._value = value
-        self._prec = prec
-        self._uom = uom
-        self._formatted = formatted if formatted is not None else value
 
     @property
     def control(self):
         """Report the event control string."""
-        return self._control
+        return self["control"]
 
     @property
     def value(self):
         """Report the value, if there was one."""
-        return self._value
+        return self["value"]
 
     @property
     def prec(self):
         """Report the precision, if there was one."""
-        return self._prec
+        return self["prec"]
 
     @property
     def uom(self):
         """Report the unit of measure, if there was one."""
-        return self._uom
+        return self["uom"]
 
     @property
     def formatted(self):
         """Report the formatted value, if there was one."""
-        return self._formatted
+        return self["formatted"]
 
     def __str__(self):
         """Return just the event title to prevent breaking changes."""
         return (
-            f"'{self.control}': value='{self.value}' "
-            f"prec='{self.prec}' uom='{self.uom}' formatted='{self.formatted}'"
+            f"NodeProperty('{self.control}': value='{self.value}' "
+            f"prec='{self.prec}' uom='{self.uom}' formatted='{self.formatted}')"
         )
 
-    __repr__ = f"NodeProperty({__str__})"
+    __repr__ = __str__
 
     def __getattr__(self, name):
         """Retreive the properties."""
