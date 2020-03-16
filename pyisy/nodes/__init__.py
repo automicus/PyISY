@@ -245,9 +245,7 @@ class Nodes:
         if cntrl not in EVENT_PROPS_IGNORED:
             node.aux_properties[cntrl] = node_property
         node.control_events.notify(node_property)
-        self.isy.log.debug(
-            "ISY Node Control Event: %s control='%s' value='%s'", address, cntrl, value
-        )
+        self.isy.log.debug("ISY Node Control Event: %s %s", address, node_property)
 
     def parse(self, xml):
         """
