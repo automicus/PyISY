@@ -4,6 +4,12 @@ from xml.dom import minidom
 from VarEvents import Property
 
 from ..constants import (
+    CMD_BEEP,
+    CMD_BRIGHTEN,
+    CMD_DIM,
+    CMD_FADE_DOWN,
+    CMD_FADE_STOP,
+    CMD_FADE_UP,
     CMD_OFF,
     CMD_OFF_FAST,
     CMD_ON,
@@ -150,3 +156,35 @@ class NodeBase:
             hint = 0
         self.update(UPDATE_INTERVAL, hint=hint)
         return True
+
+    def beep(self):
+        """Identify physical device by sound (if supported)."""
+        return self.send_cmd(CMD_BEEP)
+
+    def brighten(self):
+        """Increase brightness of a device by ~3%."""
+        return self.send_cmd(CMD_BRIGHTEN)
+
+    def dim(self):
+        """Decrease brightness of a device by ~3%."""
+        return self.send_cmd(CMD_DIM)
+
+    def fade_down(self):
+        """Begin fading down (dim) a device."""
+        return self.send_cmd(CMD_FADE_DOWN)
+
+    def fade_up(self):
+        """Begin fading up (dim) a device."""
+        return self.send_cmd(CMD_FADE_UP)
+
+    def fade_stop(self):
+        """Stop fading a device."""
+        return self.send_cmd(CMD_FADE_STOP)
+
+    def fast_on(self):
+        """Start manually brightening a device."""
+        return self.send_cmd(CMD_ON_FAST)
+
+    def fast_off(self):
+        """Start manually brightening a device."""
+        return self.send_cmd(CMD_OFF_FAST)

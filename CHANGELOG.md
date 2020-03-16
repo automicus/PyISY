@@ -23,16 +23,23 @@ V2 is a significant refactoring and cleanup of the original PyISY code, with the
             uom = uom[0]
     ```
     
-- Node.lock() and Node.unlock() methods are now Node.secure_lock() and Node.secure_unlock().
-- Most functions *that should be internal only* have been renamed to snake_case from CamelCase.
-- Property `node.hasChildren` has been renamed to `node.has_children`.
-- Node Parent property has been renamed. Internal property is `node._parent_nid`, but externally accessible property is `node.parent_node`.
-- `node.controlEvents` has been renamed to `node.control_events`.
-- `variable.setInit` and `variable.set_value` have been renamed to `variable.set_init` and `variable.set_value`.
-- `ISY.sendX10` has been renamed to `ISY.send_x10_cmd`.
-- Network Resources `updateThread` function has been renamed to `update_threaded`.
-- Properties `nid`, `pid`, `nids`, `pids` have been renamed to `address` and `addresses` for consisitency. Variables still use `vid`; however, they also include an `address` property of the form `type.id`.
-- Node Functions `on()` and `off()` have been renamed to `turn_on()` and `turn_off()`
+- Functions and properties have been renamed to snake_case from CamelCase.
+  - Property `node.hasChildren` has been renamed to `node.has_children`.
+  - Node Parent property has been renamed. Internal property is `node._parent_nid`, but externally accessible property is `node.parent_node`.
+  - `node.controlEvents` has been renamed to `node.control_events`.
+  - `variable.setInit` and `variable.set_value` have been renamed to `variable.set_init` and `variable.set_value`.
+  - `ISY.sendX10` has been renamed to `ISY.send_x10_cmd`.
+  - Network Resources `updateThread` function has been renamed to `update_threaded`.
+  - Properties `nid`, `pid`, `nids`, `pids` have been renamed to `address` and `addresses` for consisitency. Variables still use `vid`; however, they also include an `address` property of the form `type.id`.
+  - Node Functions `on()` and `off()` have been renamed to `turn_on()` and `turn_off()`
+  - Node.lock() and Node.unlock() methods are now Node.secure_lock() and Node.secure_unlock().
+  - Node climate and fan speed functions have been reduced and require a proper command from UOM 98/99 (see `constants.py`):
+    + For example to activate PROGRAM AUTO mode, call `node.set_climate_mode("program_auto")`
+  - Program functions have been renamed:
+    + `runThen` -> `run_then`
+    + `runElse` -> `run_else`
+    + `enableRunAtStartup` -> `enable_run_at_startup`
+    + `disableRunAtStartup` -> `disable_run_at_startup`
 
 #### New:
 
@@ -42,6 +49,22 @@ V2 is a significant refactoring and cleanup of the original PyISY code, with the
 - Adding retries for failed REST calls to the ISY #46
 - Adds increased Z-Wave support by storing the `devtype` category (since `type` is useless for Z-Wave)
 - Expose UUID, Firmware, and Hostname properties for referencing inside the `isy` object.
+- Various node commands have been renamed / newly exposed:
+    + `start_manual_dimming`
+    + `stop_manual_dimming`
+    + `set_climate_setpoint`
+    + `set_climate_setpoint_heat`
+    + `set_climate_setpoint_cool`
+    + `set_fan_speed`
+    + `set_climate_mode`
+    + `beep`
+    + `brighten`
+    + `dim`
+    + `fade_down`
+    + `fade_up`
+    + `fade_stop`
+    + `fast_on`
+    + `fast_off`
 
 #### Fixes:
 

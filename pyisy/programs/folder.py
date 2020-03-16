@@ -1,7 +1,18 @@
 """ISY Program Folders."""
 from VarEvents import Property
 
-from ..constants import PROTO_FOLDER, TAG_FOLDER, UPDATE_INTERVAL, URL_PROGRAMS
+from ..constants import (
+    CMD_DISABLE,
+    CMD_ENABLE,
+    CMD_RUN,
+    CMD_RUN_ELSE,
+    CMD_RUN_THEN,
+    CMD_STOP,
+    PROTO_FOLDER,
+    TAG_FOLDER,
+    UPDATE_INTERVAL,
+    URL_PROGRAMS,
+)
 
 
 class Folder:
@@ -74,3 +85,27 @@ class Folder:
     def protocol(self):
         """Return the protocol for this entity."""
         return PROTO_FOLDER
+
+    def run(self):
+        """Send a run command to the program/folder."""
+        return self.send_pgrm_cmd(CMD_RUN)
+
+    def run_then(self):
+        """Send a runThen command to the program/folder."""
+        return self.send_pgrm_cmd(CMD_RUN_THEN)
+
+    def run_else(self):
+        """Send a runElse command to the program/folder."""
+        return self.send_pgrm_cmd(CMD_RUN_ELSE)
+
+    def stop(self):
+        """Send a stop command to the program/folder."""
+        return self.send_pgrm_cmd(CMD_STOP)
+
+    def enable(self):
+        """Send command to the program/folder to enable it."""
+        return self.send_pgrm_cmd(CMD_ENABLE)
+
+    def disable(self):
+        """Send command to the program/folder to enable it."""
+        return self.send_pgrm_cmd(CMD_DISABLE)

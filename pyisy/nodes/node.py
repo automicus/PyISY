@@ -8,11 +8,22 @@ from ..constants import (
     ATTR_UNIT_OF_MEASURE,
     ATTR_VALUE,
     CLIMATE_SETPOINT_MIN_GAP,
+    CMD_CLIMATE_FAN_SPEED,
+    CMD_CLIMATE_MODE,
+    CMD_MANUAL_DIM_BEGIN,
+    CMD_MANUAL_DIM_STOP,
+    CMD_SECURE,
     METHOD_GET,
     PROP_SETPOINT_COOL,
     PROP_SETPOINT_HEAT,
     PROP_STATUS,
+    PROTO_ZWAVE,
     TAG_GROUP,
+    THERMOSTAT_TYPES,
+    THERMOSTAT_ZWAVE_CAT,
+    UOM_CLIMATE_MODES,
+    UOM_FAN_SPEEDS,
+    UOM_TO_STATES,
     URL_NODES,
     VALUE_UNKNOWN,
     XML_PARSE_ERROR,
@@ -151,6 +162,20 @@ class Node(NodeBase):
         )
         return dimmable
 
+    @property
+    def is_thermostat(self):
+        """Determine if this device is a thermostat/climate control device."""
+        return (
+            self.type and any([self.type.startswith(t) for t in THERMOSTAT_TYPES])
+        ) or (self.devtype_cat and any(self.devtype_cat in THERMOSTAT_ZWAVE_CAT))
+
+    @property
+    def is_lock(self):
+        """Determine if this device is a door lock type."""
+        return (self.type and self.type.startswith("4.64")) or (
+            self.protocol == PROTO_ZWAVE and self.devtype_cat == "111"
+        )
+
     def update(self, wait_time=0, hint=None, xmldoc=None):
         """Update the value of the node from the controller."""
         if not self.isy.auto_update and not xmldoc:
@@ -216,39 +241,107 @@ class Node(NodeBase):
             return self._nodes.get_by_id(self._parent_nid)
         return None
 
-    """
-    NODE CONTROL COMMANDS.
+    def get_command_value(self, uom, cmd):
+        """Check against the list of UOM States if this is a valid command."""
+        if not cmd in UOM_TO_STATES[uom].values():
+            self.isy.log.warning(
+                "Failed to call %s on %s, invalid command.", cmd, self.address
+            )
+            return None
+        return list(UOM_TO_STATES[uom].keys())[
+            list(UOM_TO_STATES[uom].values()).index(cmd)
+        ]
 
-    Most are added dynamically, these are special cases.
-    """
-
-    def climate_setpoint(self, val):
-        """Send a command to the device to set the system setpoints."""
-        adjustment = int(CLIMATE_SETPOINT_MIN_GAP / 2.0)
-        heat_cmd = self.climate_setpoint_heat(val - adjustment)
-        cool_cmd = self.climate_setpoint_cool(val + adjustment)
-        return heat_cmd and cool_cmd
-
-    def climate_setpoint_heat(self, val):
-        """Send a command to the device to set the system heat setpoint."""
-        # For some reason, wants 2 times the temperature for Insteon
-        if self._uom in ["101", "degrees"]:
-            val = 2 * val
-        return self.send_cmd(
-            PROP_SETPOINT_HEAT, str(val), self.get_setpoint_uom(PROP_SETPOINT_HEAT)
-        )
-
-    def climate_setpoint_cool(self, val):
-        """Send a command to the device to set the system heat setpoint."""
-        # For some reason, wants 2 times the temperature for Insteon
-        if self._uom in ["101", "degrees"]:
-            val = 2 * val
-        return self.send_cmd(
-            PROP_SETPOINT_COOL, str(val), self.get_setpoint_uom(PROP_SETPOINT_COOL)
-        )
-
-    def get_setpoint_uom(self, prop):
+    def get_property_uom(self, prop):
         """Get the Unit of Measurement for Z-Wave Climate Settings."""
         if self._devtype_cat and self._aux_properties.get(prop):
-            return self._aux_properties.get(prop).get(ATTR_UNIT_OF_MEASURE)
+            return self._aux_properties[prop].uom
         return None
+
+    def start_manual_dimming(self):
+        """Begin manually dimming a device."""
+        return self.send_cmd(CMD_MANUAL_DIM_BEGIN)
+
+    def stop_manual_dimming(self):
+        """Stop manually dimming  a device."""
+        return self.send_cmd(CMD_MANUAL_DIM_STOP)
+
+    def set_climate_setpoint(self, val):
+        """Send a command to the device to set the system setpoints."""
+        if not self.is_thermostat:
+            self.isy.log.warning(
+                "Failed to set setpoint on %s, it is not a thermostat node.",
+                self.address,
+            )
+            return
+        adjustment = int(CLIMATE_SETPOINT_MIN_GAP / 2.0)
+        heat_cmd = self.set_climate_setpoint_heat(val - adjustment)
+        cool_cmd = self.set_climate_setpoint_cool(val + adjustment)
+        return heat_cmd and cool_cmd
+
+    def set_climate_setpoint_heat(self, val):
+        """Send a command to the device to set the system heat setpoint."""
+        if not self.is_thermostat:
+            self.isy.log.warning(
+                "Failed to set heat setpoint on %s, it is not a thermostat node.",
+                self.address,
+            )
+            return
+        # For some reason, wants 2 times the temperature for Insteon
+        if self._uom in ["101", "degrees"]:
+            val = 2 * val
+        return self.send_cmd(
+            PROP_SETPOINT_HEAT, str(val), self.get_property_uom(PROP_SETPOINT_HEAT)
+        )
+
+    def set_climate_setpoint_cool(self, val):
+        """Send a command to the device to set the system heat setpoint."""
+        if not self.is_thermostat:
+            self.isy.log.warning(
+                "Failed to set cool setpoint on %s, it is not a thermostat node.",
+                self.address,
+            )
+            return
+        # For some reason, wants 2 times the temperature for Insteon
+        if self._uom in ["101", "degrees"]:
+            val = 2 * val
+        return self.send_cmd(
+            PROP_SETPOINT_COOL, str(val), self.get_property_uom(PROP_SETPOINT_COOL)
+        )
+
+    def set_fan_speed(self, cmd):
+        """Send a command to the device to set the fan speed."""
+        cmd_value = self.get_command_value(UOM_FAN_SPEEDS, cmd)
+        if cmd_value:
+            return self.send_cmd(CMD_CLIMATE_FAN_SPEED, cmd_value)
+        return False
+
+    def set_climate_mode(self, cmd):
+        """Send a command to the device to set the climate mode."""
+        if not self.is_thermostat:
+            self.isy.log.warning(
+                "Failed to set setpoint on %s, it is not a thermostat node.",
+                self.address,
+            )
+        cmd_value = self.get_command_value(UOM_CLIMATE_MODES, cmd)
+        if cmd_value:
+            return self.send_cmd(CMD_CLIMATE_MODE, cmd_value)
+        return False
+
+    def secure_lock(self):
+        """Send a command to securely lock a lock device."""
+        if not self.is_lock:
+            self.isy.log.warning(
+                "Failed to lock %s, it is not a lock node.", self.address
+            )
+            return
+        return self.send_cmd(CMD_SECURE, "1")
+
+    def secure_unlock(self):
+        """Send a command to securely lock a lock device."""
+        if not self.is_lock:
+            self.isy.log.warning(
+                "Failed to unlock %s, it is not a lock node.", self.address
+            )
+            return
+        return self.send_cmd(CMD_SECURE, "0")

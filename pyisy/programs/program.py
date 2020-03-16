@@ -120,3 +120,11 @@ class Program(Folder):
     def protocol(self):
         """Return the protocol for this entity."""
         return PROTO_PROGRAM
+
+    def enable_run_at_startup(self):
+        """Send command to the program to enable it to run at startup."""
+        return self.send_pgrm_cmd(CMD_ENABLE_RUN_AT_STARTUP)
+
+    def disable_run_at_startup(self):
+        """Send command to the program to enable it to run at startup."""
+        return self.send_pgrm_cmd(CMD_DISABLE_RUN_AT_STARTUP)
