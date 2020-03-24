@@ -27,6 +27,7 @@ from ..constants import (
     TAG_ENABLED,
     TAG_FAMILY,
     TAG_FOLDER,
+    TAG_FORMATTED,
     TAG_GROUP,
     TAG_LINK,
     TAG_NAME,
@@ -34,18 +35,19 @@ from ..constants import (
     TAG_PARENT,
     TAG_PRIMARY_NODE,
     TAG_TYPE,
+    UOM_SECONDS,
     URL_STATUS,
     XML_PARSE_ERROR,
     XML_TRUE,
 )
 from ..helpers import (
+    NodeProperty,
     attr_from_element,
     attr_from_xml,
     parse_xml_properties,
     value_from_xml,
 )
 from .group import Group
-from .handlers import EventResult
 from .node import Node
 
 
@@ -196,7 +198,7 @@ class Nodes:
     def update_received(self, xmldoc):
         """Update nodes from event stream message."""
         address = value_from_xml(xmldoc, TAG_NODE)
-        nval = int(value_from_xml(xmldoc, ATTR_ACTION))
+        value = int(value_from_xml(xmldoc, ATTR_ACTION))
         prec = attr_from_xml(xmldoc, ATTR_ACTION, ATTR_PRECISION, "0")
         uom = attr_from_xml(xmldoc, ATTR_ACTION, ATTR_UNIT_OF_MEASURE, "")
         node = self.get_by_id(address)
@@ -205,7 +207,7 @@ class Nodes:
         # Check if UOM/PREC have changed or were not set:
         node.update_precision(prec)
         node.update_uom(uom)
-        node.status.update(nval, force=True, silent=True)
+        node.status.update(value, force=True, silent=True)
         self.isy.log.debug("ISY Updated Node: " + address)
 
     def control_message_received(self, xmldoc):
@@ -221,10 +223,10 @@ class Nodes:
             return
 
         # Process the action and value if provided in event data.
-        nval = value_from_xml(xmldoc, ATTR_ACTION, 0)
+        value = value_from_xml(xmldoc, ATTR_ACTION, 0)
         prec = attr_from_xml(xmldoc, ATTR_ACTION, ATTR_PRECISION, "0")
         uom = attr_from_xml(xmldoc, ATTR_ACTION, ATTR_UNIT_OF_MEASURE, "")
-        formatted = attr_from_xml(xmldoc, ATTR_FORMATTED, nval)
+        formatted = value_from_xml(xmldoc, TAG_FORMATTED)
 
         node = self.get_by_id(address)
         if not node:
@@ -237,17 +239,13 @@ class Nodes:
             return
 
         if cntrl == PROP_RAMP_RATE:
-            nval = INSTEON_RAMP_RATES.get(nval, nval)
+            value = INSTEON_RAMP_RATES.get(value, value)
+            uom = UOM_SECONDS
+        node_property = NodeProperty(cntrl, value, prec, uom, formatted)
         if cntrl not in EVENT_PROPS_IGNORED:
-            node.aux_properties[cntrl] = {
-                ATTR_ID: cntrl,
-                ATTR_VALUE: nval,
-                ATTR_PRECISION: prec,
-                ATTR_UNIT_OF_MEASURE: uom,
-                ATTR_FORMATTED: formatted,
-            }
-        node.control_events.notify(EventResult(cntrl, nval, prec, uom, formatted))
-        self.isy.log.debug("ISY Node Control Event: %s %s %s", address, cntrl, nval)
+            node.aux_properties[cntrl] = node_property
+        node.control_events.notify(node_property)
+        self.isy.log.debug("ISY Node Control Event: %s %s", address, node_property)
 
     def parse(self, xml):
         """

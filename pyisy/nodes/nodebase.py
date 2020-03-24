@@ -147,7 +147,7 @@ class NodeBase:
             if val is not None:
                 hint = val
             elif PROP_ON_LEVEL in self._aux_properties:
-                hint = self._aux_properties[PROP_ON_LEVEL].get("value")
+                hint = self._aux_properties[PROP_ON_LEVEL].value
             else:
                 hint = 255
         elif cmd == CMD_ON_FAST:

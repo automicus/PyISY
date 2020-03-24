@@ -10,12 +10,12 @@ from .constants import (
     ATTR_VALUE,
     INSTEON_RAMP_RATES,
     ISY_EPOCH_OFFSET,
+    ISY_VALUE_UNKNOWN,
     PROP_BATTERY_LEVEL,
     PROP_RAMP_RATE,
     PROP_STATUS,
     TAG_PROPERTY,
     UOM_SECONDS,
-    VALUE_UNKNOWN,
 )
 
 
@@ -32,18 +32,18 @@ def parse_xml_properties(xmldoc):
     """
     aux_props = {}
     state_set = False
-    state = {}
+    state = NodeProperty(PROP_STATUS)
 
     props = xmldoc.getElementsByTagName(TAG_PROPERTY)
     if not props:
-        return {}, {}
+        return state, aux_props
 
     for prop in props:
         prop_id = attr_from_element(prop, ATTR_ID)
         uom = attr_from_element(prop, ATTR_UNIT_OF_MEASURE, "")
-        val = attr_from_element(prop, ATTR_VALUE, "").strip()
+        value = attr_from_element(prop, ATTR_VALUE, "").strip()
         prec = attr_from_element(prop, ATTR_PRECISION, "0")
-        formatted = attr_from_element(prop, ATTR_FORMATTED, val)
+        formatted = attr_from_element(prop, ATTR_FORMATTED, value)
 
         # ISY firmwares < 5 return a list of possible units.
         # ISYv5+ returns a UOM string which is checked against the SDK.
@@ -51,24 +51,19 @@ def parse_xml_properties(xmldoc):
         if "/" in uom and uom != "n/a":
             uom = uom.split("/")
 
-        val = int(val) if val != "" else VALUE_UNKNOWN
+        value = int(value) if value != "" else ISY_VALUE_UNKNOWN
 
-        result = {
-            ATTR_ID: prop_id,
-            ATTR_VALUE: val,
-            ATTR_PRECISION: prec,
-            ATTR_UNIT_OF_MEASURE: uom,
-            ATTR_FORMATTED: formatted,
-        }
+        result = NodeProperty(prop_id, value, prec, uom, formatted)
 
         if prop_id == PROP_STATUS:
             state = result
             state_set = True
         elif prop_id == PROP_BATTERY_LEVEL and not state_set:
             state = result
-        elif prop_id == PROP_RAMP_RATE:
-            result[ATTR_VALUE] = INSTEON_RAMP_RATES.get(val, val)
         else:
+            if prop_id == PROP_RAMP_RATE:
+                result.value = INSTEON_RAMP_RATES.get(value, value)
+                result.uom = UOM_SECONDS
             aux_props[prop_id] = result
 
     return state, aux_props
@@ -123,3 +118,62 @@ def ntp_to_system_time(timestamp):
     ntp_delta = ((_system_epoch - _ntp_epoch).days * 24 * 3600) - ISY_EPOCH_OFFSET
 
     return datetime.datetime.fromtimestamp(timestamp - ntp_delta)
+
+
+class NodeProperty(dict):
+    """Class to hold result of a control event or node aux property."""
+
+    def __init__(
+        self, control, value=ISY_VALUE_UNKNOWN, prec="0", uom="", formatted=None
+    ):
+        """Initialize an control result or aux property."""
+        super().__init__(
+            self,
+            control=control,
+            value=value,
+            prec=prec,
+            uom=uom,
+            formatted=(formatted if formatted is not None else value),
+        )
+
+    @property
+    def control(self):
+        """Report the event control string."""
+        return self["control"]
+
+    @property
+    def value(self):
+        """Report the value, if there was one."""
+        return self["value"]
+
+    @property
+    def prec(self):
+        """Report the precision, if there was one."""
+        return self["prec"]
+
+    @property
+    def uom(self):
+        """Report the unit of measure, if there was one."""
+        return self["uom"]
+
+    @property
+    def formatted(self):
+        """Report the formatted value, if there was one."""
+        return self["formatted"]
+
+    def __str__(self):
+        """Return just the event title to prevent breaking changes."""
+        return (
+            f"NodeProperty('{self.control}': value='{self.value}' "
+            f"prec='{self.prec}' uom='{self.uom}' formatted='{self.formatted}')"
+        )
+
+    __repr__ = __str__
+
+    def __getattr__(self, name):
+        """Retreive the properties."""
+        return self[name]
+
+    def __setattr__(self, name, value):
+        """Allow setting of properties."""
+        self[name] = value

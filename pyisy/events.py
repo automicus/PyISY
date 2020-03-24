@@ -155,9 +155,7 @@ class EventStream:
     def write(self, msg):
         """Write data back to the socket."""
         if self._writer is None:
-            raise NotImplementedError(
-                "Function not available while " "socket is closed."
-            )
+            raise NotImplementedError("Function not available while socket is closed.")
         self._writer.write(msg)
         self._writer.flush()
 
@@ -169,7 +167,7 @@ class EventStream:
                 if self.data.get("tls"):
                     self.cert = self.socket.getpeercert()
             except OSError:
-                self.isy.log.error("PyISY could not connect to ISY " "event stream.")
+                self.isy.log.error("PyISY could not connect to ISY event stream.")
                 if self._on_lost_function is not None:
                     self._on_lost_function()
                 return False
@@ -226,7 +224,7 @@ class EventStream:
                 if self.heartbeat_time > self._hbwait:
                     self.disconnect()
                     self.isy.log.warning(
-                        "PyISY lost connection to " "the ISY event stream."
+                        "PyISY lost connection to the ISY event stream."
                     )
                     if self._on_lost_function is not None:
                         self._on_lost_function()
