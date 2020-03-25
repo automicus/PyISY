@@ -41,7 +41,7 @@ class Node(NodeBase):
     |  uom: Unit of Measure returned by the ISY
     |  prec: Precision of the Node (10^-prec)
     |  aux_properties: Additional Properties for the node
-    |  devtype_cat: Device Type Category (used for Z-Wave Nodes.)
+    |  zwave_props: Z-Wave Properties from the devtype tag (used for Z-Wave Nodes.)
     |  node_def_id: Node Definition ID (used for ISY firmwares >=v5)
     |  pnode: Node ID of the primary node
     |  device_type: device type.
@@ -60,7 +60,7 @@ class Node(NodeBase):
         name,
         state,
         aux_properties=None,
-        devtype_cat=None,
+        zwave_props=None,
         node_def_id=None,
         pnode=None,
         device_type=None,
@@ -70,7 +70,7 @@ class Node(NodeBase):
         family_id=None,
     ):
         """Initialize a Node class."""
-        self._devtype_cat = devtype_cat
+        self._zwave_props = zwave_props
         self._node_def_id = node_def_id
         self._type = device_type
         self._enabled = enabled if enabled is not None else True
@@ -102,9 +102,9 @@ class Node(NodeBase):
         return self._node_server
 
     @property
-    def devtype_cat(self):
-        """Return the device type category (used for Z-Wave devices)."""
-        return self._devtype_cat
+    def zwave_props(self):
+        """Return the Z-Wave Properties (used for Z-Wave devices)."""
+        return self._zwave_props
 
     @property
     def node_def_id(self):
@@ -156,7 +156,11 @@ class Node(NodeBase):
         dimmable = (
             "%" in str(self._uom)
             or (isinstance(self._type, str) and self._type.startswith("1."))
-            or (self._devtype_cat is not None and self._devtype_cat in ["109", "119"])
+            or (
+                self._protocol == PROTO_ZWAVE
+                and self._zwave_props is not None
+                and self._zwave_props.category in ["109", "119", "186"]
+            )
         )
         return dimmable
 
@@ -165,13 +169,17 @@ class Node(NodeBase):
         """Determine if this device is a thermostat/climate control device."""
         return (
             self.type and any([self.type.startswith(t) for t in THERMOSTAT_TYPES])
-        ) or (self.devtype_cat and any(self.devtype_cat in THERMOSTAT_ZWAVE_CAT))
+        ) or (
+            self._protocol == PROTO_ZWAVE
+            and self.zwave_props.category
+            and any(self.zwave_props.category in THERMOSTAT_ZWAVE_CAT)
+        )
 
     @property
     def is_lock(self):
         """Determine if this device is a door lock type."""
         return (self.type and self.type.startswith("4.64")) or (
-            self.protocol == PROTO_ZWAVE and self.devtype_cat == "111"
+            self.protocol == PROTO_ZWAVE and self.zwave_props.category == "111"
         )
 
     def update(self, wait_time=0, hint=None, xmldoc=None):
@@ -251,7 +259,7 @@ class Node(NodeBase):
 
     def get_property_uom(self, prop):
         """Get the Unit of Measurement for Z-Wave Climate Settings."""
-        if self._devtype_cat and self._aux_properties.get(prop):
+        if self._protocol == PROTO_ZWAVE and self._aux_properties.get(prop):
             return self._aux_properties[prop].uom
         return None
 
