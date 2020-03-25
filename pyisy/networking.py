@@ -28,8 +28,8 @@ class NetworkResources:
         networking command class will be returned.
 
     EXAMPLE:
-        >>> a = networking['test function']
-        >>> a.run()
+        # a = networking['test function']
+        # a.run()
 
     ATTRIBUTES:
         isy: The ISY device class

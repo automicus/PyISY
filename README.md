@@ -14,3 +14,17 @@ monitored automatically as changes are reported from the device.
 
 * Greg Laabs ([@OverloadUT])
 * Ryan Kraus ([@rmkraus]) (creator)
+
+### Contributing
+
+A note on contributing: contributions of any sort are more than welcome! This repo uses precommit hooks to validate all code. We use `black` to format our code, `isort` to sort our imports, `flake8` for linting and syntax checks, and `codespell` for spell check.
+
+To use [pre-commit](https://pre-commit.com/#installation), see the installation instructions for more details.
+
+Short version:
+
+```shell
+# From your copy of the pyisy repo folder:
+pip install pre-commit
+pre-commit install
+```

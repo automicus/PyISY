@@ -130,7 +130,7 @@ class Connection:
             )
         except requests.ConnectionError:
             self.isy.log.error(
-                "ISY Could not recieve response "
+                "ISY Could not receive response "
                 "from device because of a network "
                 "issue."
             )
@@ -140,13 +140,13 @@ class Connection:
             return None
 
         if req.status_code == 200:
-            self.isy.log.debug("ISY Response Recieved")
+            self.isy.log.debug("ISY Response Received")
             # remove unicode from string in python 2.7, 3.2,
             # and 3.4 compatible way
             xml = "".join(char for char in req.text if ord(char) < 128)
             return xml
         if req.status_code == 404 and ok404:
-            self.isy.log.debug("ISY Response Recieved")
+            self.isy.log.debug("ISY Response Received")
             return ""
 
         self.isy.log.warning(
