@@ -46,6 +46,7 @@ from ..helpers import (
     attr_from_xml,
     parse_xml_properties,
     value_from_xml,
+    value_from_nested_xml,
 )
 from .group import Group
 from .node import Node
@@ -282,14 +283,9 @@ class Nodes:
                 if family is not None:
                     if family == "4":
                         protocol = PROTO_ZWAVE
-                        try:
-                            devtype_cat = (
-                                feature.getElementsByTagName(TAG_DEVICE_TYPE)[0]
-                                .getElementsByTagName(TAG_CATEGORY)[0]
-                                .firstChild.toxml()
-                            )
-                        except IndexError:
-                            devtype_cat = None
+                        devtype_cat = value_from_nested_xml(
+                            feature, [TAG_DEVICE_TYPE, TAG_CATEGORY]
+                        )
                     elif family in ("3", "8"):
                         protocol = PROTO_ZIGBEE
                     elif family == "10":

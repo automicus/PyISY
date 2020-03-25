@@ -98,6 +98,24 @@ def attr_from_element(element, attr_name, default=None):
     return value
 
 
+def value_from_nested_xml(base, chain, default=None):
+    """Extract a value from multiple nested tags."""
+    value = default
+    result = None
+    try:
+        result = base.getElementsByTagName(chain[0])[0]
+        if len(chain) > 1:
+            result = result.getElementsByTagName(chain[1])[0]
+        if len(chain) > 2:
+            result = result.getElementsByTagName(chain[2])[0]
+        if len(chain) > 3:
+            result = result.getElementsByTagName(chain[3])[0]
+        value = result.firstChild.toxml()
+    except (AttributeError, KeyError, ValueError, TypeError, IndexError):
+        pass
+    return value
+
+
 def ntp_to_system_time(timestamp):
     """Convert a ISY NTP time to system UTC time.
 
