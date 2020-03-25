@@ -44,7 +44,7 @@ class Node(NodeBase):
     |  aux_properties: Additional Properties for the node
     |  devtype_cat: Device Type Category (used for Z-Wave Nodes.)
     |  node_def_id: Node Definition ID (used for ISY firmwares >=v5)
-    |  parent_nid: Node ID of the parent node
+    |  pnode: Node ID of the primary node
     |  device_type: device type.
     |  node_server: the parent node server slot used
     |  protocol: the device protocol used (z-wave, zigbee, insteon, node server)
@@ -63,7 +63,7 @@ class Node(NodeBase):
         aux_properties=None,
         devtype_cat=None,
         node_def_id=None,
-        parent_nid=None,
+        pnode=None,
         device_type=None,
         enabled=None,
         node_server=None,
@@ -75,7 +75,7 @@ class Node(NodeBase):
         self._node_def_id = node_def_id
         self._type = device_type
         self._enabled = enabled if enabled is not None else True
-        self._parent_nid = parent_nid if parent_nid != address else None
+        self._parent_node = pnode if pnode != address else None
         self._uom = state.uom
         self._prec = state.prec
         self._formatted = state.formatted
@@ -84,7 +84,12 @@ class Node(NodeBase):
         self.status.update(state.value, force=True, silent=True)
         self.control_events = EventEmitter()
         super().__init__(
-            nodes, address, name, family_id=family_id, aux_properties=aux_properties
+            nodes,
+            address,
+            name,
+            family_id=family_id,
+            aux_properties=aux_properties,
+            pnode=pnode,
         )
 
     @property
@@ -230,8 +235,8 @@ class Node(NodeBase):
         Return None if there is no parent.
 
         """
-        if self._parent_nid:
-            return self._nodes.get_by_id(self._parent_nid)
+        if self._parent_node:
+            return self._nodes.get_by_id(self._parent_node)
         return None
 
     def get_command_value(self, uom, cmd):

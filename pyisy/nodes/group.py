@@ -26,11 +26,20 @@ class Group(NodeBase):
 
     group_all_on = Property(False)
 
-    def __init__(self, nodes, address, name, members=None, controllers=None):
+    def __init__(
+        self,
+        nodes,
+        address,
+        name,
+        members=None,
+        controllers=None,
+        family_id="6",
+        pnode=None,
+    ):
         """Initialize a Group class."""
         self._members = members or []
         self._controllers = controllers or []
-        super().__init__(nodes, address, name, family_id="6")
+        super().__init__(nodes, address, name, family_id=family_id, pnode=pnode)
 
         # listen for changes in children
         self._members_handlers = [
