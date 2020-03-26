@@ -1,5 +1,6 @@
 """Helper functions for the PyISY Module."""
 import datetime
+from logging import Handler
 import time
 
 from .constants import (
@@ -136,6 +137,14 @@ def ntp_to_system_time(timestamp):
     ntp_delta = ((_system_epoch - _ntp_epoch).days * 24 * 3600) - ISY_EPOCH_OFFSET
 
     return datetime.datetime.fromtimestamp(timestamp - ntp_delta)
+
+
+class NullHandler(Handler):
+    """NullHandler Logging Class Override."""
+
+    def emit(self, record):
+        """Override the Emit function."""
+        pass
 
 
 class NodeProperty(dict):
