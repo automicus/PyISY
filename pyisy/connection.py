@@ -40,7 +40,15 @@ class Connection:
     """Connection object to manage connection to and interaction with ISY."""
 
     def __init__(
-        self, address, port, username, password, use_https=False, tls_ver=1.1, log=None
+        self,
+        address,
+        port,
+        username,
+        password,
+        use_https=False,
+        tls_ver=1.1,
+        log=None,
+        webroot="",
     ):
         """Initialize the Connection object."""
         if log is None:
@@ -53,6 +61,7 @@ class Connection:
         self._port = port
         self._username = username
         self._password = password
+        self._webroot = webroot.rstrip("/")
 
         self.req_session = requests.Session()
 
@@ -95,6 +104,7 @@ class Connection:
         connection_info["addr"] = self._address
         connection_info["port"] = int(self._port)
         connection_info["passwd"] = self._password
+        connection_info["webroot"] = self._webroot
         if self._tls_ver:
             connection_info["tls"] = self._tls_ver
 
@@ -108,7 +118,7 @@ class Connection:
         else:
             url = "http://"
 
-        url += self._address + ":{}".format(self._port)
+        url += f"{self._address}:{self._port}{self._webroot}"
         if path is not None:
             url += "/rest/" + "/".join([quote(item) for item in path])
 

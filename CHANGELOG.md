@@ -47,6 +47,22 @@ V2 is a significant refactoring and cleanup of the original PyISY code, with the
 - Black Formatting and Linting to PEP8.
 - Modification of the `Connection` class to allow initializing a connection to the ISY and making calls externally, without the need to initialize a full `ISY` class with all properties.
 - Adding retries for failed REST calls to the ISY #46
+- Add support for ISY Portal (incl. multiple ISYs):
+    + Initialize the connection with:
+    ```python
+    isy = ISY(
+        address="my.isy.io",
+        port=443,
+        username="your@portal.email",
+        password="yourpassword",
+        use_https=True,
+        tls_ver=1.1,
+        log=None,
+        webroot="/isy/unique_isy_url_code_from_portal",
+    )
+    # Unique URL can be found in ISY Portal under 
+    #   Tools > Information > ISY Information
+    ```
 - Adds increased Z-Wave support by returning Z-Wave Properties under the `Node.zwave_props` property:
     + `category`
     + `devtype_mfg`

@@ -49,7 +49,15 @@ class ISY:
     auto_reconnect = True
 
     def __init__(
-        self, address, port, username, password, use_https=False, tls_ver=1.1, log=None
+        self,
+        address,
+        port,
+        username,
+        password,
+        use_https=False,
+        tls_ver=1.1,
+        log=None,
+        webroot="",
     ):
         """Initialize the primary ISY Class."""
         self._events = None  # create this JIT so no socket reuse
@@ -63,7 +71,7 @@ class ISY:
 
         try:
             self.conn = Connection(
-                address, port, username, password, use_https, tls_ver, self.log
+                address, port, username, password, use_https, tls_ver, self.log, webroot
             )
         except ValueError as err:
             self._connected = False
