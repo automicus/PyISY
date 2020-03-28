@@ -77,11 +77,13 @@ TAG_FEATURE = "feature"
 TAG_FIRMWARE = "app_full_version"
 TAG_FOLDER = "folder"
 TAG_FORMATTED = "fmtAct"
+TAG_GENERIC = "gen"
 TAG_GROUP = "group"
 TAG_INSTALLED = "isInstalled"
 TAG_LATITUDE = "Lat"
 TAG_LINK = "link"
 TAG_LONGITUDE = "Long"
+TAG_MFG = "mfg"
 TAG_MILIATRY_TIME = "IsMilitary"
 TAG_NAME = "name"
 TAG_NET_RULE = "NetRule"
@@ -167,8 +169,9 @@ CMD_ENABLE_RUN_AT_STARTUP = "enableRunAtStartup"
 CMD_FADE_DOWN = "FDDOWN"
 CMD_FADE_STOP = "FDSTOP"
 CMD_FADE_UP = "FDUP"
-CMD_MANUAL_DIM_BEGIN = "BMAN"
-CMD_MANUAL_DIM_STOP = "SMAN"
+CMD_MANUAL_DIM_BEGIN = "BMAN"  # Depreciated, use Fade
+CMD_MANUAL_DIM_STOP = "SMAN"  # Depreciated, use Fade
+CMD_MODE = "MODE"
 CMD_OFF = "DOF"
 CMD_OFF_FAST = "DFOF"
 CMD_ON = "DON"
@@ -182,21 +185,56 @@ CMD_STOP = "stop"
 CMD_X10 = "X10"
 
 COMMAND_FRIENDLY_NAME = {
+    "ADRPST": "auto_dr_processing_state",
     "AIRFLOW": "air_flow",
     "ALARM": "alarm",
     "ANGLE": "angle_position",
+    "ANGLPOS": "angle_position",
     "ATMPRES": "atmospheric_pressure",
+    "AWAKE": "awake",
     "BARPRES": "barometric_pressure",
     "CC": "current",
+    "CLIFSO": "fan_setting_override",
     "CO2LVL": "co2_level",
     "CPW": "power",
+    "CTL": "controller_action",
     "CV": "voltage",
+    "DELAY": "delay",
+    "DEWPT": "dew_point",
     "DISTANC": "distance",
+    "DOF3": "off_3x_key_presses",
+    "DOF4": "off_4x_key_presses",
+    "DOF5": "off_5x_key_presses",
+    "DON3": "on_3x_key_presses",
+    "DON4": "on_4x_key_presses",
+    "DON5": "on_5x_key_presses",
     "ELECCON": "electrical_conductivity",
     "ELECRES": "electrical_resistivity",
     "ERR": "device_communication_errors",
     "GPV": "general_purpose",
+    "GV0": "custom_control_0",
+    "GV1": "custom_control_1",
+    "GV10": "custom_control_10",
+    "GV11": "custom_control_11",
+    "GV12": "custom_control_12",
+    "GV13": "custom_control_13",
+    "GV14": "custom_control_14",
+    "GV15": "custom_control_15",
+    "GV16": "custom_control_16",
+    "GV17": "custom_control_17",
+    "GV18": "custom_control_18",
+    "GV19": "custom_control_19",
+    "GV2": "custom_control_2",
+    "GV20": "custom_control_20",
+    "GV3": "custom_control_3",
+    "GV4": "custom_control_4",
+    "GV5": "custom_control_5",
+    "GV6": "custom_control_6",
+    "GV7": "custom_control_7",
+    "GV8": "custom_control_8",
+    "GV9": "custom_control_9",
     "GVOL": "gas_volume",
+    "HAIL": "hail",
     "LUMIN": "luminance",
     "MOIST": "moisture",
     "PCNT": "pulse_count",
@@ -208,17 +246,19 @@ COMMAND_FRIENDLY_NAME = {
     "RR": "ramp_rate",
     "SEISINT": "seismic_intensity",
     "SEISMAG": "seismic_magnitude",
+    "SOILT": "soil_temperature",
     "SOLRAD": "solar_radiation",
     "SPEED": "speed",
     "SVOL": "sound_volume",
     "TANKCAP": "tank_capacity",
     "TIDELVL": "tide_level",
     "TIMEREM": "time_remaining",
-    "TPW": "total_kw_power",
+    "TPW": "total_energy_used",
     "UAC": "user_number",
     "USRNUM": "user_number",
     "UV": "uv_light",
     "VOCLVL": "voc_level",
+    "WATERT": "water_temperature",
     "WEIGHT": "weight",
     "WINDDIR": "wind_direction",
     "WVOL": "water_volume",
@@ -232,6 +272,7 @@ COMMAND_FRIENDLY_NAME = {
     CMD_FADE_UP: "fade_up",
     CMD_MANUAL_DIM_BEGIN: "brighten_manual",
     CMD_MANUAL_DIM_STOP: "stop_manual",
+    CMD_MODE: "mode",
     CMD_OFF: "off",
     CMD_OFF_FAST: "fastoff",
     CMD_ON: "on",
@@ -292,6 +333,7 @@ NODE_FAMILY_ID = {
 UOM_SECONDS = "57"
 UOM_FAN_SPEEDS = "99"
 UOM_CLIMATE_MODES = "98"
+UOM_CLIMATE_MODES_ZWAVE = "67"
 
 UOM_FRIENDLY_NAME = {
     "1": "A",
@@ -378,6 +420,19 @@ UOM_FRIENDLY_NAME = {
     "104": "¢",
     "105": "in",
     "106": "mm/day",
+    "107": "",  # raw 1-byte unsigned value
+    "108": "",  # raw 2-byte unsigned value
+    "109": "",  # raw 3-byte unsigned value
+    "110": "",  # raw 4-byte unsigned value
+    "111": "",  # raw 1-byte signed value
+    "112": "",  # raw 2-byte signed value
+    "113": "",  # raw 3-byte signed value
+    "114": "",  # raw 4-byte signed value
+    "116": "mi",
+    "117": "mb",
+    "118": "hpa",
+    "119": "Wh",
+    "120": "in/day",
 }
 
 UOM_TO_STATES = {
@@ -391,9 +446,9 @@ UOM_TO_STATES = {
         "1": "master code changed",
         "2": "tamper code entry limit",
         "3": "escutcheon removed",
-        "4": "manually locked",
+        "4": "key-manually locked",
         "5": "locked by touch",
-        "6": "manually unlocked",
+        "6": "key-manually unlocked",
         "7": "remote locking jammed bolt",
         "8": "remotely locked",
         "9": "remotely unlocked",
@@ -414,6 +469,20 @@ UOM_TO_STATES = {
         "25": "keypad attempt outside schedule",
         "26": "hardware failure",
         "27": "factory reset",
+        "28": "manually not fully locked",
+        "29": "all user codes deleted",
+        "30": "new user code not added-duplicate code",
+        "31": "keypad temporarily disabled",
+        "32": "keypad busy",
+        "33": "new program code entered",
+        "34": "rf unlock with invalid user code",
+        "35": "rf lock with invalid user codes",
+        "36": "window-door is open",
+        "37": "window-door is closed",
+        "38": "window-door handle is open",
+        "39": "window-door handle is closed",
+        "40": "user code entered on keypad",
+        "41": "power cycled",
     },
     "66": {  # Thermostat Heat/Cool State
         "0": "idle",
@@ -444,6 +513,9 @@ UOM_TO_STATES = {
         "11": "energy save heat",
         "12": "energy save cool",
         "13": "away",
+        "14": "program auto",
+        "15": "program heat",
+        "16": "program cool",
     },
     "68": {  # Thermostat Fan Mode
         "0": "auto",
@@ -454,6 +526,9 @@ UOM_TO_STATES = {
         "5": "medium",
         "6": "circulation",
         "7": "humidity circulation",
+        "8": "left-right circulation",
+        "9": "up-down circulation",
+        "10": "quiet",
     },
     "78": {"0": "off", "100": "on"},  # 0-Off 100-On
     "79": {"0": "open", "100": "closed"},  # 0-Open 100-Close
@@ -546,6 +621,21 @@ UOM_TO_STATES = {
         "7": "program_cool",
     },
     "99": {"7": "on", "8": "auto"},  # Insteon Thermostat Fan Mode
+    "115": {  # Most recent On style action taken for lamp control
+        "0": "on",
+        "1": "off",
+        "2": "fade up",
+        "3": "fade down",
+        "4": "fade stop",
+        "5": "fast on",
+        "6": "fast off",
+        "7": "triple press on",
+        "8": "triple press off",
+        "9": "4x press on",
+        "10": "4x press off",
+        "11": "5x press on",
+        "12": "5x press off",
+    },
 }
 
 # Translate the "RR" Property to Seconds
@@ -588,3 +678,139 @@ INSTEON_RAMP_RATES = {
 #  5.11 Insteon, 5.17 Insteon (EU), 5.18 Insteon (Aus/NZ)
 THERMOSTAT_TYPES = ["4.8", "5.3", "5.10", "5.11", "5.17", "5.18"]
 THERMOSTAT_ZWAVE_CAT = ["140"]
+
+# Referenced from ISY-WSDK 4_fam.xml
+# Included for user translations in external modules.
+# This is the Node.zwave_props.category property.
+DEVTYPE_CATEGORIES = {
+    "0": "uninitialized",
+    "101": "unknown",
+    "102": "alarm",
+    "103": "av control point",
+    "104": "binary sensor",
+    "105": "class a motor control",
+    "106": "class b motor control",
+    "107": "class c motor control",
+    "108": "controller",
+    "109": "dimmer switch",
+    "110": "display",
+    "111": "door lock",
+    "112": "doorbell",
+    "113": "entry control",
+    "114": "gateway",
+    "115": "installer tool",
+    "116": "motor multiposition",
+    "117": "climate sensor",
+    "118": "multilevel sensor",
+    "119": "multilevel switch",
+    "120": "on/off power strip",
+    "121": "on/off power switch",
+    "122": "on/off scene switch",
+    "123": "open/close valve",
+    "124": "pc controller",
+    "125": "remote",
+    "126": "remote control",
+    "127": "av remote control",
+    "128": "simple remote control",
+    "129": "repeater",
+    "130": "residential hrv",
+    "131": "satellite receiver",
+    "132": "satellite receiver",
+    "133": "scene controller",
+    "134": "scene switch",
+    "135": "security panel",
+    "136": "set-top box",
+    "137": "siren",
+    "138": "smoke alarm",
+    "139": "subsystem controller",
+    "140": "thermostat",
+    "141": "toggle",
+    "142": "television",
+    "143": "energy meter",
+    "144": "pulse meter",
+    "145": "water meter",
+    "146": "gas meter",
+    "147": "binary switch",
+    "148": "binary alarm",
+    "149": "aux alarm",
+    "150": "co2 alarm",
+    "151": "co alarm",
+    "152": "freeze alarm",
+    "153": "glass break alarm",
+    "154": "heat alarm",
+    "155": "motion sensor",
+    "156": "smoke alarm",
+    "157": "tamper alarm",
+    "158": "tilt alarm",
+    "159": "water alarm",
+    "160": "door/window alarm",
+    "161": "test alarm",
+    "162": "low battery alarm",
+    "163": "co end of life alarm",
+    "164": "malfunction alarm",
+    "165": "heartbeat",
+    "166": "overheat alarm",
+    "167": "rapid temp rise alarm",
+    "168": "underheat alarm",
+    "169": "leak detected alarm",
+    "170": "level drop alarm",
+    "171": "replace filter alarm",
+    "172": "intrusion alarm",
+    "173": "tamper code alarm",
+    "174": "hardware failure alarm",
+    "175": "software failure alarm",
+    "176": "contact police alarm",
+    "177": "contact fire alarm",
+    "178": "contact medical alarm",
+    "179": "wakeup alarm",
+    "180": "timer",
+    "181": "power management",
+    "182": "appliance",
+    "183": "home health",
+    "184": "barrier",
+    "185": "notification sensor",
+    "186": "color switch",
+    "187": "multilevel switch off on",
+    "188": "multilevel switch down up",
+    "189": "multilevel switch close open",
+    "190": "multilevel switch ccw cw",
+    "191": "multilevel switch left right",
+    "192": "multilevel switch reverse forward",
+    "193": "multilevel switch pull push",
+    "194": "basic set",
+    "195": "wall controller",
+    "196": "barrier handle",
+    "197": "sound switch",
+}
+
+# Referenced from ISY-WSDK cat.xml
+# Included for user translations in external modules.
+# This is the first part of the Node.type property (before the first ".")
+NODE_CATEGORIES = {
+    "0": "generic controller",
+    "1": "dimming control",
+    "2": "switch/relay control",
+    "3": "network bridge",
+    "4": "irrigation control",
+    "5": "climate control",
+    "6": "pool control",
+    "7": "sensors/actuators",
+    "8": "home entertainment",
+    "9": "energy management",
+    "10": "appliance control",
+    "11": "plumbing",
+    "12": "communications",
+    "13": "computer",
+    "14": "windows/shades",
+    "15": "access control",
+    "16": "security/health/safety",
+    "17": "surveillance",
+    "18": "automotive",
+    "19": "pet care",
+    "20": "toys",
+    "21": "timers/clocks",
+    "22": "holiday",
+    "113": "a10/x10",
+    "127": "virtual",
+    "254": "unknown",
+}

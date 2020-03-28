@@ -18,7 +18,6 @@ from ..constants import (
     PROTO_ZIGBEE,
     PROTO_ZWAVE,
     TAG_ADDRESS,
-    TAG_CATEGORY,
     TAG_DEVICE_TYPE,
     TAG_ENABLED,
     TAG_FAMILY,
@@ -41,10 +40,10 @@ from ..helpers import (
     attr_from_element,
     attr_from_xml,
     parse_xml_properties,
-    value_from_nested_xml,
     value_from_xml,
 )
 from .group import Group
+from .handlers import ZWaveProperties
 from .node import Node
 
 
@@ -274,13 +273,13 @@ class Nodes:
 
                 # Assume Insteon, update as confirmed otherwise
                 protocol = PROTO_INSTEON
-                devtype_cat = None
+                zwave_props = None
                 node_server = None
                 if family is not None:
                     if family == "4":
                         protocol = PROTO_ZWAVE
-                        devtype_cat = value_from_nested_xml(
-                            feature, [TAG_DEVICE_TYPE, TAG_CATEGORY]
+                        zwave_props = ZWaveProperties(
+                            feature.getElementsByTagName(TAG_DEVICE_TYPE)[0]
                         )
                     elif family in ("3", "8"):
                         protocol = PROTO_ZIGBEE
@@ -308,7 +307,7 @@ class Nodes:
                             name=nname,
                             state=state,
                             aux_properties=aux_props,
-                            devtype_cat=devtype_cat,
+                            zwave_props=zwave_props,
                             node_def_id=node_def_id,
                             pnode=pnode,
                             device_type=device_type,
