@@ -6,17 +6,13 @@ from ..constants import (
     ATTR_ACTION,
     ATTR_CONTROL,
     ATTR_FLAG,
-    ATTR_FORMATTED,
-    ATTR_ID,
     ATTR_INSTANCE,
     ATTR_NODE_DEF_ID,
     ATTR_PRECISION,
     ATTR_UNIT_OF_MEASURE,
-    ATTR_VALUE,
     EVENT_PROPS_IGNORED,
     INSTEON_RAMP_RATES,
     PROP_RAMP_RATE,
-    PROTO_GROUP,
     PROTO_INSTEON,
     PROTO_NODE_SERVER,
     PROTO_ZIGBEE,
@@ -45,8 +41,8 @@ from ..helpers import (
     attr_from_element,
     attr_from_xml,
     parse_xml_properties,
-    value_from_xml,
     value_from_nested_xml,
+    value_from_xml,
 )
 from .group import Group
 from .node import Node
@@ -329,7 +325,7 @@ class Nodes:
                     # that is a ISY scene that contains every device/
                     # scene so it will contain some scenes we have not
                     # seen yet so they are not defined and it includes
-                    # the ISY MAC addrees in newer versions of
+                    # the ISY MAC address in newer versions of
                     # ISY firmwares > 5.0.6+ ..
                     if int(flag) & 0x08:
                         self.isy.log.info("Skipping group flag=%s %s", flag, address)

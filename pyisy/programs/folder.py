@@ -33,7 +33,7 @@ class Folder:
     dtype = TAG_FOLDER
 
     def __init__(self, programs, address, pname, pstatus):
-        """Intialize the Folder class."""
+        """Initialize the Folder class."""
         self.noupdate = False
         self._programs = programs
         self.isy = programs.isy

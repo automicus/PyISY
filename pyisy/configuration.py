@@ -4,18 +4,18 @@ from xml.dom import minidom
 from .constants import (
     ATTR_DESC,
     ATTR_ID,
+    TAG_DESC,
     TAG_FEATURE,
     TAG_FIRMWARE,
     TAG_INSTALLED,
-    XML_TRUE,
-    TAG_ROOT,
     TAG_NAME,
-    TAG_DESC,
-    TAG_PRODUCT,
     TAG_NODE_DEFS,
+    TAG_PRODUCT,
+    TAG_ROOT,
     TAG_VARIABLES,
+    XML_TRUE,
 )
-from .helpers import value_from_xml, value_from_nested_xml
+from .helpers import value_from_nested_xml, value_from_xml
 
 
 class Configuration(dict):
@@ -57,9 +57,9 @@ class Configuration(dict):
         NorthWrite NOC Module
 
     EXAMPLE:
-        >>> configuration['Networking Module']
+        # configuration['Networking Module']
         True
-        >>> configuration['21040']
+        # configuration['21040']
         True
 
     ATTRIBUTES:

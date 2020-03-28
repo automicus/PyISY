@@ -4,8 +4,8 @@ import select
 import socket
 import ssl
 import sys
-import xml
 from threading import Thread, ThreadError
+import xml
 from xml.dom import minidom
 
 from . import strings
@@ -206,7 +206,7 @@ class EventStream:
 
     @property
     def connected(self):
-        """Return if the module is connnected to the ISY or not."""
+        """Return if the module is connected to the ISY or not."""
         return self._connected
 
     @property

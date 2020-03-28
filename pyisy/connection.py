@@ -1,20 +1,15 @@
 """Connection to the ISY."""
-try:
-    # python 2.7
-    from urllib import quote
-    from urllib import urlencode
-except ImportError:
-    # python 3.4
-    from urllib.parse import quote
-    from urllib.parse import urlencode
 import base64
 import ssl
 import sys
 import time
+from urllib.parse import quote, urlencode
 
 import requests
 from requests.adapters import HTTPAdapter
-from requests.packages.urllib3.poolmanager import PoolManager
+from urllib3 import disable_warnings
+from urllib3.exceptions import InsecureRequestWarning
+from urllib3.poolmanager import PoolManager
 
 from .constants import (
     METHOD_GET,
@@ -58,7 +53,7 @@ class Connection:
                 self.use_https = True
                 self._tls_ver = tls_ver
                 # Most SSL certs will not be valid. Let's not warn about them.
-                requests.packages.urllib3.disable_warnings()
+                disable_warnings(InsecureRequestWarning)
 
                 # ISY uses TLS1 and not SSL
                 self.req_session.mount(self.compile_url(None), TLSHttpAdapter(tls_ver))
@@ -86,14 +81,8 @@ class Connection:
     def connection_info(self):
         """Return the connection info required to connect to the ISY."""
         connection_info = {}
-        authstr = "{!s}:{!s}".format(self._username, self._password)
-        try:
-            connection_info["auth"] = base64.encodestring(authstr).strip()
-        except TypeError:
-            authstr = bytes(authstr, "ascii")
-            connection_info["auth"] = (
-                base64.encodebytes(authstr).strip().decode("ascii")
-            )
+        authstr = bytes(f"{self._username}:{self._password}", "ascii")
+        connection_info["auth"] = base64.encodebytes(authstr).strip().decode("ascii")
         connection_info["addr"] = self._address
         connection_info["port"] = int(self._port)
         connection_info["passwd"] = self._password
@@ -130,7 +119,7 @@ class Connection:
             )
         except requests.ConnectionError:
             self.isy.log.error(
-                "ISY Could not recieve response "
+                "ISY Could not receive response "
                 "from device because of a network "
                 "issue."
             )
@@ -140,13 +129,13 @@ class Connection:
             return None
 
         if req.status_code == 200:
-            self.isy.log.debug("ISY Response Recieved")
+            self.isy.log.debug("ISY Response Received")
             # remove unicode from string in python 2.7, 3.2,
             # and 3.4 compatible way
             xml = "".join(char for char in req.text if ord(char) < 128)
             return xml
         if req.status_code == 404 and ok404:
-            self.isy.log.debug("ISY Response Recieved")
+            self.isy.log.debug("ISY Response Received")
             return ""
 
         self.isy.log.warning(
@@ -266,12 +255,7 @@ def can_https(log, tls_ver):
     output = True
 
     # check python version
-    py_version = sys.version_info
-    if py_version.major == 3:
-        req_version = (3, 4)
-    else:
-        req_version = (2, 7, 9)
-    if py_version < req_version:
+    if sys.version_info < (3, 7):
         log.error("PyISY cannot use HTTPS: Invalid Python version. See docs.")
         output = False
 

@@ -3,7 +3,6 @@ from time import sleep
 from xml.dom import minidom
 
 from ..constants import (
-    ATTR_UNIT_OF_MEASURE,
     CLIMATE_SETPOINT_MIN_GAP,
     CMD_CLIMATE_FAN_SPEED,
     CMD_CLIMATE_MODE,
@@ -241,7 +240,7 @@ class Node(NodeBase):
 
     def get_command_value(self, uom, cmd):
         """Check against the list of UOM States if this is a valid command."""
-        if not cmd in UOM_TO_STATES[uom].values():
+        if cmd not in UOM_TO_STATES[uom].values():
             self.isy.log.warning(
                 "Failed to call %s on %s, invalid command.", cmd, self.address
             )

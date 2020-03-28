@@ -313,7 +313,7 @@ class Programs:
                 try:
                     val = int(val)
                     fun = self.get_by_index
-                except:
+                except (TypeError, ValueError):
                     raise KeyError("Unrecognized Key: " + str(val))
 
         try:

@@ -30,6 +30,7 @@ try:
 except (pkg_resources.ResolutionError, pkg_resources.ExtractionError):
     __version__ = "unknown"
 
+__all__ = ["ISY"]
 __author__ = "Ryan M. Kraus"
 __email__ = "rmkraus at gmail dot com"
 __date__ = "February 2020"
