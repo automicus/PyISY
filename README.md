@@ -9,8 +9,11 @@ monitored automatically as changes are reported from the device.
 
 **NOTE:** Significant changes have been made in V2, please refer to the [CHANGELOG](CHANGELOG.md) for details. It is recommended you do not update  to the latest version without testing for any unknown breaking changes or impacts to your dependent code.
 
+### Examples
 
-### Maintainers:
+See the [examples](examples/) folder for connection examples.
+
+### Maintainers
 
 * Greg Laabs ([@OverloadUT])
 * Ryan Kraus ([@rmkraus]) (creator)
@@ -28,3 +31,6 @@ Short version:
 pip install pre-commit
 pre-commit install
 ```
+
+[@OverloadUT]: https://github.com/overloadut
+[@rmkraus]: https://github.com/rmkraus
