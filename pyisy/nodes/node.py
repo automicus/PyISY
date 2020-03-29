@@ -26,8 +26,7 @@ from ..constants import (
     URL_NODES,
     XML_PARSE_ERROR,
 )
-from ..helpers import parse_xml_properties
-from .handlers import EventEmitter
+from ..helpers import EventEmitter, parse_xml_properties
 from .nodebase import NodeBase
 
 

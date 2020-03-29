@@ -2,13 +2,13 @@
 import logging
 from threading import Thread
 
-from .climate import Climate
 from .clock import Clock
 from .configuration import Configuration
 from .connection import Connection
 from .constants import CMD_X10, X10_COMMANDS
 from .events import EventStream
 from .helpers import NullHandler
+from .networking import NetworkResources
 from .nodes import Nodes
 from .programs import Programs
 from .variables import Variables
@@ -31,11 +31,8 @@ class ISY:
                           auto-reconnect to the event stream if the connection
                           is lost.
     :ivar auto_update: Boolean value that controls the class's subscription to
-                       the event stream that allows node, program, and climate
+                       the event stream that allows node, program
                        values to be updated automatically.
-    :ivar climate: Climate manager that holds all climate properties from the
-                   controller if the climate module is installed on the
-                   controller.
     :ivar connected: Read only boolean value indicating if the class is
                      connected to the controller.
     :ivar log: Logger used by the class and its children.
@@ -92,14 +89,8 @@ class ISY:
                 def_xml=self.conn.get_variable_defs(),
                 var_xml=self.conn.get_variables(),
             )
-
-            if self.configuration.get("Weather Information"):
-                self.climate = Climate(self, xml=self.conn.get_climate())
-            else:
-                self.climate = None
-            # if self.configuration['Networking Module']:
-            #     self.networking = NetworkResources(self,
-            #       xml=self.conn.get_network())
+            if self.configuration["Networking Module"]:
+                self.networking = NetworkResources(self, xml=self.conn.get_network())
 
     def __del__(self):
         """Turn off auto updating when the class is deleted."""

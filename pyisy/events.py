@@ -90,8 +90,7 @@ class EventStream:
         elif cntrl[0] != "_":  # NODE CONTROL EVENT
             self.isy.nodes.control_message_received(xmldoc)
         elif cntrl == "_11":  # WEATHER UPDATE
-            if self.isy.configuration["Weather Information"]:
-                self.isy.climate.update_received(xmldoc)
+            pass  # Climate module support retired.
         elif cntrl == "_1":  # Trigger Update
             if f"<{ATTR_VAR}" in msg:  # VARIABLE
                 self.isy.variables.update_received(xmldoc)

@@ -2,8 +2,7 @@
 
 ### Python Library for the ISY Controller
 
-This library allows for easy interaction with ISY nodes, programs, program,
-climate module, and network module. This class also allows for functions to be
+This library allows for easy interaction with ISY nodes, programs, variables, and the network module. This class also allows for functions to be
 assigned as handlers when ISY parameters are changed. ISY parameters can be
 monitored automatically as changes are reported from the device.
 

@@ -62,7 +62,11 @@ def main(arguments):
 
     _LOGGER.info("ISY connected: %s", isy.connected)
 
+    # Print a representation of all the Nodes
+    _LOGGER.debug(repr(isy.nodes))
+
     if isy.connected:
+        # Connect to the Event Stream and print events in the Debug Log.
         isy.auto_update = True
     else:
         _LOGGER.error(

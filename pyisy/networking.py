@@ -154,18 +154,18 @@ class NetworkCommand:
 
     """
 
-    def __init__(self, network_resources, rid):
+    def __init__(self, network_resources, address):
         """Initialize network command class.
 
         network_resources: NetworkResources class
-        rid: Integer of the command id
+        address: Integer of the command id
         """
         self._network_resources = network_resources
         self.isy = network_resources.isy
-        self._id = rid
+        self._id = address
 
     @property
-    def rid(self):
+    def address(self):
         """Return the Resource ID for the Network Resource."""
         return self._id
 

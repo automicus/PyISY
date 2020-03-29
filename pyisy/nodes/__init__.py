@@ -37,13 +37,13 @@ from ..constants import (
 )
 from ..helpers import (
     NodeProperty,
+    ZWaveProperties,
     attr_from_element,
     attr_from_xml,
     parse_xml_properties,
     value_from_xml,
 )
 from .group import Group
-from .handlers import ZWaveProperties
 from .node import Node
 
 
