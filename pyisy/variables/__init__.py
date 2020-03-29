@@ -84,15 +84,18 @@ class Variables:
 
     def parse_definitions(self, xmls):
         """Parse the XML Variable Definitions from the ISY."""
-        try:
-            xmldocs = [minidom.parseString(xml) for xml in xmls]
-        except (AttributeError, KeyError, ValueError, TypeError, IndexError):
-            self.isy.log.error("%s: Variables", XML_PARSE_ERROR)
-            return
-
-        # parse definitions
         for ind in range(2):
-            features = xmldocs[ind].getElementsByTagName(TAG_VARIABLE)
+            # parse definitions
+            if xmls[ind] is None or xmls[ind] == '<CList type="VAR_INT"></CList>':
+                # No variables of this type defined.
+                continue
+            try:
+                xmldoc = minidom.parseString(xmls[ind])
+            except (AttributeError, KeyError, ValueError, TypeError, IndexError):
+                self.isy.log.error("%s: Type %s Variables", XML_PARSE_ERROR, ind + 1)
+                continue
+
+            features = xmldoc.getElementsByTagName(TAG_VARIABLE)
             for feature in features:
                 vid = int(attr_from_element(feature, ATTR_ID))
                 self.vnames[ind + 1][vid] = attr_from_element(feature, TAG_NAME)

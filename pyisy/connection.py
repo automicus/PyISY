@@ -219,9 +219,10 @@ class Connection:
         ]
         req_urls = [self.compile_url(req) for req in req_list]
         results = [self.request(req_url) for req_url in req_urls]
+        results = [r for r in results if r is not None]  # Strip any bad requests.
         result = "".join(results)
         result = result.replace(
-            '</vars><?xml version="1.0" encoding="UTF-8"?>' "<vars>", ""
+            '</vars><?xml version="1.0" encoding="UTF-8"?><vars>', ""
         )
         return result
 
