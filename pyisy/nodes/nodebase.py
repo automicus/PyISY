@@ -7,6 +7,8 @@ from ..constants import (
     CMD_BEEP,
     CMD_BRIGHTEN,
     CMD_DIM,
+    CMD_DISABLE,
+    CMD_ENABLE,
     CMD_FADE_DOWN,
     CMD_FADE_STOP,
     CMD_FADE_UP,
@@ -201,3 +203,21 @@ class NodeBase:
     def fast_off(self):
         """Start manually brightening a device."""
         return self.send_cmd(CMD_OFF_FAST)
+
+    def enable(self):
+        """Send command to the node to enable it."""
+        if not self.isy.conn.request(
+            self.isy.conn.compile_url([URL_NODES, str(self._id), CMD_ENABLE])
+        ):
+            self.isy.log.warning("ISY could not %s %s.", CMD_ENABLE, self._id)
+            return False
+        return True
+
+    def disable(self):
+        """Send command to the node to disable it."""
+        if not self.isy.conn.request(
+            self.isy.conn.compile_url([URL_NODES, str(self._id), CMD_DISABLE])
+        ):
+            self.isy.log.warning("ISY could not %s %s.", CMD_DISABLE, self._id)
+            return False
+        return True
