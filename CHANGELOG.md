@@ -40,6 +40,7 @@ V2 is a significant refactoring and cleanup of the original PyISY code, with the
     + `runElse` -> `run_else`
     + `enableRunAtStartup` -> `enable_run_at_startup`
     + `disableRunAtStartup` -> `disable_run_at_startup`
+- Climate Module Retired as per [UDI Announcement](https://www.universal-devices.com/byebyeclimatemodule/)
 
 #### New:
 

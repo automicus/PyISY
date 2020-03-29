@@ -14,7 +14,6 @@ from urllib3.poolmanager import PoolManager
 
 from .constants import (
     METHOD_GET,
-    URL_CLIMATE,
     URL_CLOCK,
     URL_CONFIG,
     URL_DEFINITIONS,
@@ -224,12 +223,6 @@ class Connection:
         result = result.replace(
             '</vars><?xml version="1.0" encoding="UTF-8"?>' "<vars>", ""
         )
-        return result
-
-    def get_climate(self):
-        """Fetch the list of climate information from the ISY."""
-        req_url = self.compile_url([URL_CLIMATE])
-        result = self.request(req_url)
         return result
 
     def get_network(self):

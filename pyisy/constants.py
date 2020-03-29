@@ -26,26 +26,6 @@ XML_PARSE_ERROR = "ISY Could not parse response, poorly formatted XML."
 """ Dictionary of X10 commands. """
 X10_COMMANDS = {"all_off": 1, "all_on": 4, "on": 3, "off": 11, "bright": 7, "dim": 15}
 
-CARDINAL_DIRECTIONS = {
-    "N": 0.0,
-    "NNE": 22.5,
-    "NE": 45.0,
-    "ENE": 67.5,
-    "E": 90.0,
-    "ESE": 112.5,
-    "SE": 135.0,
-    "SSE": 157.5,
-    "S": 180.0,
-    "SSW": 202.5,
-    "SW": 225.0,
-    "WSW": 247.5,
-    "W": 270.0,
-    "WNW": 292.5,
-    "NW": 315.0,
-    "NNW": 337.5,
-    "N/A": None,
-}
-
 ATTR_ACTION = "action"
 ATTR_CONTROL = "control"
 ATTR_DESC = "desc"
@@ -135,9 +115,6 @@ PROP_UOM = "UOM"
 METHOD_GET = "get"
 METHOD_COMMAND = "cmd"
 
-UOM_SECONDS = "57"
-
-URL_CLIMATE = "climate"
 URL_CLOCK = "time"
 URL_CONFIG = "config"
 URL_DEFINITIONS = "definitions"
