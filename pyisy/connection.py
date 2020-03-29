@@ -1,5 +1,6 @@
 """Connection to the ISY."""
 import base64
+import logging
 import ssl
 import sys
 import time
@@ -30,6 +31,7 @@ from .constants import (
     XML_FALSE,
     XML_TRUE,
 )
+from .helpers import NullHandler
 
 MAX_RETRIES = 5
 
@@ -37,19 +39,35 @@ MAX_RETRIES = 5
 class Connection:
     """Connection object to manage connection to and interaction with ISY."""
 
-    def __init__(self, isy, address, port, username, password, use_https, tls_ver):
+    def __init__(
+        self,
+        address,
+        port,
+        username,
+        password,
+        use_https=False,
+        tls_ver=1.1,
+        log=None,
+        webroot="",
+    ):
         """Initialize the Connection object."""
-        self.isy = isy
+        if log is None:
+            self.log = logging.getLogger(__name__)
+            self.log.addHandler(NullHandler())
+        else:
+            self.log = log
+
         self._address = address
         self._port = port
         self._username = username
         self._password = password
+        self._webroot = webroot.rstrip("/")
 
         self.req_session = requests.Session()
 
         # setup proper HTTPS handling for the ISY
         if use_https:
-            if can_https(self.isy.log, tls_ver):
+            if can_https(self.log, tls_ver):
                 self.use_https = True
                 self._tls_ver = tls_ver
                 # Most SSL certs will not be valid. Let's not warn about them.
@@ -86,6 +104,7 @@ class Connection:
         connection_info["addr"] = self._address
         connection_info["port"] = int(self._port)
         connection_info["passwd"] = self._password
+        connection_info["webroot"] = self._webroot
         if self._tls_ver:
             connection_info["tls"] = self._tls_ver
 
@@ -99,7 +118,7 @@ class Connection:
         else:
             url = "http://"
 
-        url += self._address + ":{}".format(self._port)
+        url += f"{self._address}:{self._port}{self._webroot}"
         if path is not None:
             url += "/rest/" + "/".join([quote(item) for item in path])
 
@@ -110,35 +129,35 @@ class Connection:
 
     def request(self, url, retries=0, ok404=False):
         """Execute request to ISY REST interface."""
-        if self.isy.log is not None:
-            self.isy.log.info("ISY Request: " + url)
+        if self.log is not None:
+            self.log.info("ISY Request: %s", url)
 
         try:
             req = self.req_session.get(
                 url, auth=(self._username, self._password), timeout=10, verify=False
             )
         except requests.ConnectionError:
-            self.isy.log.error(
+            self.log.error(
                 "ISY Could not receive response "
                 "from device because of a network "
                 "issue."
             )
             return None
         except requests.exceptions.Timeout:
-            self.isy.log.error("Timed out waiting for response from the ISY device.")
+            self.log.error("Timed out waiting for response from the ISY device.")
             return None
 
         if req.status_code == 200:
-            self.isy.log.debug("ISY Response Received")
+            self.log.debug("ISY Response Received")
             # remove unicode from string in python 2.7, 3.2,
             # and 3.4 compatible way
             xml = "".join(char for char in req.text if ord(char) < 128)
             return xml
         if req.status_code == 404 and ok404:
-            self.isy.log.debug("ISY Response Received")
+            self.log.debug("ISY Response Received")
             return ""
 
-        self.isy.log.warning(
+        self.log.warning(
             "Bad ISY Request: %s %s: retry #%s", url, req.status_code, retries
         )
 
@@ -148,7 +167,7 @@ class Connection:
             # recurse to try again
             return self.request(url, retries + 1, ok404=False)
         # fail for good
-        self.isy.log.error(
+        self.log.error(
             "Bad ISY Request: %s %s: Failed after %s retries",
             url,
             req.status_code,

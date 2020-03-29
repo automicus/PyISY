@@ -8,6 +8,7 @@ from .configuration import Configuration
 from .connection import Connection
 from .constants import CMD_X10, X10_COMMANDS
 from .events import EventStream
+from .helpers import NullHandler
 from .nodes import Nodes
 from .programs import Programs
 from .variables import Variables
@@ -48,7 +49,15 @@ class ISY:
     auto_reconnect = True
 
     def __init__(
-        self, address, port, username, password, use_https=False, tls_ver=1.1, log=None
+        self,
+        address,
+        port,
+        username,
+        password,
+        use_https=False,
+        tls_ver=1.1,
+        log=None,
+        webroot="",
     ):
         """Initialize the primary ISY Class."""
         self._events = None  # create this JIT so no socket reuse
@@ -62,7 +71,7 @@ class ISY:
 
         try:
             self.conn = Connection(
-                self, address, port, username, password, use_https, tls_ver
+                address, port, username, password, use_https, tls_ver, self.log, webroot
             )
         except ValueError as err:
             self._connected = False
@@ -74,7 +83,7 @@ class ISY:
         else:
             self._hostname = address
             self._connected = True
-            self.configuration = Configuration(self, xml=self.conn.get_config())
+            self.configuration = Configuration(self.log, xml=self.conn.get_config())
             self.clock = Clock(self, xml=self.conn.get_time())
             self.nodes = Nodes(self, xml=self.conn.get_nodes())
             self.programs = Programs(self, xml=self.conn.get_programs())
@@ -176,11 +185,3 @@ class ISY:
                 self.log.error(
                     "ISY Failed to send X10 Command: %s To: %s", cmd, address
                 )
-
-
-class NullHandler(logging.Handler):
-    """NullHandler Logging Class Override."""
-
-    def emit(self, record):
-        """Override the Emit function."""
-        pass

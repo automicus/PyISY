@@ -63,19 +63,19 @@ class Configuration(dict):
         True
 
     ATTRIBUTES:
-        isy: The ISY device class
+        log: The logger to use.
 
     """
 
-    def __init__(self, isy, xml=None):
+    def __init__(self, log, xml=None):
         """
         Initialize configuration class.
 
-        isy: ISY class
+        log: logger to use
         xml: String of xml data containing the configuration data
         """
         super().__init__()
-        self.isy = isy
+        self.log = log
 
         if xml is not None:
             self.parse(xml)
@@ -104,4 +104,4 @@ class Configuration(dict):
             self[idnum] = installed
             self[desc] = self[idnum]
 
-        self.isy.log.info("ISY Loaded Configuration")
+        self.log.info("ISY Loaded Configuration")
