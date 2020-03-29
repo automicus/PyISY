@@ -1,15 +1,18 @@
 """Representation of a node from an ISY."""
+from math import isnan
 from time import sleep
 from xml.dom import minidom
 
 from ..constants import (
     CLIMATE_SETPOINT_MIN_GAP,
-    CMD_CLIMATE_FAN_SPEED,
+    CMD_CLIMATE_FAN_SETTING,
     CMD_CLIMATE_MODE,
     CMD_MANUAL_DIM_BEGIN,
     CMD_MANUAL_DIM_STOP,
     CMD_SECURE,
     METHOD_GET,
+    PROP_ON_LEVEL,
+    PROP_RAMP_RATE,
     PROP_SETPOINT_COOL,
     PROP_SETPOINT_HEAT,
     PROP_STATUS,
@@ -18,7 +21,7 @@ from ..constants import (
     THERMOSTAT_TYPES,
     THERMOSTAT_ZWAVE_CAT,
     UOM_CLIMATE_MODES,
-    UOM_FAN_SPEEDS,
+    UOM_FAN_MODES,
     UOM_TO_STATES,
     URL_NODES,
     XML_PARSE_ERROR,
@@ -271,6 +274,26 @@ class Node(NodeBase):
         """Stop manually dimming  a device."""
         return self.send_cmd(CMD_MANUAL_DIM_STOP)
 
+    def set_on_level(self, val):
+        """Set the ON Level for a device."""
+        if not val or not isnan(val) or int(val) not in range(256):
+            self.isy.log.warning(
+                "Invalid value for On Level for %s. Valid values are 0-255.", self._id
+            )
+            return False
+        return self.send_cmd(PROP_ON_LEVEL, str(val))
+
+    def set_ramp_rate(self, val):
+        """Set the Ramp Rate for a device."""
+        if not val or not isnan(val) or int(val) not in range(32):
+            self.isy.log.warning(
+                "Invalid value for Ramp Rate for %s. "
+                "Valid values are 0-31. See 'INSTEON_RAMP_RATES' in constants.py for values.",
+                self._id,
+            )
+            return False
+        return self.send_cmd(PROP_RAMP_RATE, str(val))
+
     def set_climate_setpoint(self, val):
         """Send a command to the device to set the system setpoints."""
         if not self.is_thermostat:
@@ -314,11 +337,11 @@ class Node(NodeBase):
             PROP_SETPOINT_COOL, str(val), self.get_property_uom(PROP_SETPOINT_COOL)
         )
 
-    def set_fan_speed(self, cmd):
-        """Send a command to the device to set the fan speed."""
-        cmd_value = self.get_command_value(UOM_FAN_SPEEDS, cmd)
+    def set_fan_mode(self, cmd):
+        """Send a command to the device to set the fan mode setting."""
+        cmd_value = self.get_command_value(UOM_FAN_MODES, cmd)
         if cmd_value:
-            return self.send_cmd(CMD_CLIMATE_FAN_SPEED, cmd_value)
+            return self.send_cmd(CMD_CLIMATE_FAN_SETTING, cmd_value)
         return False
 
     def set_climate_mode(self, cmd):
