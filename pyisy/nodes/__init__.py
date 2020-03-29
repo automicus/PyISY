@@ -115,10 +115,10 @@ class Nodes:
             return "Folder <root>"
         ind = self.addresses.index(self.root)
         if self.ntypes[ind] == TAG_FOLDER:
-            return "Folder ({})".format(self.root)
+            return f"Folder ({self.root})"
         if self.ntypes[ind] == TAG_GROUP:
-            return "Group ({})".format(self.root)
-        return "Node ({})".format(self.root)
+            return f"Group ({self.root})"
+        return f"Node ({self.root})"
 
     def __repr__(self):
         """Create a pretty representation of the nodes/folders/groups."""
@@ -138,11 +138,11 @@ class Nodes:
         folders.sort(key=lambda x: x[1])
         groups.sort(key=lambda x: x[1])
         nodes.sort(key=lambda x: x[1])
-        out = "{!s}\n{}{}{}".format(
-            self,
-            self.__repr_folders__(folders),
-            self.__repr_groups__(groups),
-            self.__repr_nodes__(nodes),
+        out = (
+            f"{self}\n"
+            f"{self.__repr_folders__(folders)}"
+            f"{self.__repr_groups__(groups)}"
+            f"{self.__repr_nodes__(nodes)}"
         )
         return out
 
@@ -151,34 +151,32 @@ class Nodes:
         out = ""
         for fold in folders:
             fold_obj = self[fold[2]]
-            out += "  + {}: Folder({})\n".format(fold[1], fold[2])
+            out += f"  + {fold[1]}: Folder({fold[2]})\n"
             for line in repr(fold_obj).split("\n")[1:]:
-                out += "  |   {}\n".format(line)
+                out += f"  |   {line}\n"
             out += "  -\n"
         return out
 
-    @staticmethod
-    def __repr_groups__(groups):
+    def __repr_groups__(self, groups):
         """Return a representation of the groups structure."""
         out = ""
         for group in groups:
-            out += "  {}: Group({})\n".format(group[1], group[2])
+            out += f"  + {group[1]}: Group({group[2]})\n"
+            for member in self[group[2]].members:
+                out += f"  |  {self[member].name}: Node({member})\n"
+            out += "  |\n  -\n"
         return out
 
     def __repr_nodes__(self, nodes):
         """Return a representation of the nodes structure."""
         out = ""
         for node in nodes:
-            node_obj = self[node[2]]
-            if node_obj.has_children:
-                out += "  + "
-            else:
-                out += "  "
-            out += "{}: Node({})\n".format(node[1], node[2])
-            if node_obj.has_children:
-                for line in repr(node_obj).split("\n")[1:]:
-                    out += "  |   {}\n".format(line)
-                out += "  -\n"
+            has_children = node[2] in self.nparents
+            out += f"  {'+ ' if has_children else ''}{node[1]}: Node({node[2]})\n"
+            if has_children:
+                for child in self.get_children(node[2]):
+                    out += f"  |   {child[1]}: Node({child[2]})\n"
+                out += "  |\n  -\n"
         return out
 
     def __iter__(self):
@@ -459,20 +457,24 @@ class Nodes:
     @property
     def children(self):
         """Return the children of the class."""
-        out = []
-        for i in range(len(self.addresses)):
-            if self.nparents[i] == self.root:
-                out.append((self.ntypes[i], self.nnames[i], self.addresses[i]))
+        return self.get_children()
+
+    def get_children(self, ident=None):
+        """Return the children of the class."""
+        if ident is None:
+            ident = self.root
+        out = [
+            (self.ntypes[i], self.nnames[i], self.addresses[i])
+            for i in [
+                index for index, parent in enumerate(self.nparents) if parent == ident
+            ]
+        ]
         return out
 
     @property
     def has_children(self):
         """Return if the root has children."""
-        try:
-            self.nparents.index(self.root)
-            return True
-        except ValueError:
-            return False
+        return self.root in self.nparents
 
     @property
     def name(self):
@@ -491,8 +493,12 @@ class Nodes:
         for dtype, name, ident in self.children:
             if dtype in [TAG_GROUP, TAG_NODE]:
                 output.append((dtype, myname + name, ident))
-
-            else:
+                if dtype == TAG_NODE and ident in self.nparents:
+                    output += [
+                        (child[0], f"{myname}{name}/{child[1]}", child[2])
+                        for child in self.get_children(ident)
+                    ]
+            if dtype == TAG_FOLDER:
                 output += [
                     (dtype2, myname + name2, ident2)
                     for (dtype2, name2, ident2) in self[ident].all_lower_nodes
