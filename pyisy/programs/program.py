@@ -4,6 +4,7 @@ from ..constants import (
     CMD_ENABLE_RUN_AT_STARTUP,
     PROTO_PROGRAM,
     TAG_PROGRAM,
+    UPDATE_INTERVAL,
 )
 from .folder import Folder
 
@@ -154,7 +155,7 @@ class Program(Folder):
             self._running = value
         return self._running
 
-    def update(self, wait_time=0, data=None):
+    def update(self, wait_time=UPDATE_INTERVAL, data=None):
         """
         Update the program with values on the controller.
 

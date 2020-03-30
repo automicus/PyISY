@@ -18,6 +18,7 @@ from ..constants import (
     TAG_PRGM_RUNNING,
     TAG_PRGM_STATUS,
     TAG_PROGRAM,
+    UPDATE_INTERVAL,
     XML_OFF,
     XML_ON,
     XML_PARSE_ERROR,
@@ -271,7 +272,7 @@ class Programs:
 
             self.isy.log.info("ISY Loaded/Updated Programs")
 
-    def update(self, wait_time=0, address=None):
+    def update(self, wait_time=UPDATE_INTERVAL, address=None):
         """
         Update the status of the programs and folders.
 

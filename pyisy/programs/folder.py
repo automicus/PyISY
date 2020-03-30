@@ -76,7 +76,7 @@ class Folder:
             self.status_events.notify(self._status)
         return self._status
 
-    def update(self, wait_time=0, data=None):
+    def update(self, wait_time=UPDATE_INTERVAL, data=None):
         """
         Update the status of the program.
 
@@ -85,8 +85,8 @@ class Folder:
         """
         if data is not None:
             self.status = data["pstatus"]
-        elif not self.isy.auto_update:
-            self._programs.update(wait_time, address=self._id)
+            return
+        self._programs.update(wait_time=wait_time, address=self._id)
 
     def send_cmd(self, command):
         """Run the appropriate clause of the object."""
@@ -98,7 +98,8 @@ class Folder:
             )
             return False
         self.isy.log.debug('ISY ran "%s" on program: %s', command, self._id)
-        self.update(UPDATE_INTERVAL)
+        if not self.isy.auto_update:
+            self.update()
         return True
 
     def enable(self):
