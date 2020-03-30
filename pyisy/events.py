@@ -19,6 +19,7 @@ from .constants import (
     PROP_STATUS,
     SOCKET_BUFFER_SIZE,
     TAG_NODE,
+    VERBOSE,
 )
 from .helpers import attr_from_xml, value_from_xml
 
@@ -71,7 +72,7 @@ class EventStream:
         except xml.parsers.expat.ExpatError:
             self.isy.log.warning("ISY Received Malformed XML:\n" + msg)
             return
-        self.isy.log.debug("ISY Update Received:\n" + msg)
+        self.isy.log.log(VERBOSE, "ISY Update Received:\n" + msg)
 
         # A wild stream id appears!
         if f"{ATTR_STREAM_ID}=" in msg and ATTR_STREAM_ID not in self.data:
@@ -89,8 +90,6 @@ class EventStream:
             self.isy.nodes.update_received(xmldoc)
         elif cntrl[0] != "_":  # NODE CONTROL EVENT
             self.isy.nodes.control_message_received(xmldoc)
-        elif cntrl == "_11":  # WEATHER UPDATE
-            pass  # Climate module support retired.
         elif cntrl == "_1":  # Trigger Update
             if f"<{ATTR_VAR}" in msg:  # VARIABLE
                 self.isy.variables.update_received(xmldoc)

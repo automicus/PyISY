@@ -18,6 +18,12 @@ from ..constants import (
 from ..helpers import attr_from_element, attr_from_xml, value_from_xml
 from .variable import Variable
 
+EMPTY_VARIABLE_RESPONSES = [
+    "/CONF/INTEGER.VAR not found",
+    "/CONF/STATE.VAR not found",
+    '<CList type="VAR_INT"></CList>',
+]
+
 
 class Variables:
     """
@@ -86,7 +92,7 @@ class Variables:
         """Parse the XML Variable Definitions from the ISY."""
         for ind in range(2):
             # parse definitions
-            if xmls[ind] is None or xmls[ind] == '<CList type="VAR_INT"></CList>':
+            if xmls[ind] is None or xmls[ind] in EMPTY_VARIABLE_RESPONSES:
                 # No variables of this type defined.
                 continue
             try:
