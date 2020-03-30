@@ -60,7 +60,7 @@ class Clock:
 
     def __str__(self):
         """Return a string representing the clock Class."""
-        return "ISY Clock (Last Updated {!s})".format(self.last_called)
+        return f"ISY Clock (Last Updated {self.last_called})"
 
     def __repr__(self):
         """Return a long string showing all the clock values."""

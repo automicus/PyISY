@@ -49,7 +49,7 @@ class EventStream:
             context.check_hostname = False
             self.socket = context.wrap_socket(
                 socket.socket(socket.AF_INET, socket.SOCK_STREAM),
-                server_hostname="https://{}".format(self.data["addr"]),
+                server_hostname=f"https://{self.data['addr']}",
             )
         else:
             self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

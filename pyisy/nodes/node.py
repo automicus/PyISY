@@ -72,81 +72,26 @@ class Node(NodeBase):
         family_id=None,
     ):
         """Initialize a Node class."""
-        self._zwave_props = zwave_props
-        self._node_def_id = node_def_id
-        self._type = device_type
         self._enabled = enabled if enabled is not None else True
-        self._parent_node = pnode if pnode != address else None
-        self._uom = state.uom
-        self._prec = state.prec
         self._formatted = state.formatted
+        self._node_def_id = node_def_id
         self._node_server = node_server
+        self._parent_node = pnode if pnode != address else None
+        self._prec = state.prec
         self._protocol = protocol
-        self.status.update(state.value, force=True, silent=True)
+        self._type = device_type
+        self._uom = state.uom
+        self._zwave_props = zwave_props
         self.control_events = EventEmitter()
         super().__init__(
             nodes,
             address,
             name,
+            state.value,
             family_id=family_id,
             aux_properties=aux_properties,
             pnode=pnode,
         )
-
-    @property
-    def protocol(self):
-        """Return the device standard used (Z-Wave, Zigbee, Insteon, Node Server)."""
-        return self._protocol
-
-    @property
-    def node_server(self):
-        """Return the node server parent slot (used for v5 Node Server devices)."""
-        return self._node_server
-
-    @property
-    def zwave_props(self):
-        """Return the Z-Wave Properties (used for Z-Wave devices)."""
-        return self._zwave_props
-
-    @property
-    def node_def_id(self):
-        """Return the node definition id (used for ISYv5)."""
-        return self._node_def_id
-
-    @property
-    def type(self):
-        """Return the device typecode (Used for Insteon)."""
-        return self._type
-
-    @property
-    def enabled(self):
-        """Return if the device is enabled or not in the ISY."""
-        return self._enabled
-
-    @property
-    def uom(self):
-        """Return the unit of measurement for the device."""
-        return self._uom
-
-    def update_uom(self, value):
-        """Set the unit of measurement if not provided initially."""
-        if value and self._uom != value:
-            self._uom = value
-
-    @property
-    def prec(self):
-        """Return the precision of the raw device value."""
-        return self._prec
-
-    def update_precision(self, value):
-        """Set the unit of measurement if not provided initially."""
-        if value and self._prec != value:
-            self._prec = value
-
-    @property
-    def formatted(self):
-        """Return the formatted value with units, if provided."""
-        return self._formatted
 
     @property
     def dimmable(self):
@@ -167,6 +112,23 @@ class Node(NodeBase):
         return dimmable
 
     @property
+    def enabled(self):
+        """Return if the device is enabled or not in the ISY."""
+        return self._enabled
+
+    @property
+    def formatted(self):
+        """Return the formatted value with units, if provided."""
+        return self._formatted
+
+    @property
+    def is_lock(self):
+        """Determine if this device is a door lock type."""
+        return (self.type and self.type.startswith("4.64")) or (
+            self.protocol == PROTO_ZWAVE and self.zwave_props.category == "111"
+        )
+
+    @property
     def is_thermostat(self):
         """Determine if this device is a thermostat/climate control device."""
         return (
@@ -178,11 +140,53 @@ class Node(NodeBase):
         )
 
     @property
-    def is_lock(self):
-        """Determine if this device is a door lock type."""
-        return (self.type and self.type.startswith("4.64")) or (
-            self.protocol == PROTO_ZWAVE and self.zwave_props.category == "111"
-        )
+    def node_def_id(self):
+        """Return the node definition id (used for ISYv5)."""
+        return self._node_def_id
+
+    @property
+    def node_server(self):
+        """Return the node server parent slot (used for v5 Node Server devices)."""
+        return self._node_server
+
+    @property
+    def parent_node(self):
+        """
+        Return the parent node object of this node.
+
+        Typically this is for devices that are represented as multiple nodes in
+        the ISY, such as door and leak sensors.
+        Return None if there is no parent.
+
+        """
+        if self._parent_node:
+            return self._nodes.get_by_id(self._parent_node)
+        return None
+
+    @property
+    def prec(self):
+        """Return the precision of the raw device value."""
+        return self._prec
+
+    @property
+    def protocol(self):
+        """Return the device standard used (Z-Wave, Zigbee, Insteon, Node Server)."""
+        return self._protocol
+
+    @property
+    def type(self):
+        """Return the device typecode (Used for Insteon)."""
+        return self._type
+
+    @property
+    def uom(self):
+        """Return the unit of measurement for the device."""
+        return self._uom
+
+    @property
+    def zwave_props(self):
+        """Return the Z-Wave Properties (used for Z-Wave devices)."""
+        return self._zwave_props
 
     def update(self, wait_time=0, hint=None, xmldoc=None):
         """Update the value of the node from the controller."""
@@ -199,7 +203,7 @@ class Node(NodeBase):
                 return
         elif hint is not None:
             # assume value was set correctly, auto update will correct errors
-            self.status.update(hint, silent=True)
+            self.status = hint
             self.isy.log.debug("ISY updated node: %s", self._id)
             return
 
@@ -212,8 +216,29 @@ class Node(NodeBase):
         self._uom = state.uom if state.uom != "" else self._uom
         self._prec = state.prec if state.prec != "0" else self._prec
         self._formatted = state.formatted
-        self.status.update(state.value, silent=True)
+        self.status = state.value
         self.isy.log.debug("ISY updated node: %s", self._id)
+
+    def update_precision(self, value):
+        """Set the unit of measurement if not provided initially."""
+        if value and self._prec != value:
+            self._prec = value
+
+    def update_uom(self, value):
+        """Set the unit of measurement if not provided initially."""
+        if value and self._uom != value:
+            self._uom = value
+
+    def get_command_value(self, uom, cmd):
+        """Check against the list of UOM States if this is a valid command."""
+        if cmd not in UOM_TO_STATES[uom].values():
+            self.isy.log.warning(
+                "Failed to call %s on %s, invalid command.", cmd, self.address
+            )
+            return None
+        return list(UOM_TO_STATES[uom].keys())[
+            list(UOM_TO_STATES[uom].values()).index(cmd)
+        ]
 
     def get_groups(self, controller=True, responder=True):
         """
@@ -234,64 +259,41 @@ class Node(NodeBase):
                         groups.append(child[2])
         return groups
 
-    @property
-    def parent_node(self):
-        """
-        Return the parent node object of this node.
-
-        Typically this is for devices that are represented as multiple nodes in
-        the ISY, such as door and leak sensors.
-        Return None if there is no parent.
-
-        """
-        if self._parent_node:
-            return self._nodes.get_by_id(self._parent_node)
-        return None
-
-    def get_command_value(self, uom, cmd):
-        """Check against the list of UOM States if this is a valid command."""
-        if cmd not in UOM_TO_STATES[uom].values():
-            self.isy.log.warning(
-                "Failed to call %s on %s, invalid command.", cmd, self.address
-            )
-            return None
-        return list(UOM_TO_STATES[uom].keys())[
-            list(UOM_TO_STATES[uom].values()).index(cmd)
-        ]
-
     def get_property_uom(self, prop):
         """Get the Unit of Measurement for Z-Wave Climate Settings."""
         if self._protocol == PROTO_ZWAVE and self._aux_properties.get(prop):
             return self._aux_properties[prop].uom
         return None
 
-    def start_manual_dimming(self):
-        """Begin manually dimming a device."""
-        return self.send_cmd(CMD_MANUAL_DIM_BEGIN)
-
-    def stop_manual_dimming(self):
-        """Stop manually dimming  a device."""
-        return self.send_cmd(CMD_MANUAL_DIM_STOP)
-
-    def set_on_level(self, val):
-        """Set the ON Level for a device."""
-        if not val or not isnan(val) or int(val) not in range(256):
+    def secure_lock(self):
+        """Send a command to securely lock a lock device."""
+        if not self.is_lock:
             self.isy.log.warning(
-                "Invalid value for On Level for %s. Valid values are 0-255.", self._id
+                "Failed to lock %s, it is not a lock node.", self.address
             )
-            return False
-        return self.send_cmd(PROP_ON_LEVEL, str(val))
+            return
+        return self.send_cmd(CMD_SECURE, "1")
 
-    def set_ramp_rate(self, val):
-        """Set the Ramp Rate for a device."""
-        if not val or not isnan(val) or int(val) not in range(32):
+    def secure_unlock(self):
+        """Send a command to securely lock a lock device."""
+        if not self.is_lock:
             self.isy.log.warning(
-                "Invalid value for Ramp Rate for %s. "
-                "Valid values are 0-31. See 'INSTEON_RAMP_RATES' in constants.py for values.",
-                self._id,
+                "Failed to unlock %s, it is not a lock node.", self.address
             )
-            return False
-        return self.send_cmd(PROP_RAMP_RATE, str(val))
+            return
+        return self.send_cmd(CMD_SECURE, "0")
+
+    def set_climate_mode(self, cmd):
+        """Send a command to the device to set the climate mode."""
+        if not self.is_thermostat:
+            self.isy.log.warning(
+                "Failed to set setpoint on %s, it is not a thermostat node.",
+                self.address,
+            )
+        cmd_value = self.get_command_value(UOM_CLIMATE_MODES, cmd)
+        if cmd_value:
+            return self.send_cmd(CMD_CLIMATE_MODE, cmd_value)
+        return False
 
     def set_climate_setpoint(self, val):
         """Send a command to the device to set the system setpoints."""
@@ -343,32 +345,36 @@ class Node(NodeBase):
             return self.send_cmd(CMD_CLIMATE_FAN_SETTING, cmd_value)
         return False
 
-    def set_climate_mode(self, cmd):
-        """Send a command to the device to set the climate mode."""
-        if not self.is_thermostat:
+    def set_on_level(self, val):
+        """Set the ON Level for a device."""
+        if not val or not isnan(val) or int(val) not in range(256):
             self.isy.log.warning(
-                "Failed to set setpoint on %s, it is not a thermostat node.",
-                self.address,
+                "Invalid value for On Level for %s. Valid values are 0-255.", self._id
             )
-        cmd_value = self.get_command_value(UOM_CLIMATE_MODES, cmd)
-        if cmd_value:
-            return self.send_cmd(CMD_CLIMATE_MODE, cmd_value)
-        return False
+            return False
+        return self.send_cmd(PROP_ON_LEVEL, str(val))
 
-    def secure_lock(self):
-        """Send a command to securely lock a lock device."""
-        if not self.is_lock:
+    def set_ramp_rate(self, val):
+        """Set the Ramp Rate for a device."""
+        if not val or not isnan(val) or int(val) not in range(32):
             self.isy.log.warning(
-                "Failed to lock %s, it is not a lock node.", self.address
+                "Invalid value for Ramp Rate for %s. "
+                "Valid values are 0-31. See 'INSTEON_RAMP_RATES' in constants.py for values.",
+                self._id,
             )
-            return
-        return self.send_cmd(CMD_SECURE, "1")
+            return False
+        return self.send_cmd(PROP_RAMP_RATE, str(val))
 
-    def secure_unlock(self):
-        """Send a command to securely lock a lock device."""
-        if not self.is_lock:
-            self.isy.log.warning(
-                "Failed to unlock %s, it is not a lock node.", self.address
-            )
-            return
-        return self.send_cmd(CMD_SECURE, "0")
+    def start_manual_dimming(self):
+        """Begin manually dimming a device."""
+        self.isy.log.warning(
+            f"'{CMD_MANUAL_DIM_BEGIN}' is depreciated. Use Fade Commands instead."
+        )
+        return self.send_cmd(CMD_MANUAL_DIM_BEGIN)
+
+    def stop_manual_dimming(self):
+        """Stop manually dimming  a device."""
+        self.isy.log.warning(
+            f"'{CMD_MANUAL_DIM_STOP}' is depreciated. Use Fade Commands instead."
+        )
+        return self.send_cmd(CMD_MANUAL_DIM_STOP)

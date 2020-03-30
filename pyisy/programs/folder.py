@@ -1,6 +1,4 @@
 """ISY Program Folders."""
-from VarEvents import Property
-
 from ..constants import (
     CMD_DISABLE,
     CMD_ENABLE,
@@ -13,6 +11,7 @@ from ..constants import (
     UPDATE_INTERVAL,
     URL_PROGRAMS,
 )
+from ..helpers import EventEmitter
 
 
 class Folder:
@@ -29,21 +28,20 @@ class Folder:
                   folder.
     """
 
-    status = Property(0, readonly=True)
     dtype = TAG_FOLDER
 
     def __init__(self, programs, address, pname, pstatus):
         """Initialize the Folder class."""
-        self.noupdate = False
-        self._programs = programs
-        self.isy = programs.isy
-        self.name = pname
         self._id = address
-        self.status.update(pstatus, force=True, silent=True)
+        self._name = pname
+        self._programs = programs
+        self._status = pstatus
+        self.isy = programs.isy
+        self.status_events = EventEmitter()
 
     def __str__(self):
         """Return a string representation of the node."""
-        return "{}({})".format(type(self).__name__, self._id)
+        return f"{type(self).__name__}({self._id})"
 
     @property
     def address(self):
@@ -55,6 +53,29 @@ class Folder:
         """Get the leaf property."""
         return self
 
+    @property
+    def name(self):
+        """Return the name of the Node."""
+        return self._name
+
+    @property
+    def protocol(self):
+        """Return the protocol for this entity."""
+        return PROTO_FOLDER
+
+    @property
+    def status(self):
+        """Return the current node state."""
+        return self._status
+
+    @status.setter
+    def status(self, value):
+        """Set the current node state and notify listeners."""
+        if self._status != value:
+            self._status = value
+            self.status_events.notify(self._status)
+        return self._status
+
     def update(self, wait_time=0, data=None):
         """
         Update the status of the program.
@@ -62,13 +83,12 @@ class Folder:
         |  data: [optional] The data to update the folder with.
         |  wait_time: [optional] Seconds to wait before updating.
         """
-        if not self.noupdate:
-            if data is not None:
-                self.status.update(data["pstatus"], force=True, silent=True)
-            elif not self.isy.auto_update:
-                self._programs.update(wait_time, address=self._id)
+        if data is not None:
+            self.status = data["pstatus"]
+        elif not self.isy.auto_update:
+            self._programs.update(wait_time, address=self._id)
 
-    def send_pgrm_cmd(self, command):
+    def send_cmd(self, command):
         """Run the appropriate clause of the object."""
         req_url = self.isy.conn.compile_url([URL_PROGRAMS, str(self._id), command])
         result = self.isy.conn.request(req_url)
@@ -81,31 +101,26 @@ class Folder:
         self.update(UPDATE_INTERVAL)
         return True
 
-    @property
-    def protocol(self):
-        """Return the protocol for this entity."""
-        return PROTO_FOLDER
-
-    def run(self):
-        """Send a run command to the program/folder."""
-        return self.send_pgrm_cmd(CMD_RUN)
-
-    def run_then(self):
-        """Send a runThen command to the program/folder."""
-        return self.send_pgrm_cmd(CMD_RUN_THEN)
-
-    def run_else(self):
-        """Send a runElse command to the program/folder."""
-        return self.send_pgrm_cmd(CMD_RUN_ELSE)
-
-    def stop(self):
-        """Send a stop command to the program/folder."""
-        return self.send_pgrm_cmd(CMD_STOP)
-
     def enable(self):
         """Send command to the program/folder to enable it."""
-        return self.send_pgrm_cmd(CMD_ENABLE)
+        return self.send_cmd(CMD_ENABLE)
 
     def disable(self):
         """Send command to the program/folder to enable it."""
-        return self.send_pgrm_cmd(CMD_DISABLE)
+        return self.send_cmd(CMD_DISABLE)
+
+    def run(self):
+        """Send a run command to the program/folder."""
+        return self.send_cmd(CMD_RUN)
+
+    def run_then(self):
+        """Send a runThen command to the program/folder."""
+        return self.send_cmd(CMD_RUN_THEN)
+
+    def run_else(self):
+        """Send a runElse command to the program/folder."""
+        return self.send_cmd(CMD_RUN_ELSE)
+
+    def stop(self):
+        """Send a stop command to the program/folder."""
+        return self.send_cmd(CMD_STOP)

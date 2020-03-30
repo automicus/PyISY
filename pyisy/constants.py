@@ -584,7 +584,7 @@ UOM_TO_STATES = {
             "104": "opening",
         },
         **{
-            str(b): "{} %".format(b) for a, b in enumerate(list(range(1, 100)))
+            str(b): f"{b} %" for a, b in enumerate(list(range(1, 100)))
         },  # 1-99 are percentage open
     },
     "98": {  # Insteon Thermostat Mode
