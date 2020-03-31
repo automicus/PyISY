@@ -325,7 +325,9 @@ class Nodes:
                     # the ISY MAC address in newer versions of
                     # ISY firmwares > 5.0.6+ ..
                     if int(flag) & 0x08:
-                        self.isy.log.info("Skipping group flag=%s %s", flag, address)
+                        self.isy.log.debug(
+                            "Skipping root group flag=%s %s", flag, address
+                        )
                         continue
                     mems = feature.getElementsByTagName(TAG_LINK)
                     # Build list of members
