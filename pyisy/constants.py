@@ -172,6 +172,7 @@ COMMAND_FRIENDLY_NAME = {
     "AWAKE": "awake",
     "BARPRES": "barometric_pressure",
     "CC": "current",
+    "CLIFRS": "fan_running_state",
     "CLIFSO": "fan_setting_override",
     "CO2LVL": "co2_level",
     "CPW": "power",
