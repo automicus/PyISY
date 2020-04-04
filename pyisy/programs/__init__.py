@@ -161,9 +161,9 @@ class Programs:
             pobj = None  # this is a new program that hasn't been registered
 
         if isinstance(pobj, Program):
+            new_status = False
             if f"<{TAG_PRGM_STATUS}>" in xml:
                 status = value_from_xml(xmldoc, TAG_PRGM_STATUS)
-                new_status = False
                 if status == "21":
                     pobj.ran_then += 1
                     new_status = True
