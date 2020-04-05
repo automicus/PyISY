@@ -18,11 +18,15 @@ from ..constants import (
     METHOD_COMMAND,
     NODE_FAMILY_ID,
     PROP_ON_LEVEL,
+    TAG_DESCRIPTION,
+    TAG_IS_LOAD,
+    TAG_LOCATION,
     TAG_SPOKEN,
     UPDATE_INTERVAL,
     URL_NODES,
     URL_NOTES,
     XML_PARSE_ERROR,
+    XML_TRUE,
 )
 from ..helpers import EventEmitter, value_from_xml
 
@@ -69,9 +73,30 @@ class NodeBase:
         return self._id
 
     @property
+    def description(self):
+        """Return the description of the node from it's notes."""
+        if self._notes is None:
+            self._notes = self.parse_notes()
+        return self._notes[TAG_DESCRIPTION]
+
+    @property
     def family(self):
         """Return the ISY Family category."""
         return self._family
+
+    @property
+    def is_load(self):
+        """Return the isLoad property of the node from it's notes."""
+        if self._notes is None:
+            self._notes = self.parse_notes()
+        return self._notes[TAG_IS_LOAD]
+
+    @property
+    def location(self):
+        """Return the location of the node from it's notes."""
+        if self._notes is None:
+            self._notes = self.parse_notes()
+        return self._notes[TAG_LOCATION]
 
     @property
     def name(self):
@@ -91,7 +116,8 @@ class NodeBase:
     @property
     def spoken(self):
         """Return the text of the Spoken property inside the group notes."""
-        self._notes = self.parse_notes()
+        if self._notes is None:
+            self._notes = self.parse_notes()
         return self._notes[TAG_SPOKEN]
 
     @property
@@ -108,11 +134,18 @@ class NodeBase:
         return self._status
 
     def parse_notes(self):
-        """Parse the notes for a given node."""
+        """Parse the notes for a given node.
+
+        Notes are not retrieved unless explicitly request by a property call
+        or a call to this function.
+        """
         notes_xml = self.isy.conn.request(
             self.isy.conn.compile_url([URL_NODES, self._id, URL_NOTES]), ok404=True
         )
         spoken = None
+        is_load = None
+        description = None
+        location = None
         if notes_xml is not None and notes_xml != "":
             try:
                 notesdom = minidom.parseString(notes_xml)
@@ -120,7 +153,15 @@ class NodeBase:
                 self.isy.log.error("%s: Node Notes %s", XML_PARSE_ERROR, notes_xml)
             else:
                 spoken = value_from_xml(notesdom, TAG_SPOKEN)
-        return {TAG_SPOKEN: spoken}
+                location = value_from_xml(notesdom, TAG_LOCATION)
+                description = value_from_xml(notesdom, TAG_DESCRIPTION)
+                is_load = value_from_xml(notesdom, TAG_IS_LOAD)
+        return {
+            TAG_SPOKEN: spoken,
+            TAG_IS_LOAD: is_load == XML_TRUE,
+            TAG_DESCRIPTION: description,
+            TAG_LOCATION: location,
+        }
 
     def update(self, wait_time=0, hint=None, xmldoc=None):
         """Update the group with values from the controller."""
