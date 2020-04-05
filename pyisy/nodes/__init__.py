@@ -201,7 +201,7 @@ class Nodes:
         # Check if UOM/PREC have changed or were not set:
         node.update_precision(prec)
         node.update_uom(uom)
-        node.status.update(value, force=True, silent=True)
+        node.status = value
         self.isy.log.debug("ISY Updated Node: " + address)
 
     def control_message_received(self, xmldoc):
@@ -325,7 +325,9 @@ class Nodes:
                     # the ISY MAC address in newer versions of
                     # ISY firmwares > 5.0.6+ ..
                     if int(flag) & 0x08:
-                        self.isy.log.info("Skipping group flag=%s %s", flag, address)
+                        self.isy.log.debug(
+                            "Skipping root group flag=%s %s", flag, address
+                        )
                         continue
                     mems = feature.getElementsByTagName(TAG_LINK)
                     # Build list of members
@@ -350,7 +352,7 @@ class Nodes:
                         ),
                         ntype,
                     )
-            self.isy.log.debug("ISY Loaded {}".format(ntype))
+            self.isy.log.debug("ISY Loaded %s", ntype)
 
     def update(self, wait_time=0):
         """
@@ -406,7 +408,7 @@ class Nodes:
 
             if output:
                 return output
-        raise KeyError("Unrecognized Key: [{!s}]".format(val))
+        raise KeyError(f"Unrecognized Key: [{val}]")
 
     def __setitem__(self, item, value):
         """Set item value."""

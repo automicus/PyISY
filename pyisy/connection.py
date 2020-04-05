@@ -148,10 +148,7 @@ class Connection:
 
         if req.status_code == 200:
             self.log.debug("ISY Response Received")
-            # remove unicode from string in python 2.7, 3.2,
-            # and 3.4 compatible way
-            xml = "".join(char for char in req.text if ord(char) < 128)
-            return xml
+            return req.text
         if req.status_code == 404 and ok404:
             self.log.debug("ISY Response Received")
             return ""

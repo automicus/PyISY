@@ -1,6 +1,4 @@
 """Representation of groups (scenes) from an ISY."""
-from VarEvents import Property
-
 from ..constants import ISY_VALUE_UNKNOWN, PROTO_GROUP
 from .nodebase import NodeBase
 
@@ -24,8 +22,6 @@ class Group(NodeBase):
     :ivar group_all_on: Watched property indicating if all devices in group are on.
     """
 
-    group_all_on = Property(False)
-
     def __init__(
         self,
         nodes,
@@ -37,14 +33,14 @@ class Group(NodeBase):
         pnode=None,
     ):
         """Initialize a Group class."""
-        self._members = members or []
+        self._all_on = False
         self._controllers = controllers or []
-        super().__init__(nodes, address, name, family_id=family_id, pnode=pnode)
+        self._members = members or []
+        super().__init__(nodes, address, name, 0, family_id=family_id, pnode=pnode)
 
         # listen for changes in children
         self._members_handlers = [
-            self._nodes[m].status.subscribe("changed", self.update)
-            for m in self.members
+            self._nodes[m].status_events.subscribe(self.update) for m in self.members
         ]
 
         # get and update the status
@@ -55,22 +51,24 @@ class Group(NodeBase):
         for handler in self._members_handlers:
             handler.unsubscribe()
 
-    def __report_status__(self, new_val):
-        """Report the status of the scene."""
-        # first clean the status input
-        status = int(self.status)
-        if status > 0:
-            clean_status = 255
-        elif status <= 0:
-            clean_status = 0
-        if status != clean_status:
-            self.status.update(clean_status, force=True, silent=True)
+    @property
+    def controllers(self):
+        """Get the controller nodes of the scene/group."""
+        return self._controllers
 
-        # now update the nodes
-        if clean_status > 0:
-            self.turn_on()
-        else:
-            self.turn_off()
+    @property
+    def group_all_on(self):
+        """Return the current node state."""
+        return self._status
+
+    @group_all_on.setter
+    def group_all_on(self, value):
+        """Set the current node state and notify listeners."""
+        if self._all_on != value:
+            self._all_on = value
+            # Re-publish the current status. Let users pick up the all on change.
+            self.status_events.notify(self._status)
+        return self._all_on
 
     @property
     def members(self):
@@ -81,11 +79,6 @@ class Group(NodeBase):
     def protocol(self):
         """Return the protocol for this entity."""
         return PROTO_GROUP
-
-    @property
-    def controllers(self):
-        """Get the controller nodes of the scene/group."""
-        return self._controllers
 
     def update(self, wait_time=0, hint=None, xmldoc=None):
         """Update the group with values from the controller."""
@@ -100,8 +93,8 @@ class Group(NodeBase):
         on_nodes = [node for node in valid_nodes if int(self._nodes[node].status) > 0]
 
         if on_nodes:
-            self.group_all_on.update(len(on_nodes) == len(valid_nodes), silent=True)
-            self.status.update(255, force=True, silent=True)
+            self.group_all_on = len(on_nodes) == len(valid_nodes)
+            self.status = 255
             return
-        self.status.update(0, force=True, silent=True)
-        self.group_all_on.update(False, silent=True)
+        self.status = 0
+        self.group_all_on = False

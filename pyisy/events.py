@@ -1,10 +1,9 @@
 """ISY Event Stream."""
 import datetime
-import select
 import socket
 import ssl
-import sys
 from threading import Thread, ThreadError
+import time
 import xml
 from xml.dom import minidom
 
@@ -17,9 +16,11 @@ from .constants import (
     ATTR_VAR,
     POLL_TIME,
     PROP_STATUS,
-    SOCKET_BUFFER_SIZE,
+    RECONNECT_DELAY,
     TAG_NODE,
+    VERBOSE,
 )
+from .eventreader import ISYEventReader, ISYMaxConnections, ISYStreamDataError
 from .helpers import attr_from_xml, value_from_xml
 
 
@@ -49,7 +50,7 @@ class EventStream:
             context.check_hostname = False
             self.socket = context.wrap_socket(
                 socket.socket(socket.AF_INET, socket.SOCK_STREAM),
-                server_hostname="https://{}".format(self.data["addr"]),
+                server_hostname=f"https://{self.data['addr']}",
             )
         else:
             self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -71,7 +72,7 @@ class EventStream:
         except xml.parsers.expat.ExpatError:
             self.isy.log.warning("ISY Received Malformed XML:\n" + msg)
             return
-        self.isy.log.debug("ISY Update Received:\n" + msg)
+        self.isy.log.log(VERBOSE, "ISY Update Received:\n" + msg)
 
         # A wild stream id appears!
         if f"{ATTR_STREAM_ID}=" in msg and ATTR_STREAM_ID not in self.data:
@@ -89,8 +90,6 @@ class EventStream:
             self.isy.nodes.update_received(xmldoc)
         elif cntrl[0] != "_":  # NODE CONTROL EVENT
             self.isy.nodes.control_message_received(xmldoc)
-        elif cntrl == "_11":  # WEATHER UPDATE
-            pass  # Climate module support retired.
         elif cntrl == "_1":  # Trigger Update
             if f"<{ATTR_VAR}" in msg:  # VARIABLE
                 self.isy.variables.update_received(xmldoc)
@@ -130,26 +129,6 @@ class EventStream:
             self._running = False
             self.unsubscribe()
             self.disconnect()
-
-    def read(self):
-        """Read data from the socket."""
-        loop = True
-        output = ""
-        while loop:
-            try:
-                new_data = self.socket.recv(SOCKET_BUFFER_SIZE)
-            except ssl.SSLWantReadError:
-                pass
-            except socket.error:
-                loop = False
-            else:
-                if len(new_data) < SOCKET_BUFFER_SIZE:
-                    loop = False
-                if sys.version_info.major == 3:
-                    new_data = new_data.decode("utf-8")
-                output += new_data
-
-        return output.split("\n")
 
     def write(self, msg):
         """Write data back to the socket."""
@@ -215,23 +194,59 @@ class EventStream:
             return (datetime.datetime.now() - self._lasthb).seconds
         return 0.0
 
+    def _lost_connection(self, delay=0):
+        """React when the event stream connection is lost."""
+        self.disconnect()
+        self.isy.log.warning("PyISY lost connection to the ISY event stream.")
+        if self._on_lost_function is not None:
+            time.sleep(delay)
+            self._on_lost_function()
+
     def watch(self):
         """Watch the subscription connection and report if dead."""
-        if self._subscribed:
-            while self._running and self._subscribed:
-                # verify connection is still alive
-                if self.heartbeat_time > self._hbwait:
-                    self.disconnect()
-                    self.isy.log.warning(
-                        "PyISY lost connection to the ISY event stream."
-                    )
-                    if self._on_lost_function is not None:
-                        self._on_lost_function()
+        if not self._subscribed:
+            self.isy.log.debug("PyISY watch called without a subscription.")
+            return
 
-                # poll socket for new data
-                inready, _, _ = select.select([self.socket], [], [], POLL_TIME)
-                if self.socket in inready:
-                    for data in self.read():
-                        if data.startswith("<?xml"):
-                            data = data.strip().replace("POST reuse HTTP/1.1", "")
-                            self._route_message(data)
+        event_reader = ISYEventReader(self.socket)
+
+        while self._running and self._subscribed:
+            # verify connection is still alive
+            if self.heartbeat_time > self._hbwait:
+                self._lost_connection()
+                return
+
+            try:
+                events = event_reader.read_events(POLL_TIME)
+            except ISYMaxConnections:
+                self.isy.log.error(
+                    "PyISY reached maximum connections, delaying reconnect attempt by %s seconds.",
+                    RECONNECT_DELAY,
+                )
+                self._lost_connection(RECONNECT_DELAY)
+                return
+            except ISYStreamDataError as ex:
+                self.isy.log.warning(
+                    "PyISY encountered an error while reading the event stream: %s.", ex
+                )
+                self._lost_connection()
+                return
+            except socket.error as ex:
+                self.isy.log.warning(
+                    "PyISY encountered a socket error while reading the event stream: %s.",
+                    ex,
+                )
+                self._lost_connection()
+                return
+
+            for message in events:
+                try:
+                    self._route_message(message)
+                except Exception as ex:  # pylint: disable=broad-except
+                    self.isy.log.warning(
+                        "PyISY encountered while routing message '%s': %s", message, ex
+                    )
+
+    def __del__(self):
+        """Ensure we unsubscribe on destroy."""
+        self.unsubscribe()

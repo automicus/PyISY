@@ -1,14 +1,10 @@
 """Representation of a program from the ISY."""
-from VarEvents import Property
-
 from ..constants import (
-    CMD_DISABLE,
     CMD_DISABLE_RUN_AT_STARTUP,
-    CMD_ENABLE,
     CMD_ENABLE_RUN_AT_STARTUP,
-    EMPTY_TIME,
     PROTO_PROGRAM,
     TAG_PROGRAM,
+    UPDATE_INTERVAL,
 )
 from .folder import Folder
 
@@ -30,32 +26,8 @@ class Program(Folder):
                   controller start up.
     |  prunning: Boolean value showing if the current program is running
                  on the controller.
-
-    :ivar name: The name of the program.
-    :ivar status: Watched property representing the current status of the
-                  program.
-    :ivar lastUpdate: Watched property representing the last time the program
-                      was updated.
-    :ivar lastRun: Watched property representing the last time the program was
-                   run.
-    :ivar lastFinished: Watched property representing the last time the program
-                        finished running.
-    :ivar enabled: Watched property representing if the program is enabled on
-                   the controller.
-    :ivar runAtStartup: Watched property representing the if the program runs
-                        on controller start up.
-    :ivar running: Watched property representing if the current program is
-                   running on the controller.
     """
 
-    lastUpdate = Property(EMPTY_TIME, readonly=True)
-    lastRun = Property(EMPTY_TIME, readonly=True)
-    lastFinished = Property(EMPTY_TIME, readonly=True)
-    enabled = Property(True)
-    runAtStartup = Property(True)
-    running = Property(False, readonly=True)
-    ranThen = Property(0, readonly=True)
-    ranElse = Property(0, readonly=True)
     dtype = TAG_PROGRAM
 
     def __init__(
@@ -73,58 +45,143 @@ class Program(Folder):
     ):
         """Initialize a Program class."""
         super(Program, self).__init__(programs, address, pname, pstatus)
-        self.lastUpdate.update(plastup, force=True, silent=True)
-        self.lastRun.update(plastrun, force=True, silent=True)
-        self.lastFinished.update(plastfin, force=True, silent=True)
-        self.enabled.update(penabled, force=True, silent=True)
-        self.enabled.responder = self.__report_enabled__
-        self.runAtStartup.update(pstartrun, force=True, silent=True)
-        self.runAtStartup.responder = self.__report_startrun__
-        self.running.update(prunning, force=True, silent=True)
+        self._enabled = penabled
+        self._last_finished = plastfin
+        self._last_run = plastrun
+        self._last_update = plastup
+        self._ran_else = 0
+        self._ran_then = 0
+        self._run_at_startup = pstartrun
+        self._running = prunning
 
-    def __report_enabled__(self, val):
-        """Set the enabled flag."""
-        self.noupdate = True
-        self.send_pgrm_cmd(CMD_ENABLE if val else CMD_DISABLE)
-        self.noupdate = False
+    @property
+    def enabled(self):
+        """Return if the program is enabled on the controller."""
+        return self._enabled
 
-    def __report_startrun__(self, val):
-        """Set the run at startup flag."""
-        self.noupdate = True
-        self.send_pgrm_cmd(
-            CMD_ENABLE_RUN_AT_STARTUP if val else CMD_DISABLE_RUN_AT_STARTUP
-        )
-        self.noupdate = False
+    @enabled.setter
+    def enabled(self, value):
+        """Set if the program is enabled on the controller."""
+        if self._enabled != value:
+            self._enabled = value
+        return self._enabled
 
-    def update(self, wait_time=0, data=None):
-        """
-        Update the program with values on the controller.
+    @property
+    def last_finished(self):
+        """Return the last time the program finished running."""
+        return self._last_finished
 
-        |  wait_time: [optional] Seconds to wait before updating.
-        |  data: [optional] Data to update the object with.
-        """
-        if not self.noupdate:
-            if data is not None:
-                prunning = (data["plastrun"] >= data["plastup"]) or data["prunning"]
-                self.status.update(data["pstatus"], force=True, silent=True)
-                self.lastUpdate.update(data["plastup"], force=True, silent=True)
-                self.lastRun.update(data["plastrun"], force=True, silent=True)
-                self.lastFinished.update(data["plastfin"], force=True, silent=True)
-                self.enabled.update(data["penabled"], force=True, silent=True)
-                self.runAtStartup.update(data["pstartrun"], force=True, silent=True)
-                self.running.update(prunning, force=True, silent=True)
-            elif not self.isy.auto_update:
-                self._programs.update(wait_time, address=self._id)
+    @last_finished.setter
+    def last_finished(self, value):
+        """Set the last time the program finished running."""
+        if self._last_finished != value:
+            self._last_finished = value
+        return self._last_finished
+
+    @property
+    def last_run(self):
+        """Return the last time the program was run."""
+        return self._last_run
+
+    @last_run.setter
+    def last_run(self, value):
+        """Set the last time the program was run."""
+        if self._last_run != value:
+            self._last_run = value
+        return self._last_run
+
+    @property
+    def last_update(self):
+        """Return the last time the program was updated."""
+        return self._last_update
+
+    @last_update.setter
+    def last_update(self, value):
+        """Set the last time the program was updated."""
+        if self._last_update != value:
+            self._last_update = value
+        return self._last_update
 
     @property
     def protocol(self):
         """Return the protocol for this entity."""
         return PROTO_PROGRAM
 
+    @property
+    def ran_else(self):
+        """Return the Ran Else property for this program."""
+        return self._ran_else
+
+    @ran_else.setter
+    def ran_else(self, value):
+        """Set the Ran Else property for this program."""
+        if self._ran_else != value:
+            self._ran_else = value
+        return self._ran_else
+
+    @property
+    def ran_then(self):
+        """Return the Ran Then property for this program."""
+        return self._ran_then
+
+    @ran_then.setter
+    def ran_then(self, value):
+        """Set the Ran Then property for this program."""
+        if self._ran_then != value:
+            self._ran_then = value
+        return self._ran_then
+
+    @property
+    def run_at_startup(self):
+        """Return if the program runs on controller start up."""
+        return self._run_at_startup
+
+    @run_at_startup.setter
+    def run_at_startup(self, value):
+        """Set if the program runs on controller start up."""
+        if self._run_at_startup != value:
+            self._run_at_startup = value
+        return self._run_at_startup
+
+    @property
+    def running(self):
+        """Return if the current program is running on the controller."""
+        return self._running
+
+    @running.setter
+    def running(self, value):
+        """Set if the current program is running on the controller."""
+        if self._running != value:
+            self._running = value
+        return self._running
+
+    def update(self, wait_time=UPDATE_INTERVAL, data=None):
+        """
+        Update the program with values on the controller.
+
+        |  wait_time: [optional] Seconds to wait before updating.
+        |  data: [optional] Data to update the object with.
+        """
+        if data is not None:
+            self.enabled = data["penabled"]
+            self.last_finished = data["plastfin"]
+            self.last_run = data["plastrun"]
+            self.last_update = data["plastup"]
+            self.run_at_startup = data["pstartrun"]
+            self.running = (data["plastrun"] >= data["plastup"]) or data["prunning"]
+            # Update Status last and make sure the change event fires, but only once.
+            if self.status != data["pstatus"]:
+                self.status = data["pstatus"]
+            else:
+                # Status didn't change, but something did, so fire the event.
+                self.status_events.notify(self.status)
+            return
+        self._programs.update(wait_time, address=self._id)
+
     def enable_run_at_startup(self):
         """Send command to the program to enable it to run at startup."""
-        return self.send_pgrm_cmd(CMD_ENABLE_RUN_AT_STARTUP)
+        return self.send_cmd(CMD_ENABLE_RUN_AT_STARTUP)
 
     def disable_run_at_startup(self):
         """Send command to the program to enable it to run at startup."""
-        return self.send_pgrm_cmd(CMD_DISABLE_RUN_AT_STARTUP)
+        return self.send_cmd(CMD_DISABLE_RUN_AT_STARTUP)

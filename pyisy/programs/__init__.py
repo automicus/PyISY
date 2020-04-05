@@ -18,6 +18,7 @@ from ..constants import (
     TAG_PRGM_RUNNING,
     TAG_PRGM_STATUS,
     TAG_PROGRAM,
+    UPDATE_INTERVAL,
     XML_OFF,
     XML_ON,
     XML_PARSE_ERROR,
@@ -100,9 +101,9 @@ class Programs:
             return "Folder <root>"
         ind = self.addresses.index(self.root)
         if self.ptypes[ind] == TAG_FOLDER:
-            return "Folder ({})".format(self.root)
+            return f"Folder ({self.root})"
         if self.ptypes[ind] == TAG_PROGRAM:
-            return "Program ({})".format(self.root)
+            return f"Program ({self.root})"
         return ""
 
     def __repr__(self):
@@ -124,14 +125,14 @@ class Programs:
         # format folders
         for fold in folders:
             fold_obj = self[fold[2]]
-            out += "  + {}: Folder({})\n".format(fold[1], fold[2])
+            out += f"  + {fold[1]}: Folder({fold[2]})\n"
             for line in repr(fold_obj).split("\n")[1:]:
-                out += "  |   {}\n".format(line)
+                out += f"  |   {line}\n"
             out += "  -\n"
 
         # format programs
         for prog in programs:
-            out += "  {}: {!s}\n".format(prog[1], self[prog[2]])
+            out += f"  {prog[1]}: {self[prog[2]]}\n"
 
         return out
 
@@ -160,27 +161,34 @@ class Programs:
             pobj = None  # this is a new program that hasn't been registered
 
         if isinstance(pobj, Program):
+            new_status = False
             if f"<{TAG_PRGM_STATUS}>" in xml:
                 status = value_from_xml(xmldoc, TAG_PRGM_STATUS)
                 if status == "21":
-                    pobj.ranThen.update(pobj.ranThen + 1, force=True, silent=True)
-                    pobj.status.update(True, force=True, silent=True)
+                    pobj.ran_then += 1
+                    new_status = True
                 elif status == "31":
-                    pobj.ranElse.update(pobj.ranElse + 1, force=True, silent=True)
-                    pobj.status.update(False, force=True, silent=True)
+                    pobj.ran_else += 1
 
             if f"<{TAG_PRGM_RUN}>" in xml:
-                plastrun = value_from_xml(xmldoc, TAG_PRGM_RUN)
-                plastrun = datetime.strptime(plastrun, XML_STRPTIME_YY)
-                pobj.lastRun.update(plastrun, force=True, silent=True)
+                pobj.last_run = datetime.strptime(
+                    value_from_xml(xmldoc, TAG_PRGM_RUN), XML_STRPTIME_YY
+                )
 
             if f"<{TAG_PRGM_FINISH}>" in xml:
-                plastfin = value_from_xml(xmldoc, TAG_PRGM_FINISH)
-                plastfin = datetime.strptime(plastfin, XML_STRPTIME_YY)
-                pobj.lastFinished.update(plastfin, force=True, silent=True)
+                pobj.last_finished = datetime.strptime(
+                    value_from_xml(xmldoc, TAG_PRGM_FINISH), XML_STRPTIME_YY
+                )
 
             if XML_ON in xml or XML_OFF in xml:
-                pobj.enabled.update(XML_ON in xml, force=True, silent=True)
+                pobj.enabled = XML_ON in xml
+
+            # Update Status last and make sure the change event fires, but only once.
+            if pobj.status != new_status:
+                pobj.status = new_status
+            else:
+                # Status didn't change, but something did, so fire the event.
+                pobj.status_events.notify(new_status)
 
         self.isy.log.debug("ISY Updated Program: " + address)
 
@@ -241,7 +249,6 @@ class Programs:
                     )
 
                     # create data dictionary
-                    # TODO: Unpack into proper properties.
                     data = {
                         "pstatus": pstatus,
                         "plastrun": plastrun,
@@ -265,7 +272,7 @@ class Programs:
 
             self.isy.log.info("ISY Loaded/Updated Programs")
 
-    def update(self, wait_time=0, address=None):
+    def update(self, wait_time=UPDATE_INTERVAL, address=None):
         """
         Update the status of the programs and folders.
 

@@ -18,6 +18,12 @@ from ..constants import (
 from ..helpers import attr_from_element, attr_from_xml, value_from_xml
 from .variable import Variable
 
+EMPTY_VARIABLE_RESPONSES = [
+    "/CONF/INTEGER.VAR not found",
+    "/CONF/STATE.VAR not found",
+    '<CList type="VAR_INT"></CList>',
+]
+
 
 class Variables:
     """
@@ -71,7 +77,7 @@ class Variables:
         """Return a string representation of the variable manager."""
         if self.root is None:
             return "Variable Collection"
-        return "Variable Collection (Type: {!s})".format(self.root)
+        return f"Variable Collection (Type: {self.root})"
 
     def __repr__(self):
         """Return a string representing the children variables."""
@@ -79,14 +85,14 @@ class Variables:
             return repr(self[1]) + repr(self[2])
         out = str(self) + "\n"
         for child in self.children:
-            out += "  {!s}: Variable({!s})\n".format(child[1], child[2])
+            out += f"  {child[1]}: Variable({child[2]})\n"
         return out
 
     def parse_definitions(self, xmls):
         """Parse the XML Variable Definitions from the ISY."""
         for ind in range(2):
             # parse definitions
-            if xmls[ind] is None or xmls[ind] == '<CList type="VAR_INT"></CList>':
+            if xmls[ind] is None or xmls[ind] in EMPTY_VARIABLE_RESPONSES:
                 # No variables of this type defined.
                 continue
             try:
@@ -124,9 +130,9 @@ class Variables:
                 self.vids[vtype].append(vid)
                 self.vobjs[vtype][vid] = vobj
             else:
-                vobj.init.update(init, force=True, silent=True)
-                vobj.val.update(val, force=True, silent=True)
-                vobj.lastEdit.update(t_s, force=True, silent=True)
+                vobj.init = init
+                vobj.status = val
+                vobj.last_edited = t_s
 
         self.isy.log.info("ISY Loaded Variables")
 
@@ -151,18 +157,14 @@ class Variables:
             return  # this is a new variable that hasn't been loaded
 
         if f"<{ATTR_INIT}>" in xml:
-            vobj.init.update(
-                int(value_from_xml(xmldoc, ATTR_INIT)), force=True, silent=True
-            )
+            vobj.init = int(value_from_xml(xmldoc, ATTR_INIT))
         else:
-            vobj.val.update(
-                int(value_from_xml(xmldoc, ATTR_VAL)), force=True, silent=True
+            vobj.status = int(value_from_xml(xmldoc, ATTR_VAL))
+            vobj.last_edited = datetime.strptime(
+                value_from_xml(xmldoc, ATTR_TS), XML_STRPTIME
             )
-            ts_raw = value_from_xml(xmldoc, ATTR_TS)
-            vobj.lastEdit.update(
-                datetime.strptime(ts_raw, XML_STRPTIME), force=True, silent=True
-            )
-        self.isy.log.debug("ISY Updated Variable: %s", str(vid))
+
+        self.isy.log.debug("ISY Updated Variable: %s.%s", str(vtype), str(vid))
 
     def __getitem__(self, val):
         """
@@ -173,17 +175,17 @@ class Variables:
         if self.root is None:
             if val in [1, 2]:
                 return Variables(self.isy, val, self.vids, self.vnames, self.vobjs)
-            raise KeyError("Unknown variable type: {!s}".format(val))
+            raise KeyError(f"Unknown variable type: {val}")
         if isinstance(val, int):
             try:
                 return self.vobjs[self.root][val]
             except (ValueError, KeyError):
-                raise KeyError("Unrecognized variable id: {!s}".format(val))
+                raise KeyError(f"Unrecognized variable id: {val}")
         else:
             for vid, vname in self.vnames[self.root]:
                 if vname == val:
                     return self.vobjs[self.root][vid]
-            raise KeyError("Unrecognized variable name: {!s}".format(val))
+            raise KeyError(f"Unrecognized variable name: {val}")
 
     def __setitem__(self, val, value):
         """Handle the setitem function for the Class."""

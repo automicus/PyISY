@@ -2,6 +2,7 @@
 import datetime
 
 UPDATE_INTERVAL = 0.5
+VERBOSE = 5  # Verbose Logging Level
 
 # Time Constants / Strings
 EMPTY_TIME = datetime.datetime(year=1, month=1, day=1)
@@ -16,6 +17,7 @@ XML_ON = "<on />"
 XML_OFF = "<off />"
 
 POLL_TIME = 5
+RECONNECT_DELAY = 60
 SOCKET_BUFFER_SIZE = 4096
 THREAD_SLEEP_TIME = 30.0
 
@@ -49,6 +51,7 @@ ATTR_VAR = "var"
 TAG_ADDRESS = "address"
 TAG_CATEGORY = "cat"
 TAG_DESC = "desc"
+TAG_DESCRIPTION = "description"
 TAG_DEVICE_TYPE = "devtype"
 TAG_DST = "DST"
 TAG_ENABLED = "enabled"
@@ -60,8 +63,10 @@ TAG_FORMATTED = "fmtAct"
 TAG_GENERIC = "gen"
 TAG_GROUP = "group"
 TAG_INSTALLED = "isInstalled"
+TAG_IS_LOAD = "isLoad"
 TAG_LATITUDE = "Lat"
 TAG_LINK = "link"
+TAG_LOCATION = "location"
 TAG_LONGITUDE = "Long"
 TAG_MFG = "mfg"
 TAG_MILIATRY_TIME = "IsMilitary"
@@ -171,6 +176,7 @@ COMMAND_FRIENDLY_NAME = {
     "AWAKE": "awake",
     "BARPRES": "barometric_pressure",
     "CC": "current",
+    "CLIFRS": "fan_running_state",
     "CLIFSO": "fan_setting_override",
     "CO2LVL": "co2_level",
     "CPW": "power",
@@ -584,7 +590,7 @@ UOM_TO_STATES = {
             "104": "opening",
         },
         **{
-            str(b): "{} %".format(b) for a, b in enumerate(list(range(1, 100)))
+            str(b): f"{b} %" for a, b in enumerate(list(range(1, 100)))
         },  # 1-99 are percentage open
     },
     "98": {  # Insteon Thermostat Mode
