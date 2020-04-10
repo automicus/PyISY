@@ -179,8 +179,8 @@ class Variables:
         if isinstance(val, int):
             try:
                 return self.vobjs[self.root][val]
-            except (ValueError, KeyError):
-                raise KeyError(f"Unrecognized variable id: {val}")
+            except (ValueError, KeyError) as err:
+                raise KeyError(f"Unrecognized variable id: {val}") from err
         else:
             for vid, vname in self.vnames[self.root]:
                 if vname == val:
