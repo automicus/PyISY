@@ -192,7 +192,7 @@ class NodeBase:
         hint = self.status
         if cmd == CMD_ON:
             if val is not None:
-                hint = val
+                hint = int(val)
             elif PROP_ON_LEVEL in self._aux_properties:
                 hint = self._aux_properties[PROP_ON_LEVEL].value
             else:

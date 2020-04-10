@@ -12,6 +12,7 @@ from ..constants import (
     ATTR_UNIT_OF_MEASURE,
     EVENT_PROPS_IGNORED,
     INSTEON_RAMP_RATES,
+    ISY_VALUE_UNKNOWN,
     PROP_RAMP_RATE,
     PROTO_INSTEON,
     PROTO_NODE_SERVER,
@@ -192,7 +193,8 @@ class Nodes:
     def update_received(self, xmldoc):
         """Update nodes from event stream message."""
         address = value_from_xml(xmldoc, TAG_NODE)
-        value = int(value_from_xml(xmldoc, ATTR_ACTION))
+        value = value_from_xml(xmldoc, ATTR_ACTION)
+        value = int(value) if value != "" else ISY_VALUE_UNKNOWN
         prec = attr_from_xml(xmldoc, ATTR_ACTION, ATTR_PRECISION, "0")
         uom = attr_from_xml(xmldoc, ATTR_ACTION, ATTR_UNIT_OF_MEASURE, "")
         node = self.get_by_id(address)
@@ -218,6 +220,7 @@ class Nodes:
 
         # Process the action and value if provided in event data.
         value = value_from_xml(xmldoc, ATTR_ACTION, 0)
+        value = int(value) if value != "" else ISY_VALUE_UNKNOWN
         prec = attr_from_xml(xmldoc, ATTR_ACTION, ATTR_PRECISION, "0")
         uom = attr_from_xml(xmldoc, ATTR_ACTION, ATTR_UNIT_OF_MEASURE, "")
         formatted = value_from_xml(xmldoc, TAG_FORMATTED)
