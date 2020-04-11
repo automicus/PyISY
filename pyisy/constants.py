@@ -1,8 +1,10 @@
 """Constants for the PyISY Module."""
 import datetime
+from xml.parsers.expat import ExpatError
 
 UPDATE_INTERVAL = 0.5
 VERBOSE = 5  # Verbose Logging Level
+
 
 # Time Constants / Strings
 EMPTY_TIME = datetime.datetime(year=1, month=1, day=1)
@@ -23,6 +25,7 @@ THREAD_SLEEP_TIME = 30.0
 
 ISY_VALUE_UNKNOWN = -1 * float("inf")
 
+XML_ERRORS = (AttributeError, KeyError, ValueError, TypeError, IndexError, ExpatError)
 XML_PARSE_ERROR = "ISY Could not parse response, poorly formatted XML."
 
 """ Dictionary of X10 commands. """

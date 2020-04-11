@@ -20,6 +20,7 @@ from .constants import (
     TAG_MFG,
     TAG_PROPERTY,
     UOM_SECONDS,
+    XML_ERRORS,
 )
 
 
@@ -78,7 +79,7 @@ def value_from_xml(xml, tag_name, default=None):
     value = default
     try:
         value = xml.getElementsByTagName(tag_name)[0].firstChild.toxml()
-    except (AttributeError, KeyError, ValueError, TypeError, IndexError):
+    except XML_ERRORS:
         pass
     return value
 
@@ -89,7 +90,7 @@ def attr_from_xml(xml, tag_name, attr_name, default=None):
     try:
         root = xml.getElementsByTagName(tag_name)[0]
         value = attr_from_element(root, attr_name, default)
-    except (AttributeError, KeyError, ValueError, TypeError, IndexError):
+    except XML_ERRORS:
         pass
     return value
 
@@ -115,7 +116,7 @@ def value_from_nested_xml(base, chain, default=None):
         if len(chain) > 3:
             result = result.getElementsByTagName(chain[3])[0]
         value = result.firstChild.toxml()
-    except (AttributeError, KeyError, ValueError, TypeError, IndexError):
+    except XML_ERRORS:
         pass
     return value
 

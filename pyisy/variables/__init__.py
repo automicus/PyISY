@@ -12,6 +12,7 @@ from ..constants import (
     TAG_NAME,
     TAG_TYPE,
     TAG_VARIABLE,
+    XML_ERRORS,
     XML_PARSE_ERROR,
     XML_STRPTIME,
 )
@@ -97,7 +98,7 @@ class Variables:
                 continue
             try:
                 xmldoc = minidom.parseString(xmls[ind])
-            except (AttributeError, KeyError, ValueError, TypeError, IndexError):
+            except XML_ERRORS:
                 self.isy.log.error("%s: Type %s Variables", XML_PARSE_ERROR, ind + 1)
                 continue
 
@@ -110,7 +111,7 @@ class Variables:
         """Parse XML from the controller with details about the variables."""
         try:
             xmldoc = minidom.parseString(xml)
-        except (AttributeError, KeyError, ValueError, TypeError, IndexError):
+        except XML_ERRORS:
             self.isy.log.error("%s: Variables", XML_PARSE_ERROR)
             return
 

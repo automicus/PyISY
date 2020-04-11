@@ -19,6 +19,7 @@ from ..constants import (
     TAG_PRGM_STATUS,
     TAG_PROGRAM,
     UPDATE_INTERVAL,
+    XML_ERRORS,
     XML_OFF,
     XML_ON,
     XML_PARSE_ERROR,
@@ -200,7 +201,7 @@ class Programs:
         """
         try:
             xmldoc = minidom.parseString(xml)
-        except (AttributeError, KeyError, ValueError, TypeError, IndexError):
+        except XML_ERRORS:
             self.isy.log.error("%s: Programs", XML_PARSE_ERROR)
         else:
             plastup = datetime.now()

@@ -33,6 +33,7 @@ from ..constants import (
     TAG_TYPE,
     UOM_SECONDS,
     URL_STATUS,
+    XML_ERRORS,
     XML_PARSE_ERROR,
     XML_TRUE,
 )
@@ -252,7 +253,7 @@ class Nodes:
         """
         try:
             xmldoc = minidom.parseString(xml)
-        except (AttributeError, KeyError, ValueError, TypeError, IndexError):
+        except XML_ERRORS:
             self.isy.log.error("%s: Nodes", XML_PARSE_ERROR)
             return False
 
