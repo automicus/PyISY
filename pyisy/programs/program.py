@@ -163,12 +163,12 @@ class Program(Folder):
         |  data: [optional] Data to update the object with.
         """
         if data is not None:
-            self.enabled = data["penabled"]
-            self.last_finished = data["plastfin"]
-            self.last_run = data["plastrun"]
-            self.last_update = data["plastup"]
-            self.run_at_startup = data["pstartrun"]
-            self.running = (data["plastrun"] >= data["plastup"]) or data["prunning"]
+            self._enabled = data["penabled"]
+            self._last_finished = data["plastfin"]
+            self._last_run = data["plastrun"]
+            self._last_update = data["plastup"]
+            self._run_at_startup = data["pstartrun"]
+            self._running = (data["plastrun"] >= data["plastup"]) or data["prunning"]
             # Update Status last and make sure the change event fires, but only once.
             if self.status != data["pstatus"]:
                 self.status = data["pstatus"]

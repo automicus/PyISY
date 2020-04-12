@@ -40,10 +40,6 @@ class NetworkResources:
 
     """
 
-    addresses = []
-    nnames = []
-    nobjs = []
-
     def __init__(self, isy, xml=None):
         """
         Initialize the network resources class.
@@ -52,6 +48,10 @@ class NetworkResources:
         xml: String of xml data containing the configuration data
         """
         self.isy = isy
+
+        self.addresses = []
+        self.nnames = []
+        self.nobjs = []
 
         if xml is not None:
             self.parse(xml)

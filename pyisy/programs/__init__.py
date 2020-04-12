@@ -59,12 +59,6 @@ class Programs:
     :ivar name: The name of the program at the current level of navigation.
     """
 
-    addresses = []
-    pnames = []
-    pparents = []
-    pobjs = []
-    ptypes = []
-
     def __init__(
         self,
         isy,
@@ -80,21 +74,21 @@ class Programs:
         self.isy = isy
         self.root = root
 
-        if (
-            addresses is not None
-            and pnames is not None
-            and pparents is not None
-            and pobjs is not None
-            and ptypes is not None
-        ):
-            self.addresses = addresses
-            self.pnames = pnames
-            self.pparents = pparents
-            self.pobjs = pobjs
-            self.ptypes = ptypes
+        self.addresses = []
+        self.pnames = []
+        self.pparents = []
+        self.pobjs = []
+        self.ptypes = []
 
-        elif xml is not None:
+        if xml is not None:
             self.parse(xml)
+            return
+
+        self.addresses = addresses
+        self.pnames = pnames
+        self.pparents = pparents
+        self.pobjs = pobjs
+        self.ptypes = ptypes
 
     def __str__(self):
         """Return a string representation of the program manager."""
