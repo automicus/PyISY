@@ -12,6 +12,7 @@ from .constants import (
     TAG_SUNRISE,
     TAG_SUNSET,
     TAG_TZ_OFFSET,
+    XML_ERRORS,
     XML_PARSE_ERROR,
     XML_TRUE,
 )
@@ -79,7 +80,7 @@ class Clock:
         """
         try:
             xmldoc = minidom.parseString(xml)
-        except (AttributeError, KeyError, ValueError, TypeError, IndexError):
+        except XML_ERRORS:
             self.isy.log.error("%s: Clock", XML_PARSE_ERROR)
         else:
             tz_offset_sec = int(value_from_xml(xmldoc, TAG_TZ_OFFSET))

@@ -24,6 +24,7 @@ from ..constants import (
     UOM_FAN_MODES,
     UOM_TO_STATES,
     URL_NODES,
+    XML_ERRORS,
     XML_PARSE_ERROR,
 )
 from ..helpers import EventEmitter, parse_xml_properties
@@ -198,7 +199,7 @@ class Node(NodeBase):
             xml = self.isy.conn.request(req_url)
             try:
                 xmldoc = minidom.parseString(xml)
-            except (AttributeError, KeyError, ValueError, TypeError, IndexError):
+            except XML_ERRORS:
                 self.isy.log.error("%s: Nodes", XML_PARSE_ERROR)
                 return
         elif hint is not None:

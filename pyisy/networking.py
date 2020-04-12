@@ -9,6 +9,7 @@ from .constants import (
     THREAD_SLEEP_TIME,
     URL_NETWORK,
     URL_RESOURCES,
+    XML_ERRORS,
     XML_PARSE_ERROR,
 )
 from .helpers import value_from_xml
@@ -63,7 +64,7 @@ class NetworkResources:
         """
         try:
             xmldoc = minidom.parseString(xml)
-        except (AttributeError, KeyError, ValueError, TypeError, IndexError):
+        except XML_ERRORS:
             self.isy.log.error("%s: NetworkResources", XML_PARSE_ERROR)
         else:
             features = xmldoc.getElementsByTagName(TAG_NET_RULE)

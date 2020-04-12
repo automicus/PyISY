@@ -25,6 +25,7 @@ from ..constants import (
     UPDATE_INTERVAL,
     URL_NODES,
     URL_NOTES,
+    XML_ERRORS,
     XML_PARSE_ERROR,
     XML_TRUE,
 )
@@ -149,7 +150,7 @@ class NodeBase:
         if notes_xml is not None and notes_xml != "":
             try:
                 notesdom = minidom.parseString(notes_xml)
-            except (AttributeError, KeyError, ValueError, TypeError, IndexError):
+            except XML_ERRORS:
                 self.isy.log.error("%s: Node Notes %s", XML_PARSE_ERROR, notes_xml)
             else:
                 spoken = value_from_xml(notesdom, TAG_SPOKEN)
@@ -192,7 +193,7 @@ class NodeBase:
         hint = self.status
         if cmd == CMD_ON:
             if val is not None:
-                hint = val
+                hint = int(val)
             elif PROP_ON_LEVEL in self._aux_properties:
                 hint = self._aux_properties[PROP_ON_LEVEL].value
             else:
