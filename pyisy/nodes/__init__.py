@@ -73,12 +73,6 @@ class Nodes:
     :ivar name: The name of the current folder in navigation.
     """
 
-    addresses = []
-    nnames = []
-    nparents = []
-    nobjs = []
-    ntypes = []
-
     def __init__(
         self,
         isy,
@@ -94,22 +88,21 @@ class Nodes:
         self.isy = isy
         self.root = root
 
-        if (
-            addresses is not None
-            and nnames is not None
-            and nparents is not None
-            and nobjs is not None
-            and ntypes is not None
-        ):
+        self.addresses = []
+        self.nnames = []
+        self.nparents = []
+        self.nobjs = []
+        self.ntypes = []
 
-            self.addresses = addresses
-            self.nnames = nnames
-            self.nparents = nparents
-            self.nobjs = nobjs
-            self.ntypes = ntypes
-
-        elif xml is not None:
+        if xml is not None:
             self.parse(xml)
+            return
+
+        self.addresses = addresses
+        self.nnames = nnames
+        self.nparents = nparents
+        self.nobjs = nobjs
+        self.ntypes = ntypes
 
     def __str__(self):
         """Return string representation of the nodes/folders/groups."""

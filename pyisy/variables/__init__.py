@@ -45,10 +45,6 @@ class Variables:
     :ivar children: List of the children below the current level of navigation.
     """
 
-    vids = {1: [], 2: []}
-    vobjs = {1: {}, 2: {}}
-    vnames = {1: {}, 2: {}}
-
     def __init__(
         self,
         isy,
@@ -62,6 +58,10 @@ class Variables:
         """Initialize a Variables ISY Variable Manager class."""
         self.isy = isy
         self.root = root
+
+        self.vids = {1: [], 2: []}
+        self.vobjs = {1: {}, 2: {}}
+        self.vnames = {1: {}, 2: {}}
 
         if vids is not None and vnames is not None and vobjs is not None:
             self.vids = vids
