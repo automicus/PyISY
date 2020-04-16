@@ -348,7 +348,7 @@ class Node(NodeBase):
 
     def set_on_level(self, val):
         """Set the ON Level for a device."""
-        if not val or not isnan(val) or int(val) not in range(256):
+        if not val or isnan(val) or int(val) not in range(256):
             self.isy.log.warning(
                 "Invalid value for On Level for %s. Valid values are 0-255.", self._id
             )
@@ -357,7 +357,7 @@ class Node(NodeBase):
 
     def set_ramp_rate(self, val):
         """Set the Ramp Rate for a device."""
-        if not val or not isnan(val) or int(val) not in range(32):
+        if not val or isnan(val) or int(val) not in range(32):
             self.isy.log.warning(
                 "Invalid value for Ramp Rate for %s. "
                 "Valid values are 0-31. See 'INSTEON_RAMP_RATES' in constants.py for values.",
