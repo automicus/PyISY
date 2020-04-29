@@ -12,10 +12,11 @@ monitored automatically as changes are reported from the device.
 
 See the [examples](examples/) folder for connection examples.
 
-### Maintainers
+### Development Team
 
-* Greg Laabs ([@OverloadUT])
-* Ryan Kraus ([@rmkraus]) (creator)
+* Greg Laabs ([@OverloadUT]) - Maintainer
+* Ryan Kraus ([@rmkraus]) - Creator
+* Tim Bond ([@shbatm]) - Version 2 Contributor
 
 ### Contributing
 
@@ -33,3 +34,4 @@ pre-commit install
 
 [@OverloadUT]: https://github.com/overloadut
 [@rmkraus]: https://github.com/rmkraus
+[@shbatm]: https://github.com/shbatm
