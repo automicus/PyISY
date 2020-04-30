@@ -111,6 +111,7 @@ V2 is a significant refactoring and cleanup of the original PyISY code, with the
     + `fast_on`
     + `fast_off`
 - In addition to the `node.parent_node` which returns a `Node` object if a node has a primary/parent node other than itself, there is now a `node.primary_node` property, which just returns the address of the primary node. If the device/group *is* the primary node, this is the same as the address (this is the `pnode` tag from `/rest/nodes`). 
+- Expose the ISY Query Function (`/rest/query`) as `isy.query()`
 
 #### Fixes:
 

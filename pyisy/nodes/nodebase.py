@@ -255,6 +255,10 @@ class NodeBase:
         """Start manually brightening a device."""
         return self.send_cmd(CMD_ON_FAST)
 
+    def query(self):
+        """Request the ISY query this node."""
+        return self.isy.query(node=self.address)
+
     def turn_off(self):
         """Turn off the nodes/group in the ISY."""
         return self.send_cmd(CMD_OFF)
