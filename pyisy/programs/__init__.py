@@ -334,7 +334,9 @@ class Programs:
         |  val: The name of the child program/folder to look for.
         """
         for i in range(len(self.addresses)):
-            if self.pparents[i] == self.root and self.pnames[i] == val:
+            if (self.root is None or self.pparents[i] == self.root) and self.pnames[
+                i
+            ] == val:
                 return self.get_by_index(i)
         return None
 

@@ -418,7 +418,9 @@ class Nodes:
         |  val: String representing name to look for.
         """
         for i in range(len(self.addresses)):
-            if self.nparents[i] == self.root and self.nnames[i] == val:
+            if (self.root is None or self.nparents[i] == self.root) and self.nnames[
+                i
+            ] == val:
                 return self.get_by_index(i)
         return None
 
