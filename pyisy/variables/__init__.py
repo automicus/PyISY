@@ -145,7 +145,10 @@ class Variables:
         """
         sleep(wait_time)
         xml = self.isy.conn.get_variables()
-        self.parse(xml)
+        if xml is not None:
+            self.parse(xml)
+        else:
+            self.isy.log.warning("ISY Failed to update variables.")
 
     def update_received(self, xmldoc):
         """Process an update received from the event stream."""
@@ -191,6 +194,17 @@ class Variables:
     def __setitem__(self, val, value):
         """Handle the setitem function for the Class."""
         return None
+
+    def get_by_name(self, val):
+        """
+        Get a variable with the given name.
+
+        |  val: The name of the variable to look for.
+        """
+        vtype, _, vid = next(item for item in self.children if val in item)
+        if not vid and vtype:
+            raise KeyError(f"Unrecognized variable name: {val}")
+        return self.vobjs[vtype].get(vid)
 
     @property
     def children(self):

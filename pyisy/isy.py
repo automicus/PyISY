@@ -5,7 +5,7 @@ from threading import Thread
 from .clock import Clock
 from .configuration import Configuration
 from .connection import Connection
-from .constants import CMD_X10, X10_COMMANDS
+from .constants import CMD_X10, URL_QUERY, X10_COMMANDS
 from .events import EventStream
 from .helpers import NullHandler
 from .networking import NetworkResources
@@ -158,6 +158,17 @@ class ISY:
             self.log.warning("PyISY reconnected to the event stream.")
 
         self._reconnect_thread = None
+
+    def query(self, address=None):
+        """Query all the nodes (or a specific node if an address is provided)."""
+        req_path = [URL_QUERY]
+        if address is not None:
+            req_path.append(address)
+        req_url = self.conn.compile_url(req_path)
+        if not self.conn.request(req_url):
+            self.log.warning("Error performing query.")
+            return False
+        self.log.debug("ISY Query requested successfully.")
 
     def send_x10_cmd(self, address, cmd):
         """

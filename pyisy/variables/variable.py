@@ -4,7 +4,6 @@ from ..constants import (
     ATTR_SET,
     PROTO_INT_VAR,
     PROTO_STATE_VAR,
-    UPDATE_INTERVAL,
     URL_VARIABLES,
     VAR_INTEGER,
 )
@@ -162,4 +161,5 @@ class Variable:
             str(self._type),
             str(self._id),
         )
-        self.update(UPDATE_INTERVAL)
+        if not self.isy.auto_update:
+            self.update()

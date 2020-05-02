@@ -132,6 +132,7 @@ URL_NODES = "nodes"
 URL_NOTES = "notes"
 URL_PING = "ping"
 URL_PROGRAMS = "programs"
+URL_QUERY = "query"
 URL_RESOURCES = "resources"
 URL_STATUS = "status"
 URL_SUBFOLDERS = "subfolders"
@@ -401,6 +402,7 @@ UOM_FRIENDLY_NAME = {
     "90": "Hz",
     "91": "°",
     "92": "° South",
+    "101": "° (x2)",
     "102": "kWs",
     "103": "$",
     "104": "¢",

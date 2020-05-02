@@ -7,7 +7,7 @@ repos:
     repo: https://github.com/psf/black
     rev: 19.10b0
   - hooks:
-      - args: ['--ignore-words-list=pyisy,hass,isy,nid,dof,dfof,don,dfon',
+      - args: ['--ignore-words-list=pyisy,hass,isy,nid,dof,dfof,don,dfon,tim',
                '--skip="./.*,*.json"', --quiet-level=2]
         exclude_types: [json]
         id: codespell
