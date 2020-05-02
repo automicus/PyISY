@@ -145,7 +145,10 @@ class Variables:
         """
         sleep(wait_time)
         xml = self.isy.conn.get_variables()
-        self.parse(xml)
+        if xml is not None:
+            self.parse(xml)
+        else:
+            self.isy.log.warning("ISY Failed to update variables.")
 
     def update_received(self, xmldoc):
         """Process an update received from the event stream."""
