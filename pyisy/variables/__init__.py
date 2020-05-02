@@ -1,0 +1,227 @@
+"""ISY Variables."""
+from datetime import datetime
+from time import sleep
+from xml.dom import minidom
+
+from ..constants import (
+    ATTR_ID,
+    ATTR_INIT,
+    ATTR_TS,
+    ATTR_VAL,
+    ATTR_VAR,
+    TAG_NAME,
+    TAG_TYPE,
+    TAG_VARIABLE,
+    XML_ERRORS,
+    XML_PARSE_ERROR,
+    XML_STRPTIME,
+)
+from ..helpers import attr_from_element, attr_from_xml, value_from_xml
+from .variable import Variable
+
+EMPTY_VARIABLE_RESPONSES = [
+    "/CONF/INTEGER.VAR not found",
+    "/CONF/STATE.VAR not found",
+    '<CList type="VAR_INT"></CList>',
+]
+
+
+class Variables:
+    """
+    This class handles the ISY variables.
+
+    This class can be used as a     dictionary to navigate through the
+    controller's structure to objects of type
+    :class:`pyisy.variables.Variable` that represent objects on the
+    controller.
+
+    |  isy: The ISY object.
+    |  root: The ID of the current level of navigation.
+    |  vids: List of variable IDs from the controller.
+    |  vnames: List of variable names form the controller.
+    |  vobjs: List of variable objects.
+    |  xml: XML string from the controller detailing the device's variables.
+
+    :ivar children: List of the children below the current level of navigation.
+    """
+
+    def __init__(
+        self,
+        isy,
+        root=None,
+        vids=None,
+        vnames=None,
+        vobjs=None,
+        def_xml=None,
+        var_xml=None,
+    ):
+        """Initialize a Variables ISY Variable Manager class."""
+        self.isy = isy
+        self.root = root
+
+        self.vids = {1: [], 2: []}
+        self.vobjs = {1: {}, 2: {}}
+        self.vnames = {1: {}, 2: {}}
+
+        if vids is not None and vnames is not None and vobjs is not None:
+            self.vids = vids
+            self.vnames = vnames
+            self.vobjs = vobjs
+            return
+
+        if def_xml is not None:
+            self.parse_definitions(def_xml)
+        if var_xml is not None:
+            self.parse(var_xml)
+
+    def __str__(self):
+        """Return a string representation of the variable manager."""
+        if self.root is None:
+            return "Variable Collection"
+        return f"Variable Collection (Type: {self.root})"
+
+    def __repr__(self):
+        """Return a string representing the children variables."""
+        if self.root is None:
+            return repr(self[1]) + repr(self[2])
+        out = str(self) + "\n"
+        for child in self.children:
+            out += f"  {child[1]}: Variable({child[2]})\n"
+        return out
+
+    def parse_definitions(self, xmls):
+        """Parse the XML Variable Definitions from the ISY."""
+        for ind in range(2):
+            # parse definitions
+            if xmls[ind] is None or xmls[ind] in EMPTY_VARIABLE_RESPONSES:
+                # No variables of this type defined.
+                continue
+            try:
+                xmldoc = minidom.parseString(xmls[ind])
+            except XML_ERRORS:
+                self.isy.log.error("%s: Type %s Variables", XML_PARSE_ERROR, ind + 1)
+                continue
+
+            features = xmldoc.getElementsByTagName(TAG_VARIABLE)
+            for feature in features:
+                vid = int(attr_from_element(feature, ATTR_ID))
+                self.vnames[ind + 1][vid] = attr_from_element(feature, TAG_NAME)
+
+    def parse(self, xml):
+        """Parse XML from the controller with details about the variables."""
+        try:
+            xmldoc = minidom.parseString(xml)
+        except XML_ERRORS:
+            self.isy.log.error("%s: Variables", XML_PARSE_ERROR)
+            return
+
+        features = xmldoc.getElementsByTagName(ATTR_VAR)
+        for feature in features:
+            vid = int(attr_from_element(feature, ATTR_ID))
+            vtype = int(attr_from_element(feature, TAG_TYPE))
+            init = value_from_xml(feature, ATTR_INIT)
+            val = value_from_xml(feature, ATTR_VAL)
+            ts_raw = value_from_xml(feature, ATTR_TS)
+            t_s = datetime.strptime(ts_raw, XML_STRPTIME)
+            vname = self.vnames[vtype].get(vid, "")
+
+            vobj = self.vobjs[vtype].get(vid)
+            if vobj is None:
+                vobj = Variable(self, vid, vtype, vname, init, val, t_s)
+                self.vids[vtype].append(vid)
+                self.vobjs[vtype][vid] = vobj
+            else:
+                vobj.init = init
+                vobj.status = val
+                vobj.last_edited = t_s
+
+        self.isy.log.info("ISY Loaded Variables")
+
+    def update(self, wait_time=0):
+        """
+        Update the variable objects with data from the controller.
+
+        |  wait_time: Seconds to wait before updating.
+        """
+        sleep(wait_time)
+        xml = self.isy.conn.get_variables()
+        if xml is not None:
+            self.parse(xml)
+        else:
+            self.isy.log.warning("ISY Failed to update variables.")
+
+    def update_received(self, xmldoc):
+        """Process an update received from the event stream."""
+        xml = xmldoc.toxml()
+        vtype = int(attr_from_xml(xmldoc, ATTR_VAR, TAG_TYPE))
+        vid = int(attr_from_xml(xmldoc, ATTR_VAR, ATTR_ID))
+        try:
+            vobj = self.vobjs[vtype][vid]
+        except KeyError:
+            return  # this is a new variable that hasn't been loaded
+
+        if f"<{ATTR_INIT}>" in xml:
+            vobj.init = int(value_from_xml(xmldoc, ATTR_INIT))
+        else:
+            vobj.status = int(value_from_xml(xmldoc, ATTR_VAL))
+            vobj.last_edited = datetime.strptime(
+                value_from_xml(xmldoc, ATTR_TS), XML_STRPTIME
+            )
+
+        self.isy.log.debug("ISY Updated Variable: %s.%s", str(vtype), str(vid))
+
+    def __getitem__(self, val):
+        """
+        Navigate through the variables by ID or name.
+
+        |  val: Name or ID for navigation.
+        """
+        if self.root is None:
+            if val in [1, 2]:
+                return Variables(self.isy, val, self.vids, self.vnames, self.vobjs)
+            raise KeyError(f"Unknown variable type: {val}")
+        if isinstance(val, int):
+            try:
+                return self.vobjs[self.root][val]
+            except (ValueError, KeyError) as err:
+                raise KeyError(f"Unrecognized variable id: {val}") from err
+        else:
+            for vid, vname in self.vnames[self.root]:
+                if vname == val:
+                    return self.vobjs[self.root][vid]
+            raise KeyError(f"Unrecognized variable name: {val}")
+
+    def __setitem__(self, val, value):
+        """Handle the setitem function for the Class."""
+        return None
+
+    def get_by_name(self, val):
+        """
+        Get a variable with the given name.
+
+        |  val: The name of the variable to look for.
+        """
+        vtype, _, vid = next(item for item in self.children if val in item)
+        if not vid and vtype:
+            raise KeyError(f"Unrecognized variable name: {val}")
+        return self.vobjs[vtype].get(vid)
+
+    @property
+    def children(self):
+        """Get the children of the class."""
+        if self.root is None:
+            types = [1, 2]
+        else:
+            types = [self.root]
+
+        out = []
+        for vtype in types:
+            for ind in range(len(self.vids[vtype])):
+                out.append(
+                    (
+                        vtype,
+                        self.vnames[vtype].get(self.vids[vtype][ind], ""),
+                        self.vids[vtype][ind],
+                    )
+                )
+        return out

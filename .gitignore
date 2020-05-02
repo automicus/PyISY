@@ -15,6 +15,7 @@ env/
 build/
 develop-eggs/
 dist/
+docs/
 downloads/
 eggs/
 .eggs/
@@ -60,4 +61,3 @@ docs/_build/
 # PyBuilder
 target/
 .AppleDouble
-
