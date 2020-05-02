@@ -159,11 +159,11 @@ class ISY:
 
         self._reconnect_thread = None
 
-    def query(self, node=None):
+    def query(self, address=None):
         """Query all the nodes (or a specific node if an address is provided)."""
         req_path = [URL_QUERY]
-        if node is not None:
-            req_path.append(node)
+        if address is not None:
+            req_path.append(address)
         req_url = self.conn.compile_url(req_path)
         if not self.conn.request(req_url):
             self.log.warning("Error performing query.")
