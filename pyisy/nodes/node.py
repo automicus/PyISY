@@ -27,7 +27,7 @@ from ..constants import (
     XML_ERRORS,
     XML_PARSE_ERROR,
 )
-from ..helpers import EventEmitter, parse_xml_properties
+from ..helpers import EventEmitter, NodeProperty, parse_xml_properties
 from .nodebase import NodeBase
 
 
@@ -220,15 +220,34 @@ class Node(NodeBase):
         self.status = state.value
         self.isy.log.debug("ISY updated node: %s", self._id)
 
-    def update_precision(self, value):
-        """Set the unit of measurement if not provided initially."""
-        if value and self._prec != value:
-            self._prec = value
+    def update_state(self, state):
+        """Update the various state properties when received."""
+        if not isinstance(state, NodeProperty):
+            self.isy.log.error("Could not update state values. Invalid type provided.")
+            return
+        changed = False
 
-    def update_uom(self, value):
-        """Set the unit of measurement if not provided initially."""
-        if value and self._uom != value:
-            self._uom = value
+        if state.prec != self._prec:
+            self.isy.log.info("Updating precision.")
+            self._prec = state.prec
+            changed = True
+
+        if state.uom != self._uom:
+            self.isy.log.info("Updating uom.")
+            self._uom = state.uom
+            changed = True
+
+        if state.formatted != self._formatted:
+            self.isy.log.info("Updating formatted.")
+            self._formatted = state.formatted
+            changed = True
+
+        if state.value != self.status:
+            self.status = state.value
+            return
+
+        if changed:
+            self.status_events.notify(self.status)
 
     def get_command_value(self, uom, cmd):
         """Check against the list of UOM States if this is a valid command."""

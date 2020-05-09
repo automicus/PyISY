@@ -332,9 +332,11 @@ UOM_SECONDS = "57"
 UOM_FAN_MODES = "99"
 UOM_CLIMATE_MODES = "98"
 UOM_CLIMATE_MODES_ZWAVE = "67"
+UOM_DOUBLE_TEMP = "101"
 
 UOM_FRIENDLY_NAME = {
     "1": "A",
+    "2": "",  # Binary / On-Off
     "3": "btu/h",
     "4": "°C",
     "5": "cm",
@@ -413,6 +415,7 @@ UOM_FRIENDLY_NAME = {
     "90": "Hz",
     "91": "°",
     "92": "° South",
+    "100": "",
     "101": "° (x2)",
     "102": "kWs",
     "103": "$",
@@ -428,8 +431,8 @@ UOM_FRIENDLY_NAME = {
     "113": "",  # raw 3-byte signed value
     "114": "",  # raw 4-byte signed value
     "116": "mi",
-    "117": "mb",
-    "118": "hpa",
+    "117": "mbar",
+    "118": "hPa",
     "119": "Wh",
     "120": "in/day",
 }
