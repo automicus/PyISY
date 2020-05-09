@@ -3,6 +3,8 @@ import datetime
 from logging import Handler
 import time
 
+import pytz
+
 from .constants import (
     ATTR_FORMATTED,
     ATTR_ID,
@@ -11,6 +13,7 @@ from .constants import (
     ATTR_VALUE,
     INSTEON_RAMP_RATES,
     ISY_EPOCH_OFFSET,
+    ISY_PROP_NOT_SET,
     ISY_VALUE_UNKNOWN,
     PROP_BATTERY_LEVEL,
     PROP_RAMP_RATE,
@@ -22,6 +25,8 @@ from .constants import (
     UOM_SECONDS,
     XML_ERRORS,
 )
+
+UTC = pytz.utc
 
 
 def parse_xml_properties(xmldoc):
@@ -37,7 +42,7 @@ def parse_xml_properties(xmldoc):
     """
     aux_props = {}
     state_set = False
-    state = NodeProperty(PROP_STATUS)
+    state = NodeProperty(PROP_STATUS, uom=ISY_PROP_NOT_SET)
 
     props = xmldoc.getElementsByTagName(TAG_PROPERTY)
     if not props:
@@ -141,6 +146,11 @@ def ntp_to_system_time(timestamp):
     ntp_delta = ((_system_epoch - _ntp_epoch).days * 24 * 3600) - ISY_EPOCH_OFFSET
 
     return datetime.datetime.fromtimestamp(timestamp - ntp_delta)
+
+
+def utc_now():
+    """Get the current UTC time."""
+    return datetime.datetime.now(UTC)
 
 
 class EventEmitter:

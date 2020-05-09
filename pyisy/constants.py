@@ -34,6 +34,7 @@ ES_RECONNECT_FAILED = "reconnect_failed"
 ES_RECONNECTING = "reconnecting"
 
 ISY_VALUE_UNKNOWN = -1 * float("inf")
+ISY_PROP_NOT_SET = "-1"
 
 XML_ERRORS = (AttributeError, KeyError, ValueError, TypeError, IndexError, ExpatError)
 XML_PARSE_ERROR = "ISY Could not parse response, poorly formatted XML."

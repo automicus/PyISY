@@ -16,7 +16,7 @@ from ..constants import (
     XML_PARSE_ERROR,
     XML_STRPTIME,
 )
-from ..helpers import attr_from_element, attr_from_xml, value_from_xml
+from ..helpers import attr_from_element, attr_from_xml, utc_now, value_from_xml
 from .variable import Variable
 
 EMPTY_VARIABLE_RESPONSES = [
@@ -160,6 +160,7 @@ class Variables:
         except KeyError:
             return  # this is a new variable that hasn't been loaded
 
+        vobj.last_update = utc_now()
         if f"<{ATTR_INIT}>" in xml:
             vobj.init = int(value_from_xml(xmldoc, ATTR_INIT))
         else:
@@ -185,11 +186,11 @@ class Variables:
                 return self.vobjs[self.root][val]
             except (ValueError, KeyError) as err:
                 raise KeyError(f"Unrecognized variable id: {val}") from err
-        else:
-            for vid, vname in self.vnames[self.root]:
-                if vname == val:
-                    return self.vobjs[self.root][vid]
-            raise KeyError(f"Unrecognized variable name: {val}")
+
+        for vid, vname in self.vnames[self.root]:
+            if vname == val:
+                return self.vobjs[self.root][vid]
+        raise KeyError(f"Unrecognized variable name: {val}")
 
     def __setitem__(self, val, value):
         """Handle the setitem function for the Class."""

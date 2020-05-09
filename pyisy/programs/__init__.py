@@ -26,7 +26,7 @@ from ..constants import (
     XML_STRPTIME_YY,
     XML_TRUE,
 )
-from ..helpers import attr_from_element, value_from_xml
+from ..helpers import attr_from_element, utc_now, value_from_xml
 from ..nodes import NodeIterator as ProgramIterator
 from .folder import Folder
 from .program import Program
@@ -198,7 +198,7 @@ class Programs:
         except XML_ERRORS:
             self.isy.log.error("%s: Programs", XML_PARSE_ERROR)
         else:
-            plastup = datetime.now()
+            plastup = utc_now()
 
             # get nodes
             features = xmldoc.getElementsByTagName(TAG_PROGRAM)

@@ -11,7 +11,7 @@ from ..constants import (
     UPDATE_INTERVAL,
     URL_PROGRAMS,
 )
-from ..helpers import EventEmitter
+from ..helpers import EventEmitter, utc_now
 
 
 class Folder:
@@ -33,6 +33,7 @@ class Folder:
     def __init__(self, programs, address, pname, pstatus):
         """Initialize the Folder class."""
         self._id = address
+        self._last_changed = utc_now()
         self._name = pname
         self._programs = programs
         self._status = pstatus
@@ -47,6 +48,11 @@ class Folder:
     def address(self):
         """Return the program or folder ID."""
         return self._id
+
+    @property
+    def last_changed(self):
+        """Return the last time the program was changed in this module."""
+        return self._last_changed
 
     @property
     def leaf(self):
@@ -84,6 +90,7 @@ class Folder:
         |  wait_time: [optional] Seconds to wait before updating.
         """
         if data is not None:
+            self._last_changed = utc_now()
             self.status = data["pstatus"]
             return
         self._programs.update(wait_time=wait_time, address=self._id)

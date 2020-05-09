@@ -29,7 +29,7 @@ from ..constants import (
     XML_PARSE_ERROR,
     XML_TRUE,
 )
-from ..helpers import EventEmitter, value_from_xml
+from ..helpers import EventEmitter, utc_now, value_from_xml
 
 
 class NodeBase:
@@ -56,6 +56,8 @@ class NodeBase:
         self._notes = None
         self._primary_node = pnode
         self._status = status
+        self._last_update = utc_now()
+        self._last_changed = utc_now()
         self.isy = nodes.isy
         self.status_events = EventEmitter()
 
@@ -91,6 +93,16 @@ class NodeBase:
         if self._notes is None:
             self._notes = self.parse_notes()
         return self._notes[TAG_IS_LOAD]
+
+    @property
+    def last_changed(self):
+        """Return the UTC Time of the last status change for this node."""
+        return self._last_changed
+
+    @property
+    def last_update(self):
+        """Return the UTC Time of the last update for this node."""
+        return self._last_update
 
     @property
     def location(self):
@@ -131,6 +143,7 @@ class NodeBase:
         """Set the current node state and notify listeners."""
         if self._status != value:
             self._status = value
+            self._last_changed = utc_now()
             self.status_events.notify(self._status)
         return self._status
 
@@ -166,7 +179,19 @@ class NodeBase:
 
     def update(self, wait_time=0, hint=None, xmldoc=None):
         """Update the group with values from the controller."""
-        pass
+        self.update_last_update()
+
+    def update_last_changed(self, timestamp=None):
+        """Set the UTC Time of the last status change for this node."""
+        if timestamp is None:
+            timestamp = utc_now()
+        self._last_changed = timestamp
+
+    def update_last_update(self, timestamp=None):
+        """Set the UTC Time of the last update for this node."""
+        if timestamp is None:
+            timestamp = utc_now()
+        self._last_update = timestamp
 
     def send_cmd(self, cmd, val=None, uom=None, query=None):
         """Send a command to the device."""

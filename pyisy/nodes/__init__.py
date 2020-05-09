@@ -234,6 +234,7 @@ class Nodes:
             return
 
         # Process the action and value if provided in event data.
+        node.update_last_update()
         value = value_from_xml(xmldoc, ATTR_ACTION, 0)
         value = int(value) if value != "" else ISY_VALUE_UNKNOWN
         prec = attr_from_xml(xmldoc, ATTR_ACTION, ATTR_PRECISION, "0")
@@ -253,6 +254,7 @@ class Nodes:
             del node.aux_properties[PROP_COMMS_ERROR]
         elif cntrl not in EVENT_PROPS_IGNORED:
             node.aux_properties[cntrl] = node_property
+            node.update_last_changed()
         node.control_events.notify(node_property)
         self.isy.log.debug("ISY Node Control Event: %s %s", address, node_property)
 
