@@ -5,9 +5,15 @@ from threading import Thread
 from .clock import Clock
 from .configuration import Configuration
 from .connection import Connection
-from .constants import CMD_X10, URL_QUERY, X10_COMMANDS
+from .constants import (
+    CMD_X10,
+    ES_START_UPDATES,
+    ES_STOP_UPDATES,
+    URL_QUERY,
+    X10_COMMANDS,
+)
 from .events import EventStream
-from .helpers import NullHandler
+from .helpers import EventEmitter, NullHandler
 from .networking import NetworkResources
 from .nodes import Nodes
 from .programs import Programs
@@ -60,11 +66,10 @@ class ISY:
         self._events = None  # create this JIT so no socket reuse
         self._reconnect_thread = None
 
+        self.log = log
         if log is None:
             self.log = logging.getLogger(__name__)
             self.log.addHandler(NullHandler())
-        else:
-            self.log = log
 
         try:
             self.conn = Connection(
@@ -76,21 +81,23 @@ class ISY:
                 self.log.error(err.message)
             except AttributeError:
                 self.log.error(err.args[0])
+            return
 
-        else:
-            self._hostname = address
-            self._connected = True
-            self.configuration = Configuration(self.log, xml=self.conn.get_config())
-            self.clock = Clock(self, xml=self.conn.get_time())
-            self.nodes = Nodes(self, xml=self.conn.get_nodes())
-            self.programs = Programs(self, xml=self.conn.get_programs())
-            self.variables = Variables(
-                self,
-                def_xml=self.conn.get_variable_defs(),
-                var_xml=self.conn.get_variables(),
-            )
-            if self.configuration["Networking Module"]:
-                self.networking = NetworkResources(self, xml=self.conn.get_network())
+        self._hostname = address
+        self._connected = True
+        self.configuration = Configuration(self.log, xml=self.conn.get_config())
+        self.clock = Clock(self, xml=self.conn.get_time())
+        self.nodes = Nodes(self, xml=self.conn.get_nodes())
+        self.programs = Programs(self, xml=self.conn.get_programs())
+        self.variables = Variables(
+            self,
+            def_xml=self.conn.get_variable_defs(),
+            var_xml=self.conn.get_variables(),
+        )
+        self.networking = None
+        if self.configuration["Networking Module"]:
+            self.networking = NetworkResources(self, xml=self.conn.get_network())
+        self.connection_events = EventEmitter()
 
     def __del__(self):
         """Turn off auto updating when the class is deleted."""
@@ -113,11 +120,6 @@ class ISY:
             return self._events.running
         return False
 
-    @property
-    def hostname(self):
-        """Return the hostname."""
-        return self._hostname
-
     @auto_update.setter
     def auto_update(self, val):
         """Set the auto_update property."""
@@ -127,7 +129,13 @@ class ISY:
                 self, self.conn.connection_info, self._on_lost_event_stream
             )
         if self._events is not None:
+            self.connection_events.notify(ES_START_UPDATES if val else ES_STOP_UPDATES)
             self._events.running = val
+
+    @property
+    def hostname(self):
+        """Return the hostname."""
+        return self._hostname
 
     def _on_lost_event_stream(self):
         """Handle lost connection to event stream."""
@@ -149,11 +157,13 @@ class ISY:
                 self, self.conn.connection_info, self._on_lost_event_stream
             )
             self._events.running = True
+            self.connection_events.notify("reconnecting")
 
         if not self.auto_update:
             del self._events
             self._events = None
             self.log.warning("PyISY could not reconnect to the event stream.")
+            self.connection_events.notify("reconnect_failed")
         else:
             self.log.warning("PyISY reconnected to the event stream.")
 

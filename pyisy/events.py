@@ -14,6 +14,9 @@ from .constants import (
     ATTR_ID,
     ATTR_STREAM_ID,
     ATTR_VAR,
+    ES_CONNECTED,
+    ES_DISCONNECTED,
+    ES_LOST_STREAM_CONNECTION,
     POLL_TIME,
     PROP_STATUS,
     RECONNECT_DELAY,
@@ -28,7 +31,7 @@ class EventStream:
     """Class to represent the Event Stream from the ISY."""
 
     def __init__(self, isy, connection_info, on_lost_func=None):
-        """Initializze the EventStream class."""
+        """Initialize the EventStream class."""
         self.isy = isy
         self._running = False
         self._writer = None
@@ -152,6 +155,7 @@ class EventStream:
             self.socket.setblocking(0)
             self._writer = self.socket.makefile("w")
             self._connected = True
+            self.isy.connection_events.notify(ES_CONNECTED)
             return True
         return True
 
@@ -162,6 +166,7 @@ class EventStream:
             self._connected = False
             self._subscribed = False
             self._running = False
+            self.isy.connection_events.notify(ES_DISCONNECTED)
 
     def subscribe(self):
         """Subscribe to the Event Stream."""
@@ -198,6 +203,7 @@ class EventStream:
         """React when the event stream connection is lost."""
         self.disconnect()
         self.isy.log.warning("PyISY lost connection to the ISY event stream.")
+        self.isy.connection_events.notify(ES_LOST_STREAM_CONNECTION)
         if self._on_lost_function is not None:
             time.sleep(delay)
             self._on_lost_function()

@@ -23,6 +23,12 @@ RECONNECT_DELAY = 60
 SOCKET_BUFFER_SIZE = 4096
 THREAD_SLEEP_TIME = 30.0
 
+ES_LOST_STREAM_CONNECTION = "lost_stream_connection"
+ES_CONNECTED = "connected"
+ES_DISCONNECTED = "disconnected"
+ES_START_UPDATES = "start_updates"
+ES_STOP_UPDATES = "stop_updates"
+
 ISY_VALUE_UNKNOWN = -1 * float("inf")
 
 XML_ERRORS = (AttributeError, KeyError, ValueError, TypeError, IndexError, ExpatError)

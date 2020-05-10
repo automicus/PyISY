@@ -1,8 +1,14 @@
 ## CHANGELOG
 
-### [v2.0.0] - Version 2.0 Initial Release
+### [v2.0.3] - Minor Updates, Connection Events and Timestamps
 
-#### Summary: 
+#### Added
+
+- Add connection events for the Event Stream to allow subscription and callbacks. Attach a callback with `isy.connection_events(callback)` and receive a string with the event detail. See `constants.py` for events starting with prefix `ES_`.
+
+### [v2.0.2] - Version 2.0 Initial Release
+
+#### Summary:
 
 V2 is a significant refactoring and cleanup of the original PyISY code, with the primary goal of (1) fixing as many bugs in one shot as possible and (2) moving towards PEP8 compliant code with as few breaking changes as possible.
 
@@ -16,13 +22,13 @@ V2 is a significant refactoring and cleanup of the original PyISY code, with the
 - Node Unit of Measure is returned as a string if it is not a list of UOMs, otherwise it is returned as a list. Previously this was returned as a 1-item list if there was only 1 UOM.
     - ISYv4 and before returned the UOM as a string ('%/on/off' or 'degrees'), ISYv5 phases this out and uses numerical UOMs that correspond to a defined value in the SDK (included in constants file).
     - Previous implementations of `unit = uom[0]` should be replaced with `unit = uom` and for compatibility, UOM should be checked if it is a list with `isinstance(uom, list)`.
-    
+
     ```python
         uom = self._node.uom
         if isinstance(uom, list):
             uom = uom[0]
     ```
-    
+
 - Functions and properties have been renamed to snake_case from CamelCase.
   - Property `node.hasChildren` has been renamed to `node.has_children`.
   - Node Parent property has been renamed. Internal property is `node._parent_nid`, but externally accessible property is `node.parent_node`.
@@ -80,7 +86,7 @@ V2 is a significant refactoring and cleanup of the original PyISY code, with the
         log=None,
         webroot="/isy/unique_isy_url_code_from_portal",
     )
-    # Unique URL can be found in ISY Portal under 
+    # Unique URL can be found in ISY Portal under
     #   Tools > Information > ISY Information
     ```
 - Adds increased Z-Wave support by returning Z-Wave Properties under the `Node.zwave_props` property:
@@ -110,7 +116,7 @@ V2 is a significant refactoring and cleanup of the original PyISY code, with the
     + `fade_stop`
     + `fast_on`
     + `fast_off`
-- In addition to the `node.parent_node` which returns a `Node` object if a node has a primary/parent node other than itself, there is now a `node.primary_node` property, which just returns the address of the primary node. If the device/group *is* the primary node, this is the same as the address (this is the `pnode` tag from `/rest/nodes`). 
+- In addition to the `node.parent_node` which returns a `Node` object if a node has a primary/parent node other than itself, there is now a `node.primary_node` property, which just returns the address of the primary node. If the device/group *is* the primary node, this is the same as the address (this is the `pnode` tag from `/rest/nodes`).
 - Expose the ISY Query Function (`/rest/query`) as `isy.query()`
 
 #### Fixes:
