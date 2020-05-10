@@ -3,8 +3,6 @@ import datetime
 from logging import Handler
 import time
 
-import pytz
-
 from .constants import (
     ATTR_FORMATTED,
     ATTR_ID,
@@ -25,8 +23,6 @@ from .constants import (
     UOM_SECONDS,
     XML_ERRORS,
 )
-
-UTC = pytz.utc
 
 
 def parse_xml_properties(xmldoc):
@@ -148,9 +144,15 @@ def ntp_to_system_time(timestamp):
     return datetime.datetime.fromtimestamp(timestamp - ntp_delta)
 
 
-def utc_now():
-    """Get the current UTC time."""
-    return datetime.datetime.now(UTC)
+def now():
+    """Get the current system time.
+
+    Note: this module uses naive datetimes because the
+    ISY is highly inconsistent with time conventions
+    and does not present enough information to accurately
+    mangage DST without significant guessing and effort.
+    """
+    return datetime.datetime.now()
 
 
 class EventEmitter:

@@ -7,7 +7,7 @@ from ..constants import (
     URL_VARIABLES,
     VAR_INTEGER,
 )
-from ..helpers import EventEmitter, utc_now
+from ..helpers import EventEmitter, now
 
 
 class Variable:
@@ -35,8 +35,8 @@ class Variable:
         self._id = vid
         self._init = init
         self._last_edited = ts
-        self._last_update = utc_now()
-        self._last_changed = utc_now()
+        self._last_update = now()
+        self._last_changed = now()
         self._name = vname
         self._status = status
         self._type = vtype
@@ -67,7 +67,7 @@ class Variable:
         """Set the initial state and notify listeners."""
         if self._init != value:
             self._init = value
-            self._last_changed = utc_now()
+            self._last_changed = now()
             self.status_events.notify(
                 {"status": self._status, "init": self._init, "ts": self._last_edited}
             )
@@ -95,6 +95,13 @@ class Variable:
         """Return the UTC Time of the last update for this node."""
         return self._last_update
 
+    @last_update.setter
+    def last_update(self, value):
+        """Set the last update time."""
+        if self._last_update != value:
+            self._last_update = value
+        return self._last_update
+
     @property
     def protocol(self):
         """Return the protocol for this entity."""
@@ -115,7 +122,7 @@ class Variable:
         """Set the current node state and notify listeners."""
         if self._status != value:
             self._status = value
-            self._last_changed = utc_now()
+            self._last_changed = now()
             self.status_events.notify(
                 {"status": self._status, "init": self._init, "ts": self._last_edited}
             )
@@ -132,7 +139,7 @@ class Variable:
 
         |  wait_time: Seconds to wait before updating.
         """
-        self._last_update = utc_now()
+        self._last_update = now()
         self._variables.update(wait_time)
 
     def set_init(self, val):

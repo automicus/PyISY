@@ -29,7 +29,7 @@ from ..constants import (
     XML_PARSE_ERROR,
     XML_TRUE,
 )
-from ..helpers import EventEmitter, utc_now, value_from_xml
+from ..helpers import EventEmitter, now, value_from_xml
 
 
 class NodeBase:
@@ -56,8 +56,8 @@ class NodeBase:
         self._notes = None
         self._primary_node = pnode
         self._status = status
-        self._last_update = utc_now()
-        self._last_changed = utc_now()
+        self._last_update = now()
+        self._last_changed = now()
         self.isy = nodes.isy
         self.status_events = EventEmitter()
 
@@ -143,7 +143,7 @@ class NodeBase:
         """Set the current node state and notify listeners."""
         if self._status != value:
             self._status = value
-            self._last_changed = utc_now()
+            self._last_changed = now()
             self.status_events.notify(self._status)
         return self._status
 
@@ -184,13 +184,13 @@ class NodeBase:
     def update_last_changed(self, timestamp=None):
         """Set the UTC Time of the last status change for this node."""
         if timestamp is None:
-            timestamp = utc_now()
+            timestamp = now()
         self._last_changed = timestamp
 
     def update_last_update(self, timestamp=None):
         """Set the UTC Time of the last update for this node."""
         if timestamp is None:
-            timestamp = utc_now()
+            timestamp = now()
         self._last_update = timestamp
 
     def send_cmd(self, cmd, val=None, uom=None, query=None):

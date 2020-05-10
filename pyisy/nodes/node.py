@@ -27,7 +27,7 @@ from ..constants import (
     XML_ERRORS,
     XML_PARSE_ERROR,
 )
-from ..helpers import EventEmitter, NodeProperty, parse_xml_properties, utc_now
+from ..helpers import EventEmitter, NodeProperty, now, parse_xml_properties
 from .nodebase import NodeBase
 
 
@@ -212,7 +212,7 @@ class Node(NodeBase):
             self.isy.log.warning("ISY could not update node: %s", self._id)
             return
 
-        self._last_update = utc_now()
+        self._last_update = now()
         state, aux_props = parse_xml_properties(xmldoc)
         self._aux_properties.update(aux_props)
         self._uom = state.uom if state.uom != "" else self._uom
@@ -227,7 +227,7 @@ class Node(NodeBase):
             self.isy.log.error("Could not update state values. Invalid type provided.")
             return
         changed = False
-        self._last_update = utc_now()
+        self._last_update = now()
 
         if state.prec != self._prec:
             self._prec = state.prec
@@ -246,7 +246,7 @@ class Node(NodeBase):
             return
 
         if changed:
-            self._last_changed = utc_now()
+            self._last_changed = now()
             self.status_events.notify(self.status)
 
     def get_command_value(self, uom, cmd):

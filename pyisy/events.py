@@ -25,7 +25,7 @@ from .constants import (
     VERBOSE,
 )
 from .eventreader import ISYEventReader, ISYMaxConnections, ISYStreamDataError
-from .helpers import attr_from_xml, utc_now, value_from_xml
+from .helpers import attr_from_xml, now, value_from_xml
 
 
 class EventStream:
@@ -94,7 +94,7 @@ class EventStream:
             elif self._loaded == ES_INITIALIZING:
                 self._loaded = ES_LOADED
                 self.isy.connection_events.notify(ES_LOADED)
-            self._lasthb = utc_now()
+            self._lasthb = now()
             self._hbwait = int(value_from_xml(xmldoc, ATTR_ACTION))
             self.isy.log.debug("ISY HEARTBEAT: %s", self._lasthb.isoformat())
         elif cntrl == PROP_STATUS:  # NODE UPDATE
@@ -206,7 +206,7 @@ class EventStream:
     def heartbeat_time(self):
         """Return the last ISY Heartbeat time."""
         if self._lasthb is not None:
-            return (utc_now() - self._lasthb).seconds
+            return (now() - self._lasthb).seconds
         return 0.0
 
     def _lost_connection(self, delay=0):
@@ -256,12 +256,13 @@ class EventStream:
                 return
 
             for message in events:
-                try:
-                    self._route_message(message)
-                except Exception as ex:  # pylint: disable=broad-except
-                    self.isy.log.warning(
-                        "PyISY encountered while routing message '%s': %s", message, ex
-                    )
+                # try:
+                #     self._route_message(message)
+                # except Exception as ex:  # pylint: disable=broad-except
+                #     self.isy.log.warning(
+                #         "PyISY encountered while routing message '%s': %s", message, ex
+                #     )
+                self._route_message(message)
 
     def __del__(self):
         """Ensure we unsubscribe on destroy."""

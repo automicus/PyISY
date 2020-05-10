@@ -1,7 +1,8 @@
 """ISY Variables."""
-from datetime import datetime
 from time import sleep
 from xml.dom import minidom
+
+from dateutil import parser
 
 from ..constants import (
     ATTR_ID,
@@ -14,9 +15,8 @@ from ..constants import (
     TAG_VARIABLE,
     XML_ERRORS,
     XML_PARSE_ERROR,
-    XML_STRPTIME,
 )
-from ..helpers import attr_from_element, attr_from_xml, utc_now, value_from_xml
+from ..helpers import attr_from_element, attr_from_xml, now, value_from_xml
 from .variable import Variable
 
 EMPTY_VARIABLE_RESPONSES = [
@@ -122,7 +122,8 @@ class Variables:
             init = value_from_xml(feature, ATTR_INIT)
             val = value_from_xml(feature, ATTR_VAL)
             ts_raw = value_from_xml(feature, ATTR_TS)
-            t_s = datetime.strptime(ts_raw, XML_STRPTIME)
+            t_s = parser.parse(ts_raw)
+            self.isy.log.info("%s", t_s.isoformat())
             vname = self.vnames[vtype].get(vid, "")
 
             vobj = self.vobjs[vtype].get(vid)
@@ -160,14 +161,12 @@ class Variables:
         except KeyError:
             return  # this is a new variable that hasn't been loaded
 
-        vobj.last_update = utc_now()
+        vobj.last_update = now()
         if f"<{ATTR_INIT}>" in xml:
             vobj.init = int(value_from_xml(xmldoc, ATTR_INIT))
         else:
             vobj.status = int(value_from_xml(xmldoc, ATTR_VAL))
-            vobj.last_edited = datetime.strptime(
-                value_from_xml(xmldoc, ATTR_TS), XML_STRPTIME
-            )
+            vobj.last_edited = parser.parse(value_from_xml(xmldoc, ATTR_TS))
 
         self.isy.log.debug("ISY Updated Variable: %s.%s", str(vtype), str(vid))
 

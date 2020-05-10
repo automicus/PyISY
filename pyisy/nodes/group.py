@@ -1,6 +1,6 @@
 """Representation of groups (scenes) from an ISY."""
 from ..constants import ISY_VALUE_UNKNOWN, PROTO_GROUP
-from ..helpers import utc_now
+from ..helpers import now
 from .nodebase import NodeBase
 
 
@@ -67,7 +67,7 @@ class Group(NodeBase):
         """Set the current node state and notify listeners."""
         if self._all_on != value:
             self._all_on = value
-            self._last_changed = utc_now()
+            self._last_changed = now()
             # Re-publish the current status. Let users pick up the all on change.
             self.status_events.notify(self._status)
         return self._all_on
@@ -84,7 +84,7 @@ class Group(NodeBase):
 
     def update(self, wait_time=0, hint=None, xmldoc=None):
         """Update the group with values from the controller."""
-        self._last_update = utc_now()
+        self._last_update = now()
         valid_nodes = [
             node
             for node in self.members
