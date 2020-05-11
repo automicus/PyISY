@@ -13,6 +13,9 @@ from ..constants import (
     EVENT_PROPS_IGNORED,
     INSTEON_RAMP_RATES,
     ISY_VALUE_UNKNOWN,
+    NC_NODE_ERROR,
+    NODE_CHANGED_ACTIONS,
+    PROP_COMMS_ERROR,
     PROP_RAMP_RATE,
     PROTO_INSTEON,
     PROTO_NODE_SERVER,
@@ -233,10 +236,27 @@ class Nodes:
             value = INSTEON_RAMP_RATES.get(value, value)
             uom = UOM_SECONDS
         node_property = NodeProperty(cntrl, value, prec, uom, formatted)
-        if cntrl not in EVENT_PROPS_IGNORED:
+        if (
+            cntrl == PROP_COMMS_ERROR
+            and value == 0
+            and PROP_COMMS_ERROR in node.aux_properties
+        ):
+            # Clear a previous comms error
+            del node.aux_properties[PROP_COMMS_ERROR]
+        elif cntrl not in EVENT_PROPS_IGNORED:
             node.aux_properties[cntrl] = node_property
         node.control_events.notify(node_property)
         self.isy.log.debug("ISY Node Control Event: %s %s", address, node_property)
+
+    def node_changed_received(self, xmldoc):
+        """Handle Node Change/Update events from an event stream message."""
+        action = value_from_xml(xmldoc, ATTR_ACTION)
+        if not action or action not in NODE_CHANGED_ACTIONS:
+            return
+        node = value_from_xml(xmldoc, TAG_NODE)
+        if action == NC_NODE_ERROR:
+            self.isy.log.warning("ISY Could not communicate with device: %s", node)
+        # FUTURE: Handle additional node change actions to force updates.
 
     def parse(self, xml):
         """
