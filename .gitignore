@@ -61,7 +61,6 @@ docs/_build/
 # PyBuilder
 target/
 .AppleDouble
-.vscode/settings.json
 
 # VSCode Configs
 .vscode/

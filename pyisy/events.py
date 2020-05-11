@@ -256,13 +256,12 @@ class EventStream:
                 return
 
             for message in events:
-                # try:
-                #     self._route_message(message)
-                # except Exception as ex:  # pylint: disable=broad-except
-                #     self.isy.log.warning(
-                #         "PyISY encountered while routing message '%s': %s", message, ex
-                #     )
-                self._route_message(message)
+                try:
+                    self._route_message(message)
+                except Exception as ex:  # pylint: disable=broad-except
+                    self.isy.log.warning(
+                        "PyISY encountered while routing message '%s': %s", message, ex
+                    )
 
     def __del__(self):
         """Ensure we unsubscribe on destroy."""
