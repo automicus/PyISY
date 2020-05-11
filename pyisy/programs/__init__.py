@@ -212,7 +212,7 @@ class Programs:
                 if attr_from_element(feature, TAG_FOLDER) == XML_TRUE:
                     # folder specific parsing
                     ptype = TAG_FOLDER
-                    data = {"pstatus": pstatus}
+                    data = {"pstatus": pstatus, "plastup": plastup}
 
                 else:
                     # program specific parsing

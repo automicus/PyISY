@@ -1,5 +1,8 @@
 """ISY Program Folders."""
 from ..constants import (
+    ATTR_LAST_CHANGED,
+    ATTR_LAST_UPDATE,
+    ATTR_STATUS,
     CMD_DISABLE,
     CMD_ENABLE,
     CMD_RUN,
@@ -7,6 +10,7 @@ from ..constants import (
     CMD_RUN_THEN,
     CMD_STOP,
     PROTO_FOLDER,
+    TAG_ADDRESS,
     TAG_FOLDER,
     UPDATE_INTERVAL,
     URL_PROGRAMS,
@@ -30,9 +34,10 @@ class Folder:
 
     dtype = TAG_FOLDER
 
-    def __init__(self, programs, address, pname, pstatus):
+    def __init__(self, programs, address, pname, pstatus, plastup):
         """Initialize the Folder class."""
         self._id = address
+        self._last_update = plastup
         self._last_changed = now()
         self._name = pname
         self._programs = programs
@@ -53,6 +58,25 @@ class Folder:
     def last_changed(self):
         """Return the last time the program was changed in this module."""
         return self._last_changed
+
+    @last_changed.setter
+    def last_changed(self, value):
+        """Set the last time the program was changed."""
+        if self._last_changed != value:
+            self._last_changed = value
+        return self._last_changed
+
+    @property
+    def last_update(self):
+        """Return the last time the program was updated."""
+        return self._last_update
+
+    @last_update.setter
+    def last_update(self, value):
+        """Set the last time the program was updated."""
+        if self._last_update != value:
+            self._last_update = value
+        return self._last_update
 
     @property
     def leaf(self):
@@ -81,6 +105,16 @@ class Folder:
             self._status = value
             self.status_events.notify(self._status)
         return self._status
+
+    @property
+    def status_feedback(self):
+        """Return information for a status change event."""
+        return {
+            TAG_ADDRESS: self.address,
+            ATTR_STATUS: self._status,
+            ATTR_LAST_CHANGED: self._last_changed,
+            ATTR_LAST_UPDATE: self._last_update,
+        }
 
     def update(self, wait_time=UPDATE_INTERVAL, data=None):
         """

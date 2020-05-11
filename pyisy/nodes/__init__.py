@@ -208,7 +208,9 @@ class Nodes:
         formatted = value_from_xml(xmldoc, TAG_FORMATTED)
 
         # Process the action and value if provided in event data.
-        node.update_state(NodeProperty(PROP_STATUS, value, prec, uom, formatted))
+        node.update_state(
+            NodeProperty(PROP_STATUS, value, prec, uom, formatted, address)
+        )
         self.isy.log.debug("ISY Updated Node: " + address)
 
     def control_message_received(self, xmldoc):
@@ -244,7 +246,7 @@ class Nodes:
         if cntrl == PROP_RAMP_RATE:
             value = INSTEON_RAMP_RATES.get(value, value)
             uom = UOM_SECONDS
-        node_property = NodeProperty(cntrl, value, prec, uom, formatted)
+        node_property = NodeProperty(cntrl, value, prec, uom, formatted, address)
         if (
             cntrl == PROP_COMMS_ERROR
             and value == 0
@@ -253,10 +255,9 @@ class Nodes:
             # Clear a previous comms error
             del node.aux_properties[PROP_COMMS_ERROR]
         elif cntrl not in EVENT_PROPS_IGNORED:
-            node.aux_properties[cntrl] = node_property
-            node.update_last_changed()
+            node.update_property(node_property)
         node.control_events.notify(node_property)
-        self.isy.log.debug("ISY Node Control Event: %s %s", address, node_property)
+        self.isy.log.debug("ISY Node Control Event: %s", node_property)
 
     def node_changed_received(self, xmldoc):
         """Handle Node Change/Update events from an event stream message."""

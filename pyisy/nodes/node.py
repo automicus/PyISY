@@ -189,7 +189,7 @@ class Node(NodeBase):
         """Return the Z-Wave Properties (used for Z-Wave devices)."""
         return self._zwave_props
 
-    def update(self, wait_time=0, hint=None, xmldoc=None):
+    def update(self, event=None, wait_time=0, hint=None, xmldoc=None):
         """Update the value of the node from the controller."""
         if not self.isy.auto_update and not xmldoc:
             sleep(wait_time)
@@ -247,7 +247,7 @@ class Node(NodeBase):
 
         if changed:
             self._last_changed = now()
-            self.status_events.notify(self.status)
+            self.status_events.notify(self.status_feedback)
 
     def get_command_value(self, uom, cmd):
         """Check against the list of UOM States if this is a valid command."""

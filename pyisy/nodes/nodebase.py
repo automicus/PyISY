@@ -2,6 +2,9 @@
 from xml.dom import minidom
 
 from ..constants import (
+    ATTR_LAST_CHANGED,
+    ATTR_LAST_UPDATE,
+    ATTR_STATUS,
     CMD_BEEP,
     CMD_BRIGHTEN,
     CMD_DIM,
@@ -18,6 +21,7 @@ from ..constants import (
     METHOD_COMMAND,
     NODE_FAMILY_ID,
     PROP_ON_LEVEL,
+    TAG_ADDRESS,
     TAG_DESCRIPTION,
     TAG_IS_LOAD,
     TAG_LOCATION,
@@ -29,7 +33,7 @@ from ..constants import (
     XML_PARSE_ERROR,
     XML_TRUE,
 )
-from ..helpers import EventEmitter, now, value_from_xml
+from ..helpers import EventEmitter, NodeProperty, now, value_from_xml
 
 
 class NodeBase:
@@ -144,8 +148,18 @@ class NodeBase:
         if self._status != value:
             self._status = value
             self._last_changed = now()
-            self.status_events.notify(self._status)
+            self.status_events.notify(self.status_feedback)
         return self._status
+
+    @property
+    def status_feedback(self):
+        """Return information for a status change event."""
+        return {
+            TAG_ADDRESS: self.address,
+            ATTR_STATUS: self._status,
+            ATTR_LAST_CHANGED: self._last_changed,
+            ATTR_LAST_UPDATE: self._last_update,
+        }
 
     def parse_notes(self):
         """Parse the notes for a given node.
@@ -177,9 +191,25 @@ class NodeBase:
             TAG_LOCATION: location,
         }
 
-    def update(self, wait_time=0, hint=None, xmldoc=None):
+    def update(self, event=None, wait_time=0, hint=None, xmldoc=None):
         """Update the group with values from the controller."""
         self.update_last_update()
+
+    def update_property(self, prop):
+        """Update an aux property for the node when received."""
+        if not isinstance(prop, NodeProperty):
+            self.isy.log.error(
+                "Could not update property value. Invalid type provided."
+            )
+            return
+        self.update_last_update()
+
+        aux_prop = self.aux_properties.get(prop.control)
+        if aux_prop and aux_prop == prop:
+            return
+        self.aux_properties[prop.control] = prop
+        self.update_last_changed()
+        self.status_events.notify(self.status_feedback)
 
     def update_last_changed(self, timestamp=None):
         """Set the UTC Time of the last status change for this node."""
@@ -227,7 +257,7 @@ class NodeBase:
             hint = 255
         elif cmd in [CMD_OFF, CMD_OFF_FAST]:
             hint = 0
-        self.update(UPDATE_INTERVAL, hint=hint)
+        self.update(wait_time=UPDATE_INTERVAL, hint=hint)
         return True
 
     def beep(self):

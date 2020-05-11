@@ -82,7 +82,7 @@ class Group(NodeBase):
         """Return the protocol for this entity."""
         return PROTO_GROUP
 
-    def update(self, wait_time=0, hint=None, xmldoc=None):
+    def update(self, event=None, wait_time=0, hint=None, xmldoc=None):
         """Update the group with values from the controller."""
         self._last_update = now()
         valid_nodes = [

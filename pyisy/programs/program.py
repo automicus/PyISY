@@ -44,11 +44,10 @@ class Program(Folder):
         prunning,
     ):
         """Initialize a Program class."""
-        super(Program, self).__init__(programs, address, pname, pstatus)
+        super(Program, self).__init__(programs, address, pname, pstatus, plastup)
         self._enabled = penabled
         self._last_finished = plastfin
         self._last_run = plastrun
-        self._last_update = plastup
         self._ran_else = 0
         self._ran_then = 0
         self._run_at_startup = pstartrun
@@ -89,18 +88,6 @@ class Program(Folder):
         if self._last_run != value:
             self._last_run = value
         return self._last_run
-
-    @property
-    def last_update(self):
-        """Return the last time the program was updated."""
-        return self._last_update
-
-    @last_update.setter
-    def last_update(self, value):
-        """Set the last time the program was updated."""
-        if self._last_update != value:
-            self._last_update = value
-        return self._last_update
 
     @property
     def protocol(self):

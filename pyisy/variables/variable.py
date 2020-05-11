@@ -1,9 +1,14 @@
 """Manage variables from the ISY."""
 from ..constants import (
     ATTR_INIT,
+    ATTR_LAST_CHANGED,
+    ATTR_LAST_UPDATE,
     ATTR_SET,
+    ATTR_STATUS,
+    ATTR_TS,
     PROTO_INT_VAR,
     PROTO_STATE_VAR,
+    TAG_ADDRESS,
     URL_VARIABLES,
     VAR_INTEGER,
 )
@@ -68,9 +73,7 @@ class Variable:
         if self._init != value:
             self._init = value
             self._last_changed = now()
-            self.status_events.notify(
-                {"status": self._status, "init": self._init, "ts": self._last_edited}
-            )
+            self.status_events.notify(self.status_feedback)
         return self._init
 
     @property
@@ -123,10 +126,20 @@ class Variable:
         if self._status != value:
             self._status = value
             self._last_changed = now()
-            self.status_events.notify(
-                {"status": self._status, "init": self._init, "ts": self._last_edited}
-            )
+            self.status_events.notify(self.status_feedback)
         return self._status
+
+    @property
+    def status_feedback(self):
+        """Return information for a status change event."""
+        return {
+            TAG_ADDRESS: self.address,
+            ATTR_STATUS: self._status,
+            ATTR_INIT: self._init,
+            ATTR_TS: self._last_edited,
+            ATTR_LAST_CHANGED: self._last_changed,
+            ATTR_LAST_UPDATE: self._last_update,
+        }
 
     @property
     def vid(self):
