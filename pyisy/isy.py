@@ -7,6 +7,8 @@ from .configuration import Configuration
 from .connection import Connection
 from .constants import (
     CMD_X10,
+    ES_RECONNECT_FAILED,
+    ES_RECONNECTING,
     ES_START_UPDATES,
     ES_STOP_UPDATES,
     URL_QUERY,
@@ -157,13 +159,13 @@ class ISY:
                 self, self.conn.connection_info, self._on_lost_event_stream
             )
             self._events.running = True
-            self.connection_events.notify("reconnecting")
+            self.connection_events.notify(ES_RECONNECTING)
 
         if not self.auto_update:
             del self._events
             self._events = None
             self.log.warning("PyISY could not reconnect to the event stream.")
-            self.connection_events.notify("reconnect_failed")
+            self.connection_events.notify(ES_RECONNECT_FAILED)
         else:
             self.log.warning("PyISY reconnected to the event stream.")
 

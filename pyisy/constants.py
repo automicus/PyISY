@@ -30,6 +30,8 @@ ES_START_UPDATES = "start_updates"
 ES_STOP_UPDATES = "stop_updates"
 ES_INITIALIZING = "stream_initializing"
 ES_LOADED = "stream_loaded"
+ES_RECONNECT_FAILED = "reconnect_failed"
+ES_RECONNECTING = "reconnecting"
 
 ISY_VALUE_UNKNOWN = -1 * float("inf")
 
