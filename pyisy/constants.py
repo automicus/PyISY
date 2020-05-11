@@ -23,6 +23,16 @@ RECONNECT_DELAY = 60
 SOCKET_BUFFER_SIZE = 4096
 THREAD_SLEEP_TIME = 30.0
 
+ES_LOST_STREAM_CONNECTION = "lost_stream_connection"
+ES_CONNECTED = "connected"
+ES_DISCONNECTED = "disconnected"
+ES_START_UPDATES = "start_updates"
+ES_STOP_UPDATES = "stop_updates"
+ES_INITIALIZING = "stream_initializing"
+ES_LOADED = "stream_loaded"
+ES_RECONNECT_FAILED = "reconnect_failed"
+ES_RECONNECTING = "reconnecting"
+
 ISY_VALUE_UNKNOWN = -1 * float("inf")
 
 XML_ERRORS = (AttributeError, KeyError, ValueError, TypeError, IndexError, ExpatError)
@@ -108,6 +118,7 @@ PROTO_ZWAVE = "zwave"
 
 PROP_BATTERY_LEVEL = "BATLVL"
 PROP_BUSY = "BUSY"
+PROP_COMMS_ERROR = "ERR"
 PROP_ENERGY_MODE = "CLIEMD"
 PROP_HEAT_COOL_STATE = "CLIHCS"
 PROP_HUMIDITY = "CLIHUM"
@@ -197,7 +208,7 @@ COMMAND_FRIENDLY_NAME = {
     "DON5": "on_5x_key_presses",
     "ELECCON": "electrical_conductivity",
     "ELECRES": "electrical_resistivity",
-    "ERR": "device_communication_errors",
+    PROP_COMMS_ERROR: "device_communication_errors",
     "GPV": "general_purpose",
     "GV0": "custom_control_0",
     "GV1": "custom_control_1",
@@ -802,3 +813,40 @@ NODE_CATEGORIES = {
     "127": "virtual",
     "254": "unknown",
 }
+
+# Node Change Actions
+NC_NODE_RENAMED = "NN"
+NC_NODE_REMOVED = "NR"
+NC_NODE_MOVED = "MV"
+NC_NODE_REMOVE_FROM_GROUP = "RG"
+NC_NODE_ENABLED = "RG"
+NC_PARENT_CHANGED = "PC"
+NC_GROUP_RENAMED = "GN"
+NC_GROUP_REMOVED = "GR"
+NC_GROUP_ADDED = "GD"
+NC_FOLDER_RENAMED = "FN"
+NC_FOLDER_REMOVED = "FR"
+NC_FOLDER_ADDED = "FD"
+NC_NODE_ERROR = "NE"
+NC_CLEAR_ERROR = "CE"
+NC_NET_RENAMED = "WR"
+NC_NODE_REVISED = "RV"
+
+NODE_CHANGED_ACTIONS = [
+    NC_NODE_RENAMED,
+    NC_NODE_REMOVED,
+    NC_NODE_MOVED,
+    NC_NODE_REMOVE_FROM_GROUP,
+    NC_NODE_ENABLED,
+    NC_PARENT_CHANGED,
+    NC_GROUP_RENAMED,
+    NC_GROUP_REMOVED,
+    NC_GROUP_ADDED,
+    NC_FOLDER_RENAMED,
+    NC_FOLDER_REMOVED,
+    NC_FOLDER_ADDED,
+    NC_NODE_ERROR,
+    NC_CLEAR_ERROR,
+    NC_NET_RENAMED,
+    NC_NODE_REVISED,
+]

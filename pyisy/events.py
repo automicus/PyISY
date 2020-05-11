@@ -14,6 +14,11 @@ from .constants import (
     ATTR_ID,
     ATTR_STREAM_ID,
     ATTR_VAR,
+    ES_CONNECTED,
+    ES_DISCONNECTED,
+    ES_INITIALIZING,
+    ES_LOADED,
+    ES_LOST_STREAM_CONNECTION,
     POLL_TIME,
     PROP_STATUS,
     RECONNECT_DELAY,
@@ -28,7 +33,7 @@ class EventStream:
     """Class to represent the Event Stream from the ISY."""
 
     def __init__(self, isy, connection_info, on_lost_func=None):
-        """Initializze the EventStream class."""
+        """Initialize the EventStream class."""
         self.isy = isy
         self._running = False
         self._writer = None
@@ -37,6 +42,7 @@ class EventStream:
         self._connected = False
         self._lasthb = None
         self._hbwait = 0
+        self._loaded = None
         self._on_lost_function = on_lost_func
         self.cert = None
         self.data = connection_info
@@ -83,6 +89,12 @@ class EventStream:
         if not cntrl:
             return
         if cntrl == "_0":  # ISY HEARTBEAT
+            if self._loaded is None:
+                self._loaded = ES_INITIALIZING
+                self.isy.connection_events.notify(ES_INITIALIZING)
+            elif self._loaded == ES_INITIALIZING:
+                self._loaded = ES_LOADED
+                self.isy.connection_events.notify(ES_LOADED)
             self._lasthb = datetime.datetime.now()
             self._hbwait = int(value_from_xml(xmldoc, ATTR_ACTION))
             self.isy.log.debug("ISY HEARTBEAT: %s", self._lasthb.isoformat())
@@ -100,6 +112,8 @@ class EventStream:
             else:  # SOMETHING HAPPENED WITH A PROGRAM FOLDER
                 # but they ISY didn't tell us what, so...
                 self.isy.programs.update()
+        elif cntrl == "_3":  # Node Changed/Updated
+            self.isy.nodes.node_changed_received(xmldoc)
 
     def update_received(self, xmldoc):
         """Set the socket ID."""
@@ -152,6 +166,7 @@ class EventStream:
             self.socket.setblocking(0)
             self._writer = self.socket.makefile("w")
             self._connected = True
+            self.isy.connection_events.notify(ES_CONNECTED)
             return True
         return True
 
@@ -162,6 +177,7 @@ class EventStream:
             self._connected = False
             self._subscribed = False
             self._running = False
+            self.isy.connection_events.notify(ES_DISCONNECTED)
 
     def subscribe(self):
         """Subscribe to the Event Stream."""
@@ -198,6 +214,7 @@ class EventStream:
         """React when the event stream connection is lost."""
         self.disconnect()
         self.isy.log.warning("PyISY lost connection to the ISY event stream.")
+        self.isy.connection_events.notify(ES_LOST_STREAM_CONNECTION)
         if self._on_lost_function is not None:
             time.sleep(delay)
             self._on_lost_function()
