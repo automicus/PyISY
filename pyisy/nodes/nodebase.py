@@ -257,7 +257,7 @@ class NodeBase:
 
     def query(self):
         """Request the ISY query this node."""
-        return self.isy.query(node=self.address)
+        return self.isy.query(address=self.address)
 
     def turn_off(self):
         """Turn off the nodes/group in the ISY."""
