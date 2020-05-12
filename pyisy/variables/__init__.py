@@ -123,7 +123,6 @@ class Variables:
             val = value_from_xml(feature, ATTR_VAL)
             ts_raw = value_from_xml(feature, ATTR_TS)
             t_s = parser.parse(ts_raw)
-            self.isy.log.info("%s", t_s.isoformat())
             vname = self.vnames[vtype].get(vid, "")
 
             vobj = self.vobjs[vtype].get(vid)

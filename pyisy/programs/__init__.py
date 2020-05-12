@@ -165,14 +165,10 @@ class Programs:
 
             if f"<{TAG_PRGM_RUN}>" in xml:
                 pobj.last_run = parser.parse(value_from_xml(xmldoc, TAG_PRGM_RUN))
-                self.isy.log.info("%s: %s", TAG_PRGM_RUN, pobj.last_run.isoformat())
 
             if f"<{TAG_PRGM_FINISH}>" in xml:
                 pobj.last_finished = parser.parse(
                     value_from_xml(xmldoc, TAG_PRGM_FINISH)
-                )
-                self.isy.log.info(
-                    "%s: %s", TAG_PRGM_FINISH, pobj.last_finished.isoformat()
                 )
 
             if XML_ON in xml or XML_OFF in xml:
