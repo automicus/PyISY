@@ -6,6 +6,7 @@ from ..constants import (
     ATTR_ACTION,
     ATTR_CONTROL,
     ATTR_FLAG,
+    ATTR_ID,
     ATTR_INSTANCE,
     ATTR_NODE_DEF_ID,
     ATTR_PRECISION,
@@ -36,7 +37,6 @@ from ..constants import (
     TAG_PRIMARY_NODE,
     TAG_TYPE,
     UOM_SECONDS,
-    URL_STATUS,
     XML_ERRORS,
     XML_PARSE_ERROR,
     XML_TRUE,
@@ -384,16 +384,51 @@ class Nodes:
 
     def update(self, wait_time=0):
         """
-        Update the contents of the class.
+        Update the status and properties of the nodes in the class.
+
+        This calls the "/rest/status" endpoint.
 
         |  wait_time: [optional] Amount of seconds to wait before updating
         """
-        sleep(wait_time)
-        xml = self.isy.conn.request(self.isy.conn.compile_url([URL_STATUS]))
-        if xml is not None:
-            self.parse(xml)
-        else:
+        if wait_time:
+            sleep(wait_time)
+        xml = self.isy.conn.get_status()
+
+        if xml is None:
             self.isy.log.warning("ISY Failed to update nodes.")
+            return
+
+        try:
+            xmldoc = minidom.parseString(xml)
+        except XML_ERRORS:
+            self.isy.log.error("%s: Nodes", XML_PARSE_ERROR)
+            return False
+
+        for feature in xmldoc.getElementsByTagName(TAG_NODE):
+            address = feature.attributes[ATTR_ID].value
+            state, aux_props = parse_xml_properties(feature)
+
+            if address in self.addresses:
+                self.get_by_id(address).update(xmldoc=feature)
+                continue
+
+        self.isy.log.info("ISY Updated Node Statuses.")
+
+    def update_nodes(self, wait_time=0):
+        """
+        Update the contents of the class.
+
+        This calls the "/rest/nodes" endpoint.
+
+        |  wait_time: [optional] Amount of seconds to wait before updating
+        """
+        if wait_time:
+            sleep(wait_time)
+        xml = self.isy.conn.get_nodes()
+        if xml is None:
+            self.isy.log.warning("ISY Failed to update nodes.")
+            return
+        self.parse(xml)
 
     def insert(self, address, nname, nparent, nobj, ntype):
         """

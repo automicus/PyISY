@@ -215,10 +215,7 @@ class Node(NodeBase):
         self._last_update = now()
         state, aux_props = parse_xml_properties(xmldoc)
         self._aux_properties.update(aux_props)
-        self._uom = state.uom if state.uom != "" else self._uom
-        self._prec = state.prec if state.prec != "0" else self._prec
-        self._formatted = state.formatted
-        self.status = state.value
+        self.update_state(state)
         self.isy.log.debug("ISY updated node: %s", self._id)
 
     def update_state(self, state):
@@ -243,6 +240,7 @@ class Node(NodeBase):
 
         if state.value != self.status:
             self.status = state.value
+            # Let Status setter throw event
             return
 
         if changed:
