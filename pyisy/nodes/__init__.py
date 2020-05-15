@@ -6,6 +6,7 @@ from ..constants import (
     ATTR_ACTION,
     ATTR_CONTROL,
     ATTR_FLAG,
+    ATTR_ID,
     ATTR_INSTANCE,
     ATTR_NODE_DEF_ID,
     ATTR_PRECISION,
@@ -17,6 +18,7 @@ from ..constants import (
     NODE_CHANGED_ACTIONS,
     PROP_COMMS_ERROR,
     PROP_RAMP_RATE,
+    PROP_STATUS,
     PROTO_INSTEON,
     PROTO_NODE_SERVER,
     PROTO_ZIGBEE,
@@ -35,7 +37,6 @@ from ..constants import (
     TAG_PRIMARY_NODE,
     TAG_TYPE,
     UOM_SECONDS,
-    URL_STATUS,
     XML_ERRORS,
     XML_PARSE_ERROR,
     XML_TRUE,
@@ -190,17 +191,26 @@ class Nodes:
     def update_received(self, xmldoc):
         """Update nodes from event stream message."""
         address = value_from_xml(xmldoc, TAG_NODE)
+
+        node = self.get_by_id(address)
+        if not node:
+            self.isy.log.debug(
+                "Received a node update for node %s but could not find a record of this "
+                "node. Please try restarting the module if the problem persists, this "
+                "may be due to a new node being added to the ISY since last restart.",
+                address,
+            )
+            return
         value = value_from_xml(xmldoc, ATTR_ACTION)
         value = int(value) if value != "" else ISY_VALUE_UNKNOWN
         prec = attr_from_xml(xmldoc, ATTR_ACTION, ATTR_PRECISION, "0")
         uom = attr_from_xml(xmldoc, ATTR_ACTION, ATTR_UNIT_OF_MEASURE, "")
-        node = self.get_by_id(address)
-        if not node:
-            return
-        # Check if UOM/PREC have changed or were not set:
-        node.update_precision(prec)
-        node.update_uom(uom)
-        node.status = value
+        formatted = value_from_xml(xmldoc, TAG_FORMATTED)
+
+        # Process the action and value if provided in event data.
+        node.update_state(
+            NodeProperty(PROP_STATUS, value, prec, uom, formatted, address)
+        )
         self.isy.log.debug("ISY Updated Node: " + address)
 
     def control_message_received(self, xmldoc):
@@ -215,13 +225,6 @@ class Nodes:
             # If there is no node associated with the control message ignore it
             return
 
-        # Process the action and value if provided in event data.
-        value = value_from_xml(xmldoc, ATTR_ACTION, 0)
-        value = int(value) if value != "" else ISY_VALUE_UNKNOWN
-        prec = attr_from_xml(xmldoc, ATTR_ACTION, ATTR_PRECISION, "0")
-        uom = attr_from_xml(xmldoc, ATTR_ACTION, ATTR_UNIT_OF_MEASURE, "")
-        formatted = value_from_xml(xmldoc, TAG_FORMATTED)
-
         node = self.get_by_id(address)
         if not node:
             self.isy.log.debug(
@@ -232,10 +235,18 @@ class Nodes:
             )
             return
 
+        # Process the action and value if provided in event data.
+        node.update_last_update()
+        value = value_from_xml(xmldoc, ATTR_ACTION, 0)
+        value = int(value) if value != "" else ISY_VALUE_UNKNOWN
+        prec = attr_from_xml(xmldoc, ATTR_ACTION, ATTR_PRECISION, "0")
+        uom = attr_from_xml(xmldoc, ATTR_ACTION, ATTR_UNIT_OF_MEASURE, "")
+        formatted = value_from_xml(xmldoc, TAG_FORMATTED)
+
         if cntrl == PROP_RAMP_RATE:
             value = INSTEON_RAMP_RATES.get(value, value)
             uom = UOM_SECONDS
-        node_property = NodeProperty(cntrl, value, prec, uom, formatted)
+        node_property = NodeProperty(cntrl, value, prec, uom, formatted, address)
         if (
             cntrl == PROP_COMMS_ERROR
             and value == 0
@@ -244,9 +255,9 @@ class Nodes:
             # Clear a previous comms error
             del node.aux_properties[PROP_COMMS_ERROR]
         elif cntrl not in EVENT_PROPS_IGNORED:
-            node.aux_properties[cntrl] = node_property
+            node.update_property(node_property)
         node.control_events.notify(node_property)
-        self.isy.log.debug("ISY Node Control Event: %s %s", address, node_property)
+        self.isy.log.debug("ISY Node Control Event: %s", node_property)
 
     def node_changed_received(self, xmldoc):
         """Handle Node Change/Update events from an event stream message."""
@@ -373,16 +384,51 @@ class Nodes:
 
     def update(self, wait_time=0):
         """
-        Update the contents of the class.
+        Update the status and properties of the nodes in the class.
+
+        This calls the "/rest/status" endpoint.
 
         |  wait_time: [optional] Amount of seconds to wait before updating
         """
-        sleep(wait_time)
-        xml = self.isy.conn.request(self.isy.conn.compile_url([URL_STATUS]))
-        if xml is not None:
-            self.parse(xml)
-        else:
+        if wait_time:
+            sleep(wait_time)
+        xml = self.isy.conn.get_status()
+
+        if xml is None:
             self.isy.log.warning("ISY Failed to update nodes.")
+            return
+
+        try:
+            xmldoc = minidom.parseString(xml)
+        except XML_ERRORS:
+            self.isy.log.error("%s: Nodes", XML_PARSE_ERROR)
+            return False
+
+        for feature in xmldoc.getElementsByTagName(TAG_NODE):
+            address = feature.attributes[ATTR_ID].value
+            state, aux_props = parse_xml_properties(feature)
+
+            if address in self.addresses:
+                self.get_by_id(address).update(xmldoc=feature)
+                continue
+
+        self.isy.log.info("ISY Updated Node Statuses.")
+
+    def update_nodes(self, wait_time=0):
+        """
+        Update the contents of the class.
+
+        This calls the "/rest/nodes" endpoint.
+
+        |  wait_time: [optional] Amount of seconds to wait before updating
+        """
+        if wait_time:
+            sleep(wait_time)
+        xml = self.isy.conn.get_nodes()
+        if xml is None:
+            self.isy.log.warning("ISY Failed to update nodes.")
+            return
+        self.parse(xml)
 
     def insert(self, address, nname, nparent, nobj, ntype):
         """

@@ -1,13 +1,18 @@
 """Manage variables from the ISY."""
 from ..constants import (
     ATTR_INIT,
+    ATTR_LAST_CHANGED,
+    ATTR_LAST_UPDATE,
     ATTR_SET,
+    ATTR_STATUS,
+    ATTR_TS,
     PROTO_INT_VAR,
     PROTO_STATE_VAR,
+    TAG_ADDRESS,
     URL_VARIABLES,
     VAR_INTEGER,
 )
-from ..helpers import EventEmitter
+from ..helpers import EventEmitter, now
 
 
 class Variable:
@@ -35,6 +40,8 @@ class Variable:
         self._id = vid
         self._init = init
         self._last_edited = ts
+        self._last_update = now()
+        self._last_changed = now()
         self._name = vname
         self._status = status
         self._type = vtype
@@ -65,10 +72,14 @@ class Variable:
         """Set the initial state and notify listeners."""
         if self._init != value:
             self._init = value
-            self.status_events.notify(
-                {"status": self._status, "init": self._init, "ts": self._last_edited}
-            )
+            self._last_changed = now()
+            self.status_events.notify(self.status_feedback)
         return self._init
+
+    @property
+    def last_changed(self):
+        """Return the UTC Time of the last status change for this node."""
+        return self._last_changed
 
     @property
     def last_edited(self):
@@ -81,6 +92,18 @@ class Variable:
         if self._last_edited != value:
             self._last_edited = value
         return self._last_edited
+
+    @property
+    def last_update(self):
+        """Return the UTC Time of the last update for this node."""
+        return self._last_update
+
+    @last_update.setter
+    def last_update(self, value):
+        """Set the last update time."""
+        if self._last_update != value:
+            self._last_update = value
+        return self._last_update
 
     @property
     def protocol(self):
@@ -102,10 +125,21 @@ class Variable:
         """Set the current node state and notify listeners."""
         if self._status != value:
             self._status = value
-            self.status_events.notify(
-                {"status": self._status, "init": self._init, "ts": self._last_edited}
-            )
+            self._last_changed = now()
+            self.status_events.notify(self.status_feedback)
         return self._status
+
+    @property
+    def status_feedback(self):
+        """Return information for a status change event."""
+        return {
+            TAG_ADDRESS: self.address,
+            ATTR_STATUS: self._status,
+            ATTR_INIT: self._init,
+            ATTR_TS: self._last_edited,
+            ATTR_LAST_CHANGED: self._last_changed,
+            ATTR_LAST_UPDATE: self._last_update,
+        }
 
     @property
     def vid(self):
@@ -118,6 +152,7 @@ class Variable:
 
         |  wait_time: Seconds to wait before updating.
         """
+        self._last_update = now()
         self._variables.update(wait_time)
 
     def set_init(self, val):

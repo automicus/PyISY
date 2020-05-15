@@ -27,7 +27,7 @@ from ..constants import (
     XML_ERRORS,
     XML_PARSE_ERROR,
 )
-from ..helpers import EventEmitter, parse_xml_properties
+from ..helpers import EventEmitter, NodeProperty, now, parse_xml_properties
 from .nodebase import NodeBase
 
 
@@ -189,7 +189,7 @@ class Node(NodeBase):
         """Return the Z-Wave Properties (used for Z-Wave devices)."""
         return self._zwave_props
 
-    def update(self, wait_time=0, hint=None, xmldoc=None):
+    def update(self, event=None, wait_time=0, hint=None, xmldoc=None):
         """Update the value of the node from the controller."""
         if not self.isy.auto_update and not xmldoc:
             sleep(wait_time)
@@ -212,23 +212,40 @@ class Node(NodeBase):
             self.isy.log.warning("ISY could not update node: %s", self._id)
             return
 
+        self._last_update = now()
         state, aux_props = parse_xml_properties(xmldoc)
         self._aux_properties.update(aux_props)
-        self._uom = state.uom if state.uom != "" else self._uom
-        self._prec = state.prec if state.prec != "0" else self._prec
-        self._formatted = state.formatted
-        self.status = state.value
+        self.update_state(state)
         self.isy.log.debug("ISY updated node: %s", self._id)
 
-    def update_precision(self, value):
-        """Set the unit of measurement if not provided initially."""
-        if value and self._prec != value:
-            self._prec = value
+    def update_state(self, state):
+        """Update the various state properties when received."""
+        if not isinstance(state, NodeProperty):
+            self.isy.log.error("Could not update state values. Invalid type provided.")
+            return
+        changed = False
+        self._last_update = now()
 
-    def update_uom(self, value):
-        """Set the unit of measurement if not provided initially."""
-        if value and self._uom != value:
-            self._uom = value
+        if state.prec != self._prec:
+            self._prec = state.prec
+            changed = True
+
+        if state.uom != self._uom:
+            self._uom = state.uom
+            changed = True
+
+        if state.formatted != self._formatted:
+            self._formatted = state.formatted
+            changed = True
+
+        if state.value != self.status:
+            self.status = state.value
+            # Let Status setter throw event
+            return
+
+        if changed:
+            self._last_changed = now()
+            self.status_events.notify(self.status_feedback)
 
     def get_command_value(self, uom, cmd):
         """Check against the list of UOM States if this is a valid command."""

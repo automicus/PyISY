@@ -11,6 +11,7 @@ from .constants import (
     ATTR_VALUE,
     INSTEON_RAMP_RATES,
     ISY_EPOCH_OFFSET,
+    ISY_PROP_NOT_SET,
     ISY_VALUE_UNKNOWN,
     PROP_BATTERY_LEVEL,
     PROP_RAMP_RATE,
@@ -37,7 +38,7 @@ def parse_xml_properties(xmldoc):
     """
     aux_props = {}
     state_set = False
-    state = NodeProperty(PROP_STATUS)
+    state = NodeProperty(PROP_STATUS, uom=ISY_PROP_NOT_SET)
 
     props = xmldoc.getElementsByTagName(TAG_PROPERTY)
     if not props:
@@ -143,6 +144,17 @@ def ntp_to_system_time(timestamp):
     return datetime.datetime.fromtimestamp(timestamp - ntp_delta)
 
 
+def now():
+    """Get the current system time.
+
+    Note: this module uses naive datetimes because the
+    ISY is highly inconsistent with time conventions
+    and does not present enough information to accurately
+    mangage DST without significant guessing and effort.
+    """
+    return datetime.datetime.now()
+
+
 class EventEmitter:
     """Event Emitter class."""
 
@@ -183,7 +195,13 @@ class NodeProperty(dict):
     """Class to hold result of a control event or node aux property."""
 
     def __init__(
-        self, control, value=ISY_VALUE_UNKNOWN, prec="0", uom="", formatted=None
+        self,
+        control,
+        value=ISY_VALUE_UNKNOWN,
+        prec="0",
+        uom="",
+        formatted=None,
+        address=None,
     ):
         """Initialize an control result or aux property."""
         super().__init__(
@@ -193,7 +211,13 @@ class NodeProperty(dict):
             prec=prec,
             uom=uom,
             formatted=(formatted if formatted is not None else value),
+            address=address,
         )
+
+    @property
+    def address(self):
+        """Report the address of the node with this property."""
+        return self["address"]
 
     @property
     def control(self):
@@ -223,8 +247,9 @@ class NodeProperty(dict):
     def __str__(self):
         """Return just the event title to prevent breaking changes."""
         return (
-            f"NodeProperty('{self.control}': value='{self.value}' "
-            f"prec='{self.prec}' uom='{self.uom}' formatted='{self.formatted}')"
+            f"NodeProperty('{self.address}': control='{self.control}', "
+            f"value='{self.value}', prec='{self.prec}', "
+            f"uom='{self.uom}', formatted='{self.formatted}')"
         )
 
     __repr__ = __str__

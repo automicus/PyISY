@@ -23,6 +23,7 @@ from .constants import (
     URL_PING,
     URL_PROGRAMS,
     URL_RESOURCES,
+    URL_STATUS,
     URL_SUBFOLDERS,
     URL_VARIABLES,
     VAR_INTEGER,
@@ -195,6 +196,13 @@ class Connection:
     def get_nodes(self):
         """Fetch the list of nodes/groups/scenes from the ISY."""
         req_url = self.compile_url([URL_NODES], {URL_MEMBERS: XML_FALSE})
+        result = self.request(req_url)
+        return result
+        return result
+
+    def get_status(self):
+        """Fetch the status of nodes/groups/scenes from the ISY."""
+        req_url = self.compile_url([URL_STATUS])
         result = self.request(req_url)
         return result
 

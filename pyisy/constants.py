@@ -34,6 +34,7 @@ ES_RECONNECT_FAILED = "reconnect_failed"
 ES_RECONNECTING = "reconnecting"
 
 ISY_VALUE_UNKNOWN = -1 * float("inf")
+ISY_PROP_NOT_SET = "-1"
 
 XML_ERRORS = (AttributeError, KeyError, ValueError, TypeError, IndexError, ExpatError)
 XML_PARSE_ERROR = "ISY Could not parse response, poorly formatted XML."
@@ -49,6 +50,8 @@ ATTR_FORMATTED = "formatted"
 ATTR_ID = "id"
 ATTR_INIT = "init"
 ATTR_INSTANCE = "instance"
+ATTR_LAST_CHANGED = "last_changed"
+ATTR_LAST_UPDATE = "last_update"
 ATTR_NODE_DEF_ID = "nodeDefId"
 ATTR_PARENT = "parentId"
 ATTR_PRECISION = "prec"
@@ -332,9 +335,11 @@ UOM_SECONDS = "57"
 UOM_FAN_MODES = "99"
 UOM_CLIMATE_MODES = "98"
 UOM_CLIMATE_MODES_ZWAVE = "67"
+UOM_DOUBLE_TEMP = "101"
 
 UOM_FRIENDLY_NAME = {
     "1": "A",
+    "2": "",  # Binary / On-Off
     "3": "btu/h",
     "4": "°C",
     "5": "cm",
@@ -413,6 +418,7 @@ UOM_FRIENDLY_NAME = {
     "90": "Hz",
     "91": "°",
     "92": "° South",
+    "100": "",
     "101": "° (x2)",
     "102": "kWs",
     "103": "$",
@@ -428,8 +434,8 @@ UOM_FRIENDLY_NAME = {
     "113": "",  # raw 3-byte signed value
     "114": "",  # raw 4-byte signed value
     "116": "mi",
-    "117": "mb",
-    "118": "hpa",
+    "117": "mbar",
+    "118": "hPa",
     "119": "Wh",
     "120": "in/day",
 }

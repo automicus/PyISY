@@ -1,5 +1,4 @@
 """ISY Event Stream."""
-import datetime
 import socket
 import ssl
 from threading import Thread, ThreadError
@@ -26,7 +25,7 @@ from .constants import (
     VERBOSE,
 )
 from .eventreader import ISYEventReader, ISYMaxConnections, ISYStreamDataError
-from .helpers import attr_from_xml, value_from_xml
+from .helpers import attr_from_xml, now, value_from_xml
 
 
 class EventStream:
@@ -95,7 +94,7 @@ class EventStream:
             elif self._loaded == ES_INITIALIZING:
                 self._loaded = ES_LOADED
                 self.isy.connection_events.notify(ES_LOADED)
-            self._lasthb = datetime.datetime.now()
+            self._lasthb = now()
             self._hbwait = int(value_from_xml(xmldoc, ATTR_ACTION))
             self.isy.log.debug("ISY HEARTBEAT: %s", self._lasthb.isoformat())
         elif cntrl == PROP_STATUS:  # NODE UPDATE
@@ -207,7 +206,7 @@ class EventStream:
     def heartbeat_time(self):
         """Return the last ISY Heartbeat time."""
         if self._lasthb is not None:
-            return (datetime.datetime.now() - self._lasthb).seconds
+            return (now() - self._lasthb).seconds
         return 0.0
 
     def _lost_connection(self, delay=0):
