@@ -342,7 +342,7 @@ class Node(NodeBase):
                 setpoint_name, self.address,
             )
             return
-        # ISY wants 2 times the temperature for Insteon in order to not loose precision
+        # ISY wants 2 times the temperature for Insteon in order to not lose precision
         if self._uom in ["101", "degrees"]:
             val = 2 * val
         return self.send_cmd(
