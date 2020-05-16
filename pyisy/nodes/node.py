@@ -328,32 +328,25 @@ class Node(NodeBase):
 
     def set_climate_setpoint_heat(self, val):
         """Send a command to the device to set the system heat setpoint."""
-        if not self.is_thermostat:
-            self.isy.log.warning(
-                "Failed to set heat setpoint on %s, it is not a thermostat node.",
-                self.address,
-            )
-            return
-        # For some reason, wants 2 times the temperature for Insteon
-        if self._uom in ["101", "degrees"]:
-            val = 2 * val
-        return self.send_cmd(
-            PROP_SETPOINT_HEAT, str(val), self.get_property_uom(PROP_SETPOINT_HEAT)
-        )
+        return self._set_climate_setpoint(val, "heat", PROP_SETPOINT_HEAT)
 
     def set_climate_setpoint_cool(self, val):
         """Send a command to the device to set the system heat setpoint."""
+        return self._set_climate_setpoint(val, "cool", PROP_SETPOINT_COOL)
+
+    def _set_climate_setpoint(self, val, setpoint_name, setpoint_prop):
+        """Send a command to the device to set the system heat setpoint."""
         if not self.is_thermostat:
             self.isy.log.warning(
-                "Failed to set cool setpoint on %s, it is not a thermostat node.",
-                self.address,
+                "Failed to set %s setpoint on %s, it is not a thermostat node.",
+                setpoint_name, self.address,
             )
             return
-        # For some reason, wants 2 times the temperature for Insteon
+        # ISY wants 2 times the temperature for Insteon in order to not loose precision
         if self._uom in ["101", "degrees"]:
             val = 2 * val
         return self.send_cmd(
-            PROP_SETPOINT_COOL, str(val), self.get_property_uom(PROP_SETPOINT_COOL)
+            setpoint_prop, str(val), self.get_property_uom(setpoint_prop)
         )
 
     def set_fan_mode(self, cmd):
