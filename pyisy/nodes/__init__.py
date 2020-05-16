@@ -406,7 +406,6 @@ class Nodes:
 
         for feature in xmldoc.getElementsByTagName(TAG_NODE):
             address = feature.attributes[ATTR_ID].value
-            state, aux_props = parse_xml_properties(feature)
 
             if address in self.addresses:
                 self.get_by_id(address).update(xmldoc=feature)

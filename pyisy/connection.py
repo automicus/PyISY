@@ -198,7 +198,6 @@ class Connection:
         req_url = self.compile_url([URL_NODES], {URL_MEMBERS: XML_FALSE})
         result = self.request(req_url)
         return result
-        return result
 
     def get_status(self):
         """Fetch the status of nodes/groups/scenes from the ISY."""
