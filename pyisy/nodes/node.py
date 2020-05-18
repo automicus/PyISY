@@ -4,6 +4,7 @@ from time import sleep
 from xml.dom import minidom
 
 from ..constants import (
+    _LOGGER,
     CLIMATE_SETPOINT_MIN_GAP,
     CMD_CLIMATE_FAN_SETTING,
     CMD_CLIMATE_MODE,
@@ -200,28 +201,28 @@ class Node(NodeBase):
             try:
                 xmldoc = minidom.parseString(xml)
             except XML_ERRORS:
-                self.isy.log.error("%s: Nodes", XML_PARSE_ERROR)
+                _LOGGER.error("%s: Nodes", XML_PARSE_ERROR)
                 return
         elif hint is not None:
             # assume value was set correctly, auto update will correct errors
             self.status = hint
-            self.isy.log.debug("ISY updated node: %s", self._id)
+            _LOGGER.debug("ISY updated node: %s", self._id)
             return
 
         if xmldoc is None:
-            self.isy.log.warning("ISY could not update node: %s", self._id)
+            _LOGGER.warning("ISY could not update node: %s", self._id)
             return
 
         self._last_update = now()
         state, aux_props = parse_xml_properties(xmldoc)
         self._aux_properties.update(aux_props)
         self.update_state(state)
-        self.isy.log.debug("ISY updated node: %s", self._id)
+        _LOGGER.debug("ISY updated node: %s", self._id)
 
     def update_state(self, state):
         """Update the various state properties when received."""
         if not isinstance(state, NodeProperty):
-            self.isy.log.error("Could not update state values. Invalid type provided.")
+            _LOGGER.error("Could not update state values. Invalid type provided.")
             return
         changed = False
         self._last_update = now()
@@ -250,7 +251,7 @@ class Node(NodeBase):
     def get_command_value(self, uom, cmd):
         """Check against the list of UOM States if this is a valid command."""
         if cmd not in UOM_TO_STATES[uom].values():
-            self.isy.log.warning(
+            _LOGGER.warning(
                 "Failed to call %s on %s, invalid command.", cmd, self.address
             )
             return None
@@ -286,25 +287,21 @@ class Node(NodeBase):
     def secure_lock(self):
         """Send a command to securely lock a lock device."""
         if not self.is_lock:
-            self.isy.log.warning(
-                "Failed to lock %s, it is not a lock node.", self.address
-            )
+            _LOGGER.warning("Failed to lock %s, it is not a lock node.", self.address)
             return
         return self.send_cmd(CMD_SECURE, "1")
 
     def secure_unlock(self):
         """Send a command to securely lock a lock device."""
         if not self.is_lock:
-            self.isy.log.warning(
-                "Failed to unlock %s, it is not a lock node.", self.address
-            )
+            _LOGGER.warning("Failed to unlock %s, it is not a lock node.", self.address)
             return
         return self.send_cmd(CMD_SECURE, "0")
 
     def set_climate_mode(self, cmd):
         """Send a command to the device to set the climate mode."""
         if not self.is_thermostat:
-            self.isy.log.warning(
+            _LOGGER.warning(
                 "Failed to set setpoint on %s, it is not a thermostat node.",
                 self.address,
             )
@@ -316,7 +313,7 @@ class Node(NodeBase):
     def set_climate_setpoint(self, val):
         """Send a command to the device to set the system setpoints."""
         if not self.is_thermostat:
-            self.isy.log.warning(
+            _LOGGER.warning(
                 "Failed to set setpoint on %s, it is not a thermostat node.",
                 self.address,
             )
@@ -337,9 +334,10 @@ class Node(NodeBase):
     def _set_climate_setpoint(self, val, setpoint_name, setpoint_prop):
         """Send a command to the device to set the system heat setpoint."""
         if not self.is_thermostat:
-            self.isy.log.warning(
+            _LOGGER.warning(
                 "Failed to set %s setpoint on %s, it is not a thermostat node.",
-                setpoint_name, self.address,
+                setpoint_name,
+                self.address,
             )
             return
         # ISY wants 2 times the temperature for Insteon in order to not lose precision
@@ -359,7 +357,7 @@ class Node(NodeBase):
     def set_on_level(self, val):
         """Set the ON Level for a device."""
         if not val or isnan(val) or int(val) not in range(256):
-            self.isy.log.warning(
+            _LOGGER.warning(
                 "Invalid value for On Level for %s. Valid values are 0-255.", self._id
             )
             return False
@@ -368,7 +366,7 @@ class Node(NodeBase):
     def set_ramp_rate(self, val):
         """Set the Ramp Rate for a device."""
         if not val or isnan(val) or int(val) not in range(32):
-            self.isy.log.warning(
+            _LOGGER.warning(
                 "Invalid value for Ramp Rate for %s. "
                 "Valid values are 0-31. See 'INSTEON_RAMP_RATES' in constants.py for values.",
                 self._id,
@@ -378,14 +376,14 @@ class Node(NodeBase):
 
     def start_manual_dimming(self):
         """Begin manually dimming a device."""
-        self.isy.log.warning(
+        _LOGGER.warning(
             f"'{CMD_MANUAL_DIM_BEGIN}' is depreciated. Use Fade Commands instead."
         )
         return self.send_cmd(CMD_MANUAL_DIM_BEGIN)
 
     def stop_manual_dimming(self):
         """Stop manually dimming  a device."""
-        self.isy.log.warning(
+        _LOGGER.warning(
             f"'{CMD_MANUAL_DIM_STOP}' is depreciated. Use Fade Commands instead."
         )
         return self.send_cmd(CMD_MANUAL_DIM_STOP)

@@ -1,9 +1,15 @@
 """Constants for the PyISY Module."""
 import datetime
+import logging
 from xml.parsers.expat import ExpatError
 
+_LOGGER = logging.getLogger(__package__)
+LOG_LEVEL = logging.DEBUG
+LOG_VERBOSE = 5
+LOG_FORMAT = "%(asctime)s %(levelname)s [%(name)s] %(message)s"
+LOG_DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
+
 UPDATE_INTERVAL = 0.5
-VERBOSE = 5  # Verbose Logging Level
 
 
 # Time Constants / Strings

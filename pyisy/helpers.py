@@ -1,6 +1,5 @@
 """Helper functions for the PyISY Module."""
 import datetime
-from logging import Handler
 import time
 
 from .constants import (
@@ -261,14 +260,6 @@ class NodeProperty(dict):
     def __setattr__(self, name, value):
         """Allow setting of properties."""
         self[name] = value
-
-
-class NullHandler(Handler):
-    """NullHandler Logging Class Override."""
-
-    def emit(self, record):
-        """Override the Emit function."""
-        pass
 
 
 class ZWaveProperties(dict):

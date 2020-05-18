@@ -1,5 +1,6 @@
 """Manage variables from the ISY."""
 from ..constants import (
+    _LOGGER,
     ATTR_INIT,
     ATTR_LAST_CHANGED,
     ATTR_LAST_UPDATE,
@@ -183,14 +184,14 @@ class Variable:
             ]
         )
         if not self.isy.conn.request(req_url):
-            self.isy.log.warning(
+            _LOGGER.warning(
                 "ISY could not set variable%s: %s.%s",
                 " init value" if init else "",
                 str(self._type),
                 str(self._id),
             )
             return
-        self.isy.log.debug(
+        _LOGGER.debug(
             "ISY set variable%s: %s.%s",
             " init value" if init else "",
             str(self._type),

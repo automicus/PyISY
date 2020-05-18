@@ -3,6 +3,7 @@ from time import sleep
 from xml.dom import minidom
 
 from ..constants import (
+    _LOGGER,
     ATTR_ACTION,
     ATTR_CONTROL,
     ATTR_FLAG,
@@ -194,7 +195,7 @@ class Nodes:
 
         node = self.get_by_id(address)
         if not node:
-            self.isy.log.debug(
+            _LOGGER.debug(
                 "Received a node update for node %s but could not find a record of this "
                 "node. Please try restarting the module if the problem persists, this "
                 "may be due to a new node being added to the ISY since last restart.",
@@ -211,7 +212,7 @@ class Nodes:
         node.update_state(
             NodeProperty(PROP_STATUS, value, prec, uom, formatted, address)
         )
-        self.isy.log.debug("ISY Updated Node: " + address)
+        _LOGGER.debug("ISY Updated Node: " + address)
 
     def control_message_received(self, xmldoc):
         """
@@ -227,7 +228,7 @@ class Nodes:
 
         node = self.get_by_id(address)
         if not node:
-            self.isy.log.debug(
+            _LOGGER.debug(
                 "Received a node update for node %s but could not find a record of this "
                 "node. Please try restarting the module if the problem persists, this "
                 "may be due to a new node being added to the ISY since last restart.",
@@ -257,7 +258,7 @@ class Nodes:
         elif cntrl not in EVENT_PROPS_IGNORED:
             node.update_property(node_property)
         node.control_events.notify(node_property)
-        self.isy.log.debug("ISY Node Control Event: %s", node_property)
+        _LOGGER.debug("ISY Node Control Event: %s", node_property)
 
     def node_changed_received(self, xmldoc):
         """Handle Node Change/Update events from an event stream message."""
@@ -266,7 +267,7 @@ class Nodes:
             return
         node = value_from_xml(xmldoc, TAG_NODE)
         if action == NC_NODE_ERROR:
-            self.isy.log.warning("ISY Could not communicate with device: %s", node)
+            _LOGGER.warning("ISY Could not communicate with device: %s", node)
         # FUTURE: Handle additional node change actions to force updates.
 
     def parse(self, xml):
@@ -278,7 +279,7 @@ class Nodes:
         try:
             xmldoc = minidom.parseString(xml)
         except XML_ERRORS:
-            self.isy.log.error("%s: Nodes", XML_PARSE_ERROR)
+            _LOGGER.error("%s: Nodes", XML_PARSE_ERROR)
             return False
 
         # get nodes
@@ -353,9 +354,7 @@ class Nodes:
                     # the ISY MAC address in newer versions of
                     # ISY firmwares > 5.0.6+ ..
                     if int(flag) & 0x08:
-                        self.isy.log.debug(
-                            "Skipping root group flag=%s %s", flag, address
-                        )
+                        _LOGGER.debug("Skipping root group flag=%s %s", flag, address)
                         continue
                     mems = feature.getElementsByTagName(TAG_LINK)
                     # Build list of members
@@ -380,7 +379,7 @@ class Nodes:
                         ),
                         ntype,
                     )
-            self.isy.log.debug("ISY Loaded %s", ntype)
+            _LOGGER.debug("ISY Loaded %s", ntype)
 
     def update(self, wait_time=0):
         """
@@ -395,13 +394,13 @@ class Nodes:
         xml = self.isy.conn.get_status()
 
         if xml is None:
-            self.isy.log.warning("ISY Failed to update nodes.")
+            _LOGGER.warning("ISY Failed to update nodes.")
             return
 
         try:
             xmldoc = minidom.parseString(xml)
         except XML_ERRORS:
-            self.isy.log.error("%s: Nodes", XML_PARSE_ERROR)
+            _LOGGER.error("%s: Nodes", XML_PARSE_ERROR)
             return False
 
         for feature in xmldoc.getElementsByTagName(TAG_NODE):
@@ -411,7 +410,7 @@ class Nodes:
                 self.get_by_id(address).update(xmldoc=feature)
                 continue
 
-        self.isy.log.info("ISY Updated Node Statuses.")
+        _LOGGER.info("ISY Updated Node Statuses.")
 
     def update_nodes(self, wait_time=0):
         """
@@ -425,7 +424,7 @@ class Nodes:
             sleep(wait_time)
         xml = self.isy.conn.get_nodes()
         if xml is None:
-            self.isy.log.warning("ISY Failed to update nodes.")
+            _LOGGER.warning("ISY Failed to update nodes.")
             return
         self.parse(xml)
 
