@@ -39,7 +39,6 @@ def main(arguments):
             password=PASSWORD,
             use_https=USE_HTTPS,
             tls_ver=TLS_VER,
-            log=_LOGGER,
             webroot=WEBROOT,
         )
     except ValueError as err:
@@ -60,7 +59,6 @@ def main(arguments):
         password=PASSWORD,
         use_https=USE_HTTPS,
         tls_ver=TLS_VER,
-        log=_LOGGER,
         webroot=WEBROOT,
     )
 
