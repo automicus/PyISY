@@ -2,6 +2,7 @@
 from xml.dom import minidom
 
 from .constants import (
+    _LOGGER,
     ATTR_DESC,
     ATTR_ID,
     TAG_DESC,
@@ -62,20 +63,15 @@ class Configuration(dict):
         # configuration['21040']
         True
 
-    ATTRIBUTES:
-        log: The logger to use.
-
     """
 
-    def __init__(self, log, xml=None):
+    def __init__(self, xml=None):
         """
         Initialize configuration class.
 
-        log: logger to use
         xml: String of xml data containing the configuration data
         """
         super().__init__()
-        self.log = log
 
         if xml is not None:
             self.parse(xml)
@@ -104,4 +100,4 @@ class Configuration(dict):
             self[idnum] = installed
             self[desc] = self[idnum]
 
-        self.log.info("ISY Loaded Configuration")
+        _LOGGER.info("ISY Loaded Configuration")

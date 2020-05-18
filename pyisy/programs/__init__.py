@@ -5,6 +5,7 @@ from xml.dom import minidom
 from dateutil import parser
 
 from ..constants import (
+    _LOGGER,
     ATTR_ID,
     ATTR_PARENT,
     ATTR_STATUS,
@@ -181,7 +182,7 @@ class Programs:
                 # Status didn't change, but something did, so fire the event.
                 pobj.status_events.notify(new_status)
 
-        self.isy.log.debug("ISY Updated Program: " + address)
+        _LOGGER.debug("ISY Updated Program: " + address)
 
     def parse(self, xml):
         """
@@ -192,7 +193,7 @@ class Programs:
         try:
             xmldoc = minidom.parseString(xml)
         except XML_ERRORS:
-            self.isy.log.error("%s: Programs", XML_PARSE_ERROR)
+            _LOGGER.error("%s: Programs", XML_PARSE_ERROR)
         else:
             plastup = now()
 
@@ -255,7 +256,7 @@ class Programs:
                     pobj = self.get_by_id(address).leaf
                     pobj.update(data=data)
 
-            self.isy.log.info("ISY Loaded/Updated Programs")
+            _LOGGER.info("ISY Loaded/Updated Programs")
 
     def update(self, wait_time=UPDATE_INTERVAL, address=None):
         """
@@ -270,7 +271,7 @@ class Programs:
         if xml is not None:
             self.parse(xml)
         else:
-            self.isy.log.warning("ISY Failed to update programs.")
+            _LOGGER.warning("ISY Failed to update programs.")
 
     def insert(self, address, pname, pparent, pobj, ptype):
         """
