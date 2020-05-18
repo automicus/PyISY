@@ -3,6 +3,7 @@ from time import sleep
 from xml.dom import minidom
 
 from .constants import (
+    _LOGGER,
     ATTR_ID,
     TAG_NAME,
     TAG_NET_RULE,
@@ -65,7 +66,7 @@ class NetworkResources:
         try:
             xmldoc = minidom.parseString(xml)
         except XML_ERRORS:
-            self.isy.log.error("%s: NetworkResources", XML_PARSE_ERROR)
+            _LOGGER.error("%s: NetworkResources", XML_PARSE_ERROR)
         else:
             features = xmldoc.getElementsByTagName(TAG_NET_RULE)
             for feature in features:
@@ -77,7 +78,7 @@ class NetworkResources:
                     self.nnames.append(nname)
                     self.nobjs.append(nobj)
 
-            self.isy.log.info("ISY Loaded Network Resources Commands")
+            _LOGGER.info("ISY Loaded Network Resources Commands")
 
     def update(self, wait_time=0):
         """
@@ -175,8 +176,6 @@ class NetworkCommand:
         req_url = self.isy.conn.compile_url([URL_NETWORK, URL_RESOURCES, str(self._id)])
 
         if not self.isy.conn.request(req_url, ok404=True):
-            self.isy.log.warning(
-                "ISY could not run networking command: %s", str(self._id)
-            )
+            _LOGGER.warning("ISY could not run networking command: %s", str(self._id))
             return
-        self.isy.log.debug("ISY ran networking command: %s", str(self._id))
+        _LOGGER.debug("ISY ran networking command: %s", str(self._id))

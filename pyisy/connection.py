@@ -13,6 +13,10 @@ from urllib3.exceptions import InsecureRequestWarning
 from urllib3.poolmanager import PoolManager
 
 from .constants import (
+    _LOGGER,
+    LOG_DATE_FORMAT,
+    LOG_FORMAT,
+    LOG_LEVEL,
     METHOD_GET,
     URL_CLOCK,
     URL_CONFIG,
@@ -31,7 +35,6 @@ from .constants import (
     XML_FALSE,
     XML_TRUE,
 )
-from .helpers import NullHandler
 
 MAX_RETRIES = 5
 
@@ -47,15 +50,15 @@ class Connection:
         password,
         use_https=False,
         tls_ver=1.1,
-        log=None,
         webroot="",
     ):
         """Initialize the Connection object."""
-        if log is None:
-            self.log = logging.getLogger(__name__)
-            self.log.addHandler(NullHandler())
-        else:
-            self.log = log
+        if not len(_LOGGER.handlers):
+            logging.basicConfig(
+                format=LOG_FORMAT, datefmt=LOG_DATE_FORMAT, level=LOG_LEVEL
+            )
+            _LOGGER.addHandler(logging.NullHandler())
+            logging.getLogger("urllib3").setLevel(logging.WARNING)
 
         self._address = address
         self._port = port
@@ -67,7 +70,7 @@ class Connection:
 
         # setup proper HTTPS handling for the ISY
         if use_https:
-            if can_https(self.log, tls_ver):
+            if can_https(tls_ver):
                 self.use_https = True
                 self._tls_ver = tls_ver
                 # Most SSL certs will not be valid. Let's not warn about them.
@@ -129,32 +132,32 @@ class Connection:
 
     def request(self, url, retries=0, ok404=False):
         """Execute request to ISY REST interface."""
-        if self.log is not None:
-            self.log.info("ISY Request: %s", url)
+        if _LOGGER is not None:
+            _LOGGER.info("ISY Request: %s", url)
 
         try:
             req = self.req_session.get(
                 url, auth=(self._username, self._password), timeout=10, verify=False
             )
         except requests.ConnectionError:
-            self.log.error(
+            _LOGGER.error(
                 "ISY Could not receive response "
                 "from device because of a network "
                 "issue."
             )
             return None
         except requests.exceptions.Timeout:
-            self.log.error("Timed out waiting for response from the ISY device.")
+            _LOGGER.error("Timed out waiting for response from the ISY device.")
             return None
 
         if req.status_code == 200:
-            self.log.debug("ISY Response Received")
+            _LOGGER.debug("ISY Response Received")
             return req.text
         if req.status_code == 404 and ok404:
-            self.log.debug("ISY Response Received")
+            _LOGGER.debug("ISY Response Received")
             return ""
 
-        self.log.warning(
+        _LOGGER.warning(
             "Bad ISY Request: %s %s: retry #%s", url, req.status_code, retries
         )
 
@@ -164,7 +167,7 @@ class Connection:
             # recurse to try again
             return self.request(url, retries + 1, ok404=False)
         # fail for good
-        self.log.error(
+        _LOGGER.error(
             "Bad ISY Request: %s %s: Failed after %s retries",
             url,
             req.status_code,
@@ -261,24 +264,22 @@ class TLSHttpAdapter(HTTPAdapter):
         )
 
 
-def can_https(log, tls_ver):
+def can_https(tls_ver):
     """
     Verify minimum requirements to use an HTTPS connection.
 
     Returns boolean indicating whether HTTPS is available.
-
-    |  log: The logger class to write results to
     """
     output = True
 
     # check python version
     if sys.version_info < (3, 7):
-        log.error("PyISY cannot use HTTPS: Invalid Python version. See docs.")
+        _LOGGER.error("PyISY cannot use HTTPS: Invalid Python version. See docs.")
         output = False
 
     # check that Python was compiled against correct OpenSSL lib
     if "PROTOCOL_TLSv1_1" not in dir(ssl):
-        log.error(
+        _LOGGER.error(
             "PyISY cannot use HTTPS: Compiled against old OpenSSL "
             + "library. See docs."
         )
@@ -286,7 +287,7 @@ def can_https(log, tls_ver):
 
     # check the requested TLS version
     if tls_ver not in [1.1, 1.2]:
-        log.error(
+        _LOGGER.error(
             "PyISY cannot use HTTPS: Only TLS 1.1 and 1.2 are supported "
             + "by the ISY controller."
         )

@@ -1,5 +1,6 @@
 """ISY Program Folders."""
 from ..constants import (
+    _LOGGER,
     ATTR_LAST_CHANGED,
     ATTR_LAST_UPDATE,
     ATTR_STATUS,
@@ -134,11 +135,9 @@ class Folder:
         req_url = self.isy.conn.compile_url([URL_PROGRAMS, str(self._id), command])
         result = self.isy.conn.request(req_url)
         if not result:
-            self.isy.log.warning(
-                'ISY could not call "%s" on program: %s', command, self._id
-            )
+            _LOGGER.warning('ISY could not call "%s" on program: %s', command, self._id)
             return False
-        self.isy.log.debug('ISY ran "%s" on program: %s', command, self._id)
+        _LOGGER.debug('ISY ran "%s" on program: %s', command, self._id)
         if not self.isy.auto_update:
             self.update()
         return True
