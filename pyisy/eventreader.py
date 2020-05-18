@@ -1,7 +1,6 @@
 """ISY Event Reader."""
 import errno
 import select
-import socket
 import ssl
 
 from .constants import SOCKET_BUFFER_SIZE
@@ -81,7 +80,7 @@ class ISYEventReader:
                 self._event_buffer += new_data
         except ssl.SSLWantReadError:
             pass
-        except socket.error as ex:
+        except OSError as ex:
             if ex.errno != errno.EWOULDBLOCK:
                 raise
 

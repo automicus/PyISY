@@ -339,7 +339,8 @@ class Node(NodeBase):
         if not self.is_thermostat:
             self.isy.log.warning(
                 "Failed to set %s setpoint on %s, it is not a thermostat node.",
-                setpoint_name, self.address,
+                setpoint_name,
+                self.address,
             )
             return
         # ISY wants 2 times the temperature for Insteon in order to not lose precision

@@ -1,0 +1,11 @@
+{
+  "python.linting.pylintEnabled": false,
+  "python.linting.enabled": true,
+  "python.formatting.provider": "black",
+  "editor.formatOnPaste": false,
+  "editor.formatOnSave": true,
+  "editor.formatOnType": true,
+  "files.trimTrailingWhitespace": true,
+  "terminal.integrated.shell.linux": "/bin/bash",
+  "python.linting.flake8Enabled": true
+}
