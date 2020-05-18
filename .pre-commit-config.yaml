@@ -7,7 +7,7 @@ repos:
         args: [--py37-plus]
   - hooks:
       - args: [--safe, --quiet]
-        files: ^((pyisy)/.+)?[^/]+\.py$
+        files: ^((pyisy|examples)/.+)?[^/]+\.py$
         id: black
     repo: https://github.com/psf/black
     rev: 19.10b0
