@@ -1,16 +1,11 @@
 """Connection to the ISY."""
-import base64
+import asyncio
 import logging
 import ssl
 import sys
-import time
 from urllib.parse import quote, urlencode
 
-import requests
-from requests.adapters import HTTPAdapter
-from urllib3 import disable_warnings
-from urllib3.exceptions import InsecureRequestWarning
-from urllib3.poolmanager import PoolManager
+import aiohttp
 
 from .constants import (
     _LOGGER,
@@ -37,6 +32,7 @@ from .constants import (
 )
 
 MAX_RETRIES = 5
+RETRY_BACKOFF = [0.01, 0.1, 1, 2, 4]
 
 
 class Connection:
@@ -51,6 +47,9 @@ class Connection:
         use_https=False,
         tls_ver=1.1,
         webroot="",
+        session=None,
+        websession=None,
+        sslcontext=None,
     ):
         """Initialize the Connection object."""
         if not len(_LOGGER.handlers):
@@ -58,52 +57,65 @@ class Connection:
                 format=LOG_FORMAT, datefmt=LOG_DATE_FORMAT, level=LOG_LEVEL
             )
             _LOGGER.addHandler(logging.NullHandler())
-            logging.getLogger("urllib3").setLevel(logging.WARNING)
 
         self._address = address
         self._port = port
         self._username = username
         self._password = password
         self._webroot = webroot.rstrip("/")
-
-        self.req_session = requests.Session()
+        self.req_session = websession
+        self.sslcontext = sslcontext
 
         # setup proper HTTPS handling for the ISY
         if use_https:
-            if can_https(tls_ver):
-                self.use_https = True
-                self._tls_ver = tls_ver
-                # Most SSL certs will not be valid. Let's not warn about them.
-                disable_warnings(InsecureRequestWarning)
-
-                # ISY uses TLS1 and not SSL
-                self.req_session.mount(self.compile_url(None), TLSHttpAdapter(tls_ver))
-            else:
+            if not can_https(tls_ver):
                 raise (
                     ValueError(
                         "PyISY could not connect to the ISY. "
                         "Check log for SSL/TLS error."
                     )
                 )
-        else:
-            self.use_https = False
-            self._tls_ver = None
 
-        # test settings
-        if not self.ping():
-            raise (
-                ValueError(
-                    "PyISY could not connect to the ISY "
-                    "controller with the provided attributes."
+            self.use_https = True
+            self._tls_ver = tls_ver
+
+            if self.sslcontext is None:
+                if tls_ver == 1.1:
+                    self.sslcontext = ssl.SSLContext(ssl.PROTOCOL_TLSv1_1)
+                elif tls_ver == 1.2:
+                    self.sslcontext = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
+
+            if self.req_session is None:
+                self.req_session = aiohttp.ClientSession(
+                    connector=aiohttp.TCPConnector(ssl_context=self.sslcontext),
+                    cookie_jar=aiohttp.CookieJar(unsafe=True),
                 )
-            )
+            return
+
+        self.use_https = False
+        self._tls_ver = None
+        if self.req_session is None:
+            self.req_session = aiohttp.ClientSession()
+
+    async def test_connection(self):
+        """Test the connection and get the config for the ISY."""
+        config = await self.get_config()
+        if not config:
+            _LOGGER.error("Could not connect to the ISY with the parameters provided.")
+            raise ISYConnectionError()
+        return config
+
+    async def close(self):
+        """Cleanup connections and prepare for exit."""
+        await self.req_session.close()
 
     @property
     def connection_info(self):
         """Return the connection info required to connect to the ISY."""
         connection_info = {}
-        authstr = bytes(f"{self._username}:{self._password}", "ascii")
-        connection_info["auth"] = base64.encodebytes(authstr).strip().decode("ascii")
+        connection_info["auth"] = aiohttp.BasicAuth(
+            self._username, password=self._password
+        )
         connection_info["addr"] = self._address
         connection_info["port"] = int(self._port)
         connection_info["passwd"] = self._password
@@ -116,11 +128,7 @@ class Connection:
     # COMMON UTILITIES
     def compile_url(self, path, query=None):
         """Compile the URL to fetch from the ISY."""
-        if self.use_https:
-            url = "https://"
-        else:
-            url = "http://"
-
+        url = "https://" if self.use_https else "http://"
         url += f"{self._address}:{self._port}{self._webroot}"
         if path is not None:
             url += "/rest/" + "/".join([quote(item) for item in path])
@@ -130,102 +138,116 @@ class Connection:
 
         return url
 
-    def request(self, url, retries=0, ok404=False):
+    async def request(self, url, retries=0, ok404=False, delay=0):
         """Execute request to ISY REST interface."""
-        if _LOGGER is not None:
-            _LOGGER.info("ISY Request: %s", url)
-
+        _LOGGER.debug("ISY Request: %s", url)
+        if delay:
+            await asyncio.sleep(delay)
         try:
-            req = self.req_session.get(
-                url, auth=(self._username, self._password), timeout=10, verify=False
-            )
-        except requests.ConnectionError:
+            async with self.req_session.get(
+                url,
+                auth=aiohttp.BasicAuth(self._username, self._password),
+                timeout=10,
+                ssl=self.sslcontext,
+            ) as res:
+                if res.status == 200:
+                    _LOGGER.debug("ISY Response Received")
+                    results = await res.text()
+                    return results
+                if res.status == 404 and ok404:
+                    _LOGGER.debug("ISY Response Received")
+                    return ""
+                if res.status == 401:
+                    _LOGGER.error("Invalid credentials provided for ISY connection.")
+                    raise ISYInvalidAuthError()
+
+                _LOGGER.warning(
+                    "Bad ISY Request: %s %s: retry #%s", url, res.status, retries
+                )
+        except asyncio.TimeoutError:
+            raise ISYConnectionError() from None
+        except aiohttp.client_exceptions.ClientError as err:
             _LOGGER.error(
                 "ISY Could not receive response "
                 "from device because of a network "
-                "issue."
+                "issue: %s",
+                type(err),
             )
-            return None
-        except requests.exceptions.Timeout:
-            _LOGGER.error("Timed out waiting for response from the ISY device.")
-            return None
-
-        if req.status_code == 200:
-            _LOGGER.debug("ISY Response Received")
-            return req.text
-        if req.status_code == 404 and ok404:
-            _LOGGER.debug("ISY Response Received")
-            return ""
-
-        _LOGGER.warning(
-            "Bad ISY Request: %s %s: retry #%s", url, req.status_code, retries
-        )
 
         if retries < MAX_RETRIES:
-            # sleep for one second to allow the ISY to catch up
-            time.sleep(1)
+            # sleep to allow the ISY to catch up
+            await asyncio.sleep(RETRY_BACKOFF[retries])
             # recurse to try again
-            return self.request(url, retries + 1, ok404=False)
+            retry_result = await self.request(url, retries + 1, ok404=False)
+            return retry_result
         # fail for good
         _LOGGER.error(
-            "Bad ISY Request: %s %s: Failed after %s retries",
-            url,
-            req.status_code,
-            retries,
+            "Bad ISY Request: %s %s: Failed after %s retries", url, res.status, retries,
         )
         return None
 
-    def ping(self):
+    async def ping(self):
         """Test connection to the ISY and return True if alive."""
         req_url = self.compile_url([URL_PING])
-        result = self.request(req_url, ok404=True)
+        result = await self.request(req_url, ok404=True)
         return result is not None
 
-    def get_config(self):
-        """Fetch the configuration from the ISY."""
-        req_url = self.compile_url([URL_CONFIG])
-        result = self.request(req_url)
+    async def get_description(self):
+        """Fetch the services description from the ISY."""
+        url = "https://" if self.use_https else "http://"
+        url += f"{self._address}:{self._port}{self._webroot}/desc"
+        result = await self.request(url)
         return result
 
-    def get_programs(self, address=None):
+    async def get_config(self):
+        """Fetch the configuration from the ISY."""
+        req_url = self.compile_url([URL_CONFIG])
+        result = await self.request(req_url)
+        return result
+
+    async def get_programs(self, address=None):
         """Fetch the list of programs from the ISY."""
         addr = [URL_PROGRAMS]
         if address is not None:
             addr.append(str(address))
         req_url = self.compile_url(addr, {URL_SUBFOLDERS: XML_TRUE})
-        result = self.request(req_url)
+        result = await self.request(req_url)
         return result
 
-    def get_nodes(self):
+    async def get_nodes(self):
         """Fetch the list of nodes/groups/scenes from the ISY."""
         req_url = self.compile_url([URL_NODES], {URL_MEMBERS: XML_FALSE})
-        result = self.request(req_url)
+        result = await self.request(req_url)
         return result
 
-    def get_status(self):
+    async def get_status(self):
         """Fetch the status of nodes/groups/scenes from the ISY."""
         req_url = self.compile_url([URL_STATUS])
-        result = self.request(req_url)
+        result = await self.request(req_url)
         return result
 
-    def get_variable_defs(self):
+    async def get_variable_defs(self):
         """Fetch the list of variables from the ISY."""
         req_list = [
             [URL_VARIABLES, URL_DEFINITIONS, VAR_INTEGER],
             [URL_VARIABLES, URL_DEFINITIONS, VAR_STATE],
         ]
         req_urls = [self.compile_url(req) for req in req_list]
-        results = [self.request(req_url) for req_url in req_urls]
+        results = await asyncio.gather(
+            *[self.request(req_url) for req_url in req_urls], return_exceptions=True
+        )
         return results
 
-    def get_variables(self):
+    async def get_variables(self):
         """Fetch the variable details from the ISY to update local copy."""
         req_list = [
             [URL_VARIABLES, METHOD_GET, VAR_INTEGER],
             [URL_VARIABLES, METHOD_GET, VAR_STATE],
         ]
         req_urls = [self.compile_url(req) for req in req_list]
-        results = [self.request(req_url) for req_url in req_urls]
+        results = await asyncio.gather(
+            *[self.request(req_url) for req_url in req_urls], return_exceptions=True
+        )
         results = [r for r in results if r is not None]  # Strip any bad requests.
         result = "".join(results)
         result = result.replace(
@@ -233,35 +255,17 @@ class Connection:
         )
         return result
 
-    def get_network(self):
+    async def get_network(self):
         """Fetch the list of network resources from the ISY."""
         req_url = self.compile_url([URL_NETWORK, URL_RESOURCES])
-        result = self.request(req_url)
+        result = await self.request(req_url)
         return result
 
-    def get_time(self):
+    async def get_time(self):
         """Fetch the system time info from the ISY."""
         req_url = self.compile_url([URL_CLOCK])
-        result = self.request(req_url)
+        result = await self.request(req_url)
         return result
-
-
-class TLSHttpAdapter(HTTPAdapter):
-    """Transport adapter that uses TLS1."""
-
-    def __init__(self, tls_ver):
-        """Initialize the TLSHttpAdapter class."""
-        if tls_ver == 1.1:
-            self.tls = ssl.PROTOCOL_TLSv1_1
-        elif tls_ver == 1.2:
-            self.tls = ssl.PROTOCOL_TLSv1_2
-        super().__init__()
-
-    def init_poolmanager(self, connections, maxsize, block=False, **pool_kwargs):
-        """Initialize the Pool Manager."""
-        self.poolmanager = PoolManager(
-            num_pools=connections, maxsize=maxsize, block=block, ssl_version=self.tls
-        )
 
 
 def can_https(tls_ver):
@@ -294,3 +298,11 @@ def can_https(tls_ver):
         output = False
 
     return output
+
+
+class ISYInvalidAuthError(Exception):
+    """Invalid authorization credentials provided."""
+
+
+class ISYConnectionError(Exception):
+    """Invalid connection parameters provided."""

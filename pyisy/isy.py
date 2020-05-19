@@ -1,4 +1,5 @@
 """Module for connecting to and interacting with the ISY."""
+import asyncio
 import logging
 from threading import Thread
 
@@ -64,44 +65,39 @@ class ISY:
         use_https=False,
         tls_ver=1.1,
         webroot="",
+        websession=None,
+        sslcontext=None,
     ):
         """Initialize the primary ISY Class."""
         self._events = None  # create this JIT so no socket reuse
         self._reconnect_thread = None
+        self._connected = False
 
         if not len(_LOGGER.handlers):
             logging.basicConfig(
                 format=LOG_FORMAT, datefmt=LOG_DATE_FORMAT, level=LOG_LEVEL
             )
             _LOGGER.addHandler(logging.NullHandler())
-            logging.getLogger("urllib3").setLevel(logging.WARNING)
 
-        try:
-            self.conn = Connection(
-                address, port, username, password, use_https, tls_ver, webroot
-            )
-        except ValueError as err:
-            self._connected = False
-            try:
-                _LOGGER.error(err.message)
-            except AttributeError:
-                _LOGGER.error(err.args[0])
-            return
-
-        self._hostname = address
-        self._connected = True
-        self.configuration = Configuration(xml=self.conn.get_config())
-        self.clock = Clock(self, xml=self.conn.get_time())
-        self.nodes = Nodes(self, xml=self.conn.get_nodes())
-        self.programs = Programs(self, xml=self.conn.get_programs())
-        self.variables = Variables(
-            self,
-            def_xml=self.conn.get_variable_defs(),
-            var_xml=self.conn.get_variables(),
+        self.conn = Connection(
+            address=address,
+            port=port,
+            username=username,
+            password=password,
+            use_https=use_https,
+            tls_ver=tls_ver,
+            webroot=webroot,
+            websession=websession,
+            sslcontext=sslcontext,
         )
+
+        self.configuration = None
+        self.clock = None
+        self.nodes = None
+        self.programs = None
+        self.variables = None
         self.networking = None
-        if self.configuration["Networking Module"]:
-            self.networking = NetworkResources(self, xml=self.conn.get_network())
+        self._hostname = address
         self.connection_events = EventEmitter()
 
     def __del__(self):
@@ -112,6 +108,42 @@ class ISY:
         # should be closed explicitly by the program.
         # See: Zen of Python Line 2
         self.auto_update = False
+
+    async def initialize(self):
+        """Initialize the connection with the ISY."""
+        config_xml = await self.conn.test_connection()
+        self.configuration = Configuration(xml=config_xml)
+
+        # Make the ISY happy for subsequent connections.
+        await asyncio.sleep(0.01)
+
+        isy_setup_tasks = [
+            self.conn.get_time(),
+            self.conn.get_nodes(),
+            self.conn.get_status(),
+            self.conn.get_programs(),
+            self.conn.get_variable_defs(),
+            self.conn.get_variables(),
+        ]
+        if self.configuration["Networking Module"]:
+            isy_setup_tasks.append(asyncio.create_task(self.conn.get_network()))
+        isy_setup_results = await asyncio.gather(
+            *isy_setup_tasks,  # return_exceptions=True,
+        )
+
+        self.clock = Clock(self, xml=isy_setup_results[0])
+        self.nodes = Nodes(self, xml=isy_setup_results[1])
+        self.nodes.update(xml=isy_setup_results[2])
+        self.programs = Programs(self, xml=isy_setup_results[3])
+        self.variables = Variables(
+            self, def_xml=isy_setup_results[4], var_xml=isy_setup_results[5],
+        )
+        if self.configuration["Networking Module"]:
+            self.networking = NetworkResources(self, xml=isy_setup_results[6])
+
+    async def shutdown(self):
+        """Cleanup connections and prepare for exit."""
+        await self.conn.close()
 
     @property
     def connected(self):

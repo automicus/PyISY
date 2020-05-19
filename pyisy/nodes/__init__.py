@@ -381,7 +381,7 @@ class Nodes:
                     )
             _LOGGER.debug("ISY Loaded %s", ntype)
 
-    def update(self, wait_time=0):
+    def update(self, wait_time=0, xml=None):
         """
         Update the status and properties of the nodes in the class.
 
@@ -391,7 +391,9 @@ class Nodes:
         """
         if wait_time:
             sleep(wait_time)
-        xml = self.isy.conn.get_status()
+
+        if xml is None:
+            xml = self.isy.conn.get_status()
 
         if xml is None:
             _LOGGER.warning("ISY Failed to update nodes.")
