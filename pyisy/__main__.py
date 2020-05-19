@@ -38,10 +38,7 @@ async def main(url, username, password, tls_ver):
             sslcontext = ssl.SSLContext(ssl.PROTOCOL_TLSv1_1)
         elif tls_ver == 1.2:
             sslcontext = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
-        websession = aiohttp.ClientSession(
-            connector=aiohttp.TCPConnector(ssl_context=sslcontext),
-            cookie_jar=aiohttp.CookieJar(unsafe=True),
-        )
+        websession = aiohttp.ClientSession(cookie_jar=aiohttp.CookieJar(unsafe=True),)
     else:
         _LOGGER.error("host value in configuration is invalid.")
         return False

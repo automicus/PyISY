@@ -87,7 +87,6 @@ class Connection:
 
             if self.req_session is None:
                 self.req_session = aiohttp.ClientSession(
-                    connector=aiohttp.TCPConnector(ssl_context=self.sslcontext),
                     cookie_jar=aiohttp.CookieJar(unsafe=True),
                 )
             return
@@ -147,7 +146,7 @@ class Connection:
             async with self.req_session.get(
                 url,
                 auth=aiohttp.BasicAuth(self._username, self._password),
-                timeout=10,
+                timeout=30,
                 ssl=self.sslcontext,
             ) as res:
                 if res.status == 200:
