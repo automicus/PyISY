@@ -1,5 +1,5 @@
 """ISY Network Resources Module."""
-from time import sleep
+from asyncio import sleep
 from xml.dom import minidom
 
 from .constants import (
@@ -7,7 +7,6 @@ from .constants import (
     ATTR_ID,
     TAG_NAME,
     TAG_NET_RULE,
-    THREAD_SLEEP_TIME,
     URL_NETWORK,
     URL_RESOURCES,
     XML_ERRORS,
@@ -80,24 +79,24 @@ class NetworkResources:
 
             _LOGGER.info("ISY Loaded Network Resources Commands")
 
-    def update(self, wait_time=0):
+    async def update(self, wait_time=0):
         """
         Update the contents of the networking class.
 
         wait_time: [optional] Amount of seconds to wait before updating
         """
-        sleep(wait_time)
-        xml = self.isy.conn.get_network()
+        await sleep(wait_time)
+        xml = await self.isy.conn.get_network()
         self.parse(xml)
 
-    def update_threaded(self):
+    async def update_threaded(self, interval):
         """
         Continually update the class until it is told to stop.
 
         Should be run in a thread.
         """
         while self.isy.auto_update:
-            self.update(THREAD_SLEEP_TIME)
+            await self.update(interval)
 
     def __getitem__(self, val):
         """Return the item from the collection."""
@@ -171,11 +170,11 @@ class NetworkCommand:
         """Return the Resource ID for the Network Resource."""
         return self._id
 
-    def run(self):
+    async def run(self):
         """Execute the networking command."""
         req_url = self.isy.conn.compile_url([URL_NETWORK, URL_RESOURCES, str(self._id)])
 
-        if not self.isy.conn.request(req_url, ok404=True):
+        if not await self.isy.conn.request(req_url, ok404=True):
             _LOGGER.warning("ISY could not run networking command: %s", str(self._id))
             return
         _LOGGER.debug("ISY ran networking command: %s", str(self._id))

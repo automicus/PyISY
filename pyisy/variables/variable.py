@@ -147,16 +147,16 @@ class Variable:
         """Return the Variable ID."""
         return self._id
 
-    def update(self, wait_time=0):
+    async def update(self, wait_time=0):
         """
         Update the object with the variable's parameters from the controller.
 
         |  wait_time: Seconds to wait before updating.
         """
         self._last_update = now()
-        self._variables.update(wait_time)
+        await self._variables.update(wait_time)
 
-    def set_init(self, val):
+    async def set_init(self, val):
         """
         Set the initial value for the variable after the controller boots.
 
@@ -166,7 +166,7 @@ class Variable:
             raise ValueError("Variable init must be an integer. Got None.")
         self.set_value(val, True)
 
-    def set_value(self, val, init=False):
+    async def set_value(self, val, init=False):
         """
         Set the value of the variable.
 
@@ -183,7 +183,7 @@ class Variable:
                 str(val),
             ]
         )
-        if not self.isy.conn.request(req_url):
+        if not await self.isy.conn.request(req_url):
             _LOGGER.warning(
                 "ISY could not set variable%s: %s.%s",
                 " init value" if init else "",
@@ -198,4 +198,4 @@ class Variable:
             str(self._id),
         )
         if not self.isy.auto_update:
-            self.update()
+            await self.update()

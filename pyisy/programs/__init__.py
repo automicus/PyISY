@@ -1,5 +1,5 @@
 """Init for management of ISY Programs."""
-from time import sleep
+from asyncio import sleep
 from xml.dom import minidom
 
 from dateutil import parser
@@ -258,15 +258,15 @@ class Programs:
 
             _LOGGER.info("ISY Loaded/Updated Programs")
 
-    def update(self, wait_time=UPDATE_INTERVAL, address=None):
+    async def update(self, wait_time=UPDATE_INTERVAL, address=None):
         """
         Update the status of the programs and folders.
 
         |  wait_time: How long to wait before updating.
         |  address: The program ID to update.
         """
-        sleep(wait_time)
-        xml = self.isy.conn.get_programs(address)
+        await sleep(wait_time)
+        xml = await self.isy.conn.get_programs(address)
 
         if xml is not None:
             self.parse(xml)

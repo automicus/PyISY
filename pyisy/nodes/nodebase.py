@@ -84,7 +84,9 @@ class NodeBase:
     def description(self):
         """Return the description of the node from it's notes."""
         if self._notes is None:
-            self._notes = self.parse_notes()
+            _LOGGER.debug(
+                "No notes retrieved for node. Call get_notes() before accessing."
+            )
         return self._notes[TAG_DESCRIPTION]
 
     @property
@@ -96,7 +98,9 @@ class NodeBase:
     def is_load(self):
         """Return the isLoad property of the node from it's notes."""
         if self._notes is None:
-            self._notes = self.parse_notes()
+            _LOGGER.debug(
+                "No notes retrieved for node. Call get_notes() before accessing."
+            )
         return self._notes[TAG_IS_LOAD]
 
     @property
@@ -113,7 +117,9 @@ class NodeBase:
     def location(self):
         """Return the location of the node from it's notes."""
         if self._notes is None:
-            self._notes = self.parse_notes()
+            _LOGGER.debug(
+                "No notes retrieved for node. Call get_notes() before accessing."
+            )
         return self._notes[TAG_LOCATION]
 
     @property
@@ -135,7 +141,9 @@ class NodeBase:
     def spoken(self):
         """Return the text of the Spoken property inside the group notes."""
         if self._notes is None:
-            self._notes = self.parse_notes()
+            _LOGGER.debug(
+                "No notes retrieved for node. Call get_notes() before accessing."
+            )
         return self._notes[TAG_SPOKEN]
 
     @property
@@ -162,13 +170,13 @@ class NodeBase:
             ATTR_LAST_UPDATE: self._last_update,
         }
 
-    def parse_notes(self):
-        """Parse the notes for a given node.
+    async def get_notes(self):
+        """Retrieve and parse the notes for a given node.
 
-        Notes are not retrieved unless explicitly request by a property call
-        or a call to this function.
+        Notes are not retrieved unless explicitly requested by
+        a call to this function.
         """
-        notes_xml = self.isy.conn.request(
+        notes_xml = await self.isy.conn.request(
             self.isy.conn.compile_url([URL_NODES, self._id, URL_NOTES]), ok404=True
         )
         spoken = None
@@ -222,7 +230,7 @@ class NodeBase:
             timestamp = now()
         self._last_update = timestamp
 
-    def send_cmd(self, cmd, val=None, uom=None, query=None):
+    async def send_cmd(self, cmd, val=None, uom=None, query=None):
         """Send a command to the device."""
         value = str(val) if val is not None else None
         _uom = str(uom) if uom is not None else None
@@ -232,7 +240,7 @@ class NodeBase:
         if _uom:
             req.append(_uom)
         req_url = self.isy.conn.compile_url(req, query)
-        if not self.isy.conn.request(req_url):
+        if not await self.isy.conn.request(req_url):
             _LOGGER.warning(
                 "ISY could not send %s command to %s.",
                 COMMAND_FRIENDLY_NAME.get(cmd),
@@ -259,65 +267,65 @@ class NodeBase:
         self.update(wait_time=UPDATE_INTERVAL, hint=hint)
         return True
 
-    def beep(self):
+    async def beep(self):
         """Identify physical device by sound (if supported)."""
-        return self.send_cmd(CMD_BEEP)
+        return await self.send_cmd(CMD_BEEP)
 
-    def brighten(self):
+    async def brighten(self):
         """Increase brightness of a device by ~3%."""
-        return self.send_cmd(CMD_BRIGHTEN)
+        return await self.send_cmd(CMD_BRIGHTEN)
 
-    def dim(self):
+    async def dim(self):
         """Decrease brightness of a device by ~3%."""
-        return self.send_cmd(CMD_DIM)
+        return await self.send_cmd(CMD_DIM)
 
-    def disable(self):
+    async def disable(self):
         """Send command to the node to disable it."""
-        if not self.isy.conn.request(
+        if not await self.isy.conn.request(
             self.isy.conn.compile_url([URL_NODES, str(self._id), CMD_DISABLE])
         ):
             _LOGGER.warning("ISY could not %s %s.", CMD_DISABLE, self._id)
             return False
         return True
 
-    def enable(self):
+    async def enable(self):
         """Send command to the node to enable it."""
-        if not self.isy.conn.request(
+        if not await self.isy.conn.request(
             self.isy.conn.compile_url([URL_NODES, str(self._id), CMD_ENABLE])
         ):
             _LOGGER.warning("ISY could not %s %s.", CMD_ENABLE, self._id)
             return False
         return True
 
-    def fade_down(self):
+    async def fade_down(self):
         """Begin fading down (dim) a device."""
-        return self.send_cmd(CMD_FADE_DOWN)
+        return await self.send_cmd(CMD_FADE_DOWN)
 
-    def fade_stop(self):
+    async def fade_stop(self):
         """Stop fading a device."""
-        return self.send_cmd(CMD_FADE_STOP)
+        return await self.send_cmd(CMD_FADE_STOP)
 
-    def fade_up(self):
+    async def fade_up(self):
         """Begin fading up (dim) a device."""
-        return self.send_cmd(CMD_FADE_UP)
+        return await self.send_cmd(CMD_FADE_UP)
 
-    def fast_off(self):
+    async def fast_off(self):
         """Start manually brightening a device."""
-        return self.send_cmd(CMD_OFF_FAST)
+        return await self.send_cmd(CMD_OFF_FAST)
 
-    def fast_on(self):
+    async def fast_on(self):
         """Start manually brightening a device."""
-        return self.send_cmd(CMD_ON_FAST)
+        return await self.send_cmd(CMD_ON_FAST)
 
-    def query(self):
+    async def query(self):
         """Request the ISY query this node."""
-        return self.isy.query(address=self.address)
+        return await self.isy.query(address=self.address)
 
-    def turn_off(self):
+    async def turn_off(self):
         """Turn off the nodes/group in the ISY."""
-        return self.send_cmd(CMD_OFF)
+        return await self.send_cmd(CMD_OFF)
 
-    def turn_on(self, val=None):
+    async def turn_on(self, val=None):
         """
         Turn the node on.
 
@@ -331,4 +339,4 @@ class NodeBase:
         else:
             cmd = CMD_OFF
             val = None
-        return self.send_cmd(cmd, val)
+        return await self.send_cmd(cmd, val)

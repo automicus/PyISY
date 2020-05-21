@@ -66,7 +66,6 @@ class ISY:
         tls_ver=1.1,
         webroot="",
         websession=None,
-        sslcontext=None,
     ):
         """Initialize the primary ISY Class."""
         self._events = None  # create this JIT so no socket reuse
@@ -88,7 +87,6 @@ class ISY:
             tls_ver=tls_ver,
             webroot=webroot,
             websession=websession,
-            sslcontext=sslcontext,
         )
 
         self.configuration = None
@@ -120,26 +118,24 @@ class ISY:
         isy_setup_tasks = [
             self.conn.get_time(),
             self.conn.get_nodes(),
-            self.conn.get_status(),
             self.conn.get_programs(),
             self.conn.get_variable_defs(),
             self.conn.get_variables(),
         ]
         if self.configuration["Networking Module"]:
             isy_setup_tasks.append(asyncio.create_task(self.conn.get_network()))
-        isy_setup_results = await asyncio.gather(
-            *isy_setup_tasks,  # return_exceptions=True,
-        )
+        isy_setup_results = await asyncio.gather(*isy_setup_tasks)
 
         self.clock = Clock(self, xml=isy_setup_results[0])
         self.nodes = Nodes(self, xml=isy_setup_results[1])
-        self.nodes.update(xml=isy_setup_results[2])
-        self.programs = Programs(self, xml=isy_setup_results[3])
+        self.programs = Programs(self, xml=isy_setup_results[2])
         self.variables = Variables(
-            self, def_xml=isy_setup_results[4], var_xml=isy_setup_results[5],
+            self, def_xml=isy_setup_results[3], var_xml=isy_setup_results[4],
         )
         if self.configuration["Networking Module"]:
-            self.networking = NetworkResources(self, xml=isy_setup_results[6])
+            self.networking = NetworkResources(self, xml=isy_setup_results[5])
+
+        await asyncio.sleep(0.01)
 
     async def shutdown(self):
         """Cleanup connections and prepare for exit."""
@@ -206,18 +202,19 @@ class ISY:
 
         self._reconnect_thread = None
 
-    def query(self, address=None):
+    async def query(self, address=None):
         """Query all the nodes (or a specific node if an address is provided)."""
         req_path = [URL_QUERY]
         if address is not None:
             req_path.append(address)
         req_url = self.conn.compile_url(req_path)
-        if not self.conn.request(req_url):
+        if not await self.conn.request(req_url):
             _LOGGER.warning("Error performing query.")
             return False
         _LOGGER.debug("ISY Query requested successfully.")
+        return True
 
-    def send_x10_cmd(self, address, cmd):
+    async def send_x10_cmd(self, address, cmd):
         """
         Send an X10 command.
 
@@ -227,7 +224,7 @@ class ISY:
         if cmd in X10_COMMANDS:
             command = X10_COMMANDS.get(cmd)
             req_url = self.conn.compile_url([CMD_X10, address, str(command)])
-            result = self.conn.request(req_url)
+            result = await self.conn.request(req_url)
             if result is not None:
                 _LOGGER.info("ISY Sent X10 Command: %s To: %s", cmd, address)
             else:

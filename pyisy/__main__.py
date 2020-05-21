@@ -8,14 +8,11 @@ Use `python3 -m pyisy -h` for full usage information.
 import argparse
 import asyncio
 import logging
-import ssl
 import time
 from urllib.parse import urlparse
 
-import aiohttp
-
 from . import ISY
-from .connection import ISYConnectionError, ISYInvalidAuthError
+from .connection import ISYConnectionError, ISYInvalidAuthError, get_new_client_session
 from .constants import LOG_DATE_FORMAT, LOG_FORMAT, LOG_VERBOSE
 
 _LOGGER = logging.getLogger(__name__)
@@ -29,19 +26,15 @@ async def main(url, username, password, tls_ver):
     if host.scheme == "http":
         https = False
         port = host.port or 80
-        websession = aiohttp.ClientSession()
-        sslcontext = None
     elif host.scheme == "https":
         https = True
         port = host.port or 443
-        if tls_ver == 1.1:
-            sslcontext = ssl.SSLContext(ssl.PROTOCOL_TLSv1_1)
-        elif tls_ver == 1.2:
-            sslcontext = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
-        websession = aiohttp.ClientSession(cookie_jar=aiohttp.CookieJar(unsafe=True),)
     else:
         _LOGGER.error("host value in configuration is invalid.")
         return False
+
+    # Use the helper function to get a new aiohttp.ClientSession.
+    websession = get_new_client_session(https, tls_ver)
 
     # Connect to ISY controller.
     isy = ISY(
@@ -53,11 +46,11 @@ async def main(url, username, password, tls_ver):
         tls_ver=tls_ver,
         webroot=host.path,
         websession=websession,
-        sslcontext=sslcontext,
     )
 
     try:
         await isy.initialize()
+        await isy.nodes.update()
     except (ISYInvalidAuthError, ISYConnectionError):
         _LOGGER.error(
             "Failed to connect to the ISY, please adjust settings and try again."
@@ -86,7 +79,7 @@ if __name__ == "__main__":
     parser.add_argument("url", type=str)
     parser.add_argument("username", type=str)
     parser.add_argument("password", type=str)
-    parser.add_argument("-t", "--tls-ver", dest="tls_ver")
+    parser.add_argument("-t", "--tls-ver", dest="tls_ver", type=float)
     parser.add_argument("-v", "--verbose", action="store_true")
     parser.set_defaults(use_https=False, tls_ver=1.1, verbose=False)
     args = parser.parse_args()

@@ -1,5 +1,5 @@
 """ISY Clock/Location Information."""
-from time import sleep
+from asyncio import sleep
 from xml.dom import minidom
 
 from .constants import (
@@ -96,14 +96,14 @@ class Clock:
 
             _LOGGER.info("ISY Loaded Clock Information")
 
-    def update(self, wait_time=0):
+    async def update(self, wait_time=0):
         """
         Update the contents of the networking class.
 
         wait_time: [optional] Amount of seconds to wait before updating
         """
-        sleep(wait_time)
-        xml = self.isy.conn.get_time()
+        await sleep(wait_time)
+        xml = await self.isy.conn.get_time()
         self.parse(xml)
 
     def update_thread(self, interval):

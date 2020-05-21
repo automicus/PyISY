@@ -32,7 +32,16 @@ from .constants import (
 )
 
 MAX_RETRIES = 5
+MAX_HTTPS_CONNECTIONS = 2
+MAX_HTTP_CONNECTIONS = 5
 RETRY_BACKOFF = [0.01, 0.1, 1, 2, 4]
+
+HTTP_OK = 200  # Valid request received, will run it
+HTTP_UNAUTHORIZED = 401  # User authentication failed
+HTTP_NOT_FOUND = 404  # Unrecognized request received and ignored
+HTTP_SERVICE_UNAVAILABLE = 503  # Valid request received, system too busy to run it
+
+HTTP_HEADERS = {"Connection": "keep-alive", "Accept-Encoding": "gzip, deflate"}
 
 
 class Connection:
@@ -49,7 +58,6 @@ class Connection:
         webroot="",
         session=None,
         websession=None,
-        sslcontext=None,
     ):
         """Initialize the Connection object."""
         if not len(_LOGGER.handlers):
@@ -62,39 +70,15 @@ class Connection:
         self._port = port
         self._username = username
         self._password = password
+        self._auth = aiohttp.BasicAuth(self._username, self._password)
         self._webroot = webroot.rstrip("/")
         self.req_session = websession
-        self.sslcontext = sslcontext
+        self._tls_ver = tls_ver
+        self.use_https = use_https
 
-        # setup proper HTTPS handling for the ISY
-        if use_https:
-            if not can_https(tls_ver):
-                raise (
-                    ValueError(
-                        "PyISY could not connect to the ISY. "
-                        "Check log for SSL/TLS error."
-                    )
-                )
-
-            self.use_https = True
-            self._tls_ver = tls_ver
-
-            if self.sslcontext is None:
-                if tls_ver == 1.1:
-                    self.sslcontext = ssl.SSLContext(ssl.PROTOCOL_TLSv1_1)
-                elif tls_ver == 1.2:
-                    self.sslcontext = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
-
-            if self.req_session is None:
-                self.req_session = aiohttp.ClientSession(
-                    cookie_jar=aiohttp.CookieJar(unsafe=True),
-                )
-            return
-
-        self.use_https = False
-        self._tls_ver = None
-        if self.req_session is None:
-            self.req_session = aiohttp.ClientSession()
+        if websession is None:
+            websession = get_new_client_session(use_https, tls_ver)
+        self.req_session = websession
 
     async def test_connection(self):
         """Test the connection and get the config for the ISY."""
@@ -145,24 +129,35 @@ class Connection:
         try:
             async with self.req_session.get(
                 url,
-                auth=aiohttp.BasicAuth(self._username, self._password),
-                timeout=30,
-                ssl=self.sslcontext,
+                auth=self._auth,
+                headers=HTTP_HEADERS,
+                timeout=15,
+                chunked=True if not self.use_https else None,
             ) as res:
-                if res.status == 200:
-                    _LOGGER.debug("ISY Response Received")
+                if res.status == HTTP_OK:
+                    _LOGGER.debug("ISY Response Received.")
                     results = await res.text()
                     return results
-                if res.status == 404 and ok404:
-                    _LOGGER.debug("ISY Response Received")
-                    return ""
-                if res.status == 401:
+                if res.status == HTTP_NOT_FOUND:
+                    if ok404:
+                        _LOGGER.debug("ISY Response Received.")
+                        res.release()
+                        return ""
+                    _LOGGER.error("ISY Reported an Invalid Command Received.")
+                    res.release()
+                    return None
+                if res.status == HTTP_UNAUTHORIZED:
                     _LOGGER.error("Invalid credentials provided for ISY connection.")
+                    res.release()
                     raise ISYInvalidAuthError()
+                if res.status == HTTP_SERVICE_UNAVAILABLE:
+                    _LOGGER.warning(
+                        "ISY too busy to process request. Retry %s of %s.",
+                        retries + 1,
+                        MAX_RETRIES,
+                    )
+                    res.release()
 
-                _LOGGER.warning(
-                    "Bad ISY Request: %s %s: retry #%s", url, res.status, retries
-                )
         except asyncio.TimeoutError:
             raise ISYConnectionError() from None
         except aiohttp.client_exceptions.ClientError as err:
@@ -265,6 +260,32 @@ class Connection:
         req_url = self.compile_url([URL_CLOCK])
         result = await self.request(req_url)
         return result
+
+
+def get_new_client_session(use_https, tls_ver=1.1):
+    """Create a new Client Session for Connecting."""
+    if use_https:
+        if not can_https(tls_ver):
+            raise (
+                ValueError(
+                    "PyISY could not connect to the ISY. "
+                    "Check log for SSL/TLS error."
+                )
+            )
+
+        if tls_ver == 1.1:
+            sslcontext = ssl.SSLContext(ssl.PROTOCOL_TLSv1_1)
+        elif tls_ver == 1.2:
+            sslcontext = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
+
+        return aiohttp.ClientSession(
+            cookie_jar=aiohttp.CookieJar(unsafe=True),
+            connector=aiohttp.TCPConnector(ssl=sslcontext, limit=MAX_HTTPS_CONNECTIONS),
+        )
+
+    return aiohttp.ClientSession(
+        connector=aiohttp.TCPConnector(limit=MAX_HTTP_CONNECTIONS)
+    )
 
 
 def can_https(tls_ver):

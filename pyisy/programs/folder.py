@@ -117,7 +117,7 @@ class Folder:
             ATTR_LAST_UPDATE: self._last_update,
         }
 
-    def update(self, wait_time=UPDATE_INTERVAL, data=None):
+    async def update(self, wait_time=UPDATE_INTERVAL, data=None):
         """
         Update the status of the program.
 
@@ -128,12 +128,12 @@ class Folder:
             self._last_changed = now()
             self.status = data["pstatus"]
             return
-        self._programs.update(wait_time=wait_time, address=self._id)
+        await self._programs.update(wait_time=wait_time, address=self._id)
 
-    def send_cmd(self, command):
+    async def send_cmd(self, command):
         """Run the appropriate clause of the object."""
         req_url = self.isy.conn.compile_url([URL_PROGRAMS, str(self._id), command])
-        result = self.isy.conn.request(req_url)
+        result = await self.isy.conn.request(req_url)
         if not result:
             _LOGGER.warning('ISY could not call "%s" on program: %s', command, self._id)
             return False
@@ -142,26 +142,26 @@ class Folder:
             self.update()
         return True
 
-    def enable(self):
+    async def enable(self):
         """Send command to the program/folder to enable it."""
-        return self.send_cmd(CMD_ENABLE)
+        return await self.send_cmd(CMD_ENABLE)
 
-    def disable(self):
+    async def disable(self):
         """Send command to the program/folder to enable it."""
-        return self.send_cmd(CMD_DISABLE)
+        return await self.send_cmd(CMD_DISABLE)
 
-    def run(self):
+    async def run(self):
         """Send a run command to the program/folder."""
-        return self.send_cmd(CMD_RUN)
+        return await self.send_cmd(CMD_RUN)
 
-    def run_then(self):
+    async def run_then(self):
         """Send a runThen command to the program/folder."""
-        return self.send_cmd(CMD_RUN_THEN)
+        return await self.send_cmd(CMD_RUN_THEN)
 
-    def run_else(self):
+    async def run_else(self):
         """Send a runElse command to the program/folder."""
-        return self.send_cmd(CMD_RUN_ELSE)
+        return await self.send_cmd(CMD_RUN_ELSE)
 
-    def stop(self):
+    async def stop(self):
         """Send a stop command to the program/folder."""
-        return self.send_cmd(CMD_STOP)
+        return await self.send_cmd(CMD_STOP)

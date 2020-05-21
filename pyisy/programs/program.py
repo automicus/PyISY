@@ -142,7 +142,7 @@ class Program(Folder):
             self._running = value
         return self._running
 
-    def update(self, wait_time=UPDATE_INTERVAL, data=None):
+    async def update(self, wait_time=UPDATE_INTERVAL, data=None):
         """
         Update the program with values on the controller.
 
@@ -163,12 +163,12 @@ class Program(Folder):
                 # Status didn't change, but something did, so fire the event.
                 self.status_events.notify(self.status)
             return
-        self._programs.update(wait_time, address=self._id)
+        await self._programs.update(wait_time, address=self._id)
 
-    def enable_run_at_startup(self):
+    async def enable_run_at_startup(self):
         """Send command to the program to enable it to run at startup."""
-        return self.send_cmd(CMD_ENABLE_RUN_AT_STARTUP)
+        return await self.send_cmd(CMD_ENABLE_RUN_AT_STARTUP)
 
-    def disable_run_at_startup(self):
+    async def disable_run_at_startup(self):
         """Send command to the program to enable it to run at startup."""
-        return self.send_cmd(CMD_DISABLE_RUN_AT_STARTUP)
+        return await self.send_cmd(CMD_DISABLE_RUN_AT_STARTUP)

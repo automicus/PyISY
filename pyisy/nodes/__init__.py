@@ -1,5 +1,5 @@
 """Representation of ISY Nodes."""
-from time import sleep
+from asyncio import sleep
 from xml.dom import minidom
 
 from ..constants import (
@@ -381,7 +381,7 @@ class Nodes:
                     )
             _LOGGER.debug("ISY Loaded %s", ntype)
 
-    def update(self, wait_time=0, xml=None):
+    async def update(self, wait_time=0, xml=None):
         """
         Update the status and properties of the nodes in the class.
 
@@ -390,10 +390,10 @@ class Nodes:
         |  wait_time: [optional] Amount of seconds to wait before updating
         """
         if wait_time:
-            sleep(wait_time)
+            await sleep(wait_time)
 
         if xml is None:
-            xml = self.isy.conn.get_status()
+            xml = await self.isy.conn.get_status()
 
         if xml is None:
             _LOGGER.warning("ISY Failed to update nodes.")
@@ -414,7 +414,7 @@ class Nodes:
 
         _LOGGER.info("ISY Updated Node Statuses.")
 
-    def update_nodes(self, wait_time=0):
+    async def update_nodes(self, wait_time=0):
         """
         Update the contents of the class.
 
@@ -423,8 +423,8 @@ class Nodes:
         |  wait_time: [optional] Amount of seconds to wait before updating
         """
         if wait_time:
-            sleep(wait_time)
-        xml = self.isy.conn.get_nodes()
+            await sleep(wait_time)
+        xml = await self.isy.conn.get_nodes()
         if xml is None:
             _LOGGER.warning("ISY Failed to update nodes.")
             return

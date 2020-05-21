@@ -1,5 +1,5 @@
 """ISY Variables."""
-from time import sleep
+from asyncio import sleep
 from xml.dom import minidom
 
 from dateutil import parser
@@ -138,14 +138,14 @@ class Variables:
 
         _LOGGER.info("ISY Loaded Variables")
 
-    def update(self, wait_time=0):
+    async def update(self, wait_time=0):
         """
         Update the variable objects with data from the controller.
 
         |  wait_time: Seconds to wait before updating.
         """
-        sleep(wait_time)
-        xml = self.isy.conn.get_variables()
+        await sleep(wait_time)
+        xml = await self.isy.conn.get_variables()
         if xml is not None:
             self.parse(xml)
         else:
