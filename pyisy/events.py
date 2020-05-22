@@ -11,7 +11,7 @@ from xml.dom import minidom
 import aiohttp
 
 from . import strings
-from .connection import get_new_client_session
+from .connection import get_new_client_session, get_sslcontext
 from .constants import (
     ATTR_ACTION,
     ATTR_CONTROL,
@@ -329,6 +329,7 @@ class WebSocketClient:
             websession = get_new_client_session(use_https, tls_ver)
 
         self.req_session = websession
+        self.sslcontext = get_sslcontext(use_https, tls_ver)
         self._loop = asyncio.get_running_loop()
 
         self._url = "wss://" if self.use_https else "ws://"
@@ -421,6 +422,7 @@ class WebSocketClient:
                 heartbeat=WS_HEARTBEAT,
                 headers=WS_HEADERS,
                 timeout=WS_TIMEOUT,
+                ssl=self.sslcontext,
             ) as ws:
                 self._status = ES_CONNECTED
                 _LOGGER.debug("Successfully connected to websocket...")

@@ -1,5 +1,5 @@
 """Init for management of ISY Programs."""
-from asyncio import sleep
+import asyncio
 from xml.dom import minidom
 
 from dateutil import parser
@@ -254,7 +254,7 @@ class Programs:
                     self.insert(address, pname, pparent, pobj, ptype)
                 else:
                     pobj = self.get_by_id(address).leaf
-                    pobj.update(data=data)
+                    asyncio.create_task(pobj.update(data=data))
 
             _LOGGER.info("ISY Loaded/Updated Programs")
 
@@ -265,7 +265,7 @@ class Programs:
         |  wait_time: How long to wait before updating.
         |  address: The program ID to update.
         """
-        await sleep(wait_time)
+        await asyncio.sleep(wait_time)
         xml = await self.isy.conn.get_programs(address)
 
         if xml is not None:

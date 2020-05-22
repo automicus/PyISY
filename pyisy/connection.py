@@ -81,9 +81,14 @@ class Connection:
         self._tls_ver = tls_ver
         self.use_https = use_https
 
+        self.semaphore = asyncio.Semaphore(
+            MAX_HTTPS_CONNECTIONS if use_https else MAX_HTTP_CONNECTIONS
+        )
+
         if websession is None:
             websession = get_new_client_session(use_https, tls_ver)
         self.req_session = websession
+        self.sslcontext = get_sslcontext(use_https, tls_ver)
 
     async def test_connection(self):
         """Test the connection and get the config for the ISY."""
@@ -132,8 +137,12 @@ class Connection:
         if delay:
             await asyncio.sleep(delay)
         try:
-            async with self.req_session.get(
-                url, auth=self._auth, headers=HTTP_HEADERS, timeout=HTTP_TIMEOUT,
+            async with self.semaphore, self.req_session.get(
+                url,
+                auth=self._auth,
+                headers=HTTP_HEADERS,
+                timeout=HTTP_TIMEOUT,
+                ssl=self.sslcontext,
             ) as res:
                 if res.status == HTTP_OK:
                     _LOGGER.debug("ISY Response Received.")
@@ -162,7 +171,7 @@ class Connection:
         except asyncio.TimeoutError:
             raise ISYConnectionError() from None
         except aiohttp.client_exceptions.ClientError as err:
-            _LOGGER.error(
+            _LOGGER.debug(
                 "ISY Could not receive response "
                 "from device because of a network "
                 "issue: %s",
@@ -274,19 +283,19 @@ def get_new_client_session(use_https, tls_ver=1.1):
                 )
             )
 
-        if tls_ver == 1.1:
-            sslcontext = ssl.SSLContext(ssl.PROTOCOL_TLSv1_1)
-        elif tls_ver == 1.2:
-            sslcontext = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
+        return aiohttp.ClientSession(cookie_jar=aiohttp.CookieJar(unsafe=True))
 
-        return aiohttp.ClientSession(
-            cookie_jar=aiohttp.CookieJar(unsafe=True),
-            connector=aiohttp.TCPConnector(ssl=sslcontext, limit=MAX_HTTPS_CONNECTIONS),
-        )
+    return aiohttp.ClientSession()
 
-    return aiohttp.ClientSession(
-        connector=aiohttp.TCPConnector(limit=MAX_HTTP_CONNECTIONS)
-    )
+
+def get_sslcontext(use_https, tls_ver=1.1):
+    """Create an SSLContext object to use for the connections."""
+    if not use_https:
+        return None
+    if tls_ver == 1.1:
+        return ssl.SSLContext(ssl.PROTOCOL_TLSv1_1)
+    elif tls_ver == 1.2:
+        return ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
 
 
 def can_https(tls_ver):
