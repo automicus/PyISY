@@ -131,7 +131,9 @@ class EventStream:
                 pass  # This is most likely a duplicate node update.
             else:  # SOMETHING HAPPENED WITH A PROGRAM FOLDER
                 # but they ISY didn't tell us what, so...
-                self.isy.programs.update()
+                asyncio.run_coroutine_threadsafe(
+                    self.isy.programs.update(), self.isy.loop
+                )
         elif cntrl == "_3":  # Node Changed/Updated
             self.isy.nodes.node_changed_received(xmldoc)
 
@@ -366,7 +368,7 @@ class WebSocketClient:
             self.isy.connection_events.notify(self._status)
         return self._status
 
-    def _route_message(self, msg):
+    async def _route_message(self, msg):
         """Route a received message from the event stream."""
         # check xml formatting
         try:
@@ -401,7 +403,7 @@ class WebSocketClient:
                 pass  # This is most likely a duplicate node update.
             else:  # SOMETHING HAPPENED WITH A PROGRAM FOLDER
                 # but they ISY didn't tell us what, so...
-                self.isy.programs.update()
+                await self.isy.programs.update()
         elif cntrl == "_3":  # Node Changed/Updated
             self.isy.nodes.node_changed_received(xmldoc)
 
@@ -425,7 +427,7 @@ class WebSocketClient:
 
                 async for msg in ws:
                     if msg.type == aiohttp.WSMsgType.TEXT:
-                        self._route_message(msg.data)
+                        await self._route_message(msg.data)
 
                     elif msg.type == aiohttp.WSMsgType.CLOSED:
                         _LOGGER.warning("Websocket connection closed: %s", msg.data)

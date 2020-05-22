@@ -111,6 +111,7 @@ class ISY:
         self.networking = None
         self._hostname = address
         self.connection_events = EventEmitter()
+        self.loop = asyncio.get_running_loop()
 
     def __del__(self):
         """Turn off auto updating when the class is deleted."""
