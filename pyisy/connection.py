@@ -34,14 +34,18 @@ from .constants import (
 MAX_RETRIES = 5
 MAX_HTTPS_CONNECTIONS = 2
 MAX_HTTP_CONNECTIONS = 5
-RETRY_BACKOFF = [0.01, 0.1, 1, 2, 4]
+RETRY_BACKOFF = [0.01, 0.10, 0.25, 1, 2]  # Seconds
 
 HTTP_OK = 200  # Valid request received, will run it
 HTTP_UNAUTHORIZED = 401  # User authentication failed
 HTTP_NOT_FOUND = 404  # Unrecognized request received and ignored
 HTTP_SERVICE_UNAVAILABLE = 503  # Valid request received, system too busy to run it
 
-HTTP_HEADERS = {"Connection": "keep-alive", "Accept-Encoding": "gzip, deflate"}
+HTTP_HEADERS = {
+    "Connection": "keep-alive",
+    "Keep-Alive": "5000",
+    "Accept-Encoding": "gzip, deflate",
+}
 
 
 class Connection:
@@ -128,11 +132,7 @@ class Connection:
             await asyncio.sleep(delay)
         try:
             async with self.req_session.get(
-                url,
-                auth=self._auth,
-                headers=HTTP_HEADERS,
-                timeout=15,
-                chunked=True if not self.use_https else None,
+                url, auth=self._auth, headers=HTTP_HEADERS, timeout=15,
             ) as res:
                 if res.status == HTTP_OK:
                     _LOGGER.debug("ISY Response Received.")

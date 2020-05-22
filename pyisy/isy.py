@@ -112,10 +112,8 @@ class ISY:
         config_xml = await self.conn.test_connection()
         self.configuration = Configuration(xml=config_xml)
 
-        # Make the ISY happy for subsequent connections.
-        await asyncio.sleep(0.01)
-
         isy_setup_tasks = [
+            self.conn.get_status(),
             self.conn.get_time(),
             self.conn.get_nodes(),
             self.conn.get_programs(),
@@ -126,16 +124,15 @@ class ISY:
             isy_setup_tasks.append(asyncio.create_task(self.conn.get_network()))
         isy_setup_results = await asyncio.gather(*isy_setup_tasks)
 
-        self.clock = Clock(self, xml=isy_setup_results[0])
-        self.nodes = Nodes(self, xml=isy_setup_results[1])
-        self.programs = Programs(self, xml=isy_setup_results[2])
+        self.clock = Clock(self, xml=isy_setup_results[1])
+        self.nodes = Nodes(self, xml=isy_setup_results[2])
+        self.programs = Programs(self, xml=isy_setup_results[3])
         self.variables = Variables(
-            self, def_xml=isy_setup_results[3], var_xml=isy_setup_results[4],
+            self, def_xml=isy_setup_results[4], var_xml=isy_setup_results[5],
         )
         if self.configuration["Networking Module"]:
-            self.networking = NetworkResources(self, xml=isy_setup_results[5])
-
-        await asyncio.sleep(0.01)
+            self.networking = NetworkResources(self, xml=isy_setup_results[6])
+        await self.nodes.update(xml=isy_setup_results[0])
 
     async def shutdown(self):
         """Cleanup connections and prepare for exit."""

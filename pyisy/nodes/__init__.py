@@ -409,7 +409,7 @@ class Nodes:
             address = feature.attributes[ATTR_ID].value
 
             if address in self.addresses:
-                self.get_by_id(address).update(xmldoc=feature)
+                await self.get_by_id(address).update(xmldoc=feature)
                 continue
 
         _LOGGER.info("ISY Updated Node Statuses.")

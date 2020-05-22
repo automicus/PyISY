@@ -3,6 +3,9 @@
 The module can be tested by running the following command:
 `python3 -m pyisy http://your-isy-url:80 username password`
 Use `python3 -m pyisy -h` for full usage information.
+
+This script can also be copied and used as a template for
+using this module.
 """
 
 import argparse
@@ -50,7 +53,6 @@ async def main(url, username, password, tls_ver):
 
     try:
         await isy.initialize()
-        await isy.nodes.update()
     except (ISYInvalidAuthError, ISYConnectionError):
         _LOGGER.error(
             "Failed to connect to the ISY, please adjust settings and try again."
@@ -64,7 +66,7 @@ async def main(url, username, password, tls_ver):
 
     # Print a representation of all the Nodes
     _LOGGER.debug(repr(isy.nodes))
-    _LOGGER.info("Loading time: %.2fs", time.time() - t0)
+    _LOGGER.info("Total Loading time: %.2fs", time.time() - t0)
     try:
         while True:
             await asyncio.sleep(1)
