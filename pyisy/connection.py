@@ -41,6 +41,8 @@ HTTP_UNAUTHORIZED = 401  # User authentication failed
 HTTP_NOT_FOUND = 404  # Unrecognized request received and ignored
 HTTP_SERVICE_UNAVAILABLE = 503  # Valid request received, system too busy to run it
 
+HTTP_TIMEOUT = 15
+
 HTTP_HEADERS = {
     "Connection": "keep-alive",
     "Keep-Alive": "5000",
@@ -60,7 +62,6 @@ class Connection:
         use_https=False,
         tls_ver=1.1,
         webroot="",
-        session=None,
         websession=None,
     ):
         """Initialize the Connection object."""
@@ -132,7 +133,7 @@ class Connection:
             await asyncio.sleep(delay)
         try:
             async with self.req_session.get(
-                url, auth=self._auth, headers=HTTP_HEADERS, timeout=15,
+                url, auth=self._auth, headers=HTTP_HEADERS, timeout=HTTP_TIMEOUT,
             ) as res:
                 if res.status == HTTP_OK:
                     _LOGGER.debug("ISY Response Received.")

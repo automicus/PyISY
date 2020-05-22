@@ -38,6 +38,8 @@ ES_INITIALIZING = "stream_initializing"
 ES_LOADED = "stream_loaded"
 ES_RECONNECT_FAILED = "reconnect_failed"
 ES_RECONNECTING = "reconnecting"
+ES_DISCONNECTING = "stream_disconnecting"
+ES_NOT_STARTED = "not_started"
 
 ISY_VALUE_UNKNOWN = -1 * float("inf")
 ISY_PROP_NOT_SET = "-1"

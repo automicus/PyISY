@@ -49,6 +49,7 @@ async def main(url, username, password, tls_ver):
         tls_ver=tls_ver,
         webroot=host.path,
         websession=websession,
+        use_websocket=True,
     )
 
     try:
@@ -67,6 +68,9 @@ async def main(url, username, password, tls_ver):
     # Print a representation of all the Nodes
     _LOGGER.debug(repr(isy.nodes))
     _LOGGER.info("Total Loading time: %.2fs", time.time() - t0)
+
+    isy.websocket.start()
+
     try:
         while True:
             await asyncio.sleep(1)

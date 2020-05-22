@@ -19,7 +19,7 @@ from .constants import (
     URL_QUERY,
     X10_COMMANDS,
 )
-from .events import EventStream
+from .events import EventStream, WebSocketClient
 from .helpers import EventEmitter
 from .networking import NetworkResources
 from .nodes import Nodes
@@ -66,6 +66,7 @@ class ISY:
         tls_ver=1.1,
         webroot="",
         websession=None,
+        use_websocket=False,
     ):
         """Initialize the primary ISY Class."""
         self._events = None  # create this JIT so no socket reuse
@@ -88,6 +89,19 @@ class ISY:
             webroot=webroot,
             websession=websession,
         )
+
+        if use_websocket:
+            self.websocket = WebSocketClient(
+                isy=self,
+                address=address,
+                port=port,
+                username=username,
+                password=password,
+                use_https=use_https,
+                tls_ver=tls_ver,
+                webroot=webroot,
+                websession=websession,
+            )
 
         self.configuration = None
         self.clock = None
@@ -136,6 +150,8 @@ class ISY:
 
     async def shutdown(self):
         """Cleanup connections and prepare for exit."""
+        if hasattr(self, "websocket"):
+            self.websocket.stop()
         await self.conn.close()
 
     @property
