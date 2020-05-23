@@ -264,7 +264,7 @@ class NodeBase:
             hint = 255
         elif cmd in [CMD_OFF, CMD_OFF_FAST]:
             hint = 0
-        self.update(wait_time=UPDATE_INTERVAL, hint=hint)
+        await self.update(wait_time=UPDATE_INTERVAL, hint=hint)
         return True
 
     async def beep(self):

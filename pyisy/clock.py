@@ -106,14 +106,14 @@ class Clock:
         xml = await self.isy.conn.get_time()
         self.parse(xml)
 
-    def update_thread(self, interval):
+    async def update_thread(self, interval):
         """
         Continually update the class until it is told to stop.
 
-        Should be run in a thread.
+        Should be run as a task in the event loop.
         """
         while self.isy.auto_update:
-            self.update(interval)
+            await self.update(interval)
 
     @property
     def last_called(self):
