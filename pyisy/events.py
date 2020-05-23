@@ -337,6 +337,7 @@ class WebSocketClient:
         self._lasthb = None
         self._sid = None
         self._program_key = None
+        self.websocket_task = None
 
         if websession is None:
             websession = get_new_client_session(use_https, tls_ver)
@@ -358,12 +359,15 @@ class WebSocketClient:
     def stop(self):
         """Close websocket connection."""
         self.status = ES_STOP_UPDATES
-        self.websocket_task.cancel()
+        if self.websocket_task is not None and not self.websocket_task.done():
+            self.websocket_task.cancel()
 
     async def reconnect(self, delay=RECONNECT_DELAY, retries=0):
         """Reconnect to a disconnected websocket."""
         if self.status == ES_CONNECTED:
             return
+        if self.websocket_task is not None and not self.websocket_task.done():
+            self.websocket_task.cancel()
         self.status = ES_RECONNECTING
         _LOGGER.info("PyISY attempting stream reconnect in %ss.", delay)
         await asyncio.sleep(delay)
@@ -490,6 +494,8 @@ class WebSocketClient:
                 _LOGGER.error("Websocket Client Connector Error.")
                 self.status = ES_LOST_STREAM_CONNECTION
                 await self.reconnect(RECONNECT_DELAY)
+        except asyncio.CancelledError:
+            self.status = ES_DISCONNECTED
         except Exception as err:
             if self.status != ES_STOP_UPDATES:
                 _LOGGER.exception("Unexpected error %s", err)
