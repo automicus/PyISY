@@ -13,6 +13,8 @@ import aiohttp
 from . import strings
 from .connection import get_new_client_session, get_sslcontext
 from .constants import (
+    ACTION_KEY,
+    ACTION_KEY_CHANGED,
     ATTR_ACTION,
     ATTR_CONTROL,
     ATTR_ID,
@@ -33,6 +35,7 @@ from .constants import (
     POLL_TIME,
     PROP_STATUS,
     RECONNECT_DELAY,
+    TAG_EVENT_INFO,
     TAG_NODE,
 )
 from .eventreader import ISYEventReader, ISYMaxConnections, ISYStreamDataError
@@ -47,6 +50,8 @@ WS_HEADERS = {
 }
 WS_HEARTBEAT = 30
 WS_TIMEOUT = aiohttp.ClientTimeout(total=60, connect=60, sock_connect=60, sock_read=60)
+WS_MAX_RETRIES = 4
+WS_RETRY_BACKOFF = [0.01, 1, 10, 30, 60]  # Seconds
 
 
 class EventStream:
@@ -129,8 +134,14 @@ class EventStream:
                 self.isy.programs.update_received(xmldoc)
             elif f"<{TAG_NODE}>" in msg and "[" in msg:  # Node Server Update
                 pass  # This is most likely a duplicate node update.
-            else:  # SOMETHING HAPPENED WITH A PROGRAM FOLDER
-                # but they ISY didn't tell us what, so...
+            elif f"<{ATTR_ACTION}>" in msg:
+                action = value_from_xml(xmldoc, ATTR_ACTION)
+                if action == ACTION_KEY:
+                    self.data[ACTION_KEY] = value_from_xml(xmldoc, TAG_EVENT_INFO)
+                    return
+                if action == ACTION_KEY_CHANGED:
+                    self._program_key = value_from_xml(xmldoc, TAG_NODE)
+                # Need to reload programs
                 asyncio.run_coroutine_threadsafe(
                     self.isy.programs.update(), self.isy.loop
                 )
@@ -323,7 +334,9 @@ class WebSocketClient:
         self._tls_ver = tls_ver
         self.use_https = use_https
         self._status = ES_NOT_STARTED
+        self._lasthb = None
         self._sid = None
+        self._program_key = None
 
         if websession is None:
             websession = get_new_client_session(use_https, tls_ver)
@@ -337,24 +350,25 @@ class WebSocketClient:
 
     def start(self):
         """Start the websocket connection."""
-        if self._status != ES_CONNECTED:
+        if self.status != ES_CONNECTED:
             _LOGGER.info("Starting websocket connection.")
-            self._status = ES_INITIALIZING
+            self.status = ES_INITIALIZING
             self.websocket_task = self._loop.create_task(self.websocket())
 
     def stop(self):
         """Close websocket connection."""
-        self._status = ES_STOP_UPDATES
+        self.status = ES_STOP_UPDATES
         self.websocket_task.cancel()
 
-    async def reconnect(self, delay=RECONNECT_DELAY):
+    async def reconnect(self, delay=RECONNECT_DELAY, retries=0):
         """Reconnect to a disconnected websocket."""
-        if self._status == ES_CONNECTED:
+        if self.status == ES_CONNECTED:
             return
-        self._status = ES_RECONNECTING
-        _LOGGER.warning("PyISY attempting stream reconnect in %ss.", delay)
+        self.status = ES_RECONNECTING
+        _LOGGER.info("PyISY attempting stream reconnect in %ss.", delay)
         await asyncio.sleep(delay)
-        self.websocket_task = self._loop.create_task(self.websocket())
+        retries = (retries + 1) if retries < WS_MAX_RETRIES else WS_MAX_RETRIES
+        self.websocket_task = self._loop.create_task(self.websocket(retries))
 
     @property
     def status(self):
@@ -368,6 +382,11 @@ class WebSocketClient:
             self._status = value
             self.isy.connection_events.notify(self._status)
         return self._status
+
+    @property
+    def last_heartbeat(self):
+        """Return the last received heartbeat time from the ISY."""
+        return self._lasthb
 
     async def _route_message(self, msg):
         """Route a received message from the event stream."""
@@ -391,19 +410,26 @@ class WebSocketClient:
             self._lasthb = now()
             self._hbwait = int(value_from_xml(xmldoc, ATTR_ACTION))
             _LOGGER.debug("ISY HEARTBEAT: %s", self._lasthb.isoformat())
+            self.isy.connection_events.notify(self._status)
         elif cntrl == PROP_STATUS:  # NODE UPDATE
             self.isy.nodes.update_received(xmldoc)
         elif cntrl[0] != "_":  # NODE CONTROL EVENT
             self.isy.nodes.control_message_received(xmldoc)
         elif cntrl == "_1":  # Trigger Update
-            if f"<{ATTR_VAR}" in msg:  # VARIABLE
+            if f"<{ATTR_VAR}" in msg:  # VARIABLE (action=6 or 7)
                 self.isy.variables.update_received(xmldoc)
-            elif f"<{ATTR_ID}>" in msg:  # PROGRAM
+            elif f"<{ATTR_ID}>" in msg:  # PROGRAM (action=0)
                 self.isy.programs.update_received(xmldoc)
             elif f"<{TAG_NODE}>" in msg and "[" in msg:  # Node Server Update
                 pass  # This is most likely a duplicate node update.
-            else:  # SOMETHING HAPPENED WITH A PROGRAM FOLDER
-                # but they ISY didn't tell us what, so...
+            elif f"<{ATTR_ACTION}>" in msg:
+                action = value_from_xml(xmldoc, ATTR_ACTION)
+                if action == ACTION_KEY:
+                    self._program_key = value_from_xml(xmldoc, TAG_EVENT_INFO)
+                    return
+                if action == ACTION_KEY_CHANGED:
+                    self._program_key = value_from_xml(xmldoc, TAG_NODE)
+                # Need to reload programs
                 await self.isy.programs.update()
         elif cntrl == "_3":  # Node Changed/Updated
             self.isy.nodes.node_changed_received(xmldoc)
@@ -413,7 +439,7 @@ class WebSocketClient:
         self._sid = attr_from_xml(xmldoc, "Event", ATTR_STREAM_ID)
         _LOGGER.debug("ISY Updated Events Stream ID")
 
-    async def websocket(self):
+    async def websocket(self, retries=0):
         """Start websocket connection."""
         try:
             async with self.req_session.ws_connect(
@@ -424,8 +450,9 @@ class WebSocketClient:
                 timeout=WS_TIMEOUT,
                 ssl=self.sslcontext,
             ) as ws:
-                self._status = ES_CONNECTED
-                _LOGGER.debug("Successfully connected to websocket...")
+                self.status = ES_CONNECTED
+                retries = 0
+                _LOGGER.debug("Successfully connected to websocket... %s", self.status)
 
                 async for msg in ws:
                     if msg.type == aiohttp.WSMsgType.TEXT:
@@ -450,22 +477,25 @@ class WebSocketClient:
                     elif msg.type == aiohttp.WSMsgType.BINARY:
                         _LOGGER.warning("Unexpected binary message received.")
 
-            self._status = ES_DISCONNECTED
+            self.status = ES_DISCONNECTED
 
-        except (aiohttp.ClientOSError, aiohttp.ServerDisconnectedError):
+        except (
+            aiohttp.ClientOSError,
+            aiohttp.client_exceptions.ServerDisconnectedError,
+        ):
             _LOGGER.debug("ISY not ready or closed connection. Retrying.")
-            await self.reconnect(0.01)
+            await self.reconnect(WS_RETRY_BACKOFF[retries], retries=retries)
         except aiohttp.ClientConnectorError:
-            if self._status != ES_STOP_UPDATES:
+            if self.status != ES_STOP_UPDATES:
                 _LOGGER.error("Websocket Client Connector Error.")
-                self._status = ES_LOST_STREAM_CONNECTION
+                self.status = ES_LOST_STREAM_CONNECTION
                 await self.reconnect(RECONNECT_DELAY)
         except Exception as err:
-            if self._status != ES_STOP_UPDATES:
+            if self.status != ES_STOP_UPDATES:
                 _LOGGER.exception("Unexpected error %s", err)
-                self._status = ES_LOST_STREAM_CONNECTION
+                self.status = ES_LOST_STREAM_CONNECTION
                 await self.reconnect(RECONNECT_DELAY)
         else:
-            if self._status != ES_STOP_UPDATES:
-                self._status = ES_DISCONNECTED
+            if self.status != ES_STOP_UPDATES:
+                self.status = ES_DISCONNECTED
                 await self.reconnect(RECONNECT_DELAY)

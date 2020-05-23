@@ -170,7 +170,10 @@ class Connection:
 
         except asyncio.TimeoutError:
             raise ISYConnectionError() from None
-        except (aiohttp.ClientOSError, aiohttp.ServerDisconnectedError):
+        except (
+            aiohttp.ClientOSError,
+            aiohttp.client_exceptions.ServerDisconnectedError,
+        ):
             _LOGGER.debug(
                 "ISY not ready or closed connection. Retrying in %ss, retry #%s",
                 RETRY_BACKOFF[retries],
