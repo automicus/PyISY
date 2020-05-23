@@ -139,7 +139,7 @@ class Folder:
             return False
         _LOGGER.debug('ISY ran "%s" on program: %s', command, self._id)
         if not self.isy.auto_update:
-            self.update()
+            await self.update()
         return True
 
     async def enable(self):

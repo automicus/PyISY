@@ -41,11 +41,12 @@ class Group(NodeBase):
 
         # listen for changes in children
         self._members_handlers = [
-            self._nodes[m].status_events.subscribe(self.update) for m in self.members
+            self._nodes[m].status_events.subscribe(self.update_callback)
+            for m in self.members
         ]
 
         # get and update the status
-        self.update()
+        self.isy.loop.create_task(self.update())
 
     def __del__(self):
         """Cleanup event handlers before deleting."""
@@ -82,7 +83,7 @@ class Group(NodeBase):
         """Return the protocol for this entity."""
         return PROTO_GROUP
 
-    def update(self, event=None, wait_time=0, hint=None, xmldoc=None):
+    async def update(self, event=None, wait_time=0, hint=None, xmldoc=None):
         """Update the group with values from the controller."""
         self._last_update = now()
         valid_nodes = [
@@ -101,3 +102,7 @@ class Group(NodeBase):
             return
         self.status = 0
         self.group_all_on = False
+
+    def update_callback(self, event=None):
+        """Handle synchronous callbacks for subscriber events."""
+        self.isy.loop.create_task(self.update(event))

@@ -452,13 +452,14 @@ class WebSocketClient:
 
             self._status = ES_DISCONNECTED
 
+        except (aiohttp.ClientOSError, aiohttp.ServerDisconnectedError):
+            _LOGGER.debug("ISY not ready or closed connection. Retrying.")
+            await self.reconnect(0.01)
         except aiohttp.ClientConnectorError:
             if self._status != ES_STOP_UPDATES:
                 _LOGGER.error("Websocket Client Connector Error.")
                 self._status = ES_LOST_STREAM_CONNECTION
                 await self.reconnect(RECONNECT_DELAY)
-                return
-
         except Exception as err:
             if self._status != ES_STOP_UPDATES:
                 _LOGGER.exception("Unexpected error %s", err)

@@ -9,6 +9,7 @@ from .connection import Connection
 from .constants import (
     _LOGGER,
     CMD_X10,
+    ES_CONNECTED,
     ES_RECONNECT_FAILED,
     ES_RECONNECTING,
     ES_START_UPDATES,
@@ -90,6 +91,7 @@ class ISY:
             websession=websession,
         )
 
+        self.websocket = None
         if use_websocket:
             self.websocket = WebSocketClient(
                 isy=self,
@@ -112,15 +114,6 @@ class ISY:
         self._hostname = address
         self.connection_events = EventEmitter()
         self.loop = asyncio.get_running_loop()
-
-    def __del__(self):
-        """Turn off auto updating when the class is deleted."""
-        # not the best method, I know, but this "forces" Python to clean up
-        # the subscription sockets if it isn't done explicitly by the user.
-        # As a rule of thumb, this should not be relied upon. The subscription
-        # should be closed explicitly by the program.
-        # See: Zen of Python Line 2
-        self.auto_update = False
 
     async def initialize(self):
         """Initialize the connection with the ISY."""
@@ -149,10 +142,15 @@ class ISY:
             self.networking = NetworkResources(self, xml=isy_setup_results[6])
         await self.nodes.update(xml=isy_setup_results[0])
 
+        self._connected = True
+
     async def shutdown(self):
         """Cleanup connections and prepare for exit."""
-        if hasattr(self, "websocket"):
+        if self.websocket is not None:
             self.websocket.stop()
+        if self._events is not None and self._events.running:
+            self.connection_events.notify(ES_STOP_UPDATES)
+            self._events.running = False
         await self.conn.close()
 
     @property
@@ -163,6 +161,8 @@ class ISY:
     @property
     def auto_update(self):
         """Return the auto_update property."""
+        if self.websocket is not None:
+            return self.websocket.status == ES_CONNECTED
         if self._events is not None:
             return self._events.running
         return False
@@ -170,6 +170,11 @@ class ISY:
     @auto_update.setter
     def auto_update(self, val):
         """Set the auto_update property."""
+        if self.websocket is not None:
+            _LOGGER.warning(
+                "Websockets are enabled. Use isy.websocket.start() or .stop() instead."
+            )
+            return
         if val and not self.auto_update:
             # create new event stream socket
             self._events = EventStream(
