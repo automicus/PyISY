@@ -170,8 +170,14 @@ class Connection:
 
         except asyncio.TimeoutError:
             raise ISYConnectionError() from None
-        except aiohttp.client_exceptions.ClientError as err:
+        except (aiohttp.ClientOSError, aiohttp.ServerDisconnectedError):
             _LOGGER.debug(
+                "ISY not ready or closed connection. Retrying in %ss, retry #%s",
+                RETRY_BACKOFF[retries],
+                retries + 1,
+            )
+        except aiohttp.client_exceptions.ClientError as err:
+            _LOGGER.error(
                 "ISY Could not receive response "
                 "from device because of a network "
                 "issue: %s",
