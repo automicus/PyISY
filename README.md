@@ -46,3 +46,9 @@ Assuming you have the pre-requisites installed from the link above (VSCode, Dock
 [@overloadut]: https://github.com/overloadut
 [@rmkraus]: https://github.com/rmkraus
 [@shbatm]: https://github.com/shbatm
+
+### PyISY_beta Fork & PyPi Package
+
+The PyISY_beta package is a drop in replacement & testing package for the original PyISY. It was created to provide a package to test new modifications while waiting to be incorporated into the original scope.
+
+For more information about the beta package: https://github.com/shbatm/PyISY/tree/PyISY_beta
