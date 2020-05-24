@@ -493,6 +493,7 @@ class WebSocketClient:
             aiohttp.ClientConnectorError,
             aiohttp.ClientOSError,
             aiohttp.client_exceptions.ServerDisconnectedError,
+            asyncio.TimeoutError,
         ):
             if self.status != ES_STOP_UPDATES:
                 _LOGGER.error("Websocket Client Connector Error.")
