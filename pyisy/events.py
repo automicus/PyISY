@@ -403,7 +403,7 @@ class WebSocketClient:
     async def _websocket_guardian(self):
         """Watch and reset websocket connection if no messages received."""
         while self.status != ES_STOP_UPDATES:
-            asyncio.sleep(self._hbwait)
+            await asyncio.sleep(self._hbwait)
             if self.heartbeat_time > self._hbwait:
                 _LOGGER.debug("Websocket missed a heartbeat, resetting connection.")
                 self.status = ES_LOST_STREAM_CONNECTION
