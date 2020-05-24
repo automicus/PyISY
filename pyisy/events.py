@@ -339,6 +339,7 @@ class WebSocketClient:
         self._sid = None
         self._program_key = None
         self.websocket_task = None
+        self.guardian_task = None
 
         if websession is None:
             websession = get_new_client_session(use_https, tls_ver)
@@ -356,20 +357,24 @@ class WebSocketClient:
             _LOGGER.info("Starting websocket connection.")
             self.status = ES_INITIALIZING
             self.websocket_task = self._loop.create_task(self.websocket(retries))
-            self._loop.create_task(self._websocket_guardian())
+            self.guardian_task = self._loop.create_task(self._websocket_guardian())
 
     def stop(self):
         """Close websocket connection."""
         self.status = ES_STOP_UPDATES
-        if self.websocket_task is not None and not self.websocket_task.done():
+        if self.websocket_task is not None:
             self.websocket_task.cancel()
+        if self.guardian_task is not None:
+            self.guardian_task.cancel()
 
-    async def reconnect(self, delay=RECONNECT_DELAY, retries=0):
+    async def reconnect(self, delay=None, retries=0):
         """Reconnect to a disconnected websocket."""
         if self.status == ES_CONNECTED:
             return
         self.stop()
         self.status = ES_RECONNECTING
+        if delay is None:
+            delay = WS_RETRY_BACKOFF[retries]
         _LOGGER.info("PyISY attempting stream reconnect in %ss.", delay)
         await asyncio.sleep(delay)
         retries = (retries + 1) if retries < WS_MAX_RETRIES else WS_MAX_RETRIES
@@ -459,7 +464,7 @@ class WebSocketClient:
     def update_received(self, xmldoc):
         """Set the socket ID."""
         self._sid = attr_from_xml(xmldoc, "Event", ATTR_STREAM_ID)
-        _LOGGER.debug("ISY Updated Events Stream ID")
+        _LOGGER.debug("ISY Updated Events Stream ID: %s", self._sid)
 
     async def websocket(self, retries=0):
         """Start websocket connection."""
@@ -470,6 +475,7 @@ class WebSocketClient:
                 heartbeat=WS_HEARTBEAT,
                 headers=WS_HEADERS,
                 timeout=WS_TIMEOUT,
+                receive_timeout=self._hbwait,
                 ssl=self.sslcontext,
             ) as ws:
                 self.status = ES_CONNECTED
@@ -479,34 +485,32 @@ class WebSocketClient:
                 async for msg in ws:
                     if msg.type == aiohttp.WSMsgType.TEXT:
                         await self._route_message(msg.data)
-
                     elif msg.type == aiohttp.WSMsgType.ERROR:
-                        _LOGGER.error("Websocket error: %s", ws.exception())
-                        break
-
+                        _LOGGER.error("Unexpected websocket error: %s", ws.exception())
                     elif msg.type == aiohttp.WSMsgType.BINARY:
                         _LOGGER.warning("Unexpected binary message received.")
 
             self.status = ES_DISCONNECTED
 
+        except asyncio.TimeoutError:
+            _LOGGER.warning("Websocket Timeout: %s", ws.exception())
         except (
-            aiohttp.ClientConnectorError,
             aiohttp.ClientOSError,
             aiohttp.client_exceptions.ServerDisconnectedError,
-            asyncio.TimeoutError,
         ):
-            if self.status != ES_STOP_UPDATES:
-                _LOGGER.error("Websocket Client Connector Error.")
-                self.status = ES_LOST_STREAM_CONNECTION
-                await self.reconnect(WS_RETRY_BACKOFF[retries], retries=retries)
+            _LOGGER.debug("Websocket Server Not Ready: %s", ws.exception())
+        except aiohttp.ClientConnectorError:
+            _LOGGER.error("Websocket Client Connector Error: %s", ws.exception())
         except asyncio.CancelledError:
             self.status = ES_DISCONNECTED
+            return
         except Exception as err:
-            if self.status != ES_STOP_UPDATES:
-                _LOGGER.exception("Unexpected websocket error %s", err)
-                self.status = ES_LOST_STREAM_CONNECTION
-                await self.reconnect(WS_RETRY_BACKOFF[retries], retries=retries)
+            _LOGGER.error("Unexpected websocket error %s", err)
         else:
+            _LOGGER.warning(
+                "Websocket closed unexpectedly: %s", ws.close_code,
+            )
+        finally:
             if self.status != ES_STOP_UPDATES:
-                self.status = ES_DISCONNECTED
-                await self.reconnect(WS_RETRY_BACKOFF[retries], retries=retries)
+                self.status = ES_LOST_STREAM_CONNECTION
+                await self.reconnect(retries=retries)
