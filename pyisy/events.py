@@ -49,7 +49,7 @@ WS_HEADERS = {
     "Origin": "com.universal-devices.websockets.isy",
 }
 WS_HEARTBEAT = 60
-WS_TIMEOUT = aiohttp.ClientTimeout(total=60, connect=60, sock_connect=60, sock_read=60)
+WS_TIMEOUT = 60
 WS_MAX_RETRIES = 4
 WS_RETRY_BACKOFF = [0.01, 1, 10, 30, 60]  # Seconds
 
@@ -403,7 +403,7 @@ class WebSocketClient:
     async def _websocket_guardian(self):
         """Watch and reset websocket connection if no messages received."""
         while self.status != ES_STOP_UPDATES:
-            asyncio.sleep(self._hbwait)
+            await asyncio.sleep(self._hbwait)
             if self.heartbeat_time > self._hbwait:
                 _LOGGER.debug("Websocket missed a heartbeat, resetting connection.")
                 self.status = ES_LOST_STREAM_CONNECTION
@@ -474,27 +474,15 @@ class WebSocketClient:
             ) as ws:
                 self.status = ES_CONNECTED
                 retries = 0
-                _LOGGER.debug("Successfully connected to websocket... %s", self.status)
+                _LOGGER.debug("Successfully connected to websocket.")
 
                 async for msg in ws:
                     if msg.type == aiohttp.WSMsgType.TEXT:
                         await self._route_message(msg.data)
 
-                    elif msg.type == aiohttp.WSMsgType.CLOSED:
-                        _LOGGER.warning("Websocket connection closed: %s", msg.data)
-                        await ws.close()
-                        break
-
                     elif msg.type == aiohttp.WSMsgType.ERROR:
                         _LOGGER.error("Websocket error: %s", ws.exception())
                         break
-
-                    elif msg.type == aiohttp.WSMsgType.PING:
-                        _LOGGER.debug("Websocket ping received.")
-                        ws.pong()
-
-                    elif msg.type == aiohttp.WSMsgType.PONG:
-                        _LOGGER.debug("Websocket pong received.")
 
                     elif msg.type == aiohttp.WSMsgType.BINARY:
                         _LOGGER.warning("Unexpected binary message received.")
@@ -502,24 +490,22 @@ class WebSocketClient:
             self.status = ES_DISCONNECTED
 
         except (
+            aiohttp.ClientConnectorError,
             aiohttp.ClientOSError,
             aiohttp.client_exceptions.ServerDisconnectedError,
         ):
-            _LOGGER.debug("ISY not ready or closed connection. Retrying.")
-            await self.reconnect(WS_RETRY_BACKOFF[retries], retries=retries)
-        except aiohttp.ClientConnectorError:
             if self.status != ES_STOP_UPDATES:
                 _LOGGER.error("Websocket Client Connector Error.")
                 self.status = ES_LOST_STREAM_CONNECTION
-                await self.reconnect(RECONNECT_DELAY)
+                await self.reconnect(WS_RETRY_BACKOFF[retries], retries=retries)
         except asyncio.CancelledError:
             self.status = ES_DISCONNECTED
         except Exception as err:
             if self.status != ES_STOP_UPDATES:
-                _LOGGER.exception("Unexpected error %s", err)
+                _LOGGER.exception("Unexpected websocket error %s", err)
                 self.status = ES_LOST_STREAM_CONNECTION
-                await self.reconnect(RECONNECT_DELAY)
+                await self.reconnect(WS_RETRY_BACKOFF[retries], retries=retries)
         else:
             if self.status != ES_STOP_UPDATES:
                 self.status = ES_DISCONNECTED
-                await self.reconnect(RECONNECT_DELAY)
+                await self.reconnect(WS_RETRY_BACKOFF[retries], retries=retries)
