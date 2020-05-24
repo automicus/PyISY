@@ -48,7 +48,7 @@ WS_HEADERS = {
     "Sec-WebSocket-Version": "13",
     "Origin": "com.universal-devices.websockets.isy",
 }
-WS_HEARTBEAT = 30
+WS_HEARTBEAT = 60
 WS_TIMEOUT = aiohttp.ClientTimeout(total=60, connect=60, sock_connect=60, sock_read=60)
 WS_MAX_RETRIES = 4
 WS_RETRY_BACKOFF = [0.01, 1, 10, 30, 60]  # Seconds
@@ -335,6 +335,7 @@ class WebSocketClient:
         self.use_https = use_https
         self._status = ES_NOT_STARTED
         self._lasthb = None
+        self._hbwait = WS_HEARTBEAT
         self._sid = None
         self._program_key = None
         self.websocket_task = None
@@ -349,12 +350,13 @@ class WebSocketClient:
         self._url = "wss://" if self.use_https else "ws://"
         self._url += f"{self._address}:{self._port}{self._webroot}/rest/subscribe"
 
-    def start(self):
+    def start(self, retries=0):
         """Start the websocket connection."""
         if self.status != ES_CONNECTED:
             _LOGGER.info("Starting websocket connection.")
             self.status = ES_INITIALIZING
-            self.websocket_task = self._loop.create_task(self.websocket())
+            self.websocket_task = self._loop.create_task(self.websocket(retries))
+            self._loop.create_task(self._websocket_guardian())
 
     def stop(self):
         """Close websocket connection."""
@@ -366,13 +368,12 @@ class WebSocketClient:
         """Reconnect to a disconnected websocket."""
         if self.status == ES_CONNECTED:
             return
-        if self.websocket_task is not None and not self.websocket_task.done():
-            self.websocket_task.cancel()
+        self.stop()
         self.status = ES_RECONNECTING
         _LOGGER.info("PyISY attempting stream reconnect in %ss.", delay)
         await asyncio.sleep(delay)
         retries = (retries + 1) if retries < WS_MAX_RETRIES else WS_MAX_RETRIES
-        self.websocket_task = self._loop.create_task(self.websocket(retries))
+        self.start(retries=retries)
 
     @property
     def status(self):
@@ -391,6 +392,23 @@ class WebSocketClient:
     def last_heartbeat(self):
         """Return the last received heartbeat time from the ISY."""
         return self._lasthb
+
+    @property
+    def heartbeat_time(self):
+        """Return the time since the last ISY Heartbeat."""
+        if self._lasthb is not None:
+            return (now() - self._lasthb).seconds
+        return 0.0
+
+    async def _websocket_guardian(self):
+        """Watch and reset websocket connection if no messages received."""
+        while self.status != ES_STOP_UPDATES:
+            asyncio.sleep(self._hbwait)
+            if self.heartbeat_time > self._hbwait:
+                _LOGGER.debug("Websocket missed a heartbeat, resetting connection.")
+                self.status = ES_LOST_STREAM_CONNECTION
+                await self.reconnect()
+                return
 
     async def _route_message(self, msg):
         """Route a received message from the event stream."""
