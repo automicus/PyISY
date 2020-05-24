@@ -48,8 +48,8 @@ WS_HEADERS = {
     "Sec-WebSocket-Version": "13",
     "Origin": "com.universal-devices.websockets.isy",
 }
-WS_HEARTBEAT = 60
-WS_TIMEOUT = 60
+WS_HEARTBEAT = 30
+WS_TIMEOUT = 10.0
 WS_MAX_RETRIES = 4
 WS_RETRY_BACKOFF = [0.01, 1, 10, 30, 60]  # Seconds
 
@@ -354,7 +354,7 @@ class WebSocketClient:
     def start(self, retries=0):
         """Start the websocket connection."""
         if self.status != ES_CONNECTED:
-            _LOGGER.info("Starting websocket connection.")
+            _LOGGER.debug("Starting websocket connection.")
             self.status = ES_INITIALIZING
             self.websocket_task = self._loop.create_task(self.websocket(retries))
             self.guardian_task = self._loop.create_task(self._websocket_guardian())
@@ -363,14 +363,14 @@ class WebSocketClient:
         """Close websocket connection."""
         self.status = ES_STOP_UPDATES
         if self.websocket_task is not None:
+            _LOGGER.debug("Stopping websocket connection.")
             self.websocket_task.cancel()
         if self.guardian_task is not None:
             self.guardian_task.cancel()
+            self._lasthb = None
 
     async def reconnect(self, delay=None, retries=0):
         """Reconnect to a disconnected websocket."""
-        if self.status == ES_CONNECTED:
-            return
         self.stop()
         self.status = ES_RECONNECTING
         if delay is None:
@@ -378,7 +378,7 @@ class WebSocketClient:
         _LOGGER.info("PyISY attempting stream reconnect in %ss.", delay)
         await asyncio.sleep(delay)
         retries = (retries + 1) if retries < WS_MAX_RETRIES else WS_MAX_RETRIES
-        self.start(retries=retries)
+        self.start(retries)
 
     @property
     def status(self):
@@ -409,10 +409,14 @@ class WebSocketClient:
         """Watch and reset websocket connection if no messages received."""
         while self.status != ES_STOP_UPDATES:
             await asyncio.sleep(self._hbwait)
-            if self.heartbeat_time > self._hbwait:
+            if (
+                self.websocket_task.cancelled()
+                or self.websocket_task.done()
+                or self.heartbeat_time > self._hbwait
+            ):
                 _LOGGER.debug("Websocket missed a heartbeat, resetting connection.")
                 self.status = ES_LOST_STREAM_CONNECTION
-                await self.reconnect()
+                self._loop.create_task(self.reconnect())
                 return
 
     async def _route_message(self, msg):
@@ -485,32 +489,37 @@ class WebSocketClient:
                 async for msg in ws:
                     if msg.type == aiohttp.WSMsgType.TEXT:
                         await self._route_message(msg.data)
-                    elif msg.type == aiohttp.WSMsgType.ERROR:
-                        _LOGGER.error("Unexpected websocket error: %s", ws.exception())
                     elif msg.type == aiohttp.WSMsgType.BINARY:
                         _LOGGER.warning("Unexpected binary message received.")
+                    elif msg.type == aiohttp.WSMsgType.ERROR:
+                        _LOGGER.error("Error during receive %s", ws.exception())
+                        break
 
+        except asyncio.CancelledError:
             self.status = ES_DISCONNECTED
-
+            return
         except asyncio.TimeoutError:
-            _LOGGER.warning("Websocket Timeout: %s", ws.exception())
+            _LOGGER.debug("Websocket Timeout.")
         except (
             aiohttp.ClientOSError,
             aiohttp.client_exceptions.ServerDisconnectedError,
         ):
-            _LOGGER.debug("Websocket Server Not Ready: %s", ws.exception())
+            _LOGGER.debug("Websocket Server Not Ready.")
         except aiohttp.ClientConnectorError:
-            _LOGGER.error("Websocket Client Connector Error: %s", ws.exception())
-        except asyncio.CancelledError:
-            self.status = ES_DISCONNECTED
-            return
+            _LOGGER.error("Websocket Client Connector Error.")
         except Exception as err:
             _LOGGER.error("Unexpected websocket error %s", err)
         else:
-            _LOGGER.warning(
-                "Websocket closed unexpectedly: %s", ws.close_code,
-            )
-        finally:
-            if self.status != ES_STOP_UPDATES:
-                self.status = ES_LOST_STREAM_CONNECTION
-                await self.reconnect(retries=retries)
+            if isinstance(ws.exception(), asyncio.TimeoutError):
+                _LOGGER.debug("Websocket Timeout.")
+            elif isinstance(ws.exception(), aiohttp.streams.EofStream):
+                _LOGGER.warning(
+                    "Websocket disconnected unexpectedly. Check network connection."
+                )
+            else:
+                _LOGGER.warning(
+                    "Websocket disconnected unexpectedly with code: %s", ws.close_code
+                )
+        if self.status != ES_STOP_UPDATES:
+            self.status = ES_LOST_STREAM_CONNECTION
+            self._loop.create_task(self.reconnect(retries=retries))
