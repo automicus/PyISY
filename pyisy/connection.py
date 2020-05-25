@@ -41,7 +41,7 @@ HTTP_UNAUTHORIZED = 401  # User authentication failed
 HTTP_NOT_FOUND = 404  # Unrecognized request received and ignored
 HTTP_SERVICE_UNAVAILABLE = 503  # Valid request received, system too busy to run it
 
-HTTP_TIMEOUT = 15
+HTTP_TIMEOUT = 30
 
 HTTP_HEADERS = {
     "Connection": "keep-alive",
@@ -92,7 +92,7 @@ class Connection:
 
     async def test_connection(self):
         """Test the connection and get the config for the ISY."""
-        config = await self.get_config()
+        config = await self.get_config(retries=None)
         if not config:
             _LOGGER.error("Could not connect to the ISY with the parameters provided.")
             raise ISYConnectionError()
@@ -159,31 +159,39 @@ class Connection:
                 if res.status == HTTP_UNAUTHORIZED:
                     _LOGGER.error("Invalid credentials provided for ISY connection.")
                     res.release()
-                    raise ISYInvalidAuthError()
+                    raise ISYInvalidAuthError(
+                        "Invalid credentials provided for ISY connection."
+                    )
                 if res.status == HTTP_SERVICE_UNAVAILABLE:
                     _LOGGER.warning(
-                        "ISY too busy to process request. Retry %s of %s.",
+                        "ISY too busy to process request. Retrying in %ss, retry %s.",
+                        RETRY_BACKOFF[retries],
                         retries + 1,
-                        MAX_RETRIES,
                     )
                     res.release()
 
         except asyncio.TimeoutError:
-            raise ISYConnectionError() from None
+            if retries is None:
+                _LOGGER.error("Timeout while trying to connect to the ISY.")
+                raise ISYConnectionError("Timeout while trying to connect to the ISY.")
+            else:
+                _LOGGER.warning(
+                    "Timeout while trying to connect to the ISY. Retrying in %ss, retry #%s.",
+                    RETRY_BACKOFF[retries],
+                    retries + 1,
+                )
         except (
             aiohttp.ClientOSError,
             aiohttp.client_exceptions.ServerDisconnectedError,
         ):
             _LOGGER.debug(
-                "ISY not ready or closed connection. Retrying in %ss, retry #%s",
+                "ISY not ready or closed connection. Retrying in %ss, retry #%s.",
                 RETRY_BACKOFF[retries],
                 retries + 1,
             )
         except aiohttp.client_exceptions.ClientError as err:
             _LOGGER.error(
-                "ISY Could not receive response "
-                "from device because of a network "
-                "issue: %s",
+                "ISY Could not receive response from device because of a network issue: %s",
                 type(err),
             )
 
@@ -195,7 +203,10 @@ class Connection:
             return retry_result
         # fail for good
         _LOGGER.error(
-            "Bad ISY Request: %s %s: Failed after %s retries", url, res.status, retries,
+            "Bad ISY Request: %s %s: Failed after %s retries.",
+            url,
+            res.status,
+            retries,
         )
         return None
 
@@ -212,10 +223,10 @@ class Connection:
         result = await self.request(url)
         return result
 
-    async def get_config(self):
+    async def get_config(self, retries=0):
         """Fetch the configuration from the ISY."""
         req_url = self.compile_url([URL_CONFIG])
-        result = await self.request(req_url)
+        result = await self.request(req_url, retries=retries)
         return result
 
     async def get_programs(self, address=None):
