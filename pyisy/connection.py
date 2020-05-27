@@ -163,39 +163,34 @@ class Connection:
                         "Invalid credentials provided for ISY connection."
                     )
                 if res.status == HTTP_SERVICE_UNAVAILABLE:
-                    _LOGGER.warning(
-                        "ISY too busy to process request. Retrying in %ss, retry %s.",
-                        RETRY_BACKOFF[retries],
-                        retries + 1,
-                    )
+                    _LOGGER.warning("ISY too busy to process request.")
                     res.release()
 
         except asyncio.TimeoutError:
-            if retries is None:
-                _LOGGER.error("Timeout while trying to connect to the ISY.")
-                raise ISYConnectionError("Timeout while trying to connect to the ISY.")
-            else:
-                _LOGGER.warning(
-                    "Timeout while trying to connect to the ISY. Retrying in %ss, retry #%s.",
-                    RETRY_BACKOFF[retries],
-                    retries + 1,
-                )
+            _LOGGER.warning("Timeout while trying to connect to the ISY.")
         except (
             aiohttp.ClientOSError,
-            aiohttp.client_exceptions.ServerDisconnectedError,
+            aiohttp.ServerDisconnectedError,
         ):
-            _LOGGER.debug(
-                "ISY not ready or closed connection. Retrying in %ss, retry #%s.",
-                RETRY_BACKOFF[retries],
-                retries + 1,
+            _LOGGER.debug("ISY not ready or closed connection.")
+        except aiohttp.ClientResponseError as err:
+            _LOGGER.error(
+                "Client Response Error from ISY: %s %s.", err.status, err.message
             )
-        except aiohttp.client_exceptions.ClientError as err:
+        except aiohttp.ClientError as err:
             _LOGGER.error(
                 "ISY Could not receive response from device because of a network issue: %s",
                 type(err),
             )
 
+        if retries is None:
+            raise ISYConnectionError()
         if retries < MAX_RETRIES:
+            _LOGGER.debug(
+                "Retrying ISY Request in %ss, retry %s.",
+                RETRY_BACKOFF[retries],
+                retries + 1,
+            )
             # sleep to allow the ISY to catch up
             await asyncio.sleep(RETRY_BACKOFF[retries])
             # recurse to try again
