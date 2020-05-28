@@ -13,10 +13,9 @@ from .constants import (
     TAG_SUNRISE,
     TAG_SUNSET,
     TAG_TZ_OFFSET,
-    XML_ERRORS,
-    XML_PARSE_ERROR,
     XML_TRUE,
 )
+from .exceptions import XML_ERRORS, XML_PARSE_ERROR, ISYResponseParseError
 from .helpers import ntp_to_system_time, value_from_xml
 
 
@@ -83,18 +82,19 @@ class Clock:
             xmldoc = minidom.parseString(xml)
         except XML_ERRORS:
             _LOGGER.error("%s: Clock", XML_PARSE_ERROR)
-        else:
-            tz_offset_sec = int(value_from_xml(xmldoc, TAG_TZ_OFFSET))
-            self._tz_offset = tz_offset_sec / 3600
-            self._dst = value_from_xml(xmldoc, TAG_DST) == XML_TRUE
-            self._latitude = float(value_from_xml(xmldoc, TAG_LATITUDE))
-            self._longitude = float(value_from_xml(xmldoc, TAG_LONGITUDE))
-            self._military = value_from_xml(xmldoc, TAG_MILIATRY_TIME) == XML_TRUE
-            self._last_called = ntp_to_system_time(int(value_from_xml(xmldoc, TAG_NTP)))
-            self._sunrise = ntp_to_system_time(int(value_from_xml(xmldoc, TAG_SUNRISE)))
-            self._sunset = ntp_to_system_time(int(value_from_xml(xmldoc, TAG_SUNSET)))
+            raise ISYResponseParseError(XML_PARSE_ERROR)
 
-            _LOGGER.info("ISY Loaded Clock Information")
+        tz_offset_sec = int(value_from_xml(xmldoc, TAG_TZ_OFFSET))
+        self._tz_offset = tz_offset_sec / 3600
+        self._dst = value_from_xml(xmldoc, TAG_DST) == XML_TRUE
+        self._latitude = float(value_from_xml(xmldoc, TAG_LATITUDE))
+        self._longitude = float(value_from_xml(xmldoc, TAG_LONGITUDE))
+        self._military = value_from_xml(xmldoc, TAG_MILIATRY_TIME) == XML_TRUE
+        self._last_called = ntp_to_system_time(int(value_from_xml(xmldoc, TAG_NTP)))
+        self._sunrise = ntp_to_system_time(int(value_from_xml(xmldoc, TAG_SUNRISE)))
+        self._sunset = ntp_to_system_time(int(value_from_xml(xmldoc, TAG_SUNSET)))
+
+        _LOGGER.info("ISY Loaded Clock Information")
 
     async def update(self, wait_time=0):
         """

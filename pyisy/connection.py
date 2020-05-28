@@ -30,6 +30,7 @@ from .constants import (
     XML_FALSE,
     XML_TRUE,
 )
+from .exceptions import ISYConnectionError, ISYInvalidAuthError
 
 MAX_RETRIES = 5
 MAX_HTTPS_CONNECTIONS = 2
@@ -41,7 +42,7 @@ HTTP_UNAUTHORIZED = 401  # User authentication failed
 HTTP_NOT_FOUND = 404  # Unrecognized request received and ignored
 HTTP_SERVICE_UNAVAILABLE = 503  # Valid request received, system too busy to run it
 
-HTTP_TIMEOUT = 15
+HTTP_TIMEOUT = 30
 
 HTTP_HEADERS = {
     "Connection": "keep-alive",
@@ -92,7 +93,7 @@ class Connection:
 
     async def test_connection(self):
         """Test the connection and get the config for the ISY."""
-        config = await self.get_config()
+        config = await self.get_config(retries=None)
         if not config:
             _LOGGER.error("Could not connect to the ISY with the parameters provided.")
             raise ISYConnectionError()
@@ -106,14 +107,12 @@ class Connection:
     def connection_info(self):
         """Return the connection info required to connect to the ISY."""
         connection_info = {}
-        connection_info["auth"] = aiohttp.BasicAuth(
-            self._username, password=self._password
-        )
+        connection_info["auth"] = self._auth.encode()
         connection_info["addr"] = self._address
         connection_info["port"] = int(self._port)
         connection_info["passwd"] = self._password
         connection_info["webroot"] = self._webroot
-        if self._tls_ver:
+        if self.use_https and self._tls_ver:
             connection_info["tls"] = self._tls_ver
 
         return connection_info
@@ -159,35 +158,38 @@ class Connection:
                 if res.status == HTTP_UNAUTHORIZED:
                     _LOGGER.error("Invalid credentials provided for ISY connection.")
                     res.release()
-                    raise ISYInvalidAuthError()
-                if res.status == HTTP_SERVICE_UNAVAILABLE:
-                    _LOGGER.warning(
-                        "ISY too busy to process request. Retry %s of %s.",
-                        retries + 1,
-                        MAX_RETRIES,
+                    raise ISYInvalidAuthError(
+                        "Invalid credentials provided for ISY connection."
                     )
+                if res.status == HTTP_SERVICE_UNAVAILABLE:
+                    _LOGGER.warning("ISY too busy to process request.")
                     res.release()
 
         except asyncio.TimeoutError:
-            raise ISYConnectionError() from None
+            _LOGGER.warning("Timeout while trying to connect to the ISY.")
         except (
             aiohttp.ClientOSError,
-            aiohttp.client_exceptions.ServerDisconnectedError,
+            aiohttp.ServerDisconnectedError,
         ):
-            _LOGGER.debug(
-                "ISY not ready or closed connection. Retrying in %ss, retry #%s",
-                RETRY_BACKOFF[retries],
-                retries + 1,
-            )
-        except aiohttp.client_exceptions.ClientError as err:
+            _LOGGER.debug("ISY not ready or closed connection.")
+        except aiohttp.ClientResponseError as err:
             _LOGGER.error(
-                "ISY Could not receive response "
-                "from device because of a network "
-                "issue: %s",
+                "Client Response Error from ISY: %s %s.", err.status, err.message
+            )
+        except aiohttp.ClientError as err:
+            _LOGGER.error(
+                "ISY Could not receive response from device because of a network issue: %s",
                 type(err),
             )
 
+        if retries is None:
+            raise ISYConnectionError()
         if retries < MAX_RETRIES:
+            _LOGGER.debug(
+                "Retrying ISY Request in %ss, retry %s.",
+                RETRY_BACKOFF[retries],
+                retries + 1,
+            )
             # sleep to allow the ISY to catch up
             await asyncio.sleep(RETRY_BACKOFF[retries])
             # recurse to try again
@@ -195,7 +197,10 @@ class Connection:
             return retry_result
         # fail for good
         _LOGGER.error(
-            "Bad ISY Request: %s %s: Failed after %s retries", url, res.status, retries,
+            "Bad ISY Request: %s %s: Failed after %s retries.",
+            url,
+            res.status,
+            retries,
         )
         return None
 
@@ -212,10 +217,10 @@ class Connection:
         result = await self.request(url)
         return result
 
-    async def get_config(self):
+    async def get_config(self, retries=0):
         """Fetch the configuration from the ISY."""
         req_url = self.compile_url([URL_CONFIG])
-        result = await self.request(req_url)
+        result = await self.request(req_url, retries=retries)
         return result
 
     async def get_programs(self, address=None):
@@ -337,11 +342,3 @@ def can_https(tls_ver):
         output = False
 
     return output
-
-
-class ISYInvalidAuthError(Exception):
-    """Invalid authorization credentials provided."""
-
-
-class ISYConnectionError(Exception):
-    """Invalid connection parameters provided."""

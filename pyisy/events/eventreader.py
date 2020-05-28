@@ -3,7 +3,13 @@ import errno
 import select
 import ssl
 
-from .constants import SOCKET_BUFFER_SIZE
+from ..constants import SOCKET_BUFFER_SIZE
+from ..exceptions import (
+    ISYInvalidAuthError,
+    ISYMaxConnections,
+    ISYStreamDataError,
+    ISYStreamDisconnected,
+)
 
 
 class ISYEventReader:
@@ -13,6 +19,7 @@ class ISYEventReader:
     HTTP_HEADER_BODY_SEPERATOR = b"\r\n\r\n"
     HTTP_HEADER_BODY_SEPERATOR_LEN = 4
     REACHED_MAX_CONNECTIONS_RESPONSE = b"HTTP/1.1 817"
+    HTTP_NOT_AUTHORIZED_RESPONSE = b"HTTP/1.1 401"
     CONTENT_LENGTH_HEADER = b"content-length"
     HEADER_SEPERATOR = b":"
 
@@ -70,6 +77,7 @@ class ISYEventReader:
             # up to 32 * SOCKET_BUFFER_SIZE
             for read_count in range(0, 32):
                 new_data = self._socket.recv(SOCKET_BUFFER_SIZE)
+                print(f"read_count: {read_count} new_data: {new_data}")
                 if len(new_data) == 0:
                     if read_count != 0:
                         break
@@ -91,6 +99,8 @@ class ISYEventReader:
         headers = self._event_buffer[0:seperator_position]
         if headers.startswith(self.REACHED_MAX_CONNECTIONS_RESPONSE):
             raise ISYMaxConnections(self._event_buffer)
+        if headers.startswith(self.HTTP_NOT_AUTHORIZED_RESPONSE):
+            raise ISYInvalidAuthError(self._event_buffer)
         self._event_buffer = self._event_buffer[
             seperator_position + self.HTTP_HEADER_BODY_SEPERATOR_LEN :
         ]
@@ -101,15 +111,3 @@ class ISYEventReader:
             self._event_content_length = int(header_value.strip())
         if not self._event_content_length:
             raise ISYStreamDataError(headers)
-
-
-class ISYStreamDataError(Exception):
-    """Invalid data in the isy event stream."""
-
-
-class ISYStreamDisconnected(ISYStreamDataError):
-    """The isy has disconnected."""
-
-
-class ISYMaxConnections(ISYStreamDisconnected):
-    """The isy has disconnected because it reached maximum connections."""

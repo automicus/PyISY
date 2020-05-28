@@ -20,8 +20,8 @@ from .constants import (
     TAG_MFG,
     TAG_PROPERTY,
     UOM_SECONDS,
-    XML_ERRORS,
 )
+from .exceptions import XML_ERRORS
 
 
 def parse_xml_properties(xmldoc):

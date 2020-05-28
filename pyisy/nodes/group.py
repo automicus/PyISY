@@ -1,6 +1,4 @@
 """Representation of groups (scenes) from an ISY."""
-import asyncio
-
 from ..constants import ISY_VALUE_UNKNOWN, PROTO_GROUP
 from ..helpers import now
 from .nodebase import NodeBase
@@ -48,7 +46,7 @@ class Group(NodeBase):
         ]
 
         # get and update the status
-        asyncio.create_task(self.update())
+        self.isy.loop.create_task(self.update())
 
     def __del__(self):
         """Cleanup event handlers before deleting."""
@@ -107,4 +105,4 @@ class Group(NodeBase):
 
     def update_callback(self, event=None):
         """Handle synchronous callbacks for subscriber events."""
-        asyncio.create_task(self.update(event))
+        self.isy.loop.create_task(self.update(event))
