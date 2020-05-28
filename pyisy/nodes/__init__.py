@@ -38,10 +38,9 @@ from ..constants import (
     TAG_PRIMARY_NODE,
     TAG_TYPE,
     UOM_SECONDS,
-    XML_ERRORS,
-    XML_PARSE_ERROR,
     XML_TRUE,
 )
+from ..exceptions import XML_ERRORS, XML_PARSE_ERROR, ISYResponseParseError
 from ..helpers import (
     NodeProperty,
     ZWaveProperties,
@@ -280,7 +279,7 @@ class Nodes:
             xmldoc = minidom.parseString(xml)
         except XML_ERRORS:
             _LOGGER.error("%s: Nodes", XML_PARSE_ERROR)
-            return False
+            raise ISYResponseParseError(XML_PARSE_ERROR)
 
         # get nodes
         ntypes = [TAG_FOLDER, TAG_NODE, TAG_GROUP]

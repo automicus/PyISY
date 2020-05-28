@@ -14,9 +14,8 @@ from ..constants import (
     TAG_NAME,
     TAG_TYPE,
     TAG_VARIABLE,
-    XML_ERRORS,
-    XML_PARSE_ERROR,
 )
+from ..exceptions import XML_ERRORS, XML_PARSE_ERROR, ISYResponseParseError
 from ..helpers import attr_from_element, attr_from_xml, now, value_from_xml
 from .variable import Variable
 
@@ -114,7 +113,7 @@ class Variables:
             xmldoc = minidom.parseString(xml)
         except XML_ERRORS:
             _LOGGER.error("%s: Variables", XML_PARSE_ERROR)
-            return
+            raise ISYResponseParseError(XML_PARSE_ERROR)
 
         features = xmldoc.getElementsByTagName(ATTR_VAR)
         for feature in features:

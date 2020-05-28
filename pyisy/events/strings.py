@@ -4,7 +4,7 @@
 SUB_MSG = {
     "head": """POST /services HTTP/1.1
 Host: {addr}:{port}{webroot}
-Authorization: Basic {auth}
+Authorization: {auth}
 Content-Length: {length}
 Content-Type: text/xml; charset="utf-8"
 SOAPAction: urn:udi-com:device:X_Insteon_Lighting_Service:1#Subscribe\r
@@ -23,7 +23,7 @@ SOAPAction: urn:udi-com:device:X_Insteon_Lighting_Service:1#Subscribe\r
 UNSUB_MSG = {
     "head": """POST /services HTTP/1.1
 Host: {addr}:{port}{webroot}
-Authorization: Basic {auth}
+Authorization: {auth}
 Content-Length: {length}
 Content-Type: text/xml; charset="utf-8"
 SOAPAction: urn:udi-com:device:X_Insteon_Lighting_Service:1#Unsubscribe\r
@@ -41,7 +41,7 @@ SOAPAction: urn:udi-com:device:X_Insteon_Lighting_Service:1#Unsubscribe\r
 RESUB_MSG = {
     "head": """POST /services HTTP/1.1
 Host: {addr}:{port}{webroot}
-Authorization: Basic {auth}
+Authorization: {auth}
 Content-Length: {length}
 Content-Type: text/xml; charset="utf-8"
 SOAPAction: urn:udi-com:device:X_Insteon_Lighting_Service:1#Subscribe\r

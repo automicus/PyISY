@@ -20,7 +20,8 @@ from .constants import (
     URL_QUERY,
     X10_COMMANDS,
 )
-from .events import EventStream, WebSocketClient
+from .events.tcpsocket import EventStream
+from .events.websocket import WebSocketClient
 from .helpers import EventEmitter
 from .networking import NetworkResources
 from .nodes import Nodes

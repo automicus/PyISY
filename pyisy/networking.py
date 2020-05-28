@@ -9,9 +9,8 @@ from .constants import (
     TAG_NET_RULE,
     URL_NETWORK,
     URL_RESOURCES,
-    XML_ERRORS,
-    XML_PARSE_ERROR,
 )
+from .exceptions import XML_ERRORS, XML_PARSE_ERROR, ISYResponseParseError
 from .helpers import value_from_xml
 
 
@@ -66,18 +65,19 @@ class NetworkResources:
             xmldoc = minidom.parseString(xml)
         except XML_ERRORS:
             _LOGGER.error("%s: NetworkResources", XML_PARSE_ERROR)
-        else:
-            features = xmldoc.getElementsByTagName(TAG_NET_RULE)
-            for feature in features:
-                address = int(value_from_xml(feature, ATTR_ID))
-                if address not in self.addresses:
-                    nname = value_from_xml(feature, TAG_NAME)
-                    nobj = NetworkCommand(self, address)
-                    self.addresses.append(address)
-                    self.nnames.append(nname)
-                    self.nobjs.append(nobj)
+            raise ISYResponseParseError(XML_PARSE_ERROR)
 
-            _LOGGER.info("ISY Loaded Network Resources Commands")
+        features = xmldoc.getElementsByTagName(TAG_NET_RULE)
+        for feature in features:
+            address = int(value_from_xml(feature, ATTR_ID))
+            if address not in self.addresses:
+                nname = value_from_xml(feature, TAG_NAME)
+                nobj = NetworkCommand(self, address)
+                self.addresses.append(address)
+                self.nnames.append(nname)
+                self.nobjs.append(nobj)
+
+        _LOGGER.info("ISY Loaded Network Resources Commands")
 
     async def update(self, wait_time=0):
         """

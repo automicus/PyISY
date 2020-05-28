@@ -1,7 +1,6 @@
 """Constants for the PyISY Module."""
 import datetime
 import logging
-from xml.parsers.expat import ExpatError
 
 _LOGGER = logging.getLogger(__package__)
 LOG_LEVEL = logging.DEBUG
@@ -24,7 +23,7 @@ XML_FALSE = "false"
 XML_ON = "<on />"
 XML_OFF = "<off />"
 
-POLL_TIME = 5
+POLL_TIME = 10
 RECONNECT_DELAY = 60
 SOCKET_BUFFER_SIZE = 4096
 THREAD_SLEEP_TIME = 30.0
@@ -43,9 +42,6 @@ ES_NOT_STARTED = "not_started"
 
 ISY_VALUE_UNKNOWN = -1 * float("inf")
 ISY_PROP_NOT_SET = "-1"
-
-XML_ERRORS = (AttributeError, KeyError, ValueError, TypeError, IndexError, ExpatError)
-XML_PARSE_ERROR = "ISY Could not parse response, poorly formatted XML."
 
 """ Dictionary of X10 commands. """
 X10_COMMANDS = {"all_off": 1, "all_on": 4, "on": 3, "off": 11, "bright": 7, "dim": 15}

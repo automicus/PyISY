@@ -30,6 +30,7 @@ from .constants import (
     XML_FALSE,
     XML_TRUE,
 )
+from .exceptions import ISYConnectionError, ISYInvalidAuthError
 
 MAX_RETRIES = 5
 MAX_HTTPS_CONNECTIONS = 2
@@ -106,14 +107,12 @@ class Connection:
     def connection_info(self):
         """Return the connection info required to connect to the ISY."""
         connection_info = {}
-        connection_info["auth"] = aiohttp.BasicAuth(
-            self._username, password=self._password
-        )
+        connection_info["auth"] = self._auth.encode()
         connection_info["addr"] = self._address
         connection_info["port"] = int(self._port)
         connection_info["passwd"] = self._password
         connection_info["webroot"] = self._webroot
-        if self._tls_ver:
+        if self.use_https and self._tls_ver:
             connection_info["tls"] = self._tls_ver
 
         return connection_info
@@ -343,11 +342,3 @@ def can_https(tls_ver):
         output = False
 
     return output
-
-
-class ISYInvalidAuthError(Exception):
-    """Invalid authorization credentials provided."""
-
-
-class ISYConnectionError(Exception):
-    """Invalid connection parameters provided."""

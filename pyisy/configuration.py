@@ -16,6 +16,7 @@ from .constants import (
     TAG_VARIABLES,
     XML_TRUE,
 )
+from .exceptions import XML_ERRORS, XML_PARSE_ERROR, ISYResponseParseError
 from .helpers import value_from_nested_xml, value_from_xml
 
 
@@ -82,7 +83,11 @@ class Configuration(dict):
 
         xml: String of the xml data
         """
-        xmldoc = minidom.parseString(xml)
+        try:
+            xmldoc = minidom.parseString(xml)
+        except XML_ERRORS:
+            _LOGGER.error("%s: Configuration", XML_PARSE_ERROR)
+            raise ISYResponseParseError(XML_PARSE_ERROR)
 
         self["firmware"] = value_from_xml(xmldoc, TAG_FIRMWARE)
         self["uuid"] = value_from_nested_xml(xmldoc, [TAG_ROOT, ATTR_ID])

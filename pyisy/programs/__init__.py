@@ -19,12 +19,11 @@ from ..constants import (
     TAG_PRGM_STATUS,
     TAG_PROGRAM,
     UPDATE_INTERVAL,
-    XML_ERRORS,
     XML_OFF,
     XML_ON,
-    XML_PARSE_ERROR,
     XML_TRUE,
 )
+from ..exceptions import XML_ERRORS, XML_PARSE_ERROR, ISYResponseParseError
 from ..helpers import attr_from_element, now, value_from_xml
 from ..nodes import NodeIterator as ProgramIterator
 from .folder import Folder
@@ -194,67 +193,64 @@ class Programs:
             xmldoc = minidom.parseString(xml)
         except XML_ERRORS:
             _LOGGER.error("%s: Programs", XML_PARSE_ERROR)
-        else:
-            plastup = now()
+            raise ISYResponseParseError(XML_PARSE_ERROR)
 
-            # get nodes
-            features = xmldoc.getElementsByTagName(TAG_PROGRAM)
-            for feature in features:
-                # id, name, and status
-                address = attr_from_element(feature, ATTR_ID)
-                pname = value_from_xml(feature, TAG_NAME)
-                pparent = attr_from_element(feature, ATTR_PARENT)
-                pstatus = attr_from_element(feature, ATTR_STATUS) == XML_TRUE
+        plastup = now()
 
-                if attr_from_element(feature, TAG_FOLDER) == XML_TRUE:
-                    # folder specific parsing
-                    ptype = TAG_FOLDER
-                    data = {"pstatus": pstatus, "plastup": plastup}
+        # get nodes
+        features = xmldoc.getElementsByTagName(TAG_PROGRAM)
+        for feature in features:
+            # id, name, and status
+            address = attr_from_element(feature, ATTR_ID)
+            pname = value_from_xml(feature, TAG_NAME)
+            pparent = attr_from_element(feature, ATTR_PARENT)
+            pstatus = attr_from_element(feature, ATTR_STATUS) == XML_TRUE
 
+            if attr_from_element(feature, TAG_FOLDER) == XML_TRUE:
+                # folder specific parsing
+                ptype = TAG_FOLDER
+                data = {"pstatus": pstatus, "plastup": plastup}
+
+            else:
+                # program specific parsing
+                ptype = TAG_PROGRAM
+
+                # last run time
+                plastrun = value_from_xml(feature, "lastRunTime", EMPTY_TIME)
+                if plastrun != EMPTY_TIME:
+                    plastrun = parser.parse(plastrun)
+
+                # last finish time
+                plastfin = value_from_xml(feature, "lastFinishTime", EMPTY_TIME)
+                if plastfin != EMPTY_TIME:
+                    plastfin = parser.parse(plastfin)
+
+                # enabled, run at startup, running
+                penabled = bool(attr_from_element(feature, TAG_ENABLED) == XML_TRUE)
+                pstartrun = bool(attr_from_element(feature, "runAtStartup") == XML_TRUE)
+                prunning = bool(attr_from_element(feature, TAG_PRGM_RUNNING) != "idle")
+
+                # create data dictionary
+                data = {
+                    "pstatus": pstatus,
+                    "plastrun": plastrun,
+                    "plastfin": plastfin,
+                    "penabled": penabled,
+                    "pstartrun": pstartrun,
+                    "prunning": prunning,
+                    "plastup": plastup,
+                }
+
+            # add or update object if it already exists
+            if address not in self.addresses:
+                if ptype == TAG_FOLDER:
+                    pobj = Folder(self, address, pname, **data)
                 else:
-                    # program specific parsing
-                    ptype = TAG_PROGRAM
-
-                    # last run time
-                    plastrun = value_from_xml(feature, "lastRunTime", EMPTY_TIME)
-                    if plastrun != EMPTY_TIME:
-                        plastrun = parser.parse(plastrun)
-
-                    # last finish time
-                    plastfin = value_from_xml(feature, "lastFinishTime", EMPTY_TIME)
-                    if plastfin != EMPTY_TIME:
-                        plastfin = parser.parse(plastfin)
-
-                    # enabled, run at startup, running
-                    penabled = bool(attr_from_element(feature, TAG_ENABLED) == XML_TRUE)
-                    pstartrun = bool(
-                        attr_from_element(feature, "runAtStartup") == XML_TRUE
-                    )
-                    prunning = bool(
-                        attr_from_element(feature, TAG_PRGM_RUNNING) != "idle"
-                    )
-
-                    # create data dictionary
-                    data = {
-                        "pstatus": pstatus,
-                        "plastrun": plastrun,
-                        "plastfin": plastfin,
-                        "penabled": penabled,
-                        "pstartrun": pstartrun,
-                        "prunning": prunning,
-                        "plastup": plastup,
-                    }
-
-                # add or update object if it already exists
-                if address not in self.addresses:
-                    if ptype == TAG_FOLDER:
-                        pobj = Folder(self, address, pname, **data)
-                    else:
-                        pobj = Program(self, address, pname, **data)
-                    self.insert(address, pname, pparent, pobj, ptype)
-                else:
-                    pobj = self.get_by_id(address).leaf
-                    asyncio.create_task(pobj.update(data=data))
+                    pobj = Program(self, address, pname, **data)
+                self.insert(address, pname, pparent, pobj, ptype)
+            else:
+                pobj = self.get_by_id(address).leaf
+                asyncio.create_task(pobj.update(data=data))
 
             _LOGGER.info("ISY Loaded/Updated Programs")
 
