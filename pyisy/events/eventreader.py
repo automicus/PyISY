@@ -1,4 +1,4 @@
-"""ISY Event Reader."""
+"""ISY TCP Socket Event Reader."""
 import errno
 import select
 import ssl

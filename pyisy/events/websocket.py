@@ -1,4 +1,4 @@
-"""ISY Event Stream."""
+"""ISY Websocket Event Stream."""
 import asyncio
 import logging
 import xml
