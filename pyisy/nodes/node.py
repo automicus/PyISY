@@ -25,9 +25,8 @@ from ..constants import (
     UOM_FAN_MODES,
     UOM_TO_STATES,
     URL_NODES,
-    XML_ERRORS,
-    XML_PARSE_ERROR,
 )
+from ..exceptions import XML_ERRORS, XML_PARSE_ERROR, ISYResponseParseError
 from ..helpers import EventEmitter, NodeProperty, now, parse_xml_properties
 from .nodebase import NodeBase
 
@@ -202,7 +201,7 @@ class Node(NodeBase):
                 xmldoc = minidom.parseString(xml)
             except XML_ERRORS:
                 _LOGGER.error("%s: Nodes", XML_PARSE_ERROR)
-                return
+                raise ISYResponseParseError(XML_PARSE_ERROR)
         elif hint is not None:
             # assume value was set correctly, auto update will correct errors
             self.status = hint

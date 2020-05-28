@@ -30,10 +30,9 @@ from ..constants import (
     UPDATE_INTERVAL,
     URL_NODES,
     URL_NOTES,
-    XML_ERRORS,
-    XML_PARSE_ERROR,
     XML_TRUE,
 )
+from ..exceptions import XML_ERRORS, XML_PARSE_ERROR, ISYResponseParseError
 from ..helpers import EventEmitter, NodeProperty, now, value_from_xml
 
 
@@ -188,11 +187,12 @@ class NodeBase:
                 notesdom = minidom.parseString(notes_xml)
             except XML_ERRORS:
                 _LOGGER.error("%s: Node Notes %s", XML_PARSE_ERROR, notes_xml)
-            else:
-                spoken = value_from_xml(notesdom, TAG_SPOKEN)
-                location = value_from_xml(notesdom, TAG_LOCATION)
-                description = value_from_xml(notesdom, TAG_DESCRIPTION)
-                is_load = value_from_xml(notesdom, TAG_IS_LOAD)
+                raise ISYResponseParseError()
+
+            spoken = value_from_xml(notesdom, TAG_SPOKEN)
+            location = value_from_xml(notesdom, TAG_LOCATION)
+            description = value_from_xml(notesdom, TAG_DESCRIPTION)
+            is_load = value_from_xml(notesdom, TAG_IS_LOAD)
         return {
             TAG_SPOKEN: spoken,
             TAG_IS_LOAD: is_load == XML_TRUE,
