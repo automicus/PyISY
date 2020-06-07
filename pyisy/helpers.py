@@ -8,6 +8,8 @@ from .constants import (
     ATTR_PRECISION,
     ATTR_UNIT_OF_MEASURE,
     ATTR_VALUE,
+    DEFAULT_PRECISION,
+    DEFAULT_UNIT_OF_MEASURE,
     INSTEON_RAMP_RATES,
     ISY_EPOCH_OFFSET,
     ISY_PROP_NOT_SET,
@@ -45,9 +47,9 @@ def parse_xml_properties(xmldoc):
 
     for prop in props:
         prop_id = attr_from_element(prop, ATTR_ID)
-        uom = attr_from_element(prop, ATTR_UNIT_OF_MEASURE, "")
+        uom = attr_from_element(prop, ATTR_UNIT_OF_MEASURE, DEFAULT_UNIT_OF_MEASURE)
         value = attr_from_element(prop, ATTR_VALUE, "").strip()
-        prec = attr_from_element(prop, ATTR_PRECISION, "0")
+        prec = attr_from_element(prop, ATTR_PRECISION, DEFAULT_PRECISION)
         formatted = attr_from_element(prop, ATTR_FORMATTED, value)
 
         # ISY firmwares < 5 return a list of possible units.
@@ -197,8 +199,8 @@ class NodeProperty(dict):
         self,
         control,
         value=ISY_VALUE_UNKNOWN,
-        prec="0",
-        uom="",
+        prec=DEFAULT_PRECISION,
+        uom=DEFAULT_UNIT_OF_MEASURE,
         formatted=None,
         address=None,
     ):
