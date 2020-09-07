@@ -123,7 +123,7 @@ class EventStream:
     def running(self):
         """Return the running state of the thread."""
         try:
-            return self._thread.isAlive()
+            return self._thread.is_alive()
         except (AttributeError, RuntimeError, ThreadError):
             return False
 
