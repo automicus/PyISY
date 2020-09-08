@@ -44,7 +44,7 @@ class Program(Folder):
         prunning,
     ):
         """Initialize a Program class."""
-        super(Program, self).__init__(programs, address, pname, pstatus, plastup)
+        super().__init__(programs, address, pname, pstatus, plastup)
         self._enabled = penabled
         self._last_finished = plastfin
         self._last_run = plastrun

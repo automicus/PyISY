@@ -24,6 +24,7 @@ LOG_DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 _LOGGER = logging.getLogger(__name__)
 
+
 def main(arguments):
     """Execute primary loop."""
     logging.basicConfig(format=LOG_FORMAT, datefmt=LOG_DATE_FORMAT, level=LOG_LEVEL)

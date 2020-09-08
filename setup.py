@@ -22,7 +22,7 @@ setup(
     include_package_data=True,
     platforms="any",
     setup_requires=["setuptools-git-version"],
-    install_requires=["requests"],
+    install_requires=["requests", "python-dateutil"],
     keywords=["home automation", "isy", "isy994", "isy-994", "UDI"],
     classifiers=[
         "Intended Audience :: Developers",

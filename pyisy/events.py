@@ -247,7 +247,7 @@ class EventStream:
                 )
                 self._lost_connection()
                 return
-            except socket.error as ex:
+            except OSError as ex:
                 self.isy.log.warning(
                     "PyISY encountered a socket error while reading the event stream: %s.",
                     ex,

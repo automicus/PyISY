@@ -36,7 +36,7 @@ class Variable:
 
     def __init__(self, variables, vid, vtype, vname, init, status, ts):
         """Initialize a Variable class."""
-        super(Variable, self).__init__()
+        super().__init__()
         self._id = vid
         self._init = init
         self._last_edited = ts

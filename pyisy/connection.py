@@ -252,7 +252,7 @@ class TLSHttpAdapter(HTTPAdapter):
             self.tls = ssl.PROTOCOL_TLSv1_1
         elif tls_ver == 1.2:
             self.tls = ssl.PROTOCOL_TLSv1_2
-        super(TLSHttpAdapter, self).__init__()
+        super().__init__()
 
     def init_poolmanager(self, connections, maxsize, block=False, **pool_kwargs):
         """Initialize the Pool Manager."""
