@@ -205,8 +205,12 @@ class NodeBase:
         self.update_last_update()
 
         aux_prop = self.aux_properties.get(prop.control)
-        if aux_prop and aux_prop == prop:
-            return
+        if aux_prop:
+            if prop.uom == "" and not aux_prop.uom == "":
+                # Guard against overwriting known UOM with blank UOM (ISYv4).
+                prop.uom = aux_prop.uom
+            if aux_prop == prop:
+                return
         self.aux_properties[prop.control] = prop
         self.update_last_changed()
         self.status_events.notify(self.status_feedback)
