@@ -1,4 +1,4 @@
-pylint==2.4.4
+pylint==2.6.0
 pylint-strict-informational==0.1
 black==19.10b0
 codespell==1.16.0
