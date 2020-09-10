@@ -687,8 +687,16 @@ INSTEON_RAMP_RATES = {
 
 # Thermostat Types/Categories. 4.8 Trane, 5.3 venstar, 5.10 Insteon Wireless,
 #  5.11 Insteon, 5.17 Insteon (EU), 5.18 Insteon (Aus/NZ)
-THERMOSTAT_TYPES = ["4.8", "5.3", "5.10", "5.11", "5.17", "5.18"]
-THERMOSTAT_ZWAVE_CAT = ["140"]
+INSTEON_TYPE_THERMOSTAT = ["4.8", "5.3", "5.10", "5.11", "5.17", "5.18"]
+ZWAVE_CAT_THERMOSTAT = ["140"]
+
+# Other special categories or types
+INSTEON_TYPE_LOCK = ["4.64"]
+ZWAVE_CAT_LOCK = ["111"]
+
+INSTEON_TYPE_DIMMABLE = ["1."]
+INSTEON_SUBNODE_DIMMABLE = " 1"
+ZWAVE_CAT_DIMMABLE = ["109", "119", "186"]
 
 # Referenced from ISY-WSDK 4_fam.xml
 # Included for user translations in external modules.
