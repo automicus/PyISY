@@ -1,7 +1,7 @@
 pylint==2.6.0
 pylint-strict-informational==0.1
 black==19.10b0
-codespell==1.16.0
+codespell==1.17.1
 flake8-docstrings==1.5.0
 flake8==3.8.1
 isort==5.5.2
