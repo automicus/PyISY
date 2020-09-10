@@ -108,7 +108,7 @@ class Node(NodeBase):
 
         DEPRECIATED: USE is_dimmable INSTEAD. Will be removed in future release.
         """
-        self.isy.log.info("Node.dimmable is depreciated. Use Node.is_dimmable instead.")
+        _LOGGER.info("Node.dimmable is depreciated. Use Node.is_dimmable instead.")
         return self.is_dimmable
 
     @property
