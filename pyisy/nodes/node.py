@@ -11,22 +11,28 @@ from ..constants import (
     CMD_MANUAL_DIM_BEGIN,
     CMD_MANUAL_DIM_STOP,
     CMD_SECURE,
+    INSTEON_SUBNODE_DIMMABLE,
+    INSTEON_TYPE_DIMMABLE,
+    INSTEON_TYPE_LOCK,
+    INSTEON_TYPE_THERMOSTAT,
     METHOD_GET,
     PROP_ON_LEVEL,
     PROP_RAMP_RATE,
     PROP_SETPOINT_COOL,
     PROP_SETPOINT_HEAT,
     PROP_STATUS,
+    PROTO_INSTEON,
     PROTO_ZWAVE,
     TAG_GROUP,
-    THERMOSTAT_TYPES,
-    THERMOSTAT_ZWAVE_CAT,
     UOM_CLIMATE_MODES,
     UOM_FAN_MODES,
     UOM_TO_STATES,
     URL_NODES,
     XML_ERRORS,
     XML_PARSE_ERROR,
+    ZWAVE_CAT_DIMMABLE,
+    ZWAVE_CAT_LOCK,
+    ZWAVE_CAT_THERMOSTAT,
 )
 from ..helpers import EventEmitter, NodeProperty, now, parse_xml_properties
 from .nodebase import NodeBase
@@ -100,18 +106,10 @@ class Node(NodeBase):
         """
         Return the best guess if this is a dimmable node.
 
-        Check ISYv4 UOM, then Insteon and Z-Wave Types for dimmable types.
+        DEPRECIATED: USE is_dimmable INSTEAD. Will be removed in future release.
         """
-        dimmable = (
-            "%" in str(self._uom)
-            or (isinstance(self._type, str) and self._type.startswith("1."))
-            or (
-                self._protocol == PROTO_ZWAVE
-                and self._zwave_props is not None
-                and self._zwave_props.category in ["109", "119", "186"]
-            )
-        )
-        return dimmable
+        _LOGGER.info("Node.dimmable is depreciated. Use Node.is_dimmable instead.")
+        return self.is_dimmable
 
     @property
     def enabled(self):
@@ -124,21 +122,49 @@ class Node(NodeBase):
         return self._formatted
 
     @property
+    def is_dimmable(self):
+        """
+        Return the best guess if this is a dimmable node.
+
+        Check ISYv4 UOM, then Insteon and Z-Wave Types for dimmable types.
+        """
+        dimmable = (
+            "%" in str(self._uom)
+            or (
+                self._protocol == PROTO_INSTEON
+                and self.type
+                and any([self.type.startswith(t) for t in INSTEON_TYPE_DIMMABLE])
+                and self._id.endswith(INSTEON_SUBNODE_DIMMABLE)
+            )
+            or (
+                self._protocol == PROTO_ZWAVE
+                and self._zwave_props is not None
+                and self._zwave_props.category in ZWAVE_CAT_DIMMABLE
+            )
+        )
+        return dimmable
+
+    @property
     def is_lock(self):
         """Determine if this device is a door lock type."""
-        return (self.type and self.type.startswith("4.64")) or (
-            self.protocol == PROTO_ZWAVE and self.zwave_props.category == "111"
+        return (
+            self.type and any([self.type.startswith(t) for t in INSTEON_TYPE_LOCK])
+        ) or (
+            self.protocol == PROTO_ZWAVE
+            and self.zwave_props.category
+            and self.zwave_props.category in ZWAVE_CAT_LOCK
         )
 
     @property
     def is_thermostat(self):
         """Determine if this device is a thermostat/climate control device."""
         return (
-            self.type and any([self.type.startswith(t) for t in THERMOSTAT_TYPES])
+            self.type
+            and any([self.type.startswith(t) for t in INSTEON_TYPE_THERMOSTAT])
         ) or (
             self._protocol == PROTO_ZWAVE
             and self.zwave_props.category
-            and any(self.zwave_props.category in THERMOSTAT_ZWAVE_CAT)
+            and self.zwave_props.category in ZWAVE_CAT_THERMOSTAT
         )
 
     @property
