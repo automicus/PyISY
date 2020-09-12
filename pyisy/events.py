@@ -1,4 +1,5 @@
 """ISY Event Stream."""
+import logging
 import socket
 import ssl
 from threading import Thread, ThreadError
@@ -18,14 +19,16 @@ from .constants import (
     ES_INITIALIZING,
     ES_LOADED,
     ES_LOST_STREAM_CONNECTION,
+    LOG_VERBOSE,
     POLL_TIME,
     PROP_STATUS,
     RECONNECT_DELAY,
     TAG_NODE,
-    VERBOSE,
 )
 from .eventreader import ISYEventReader, ISYMaxConnections, ISYStreamDataError
 from .helpers import attr_from_xml, now, value_from_xml
+
+_LOGGER = logging.getLogger(__name__)  # Allows targeting pyisy.events in handlers.
 
 
 class EventStream:
@@ -75,9 +78,9 @@ class EventStream:
         try:
             xmldoc = minidom.parseString(msg)
         except xml.parsers.expat.ExpatError:
-            self.isy.log.warning("ISY Received Malformed XML:\n" + msg)
+            _LOGGER.warning("ISY Received Malformed XML:\n" + msg)
             return
-        self.isy.log.log(VERBOSE, "ISY Update Received:\n" + msg)
+        _LOGGER.log(LOG_VERBOSE, "ISY Update Received:\n" + msg)
 
         # A wild stream id appears!
         if f"{ATTR_STREAM_ID}=" in msg and ATTR_STREAM_ID not in self.data:
@@ -96,7 +99,7 @@ class EventStream:
                 self.isy.connection_events.notify(ES_LOADED)
             self._lasthb = now()
             self._hbwait = int(value_from_xml(xmldoc, ATTR_ACTION))
-            self.isy.log.debug("ISY HEARTBEAT: %s", self._lasthb.isoformat())
+            _LOGGER.debug("ISY HEARTBEAT: %s", self._lasthb.isoformat())
         elif cntrl == PROP_STATUS:  # NODE UPDATE
             self.isy.nodes.update_received(xmldoc)
         elif cntrl[0] != "_":  # NODE CONTROL EVENT
@@ -117,7 +120,7 @@ class EventStream:
     def update_received(self, xmldoc):
         """Set the socket ID."""
         self.data[ATTR_STREAM_ID] = attr_from_xml(xmldoc, "Event", ATTR_STREAM_ID)
-        self.isy.log.debug("ISY Updated Events Stream ID")
+        _LOGGER.debug("ISY Updated Events Stream ID")
 
     @property
     def running(self):
@@ -130,7 +133,7 @@ class EventStream:
     @running.setter
     def running(self, val):
         if val and not self.running:
-            self.isy.log.info("ISY Starting Updates")
+            _LOGGER.info("ISY Starting Updates")
             if self.connect():
                 self.subscribe()
                 self._running = True
@@ -138,7 +141,7 @@ class EventStream:
                 self._thread.daemon = True
                 self._thread.start()
         else:
-            self.isy.log.info("ISY Stopping Updates")
+            _LOGGER.info("ISY Stopping Updates")
             self._running = False
             self.unsubscribe()
             self.disconnect()
@@ -158,7 +161,7 @@ class EventStream:
                 if self.data.get("tls"):
                     self.cert = self.socket.getpeercert()
             except OSError:
-                self.isy.log.error("PyISY could not connect to ISY event stream.")
+                _LOGGER.error("PyISY could not connect to ISY event stream.")
                 if self._on_lost_function is not None:
                     self._on_lost_function()
                 return False
@@ -212,7 +215,7 @@ class EventStream:
     def _lost_connection(self, delay=0):
         """React when the event stream connection is lost."""
         self.disconnect()
-        self.isy.log.warning("PyISY lost connection to the ISY event stream.")
+        _LOGGER.warning("PyISY lost connection to the ISY event stream.")
         self.isy.connection_events.notify(ES_LOST_STREAM_CONNECTION)
         if self._on_lost_function is not None:
             time.sleep(delay)
@@ -221,7 +224,7 @@ class EventStream:
     def watch(self):
         """Watch the subscription connection and report if dead."""
         if not self._subscribed:
-            self.isy.log.debug("PyISY watch called without a subscription.")
+            _LOGGER.debug("PyISY watch called without a subscription.")
             return
 
         event_reader = ISYEventReader(self.socket)
@@ -235,20 +238,20 @@ class EventStream:
             try:
                 events = event_reader.read_events(POLL_TIME)
             except ISYMaxConnections:
-                self.isy.log.error(
+                _LOGGER.error(
                     "PyISY reached maximum connections, delaying reconnect attempt by %s seconds.",
                     RECONNECT_DELAY,
                 )
                 self._lost_connection(RECONNECT_DELAY)
                 return
             except ISYStreamDataError as ex:
-                self.isy.log.warning(
+                _LOGGER.warning(
                     "PyISY encountered an error while reading the event stream: %s.", ex
                 )
                 self._lost_connection()
                 return
             except OSError as ex:
-                self.isy.log.warning(
+                _LOGGER.warning(
                     "PyISY encountered a socket error while reading the event stream: %s.",
                     ex,
                 )
@@ -259,7 +262,7 @@ class EventStream:
                 try:
                     self._route_message(message)
                 except Exception as ex:  # pylint: disable=broad-except
-                    self.isy.log.warning(
+                    _LOGGER.warning(
                         "PyISY encountered while routing message '%s': %s", message, ex
                     )
 

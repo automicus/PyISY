@@ -6,16 +6,20 @@ from .clock import Clock
 from .configuration import Configuration
 from .connection import Connection
 from .constants import (
+    _LOGGER,
     CMD_X10,
     ES_RECONNECT_FAILED,
     ES_RECONNECTING,
     ES_START_UPDATES,
     ES_STOP_UPDATES,
+    LOG_DATE_FORMAT,
+    LOG_FORMAT,
+    LOG_LEVEL,
     URL_QUERY,
     X10_COMMANDS,
 )
 from .events import EventStream
-from .helpers import EventEmitter, NullHandler
+from .helpers import EventEmitter
 from .networking import NetworkResources
 from .nodes import Nodes
 from .programs import Programs
@@ -33,7 +37,6 @@ class ISY:
     |  use_https: [optional] Boolean of whether secured HTTP should be used
     |  tls_ver: [optional] Number indicating the version of TLS encryption to
        use. Valid options are 1.1 or 1.2.
-    |  log: [optional] Log file class from logging module
 
     :ivar auto_reconnect: Boolean value that indicates if the class should
                           auto-reconnect to the event stream if the connection
@@ -43,7 +46,6 @@ class ISY:
                        values to be updated automatically.
     :ivar connected: Read only boolean value indicating if the class is
                      connected to the controller.
-    :ivar log: Logger used by the class and its children.
     :ivar nodes: :class:`pyisy.nodes.Nodes` manager that interacts with
                  Insteon nodes and groups.
     :ivar programs: Program manager that interacts with ISY programs and i
@@ -61,33 +63,34 @@ class ISY:
         password,
         use_https=False,
         tls_ver=1.1,
-        log=None,
         webroot="",
     ):
         """Initialize the primary ISY Class."""
         self._events = None  # create this JIT so no socket reuse
         self._reconnect_thread = None
 
-        self.log = log
-        if log is None:
-            self.log = logging.getLogger(__name__)
-            self.log.addHandler(NullHandler())
+        if not len(_LOGGER.handlers):
+            logging.basicConfig(
+                format=LOG_FORMAT, datefmt=LOG_DATE_FORMAT, level=LOG_LEVEL
+            )
+            _LOGGER.addHandler(logging.NullHandler())
+            logging.getLogger("urllib3").setLevel(logging.WARNING)
 
         try:
             self.conn = Connection(
-                address, port, username, password, use_https, tls_ver, self.log, webroot
+                address, port, username, password, use_https, tls_ver, webroot
             )
         except ValueError as err:
             self._connected = False
             try:
-                self.log.error(err.message)
+                _LOGGER.error(err.message)
             except AttributeError:
-                self.log.error(err.args[0])
+                _LOGGER.error(err.args[0])
             return
 
         self._hostname = address
         self._connected = True
-        self.configuration = Configuration(self.log, xml=self.conn.get_config())
+        self.configuration = Configuration(xml=self.conn.get_config())
         self.clock = Clock(self, xml=self.conn.get_time())
         self.nodes = Nodes(self, xml=self.conn.get_nodes())
         self.programs = Programs(self, xml=self.conn.get_programs())
@@ -153,7 +156,7 @@ class ISY:
     def _auto_reconnecter(self):
         """Auto-reconnect to the event stream."""
         while self.auto_reconnect and not self.auto_update:
-            self.log.warning("PyISY attempting stream reconnect.")
+            _LOGGER.warning("PyISY attempting stream reconnect.")
             del self._events
             self._events = EventStream(
                 self, self.conn.connection_info, self._on_lost_event_stream
@@ -164,10 +167,10 @@ class ISY:
         if not self.auto_update:
             del self._events
             self._events = None
-            self.log.warning("PyISY could not reconnect to the event stream.")
+            _LOGGER.warning("PyISY could not reconnect to the event stream.")
             self.connection_events.notify(ES_RECONNECT_FAILED)
         else:
-            self.log.warning("PyISY reconnected to the event stream.")
+            _LOGGER.warning("PyISY reconnected to the event stream.")
 
         self._reconnect_thread = None
 
@@ -178,9 +181,9 @@ class ISY:
             req_path.append(address)
         req_url = self.conn.compile_url(req_path)
         if not self.conn.request(req_url):
-            self.log.warning("Error performing query.")
+            _LOGGER.warning("Error performing query.")
             return False
-        self.log.debug("ISY Query requested successfully.")
+        _LOGGER.debug("ISY Query requested successfully.")
 
     def send_x10_cmd(self, address, cmd):
         """
@@ -194,8 +197,6 @@ class ISY:
             req_url = self.conn.compile_url([CMD_X10, address, str(command)])
             result = self.conn.request(req_url)
             if result is not None:
-                self.log.info("ISY Sent X10 Command: %s To: %s", cmd, address)
+                _LOGGER.info("ISY Sent X10 Command: %s To: %s", cmd, address)
             else:
-                self.log.error(
-                    "ISY Failed to send X10 Command: %s To: %s", cmd, address
-                )
+                _LOGGER.error("ISY Failed to send X10 Command: %s To: %s", cmd, address)

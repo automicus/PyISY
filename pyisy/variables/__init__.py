@@ -5,6 +5,7 @@ from xml.dom import minidom
 from dateutil import parser
 
 from ..constants import (
+    _LOGGER,
     ATTR_ID,
     ATTR_INIT,
     ATTR_TS,
@@ -99,7 +100,7 @@ class Variables:
             try:
                 xmldoc = minidom.parseString(xmls[ind])
             except XML_ERRORS:
-                self.isy.log.error("%s: Type %s Variables", XML_PARSE_ERROR, ind + 1)
+                _LOGGER.error("%s: Type %s Variables", XML_PARSE_ERROR, ind + 1)
                 continue
 
             features = xmldoc.getElementsByTagName(TAG_VARIABLE)
@@ -112,7 +113,7 @@ class Variables:
         try:
             xmldoc = minidom.parseString(xml)
         except XML_ERRORS:
-            self.isy.log.error("%s: Variables", XML_PARSE_ERROR)
+            _LOGGER.error("%s: Variables", XML_PARSE_ERROR)
             return
 
         features = xmldoc.getElementsByTagName(ATTR_VAR)
@@ -135,7 +136,7 @@ class Variables:
                 vobj.status = val
                 vobj.last_edited = t_s
 
-        self.isy.log.info("ISY Loaded Variables")
+        _LOGGER.info("ISY Loaded Variables")
 
     def update(self, wait_time=0):
         """
@@ -148,7 +149,7 @@ class Variables:
         if xml is not None:
             self.parse(xml)
         else:
-            self.isy.log.warning("ISY Failed to update variables.")
+            _LOGGER.warning("ISY Failed to update variables.")
 
     def update_received(self, xmldoc):
         """Process an update received from the event stream."""
@@ -167,7 +168,7 @@ class Variables:
             vobj.status = int(value_from_xml(xmldoc, ATTR_VAL))
             vobj.last_edited = parser.parse(value_from_xml(xmldoc, ATTR_TS))
 
-        self.isy.log.debug("ISY Updated Variable: %s.%s", str(vtype), str(vid))
+        _LOGGER.debug("ISY Updated Variable: %s.%s", str(vtype), str(vid))
 
     def __getitem__(self, val):
         """

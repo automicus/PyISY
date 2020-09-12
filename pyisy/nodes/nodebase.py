@@ -2,6 +2,7 @@
 from xml.dom import minidom
 
 from ..constants import (
+    _LOGGER,
     ATTR_LAST_CHANGED,
     ATTR_LAST_UPDATE,
     ATTR_STATUS,
@@ -178,7 +179,7 @@ class NodeBase:
             try:
                 notesdom = minidom.parseString(notes_xml)
             except XML_ERRORS:
-                self.isy.log.error("%s: Node Notes %s", XML_PARSE_ERROR, notes_xml)
+                _LOGGER.error("%s: Node Notes %s", XML_PARSE_ERROR, notes_xml)
             else:
                 spoken = value_from_xml(notesdom, TAG_SPOKEN)
                 location = value_from_xml(notesdom, TAG_LOCATION)
@@ -198,9 +199,7 @@ class NodeBase:
     def update_property(self, prop):
         """Update an aux property for the node when received."""
         if not isinstance(prop, NodeProperty):
-            self.isy.log.error(
-                "Could not update property value. Invalid type provided."
-            )
+            _LOGGER.error("Could not update property value. Invalid type provided.")
             return
         self.update_last_update()
 
@@ -238,13 +237,13 @@ class NodeBase:
             req.append(_uom)
         req_url = self.isy.conn.compile_url(req, query)
         if not self.isy.conn.request(req_url):
-            self.isy.log.warning(
+            _LOGGER.warning(
                 "ISY could not send %s command to %s.",
                 COMMAND_FRIENDLY_NAME.get(cmd),
                 self._id,
             )
             return False
-        self.isy.log.debug(
+        _LOGGER.debug(
             "ISY command %s sent to %s.", COMMAND_FRIENDLY_NAME.get(cmd), self._id
         )
 
@@ -281,7 +280,7 @@ class NodeBase:
         if not self.isy.conn.request(
             self.isy.conn.compile_url([URL_NODES, str(self._id), CMD_DISABLE])
         ):
-            self.isy.log.warning("ISY could not %s %s.", CMD_DISABLE, self._id)
+            _LOGGER.warning("ISY could not %s %s.", CMD_DISABLE, self._id)
             return False
         return True
 
@@ -290,7 +289,7 @@ class NodeBase:
         if not self.isy.conn.request(
             self.isy.conn.compile_url([URL_NODES, str(self._id), CMD_ENABLE])
         ):
-            self.isy.log.warning("ISY could not %s %s.", CMD_ENABLE, self._id)
+            _LOGGER.warning("ISY could not %s %s.", CMD_ENABLE, self._id)
             return False
         return True
 

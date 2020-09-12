@@ -3,6 +3,7 @@ from time import sleep
 from xml.dom import minidom
 
 from .constants import (
+    _LOGGER,
     EMPTY_TIME,
     TAG_DST,
     TAG_LATITUDE,
@@ -81,7 +82,7 @@ class Clock:
         try:
             xmldoc = minidom.parseString(xml)
         except XML_ERRORS:
-            self.isy.log.error("%s: Clock", XML_PARSE_ERROR)
+            _LOGGER.error("%s: Clock", XML_PARSE_ERROR)
         else:
             tz_offset_sec = int(value_from_xml(xmldoc, TAG_TZ_OFFSET))
             self._tz_offset = tz_offset_sec / 3600
@@ -93,7 +94,7 @@ class Clock:
             self._sunrise = ntp_to_system_time(int(value_from_xml(xmldoc, TAG_SUNRISE)))
             self._sunset = ntp_to_system_time(int(value_from_xml(xmldoc, TAG_SUNSET)))
 
-            self.isy.log.info("ISY Loaded Clock Information")
+            _LOGGER.info("ISY Loaded Clock Information")
 
     def update(self, wait_time=0):
         """
