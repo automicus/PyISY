@@ -12,7 +12,13 @@ from ..constants import (
     ATTR_NODE_DEF_ID,
     ATTR_PRECISION,
     ATTR_UNIT_OF_MEASURE,
+    DEFAULT_PRECISION,
+    DEFAULT_UNIT_OF_MEASURE,
     EVENT_PROPS_IGNORED,
+    FAMILY_BRULTECH,
+    FAMILY_NODESERVER,
+    FAMILY_RCS,
+    FAMILY_ZWAVE,
     INSTEON_RAMP_RATES,
     ISY_VALUE_UNKNOWN,
     NC_NODE_ERROR,
@@ -203,8 +209,10 @@ class Nodes:
             return
         value = value_from_xml(xmldoc, ATTR_ACTION)
         value = int(value) if value != "" else ISY_VALUE_UNKNOWN
-        prec = attr_from_xml(xmldoc, ATTR_ACTION, ATTR_PRECISION, "0")
-        uom = attr_from_xml(xmldoc, ATTR_ACTION, ATTR_UNIT_OF_MEASURE, "")
+        prec = attr_from_xml(xmldoc, ATTR_ACTION, ATTR_PRECISION, DEFAULT_PRECISION)
+        uom = attr_from_xml(
+            xmldoc, ATTR_ACTION, ATTR_UNIT_OF_MEASURE, DEFAULT_UNIT_OF_MEASURE
+        )
         formatted = value_from_xml(xmldoc, TAG_FORMATTED)
 
         # Process the action and value if provided in event data.
@@ -239,8 +247,10 @@ class Nodes:
         node.update_last_update()
         value = value_from_xml(xmldoc, ATTR_ACTION, 0)
         value = int(value) if value != "" else ISY_VALUE_UNKNOWN
-        prec = attr_from_xml(xmldoc, ATTR_ACTION, ATTR_PRECISION, "0")
-        uom = attr_from_xml(xmldoc, ATTR_ACTION, ATTR_UNIT_OF_MEASURE, "")
+        prec = attr_from_xml(xmldoc, ATTR_ACTION, ATTR_PRECISION, DEFAULT_PRECISION)
+        uom = attr_from_xml(
+            xmldoc, ATTR_ACTION, ATTR_UNIT_OF_MEASURE, DEFAULT_UNIT_OF_MEASURE
+        )
         formatted = value_from_xml(xmldoc, TAG_FORMATTED)
 
         if cntrl == PROP_RAMP_RATE:
@@ -302,14 +312,14 @@ class Nodes:
                 zwave_props = None
                 node_server = None
                 if family is not None:
-                    if family == "4":
+                    if family == FAMILY_ZWAVE:
                         protocol = PROTO_ZWAVE
                         zwave_props = ZWaveProperties(
                             feature.getElementsByTagName(TAG_DEVICE_TYPE)[0]
                         )
-                    elif family in ("3", "8"):
+                    elif family in (FAMILY_BRULTECH, FAMILY_RCS):
                         protocol = PROTO_ZIGBEE
-                    elif family == "10":
+                    elif family == FAMILY_NODESERVER:
                         # Node Server Slot is stored with family as text:
                         node_server = attr_from_xml(feature, TAG_FAMILY, ATTR_INSTANCE)
                         if node_server:

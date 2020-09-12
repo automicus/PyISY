@@ -12,17 +12,50 @@
 - Module can now be used/tested from the command-line with the new `__main__.py` script; you can test a connection with `python3 -m pyisy http://your-isy-url:80 username password`.
 - A new helper function has been added to create an `aiohttp.ClientSession` compliant with the ISY: `Connection.get_new_client_session(use_https, tls_ver=1.1)` will return a web session that can be passed to the init functions of `ISY` and `Connection` classes.
 
-### [v2.0.3] - Fix Property Updates, Add Timestamps, Unused Status Handling
+### [v2.1.0] - Property Updates, Timestamps, Status Handling, and more...
+
+#### Breaking Changes
+
+- `Node.dimmable` has been depreciated in favor of `Node.is_dimmable` to make the naming more consistent with `is_lock` and `is_thermostat`. `Node.dimmable` will still work, however, plan for it to be removed in the future.
+- `Node.is_dimmable` will only include the first subnode for Insteon devices in type 1. This should represent the main (load) button for KeypadLincs and the light for FanLincs, all other subnodes (KPL buttons and Fan Motor) are not dimmable (fixes #110)
+- This removes the `log=` parameter when initializing new `Connection` and `ISY` class instances. Please update any loading functions you may use to remove this `log=` parameter.
+
 
 #### Changed / Fixed
 
 - Changed the default Status Property (`ST`) unit of measurement (UOM) to `ISY_PROP_NOT_SET = "-1"`: Some NodeServer and Z-Wave nodes do not make use of the `ST` (or status) property in the ISY and only report `aux_properties`; in addition, most NodeServer nodes do not report the `ST` property when all nodes are retrieved, they only report it when queried directly or in the Event Stream. Previously, there was no way to differentiate between Insteon Nodes that don't have a valid status yet (after ISY reboot) and the other types of nodes that don't report the property correctly since they both reported `ISY_VALUE_UNKNOWN`. The `ISY_PROP_NOT_SET` allows differentiation between the two conditions based on having a valid UOM or not. Fixes #98.
 - Rewrite the Node status update receiver: currently, when a Node's status is updated, the `formatted` property is not updated and the `uom`/`prec` are updated with separate functions from outside of the Node's class. This updates the receiver to pass a `NodeProperty` instance into the Node, and allows the Node to update all of it's properties if they've changed, before reporting the status change to the subscribers. This makes the `formatted` property actually useful.
+- Logging Cleanup: Removes reliance on `isy` parent objects to provide logger and uses a module-wide `_LOGGER`.  Everything will be logged under the `pyisy` namespace except Events. Events maintains a separate logger namespace to allow targeting in handlers of `pyisy.events`.
 
 #### Added
 
 - Added `*.last_update` and `*.last_changed` properties which are UTC Datetime Timestamps, to allow detection of stale data. Fixes #99
 - Add connection events for the Event Stream to allow subscription and callbacks. Attach a callback with `isy.connection_events(callback)` and receive a string with the event detail. See `constants.py` for events starting with prefix `ES_`.
+- Add a VSCode Devcontainer based on Python 3.8
+- Update the package requirements to explicitly include dateutil and the dev requirements for pre-commit
+- Add pyupgrade hook to pre-commit and run it on the whole repo.
+
+#### All PRs in this Version:
+
+- Revise Node.dimmable property to exclude non-dimmable subnodes (#122)
+- Logging cleanup and consolidation (#106)
+- Fix #109 - Update for events depreciation warning
+- Add Devcontainer, Update Requirements, Use PyUpgrade (#105)
+- Guard against overwriting known attributes with blanks (#112)
+- Minor code cleanups (#104)
+- Fix Property Updates, Add Timestamps, Unused Status Handling (#100)
+- Fix parameter name (#102)
+- Add connection events target (#101)
+
+#### Dependency Changes:
+
+- Bump black from 19.10b0 to 20.8b1
+- Bump pyupgrade from 2.3.0 to 2.7.2
+- Bump codespell from 1.16.0 to 1.17.1
+- Bump flake8 from 3.8.1 to 3.8.3
+- Bump pydocstyle from 5.0.2 to 5.1.1
+- Bump pylint from 2.4.4 to 2.6.0
+- Bump isort from 4.3.21 to 5.5.2
 
 ### [v2.0.2] - Version 2.0 Initial Release
 
