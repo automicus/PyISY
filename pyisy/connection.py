@@ -71,6 +71,7 @@ class Connection:
                 format=LOG_FORMAT, datefmt=LOG_DATE_FORMAT, level=LOG_LEVEL
             )
             _LOGGER.addHandler(logging.NullHandler())
+            logging.getLogger("urllib3").setLevel(logging.WARNING)
 
         self._address = address
         self._port = port
