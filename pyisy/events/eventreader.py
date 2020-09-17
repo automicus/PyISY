@@ -56,7 +56,7 @@ class ISYEventReader:
             self._event_count += 1
             self._event_buffer = self._event_buffer[self._event_content_length :]
             self._event_content_length = None
-            events.append(body.decode("utf-8"))
+            events.append(body.decode(encoding="utf-8", errors="ignore"))
 
     def _receive_into_buffer(self, timeout):
         """Receive data on available on the socket.
