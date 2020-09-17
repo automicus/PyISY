@@ -146,7 +146,7 @@ class Connection:
             ) as res:
                 if res.status == HTTP_OK:
                     _LOGGER.debug("ISY Response Received.")
-                    results = await res.text()
+                    results = await res.text(encoding="utf-8")
                     return results
                 if res.status == HTTP_NOT_FOUND:
                     if ok404:
