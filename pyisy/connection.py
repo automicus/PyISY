@@ -152,7 +152,7 @@ class Connection:
 
         if req.status_code == 200:
             _LOGGER.debug("ISY Response Received")
-            return req.text
+            return req.content.decode(encoding="utf-8", errors="ignore")
         if req.status_code == 404 and ok404:
             _LOGGER.debug("ISY Response Received")
             return ""
