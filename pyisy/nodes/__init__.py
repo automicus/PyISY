@@ -202,7 +202,7 @@ class Nodes:
                 address,
             )
             return
-        value = value_from_xml(xmldoc, ATTR_ACTION)
+        value = value_from_xml(xmldoc, ATTR_ACTION, "")
         value = int(value) if value != "" else ISY_VALUE_UNKNOWN
         prec = attr_from_xml(xmldoc, ATTR_ACTION, ATTR_PRECISION, "0")
         uom = attr_from_xml(xmldoc, ATTR_ACTION, ATTR_UNIT_OF_MEASURE, "")
