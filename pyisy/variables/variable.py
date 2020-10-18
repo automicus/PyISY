@@ -129,7 +129,7 @@ class Variable:
         if self._prec != value:
             self._prec = value
             self._last_changed = now()
-            self.status_events.notify(self.prec_feedback)
+            self.status_events.notify(self.status_feedback)
         return self._prec
 
     @property
