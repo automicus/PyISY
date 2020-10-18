@@ -4,6 +4,7 @@ from ..constants import (
     ATTR_INIT,
     ATTR_LAST_CHANGED,
     ATTR_LAST_UPDATE,
+    ATTR_PRECISION,
     ATTR_SET,
     ATTR_STATUS,
     ATTR_TS,
@@ -35,7 +36,7 @@ class Variable:
     :ivar val: Watched property that represents the value of the variable.
     """
 
-    def __init__(self, variables, vid, vtype, vname, init, status, ts):
+    def __init__(self, variables, vid, vtype, vname, init, status, ts, prec):
         """Initialize a Variable class."""
         super().__init__()
         self._id = vid
@@ -44,6 +45,7 @@ class Variable:
         self._last_update = now()
         self._last_changed = now()
         self._name = vname
+        self._prec = prec
         self._status = status
         self._type = vtype
         self._variables = variables
@@ -117,6 +119,20 @@ class Variable:
         return self._name
 
     @property
+    def prec(self):
+        """Return the Variable Precision."""
+        return self._prec
+
+    @prec.setter
+    def prec(self, value):
+        """Set the current node state and notify listeners."""
+        if self._prec != value:
+            self._prec = value
+            self._last_changed = now()
+            self.status_events.notify(self.prec_feedback)
+        return self._prec
+
+    @property
     def status(self):
         """Return the current node state."""
         return self._status
@@ -137,6 +153,7 @@ class Variable:
             TAG_ADDRESS: self.address,
             ATTR_STATUS: self._status,
             ATTR_INIT: self._init,
+            ATTR_PRECISION: self._prec,
             ATTR_TS: self._last_edited,
             ATTR_LAST_CHANGED: self._last_changed,
             ATTR_LAST_UPDATE: self._last_update,
