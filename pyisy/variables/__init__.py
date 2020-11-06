@@ -8,6 +8,7 @@ from ..constants import (
     _LOGGER,
     ATTR_ID,
     ATTR_INIT,
+    ATTR_PRECISION,
     ATTR_TS,
     ATTR_VAL,
     ATTR_VAR,
@@ -120,6 +121,7 @@ class Variables:
             vid = int(attr_from_element(feature, ATTR_ID))
             vtype = int(attr_from_element(feature, TAG_TYPE))
             init = value_from_xml(feature, ATTR_INIT)
+            prec = int(value_from_xml(feature, ATTR_PRECISION, 0))
             val = value_from_xml(feature, ATTR_VAL)
             ts_raw = value_from_xml(feature, ATTR_TS)
             t_s = parser.parse(ts_raw)
@@ -127,12 +129,13 @@ class Variables:
 
             vobj = self.vobjs[vtype].get(vid)
             if vobj is None:
-                vobj = Variable(self, vid, vtype, vname, init, val, t_s)
+                vobj = Variable(self, vid, vtype, vname, init, val, t_s, prec)
                 self.vids[vtype].append(vid)
                 self.vobjs[vtype][vid] = vobj
             else:
                 vobj.init = init
                 vobj.status = val
+                vobj.prec = prec
                 vobj.last_edited = t_s
 
         _LOGGER.info("ISY Loaded Variables")
@@ -165,6 +168,7 @@ class Variables:
             vobj.init = int(value_from_xml(xmldoc, ATTR_INIT))
         else:
             vobj.status = int(value_from_xml(xmldoc, ATTR_VAL))
+            vobj.prec = int(value_from_xml(xmldoc, ATTR_PRECISION, 0))
             vobj.last_edited = parser.parse(value_from_xml(xmldoc, ATTR_TS))
 
         _LOGGER.debug("ISY Updated Variable: %s.%s", str(vtype), str(vid))
