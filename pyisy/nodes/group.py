@@ -61,7 +61,7 @@ class Group(NodeBase):
     @property
     def group_all_on(self):
         """Return the current node state."""
-        return self._status
+        return self._all_on
 
     @group_all_on.setter
     def group_all_on(self, value):
