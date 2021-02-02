@@ -1,5 +1,5 @@
-PyISY Library
-=============
+PyISY Library Reference
+=======================
 
 ISY Class
 ---------
