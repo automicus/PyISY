@@ -11,7 +11,6 @@
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
 import os
-import shlex
 import sys
 
 import sphinx_rtd_theme
