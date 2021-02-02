@@ -5,10 +5,12 @@
   "postCreateCommand": ".devcontainer/postCreate.sh",
   "runArgs": ["-e", "GIT_EDITOR=code --wait"],
   "extensions": [
-    "ms-python.python",
-    "visualstudioexptteam.vscodeintellicode",
-    "esbenp.prettier-vscode"
-  ],
+	"ms-python.python",
+	"visualstudioexptteam.vscodeintellicode",
+	"esbenp.prettier-vscode",
+	"lextudio.restructuredtext",
+	"graykode.ai-docstring"
+],
   "settings": {
     "python.pythonPath": "/usr/local/bin/python",
     "python.linting.pylintEnabled": true,
