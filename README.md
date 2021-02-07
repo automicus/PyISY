@@ -12,6 +12,8 @@ monitored automatically as changes are reported from the device.
 
 See the [examples](examples/) folder for connection examples.
 
+The full documentation is available at https://pyisy.readthedocs.io.
+
 ### Development Team
 
 - Greg Laabs ([@overloadut]) - Maintainer

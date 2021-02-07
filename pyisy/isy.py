@@ -224,7 +224,14 @@ class ISY:
         self._reconnect_thread = None
 
     async def query(self, address=None):
-        """Query all the nodes (or a specific node if an address is provided)."""
+        """Query all the nodes or a specific node if an address is provided .
+
+        Args:
+            address (string, optional): Node Address to query. Defaults to None.
+
+        Returns:
+            boolean: Returns `True` on successful command, `False` on error.
+        """
         req_path = [URL_QUERY]
         if address is not None:
             req_path.append(address)

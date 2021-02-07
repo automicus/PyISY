@@ -7,5 +7,10 @@
   "editor.formatOnType": true,
   "files.trimTrailingWhitespace": true,
   "terminal.integrated.shell.linux": "/bin/bash",
-  "python.linting.flake8Enabled": true
+  "python.linting.flake8Enabled": true,
+  "restructuredtext.confPath": "${workspaceFolder}/docs",
+  "cSpell.words": [
+    "automodule"
+  ],
+  "restructuredtext.languageServer.disabled": true
 }
