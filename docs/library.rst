@@ -5,7 +5,6 @@ ISY Class
 ---------
 .. autoclass:: pyisy.isy.ISY
     :members:
-    :special-members:
 
 
 Node Manager Class

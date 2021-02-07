@@ -10,9 +10,11 @@ WORKDIR /workspaces
 
 # Install Python dependencies from requirements
 COPY requirements.txt requirements-dev.txt ./
+COPY docs/requirements.txt ./requirements-docs.txt
 RUN pip3 install -r requirements.txt \
-    && pip3 install -r requirements-dev.txt \
-    && rm -f requirements.txt requirements-dev.txt
+    -r requirements-dev.txt \
+    -r requirements-docs.txt \
+    && rm -f requirements.txt requirements-dev.txt requirements-docs.txt
 
 ENV PATH=/root/.local/bin:${PATH}
 

@@ -9,7 +9,9 @@
 	"visualstudioexptteam.vscodeintellicode",
 	"esbenp.prettier-vscode",
 	"lextudio.restructuredtext",
-	"graykode.ai-docstring"
+	"graykode.ai-docstring",
+	"github.vscode-pull-request-github",
+	"streetsidesoftware.code-spell-checker"
 ],
   "settings": {
     "python.pythonPath": "/usr/local/bin/python",

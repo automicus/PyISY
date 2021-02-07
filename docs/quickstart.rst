@@ -1,82 +1,173 @@
+.. _tutorial:
 
 PyISY Tutorial
 ==============
 
-This is the basic user guide for the PyISY Python module. This file can
-be downloaded and run locally to observe the actions first hand. In
-order to run this Notebook locally, you'll have to create a settings
-file in the same directory that the iPython Notebook file is placed.
-I'll cover this more later. You'll also want to pay close attention to
-the item addresses and names that are being called.
+This is the basic user guide for the PyISY Python module.
+This module was developed to communicate with the UDI ISY-994 home automation hub
+via the hub's REST interface and Websocket/SOAP event streams. It provides
+near real-time updates from the device and allows control of all devices that
+are supported within the ISY.
 
-This Notebook can be downloaded
-`here <http://docs.automic.us/PyISY/v1.0.4/PyISY.ipynb>`__.
+The way this module works is by connecting to your device, gathering information about
+the configuration and nodes connected, and then creating a local shadow structure that
+mimics the ISY's internal structure; similar to how UDI's Admin Console works in Java.
+
+Once connected, the module can then be used by other programs or Python scripts to
+interact with the ISY and either a) get the status of a node, program, variable, etc.,
+or b) run a command on those items.
+
+.. note::
+
+    This documentation is specific to PyISY Version 3.x.x, which uses asynchronous
+    communications and the asyncio module. If you need threaded (synchronous) support
+    please use Version 2.x.x.
+
 
 Environment Setup
 -----------------
 
-Basic Imports
-~~~~~~~~~~~~~
+This module can be installed via pip in any environment supporting Python 3.7 or later:
 
-To begin, we will import the PyISY library as well as a few others that
-we will need later on.
+.. code-block:: shell
 
-.. code:: python
+    pip3 install pyisy
 
-    import PyISY
-    from time import sleep
 
-Load Settings
-~~~~~~~~~~~~~
+Quick Start
+~~~~~~~~~~~
 
-If you are interested in running this notebook locally, you'll have to
-create a file called PyISY.settings.txt. This file will contain all the
-information needed to connect to the ISY device. This file must be four
-lines and contain the IP address, port, username, and password needed to
-connect to the ISY controller. It should look something like the
-following.
+Starting with Version 3, this module can connect directly from the the command line
+to immediately print the list of nodes, and connect to the event stream and print
+the events as they are sent from the ISY.
 
-192.168.1.10
-80
-username
-password
+After installation, you can test the connection with the following
 
-.. code:: python
+.. code-block:: shell
 
-    # load settings
-    f = open('PyISY.settings.txt', 'r')
-    ADDR = f.readline().strip()
-    PORT = f.readline().strip()
-    USER = f.readline().strip()
-    PASS = f.readline().strip()
-    f.close()
+    python3 -m pyisy http://your-isy-url:80 username password
+
+A good starting point for developing your own code is to copy the `__main__.py` file
+from the module's source code. This walks you through how to create the connections and
+some simple commands to get you started.
+
+You can download it from GitHub: `<https://github.com/automicus/PyISY/blob/v3.x.x/pyisy/__main__.py>`_
+
 
 Basic Usage
 -----------
+
+Testing Your Connection
+~~~~~~~~~~~~~~~~~~~~~~~
+
+When connecting to the ISY, it will connect and download all available information and populate
+the local structures. Sometimes you just want to make sure the connection works before setting
+everything up. This can be done using the :class:`Connection<pyisy.connection.Connection>` Class.
+
+.. code-block:: python
+
+    import asyncio
+    import logging
+    from urlparse import urlparse
+
+    from pyisy import ISY
+    from pyisy.connection import ISYConnectionError, ISYInvalidAuthError, get_new_client_session
+    _LOGGER = logging.getLogger(__name__)
+
+    """Validate the user input allows us to connect."""
+    user = "username"
+    password = "password"
+    host = urlparse("http://isy994-ip-address:port/")
+    tls_version = "1.2" # Can be False if using HTTP
+
+    if host.scheme == "http":
+        https = False
+        port = host.port or 80
+    elif host.scheme == "https":
+        https = True
+        port = host.port or 443
+    else:
+        _LOGGER.error("host value in configuration is invalid.")
+        return False
+
+    # Use the helper function to get a new aiohttp.ClientSession.
+    websession = get_new_client_session(https, tls_ver)
+
+    # Connect to ISY controller.
+    isy_conn = Connection(
+        host.hostname,
+        port,
+        user,
+        password,
+        use_https=https,
+        tls_ver=tls_version,
+        webroot=host.path,
+        websession=websession,
+    )
+
+    try:
+        with async_timeout.timeout(30):
+            isy_conf_xml = await isy_conn.test_connection()
+    except (ISYInvalidAuthError, ISYConnectionError):
+        _LOGGER.error(
+            "Failed to connect to the ISY, please adjust settings and try again."
+        )
+
+Once you have a connection class and successfully tested the configuration, you can
+then use the :class:`Configuration<pyisy.configuration.Configuration>` Class to get
+some additional details about the ISY, including the firmware version, name, and
+installed options like Networking, Variables, or NodeServers.
+
+.. code-block:: python
+
+    try:
+        isy_conf = Configuration(xml=isy_conf_xml)
+    except ISYResponseParseError as error:
+        raise CannotConnect from error
+    if not isy_conf or "name" not in isy_conf or not isy_conf["name"]:
+        raise CannotConnect
+
 
 Connecting to the Controller
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Connecting to the controller is simple and will create an instance of
-the ISY class. This instance is what we will use to interact with the
-controller. To connect, use the following line. A lot of output will be
-printed indicating everything that is happening behind the scenes.
-Basically, what all this means is that an initial connection is being
-made and then all of the available modules are being loaded. By default
-this means all of the Nodes, Scenes, Programs, and Variables. If the
-climate module is available, it will be loaded. Similarly, the
-networking module will be loaded if it is available.
+the :class:`ISY<pyisy.isy.ISY>` class. This instance is what we will use to interact with the
+controller. By default when connecting to the ISY, it will load all available modules;
+this means all of the Nodes, Scenes, Programs, and Variables. The
+networking module will only be loaded if it is available.
 
-.. code:: python
+As mentioned above, the best starting point for your own script is the
+`__main__.py` file. This includes the basic connection to the ISY and also
+connecting to the event stream.
 
-    # connect to ISY
-    isy = PyISY.ISY(ADDR, PORT, USER, PASS)
-    print(isy.connected)
+Looking at the main function here, you can see the general flow:
 
+1. Validate the settings
+2. Create (or provide) an `asyncio` WebSession.
+3. Create an instance of the :class:`ISY<pyisy.isy.ISY>` Class
+4. Initialize the connection with :meth:`isy.initialize<pyisy.isy.ISY.initialize>`.
+5. Connect to the :class:`WebSocketClient<pyisy.events.websocket.WebSocketClient>` for real-time event updates.
+6. Safely shutdown the connection when done with :meth:`isy.shutdown()<pyisy.isy.shutdown>`.
 
-.. parsed-literal::
+.. literalinclude:: ../pyisy/__main__.py
+    :language: python
+    :pyobject: main
 
-    True
+General Structure of the ISY Class
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The :class:`ISY<pyisy.isy.ISY>` Class holds the local "shadow" copy of the
+ISY's structure and status. You can access the different components just like Python a `dict`.
+Each category is a `dict`-like object that holds the structure, and then each
+element is populated within that structure.
+
+- Nodes & Groups (Scenes): :class:`isy.nodes<pyisy.nodes.Nodes>`
+- Programs & Program Folders: :class:`isy.programs<pyisy.programs.Programs>`
+- Variables: :class:`isy.variables<pyisy.variables.Variables>`
+- Network Resources: :class:`isy.networking<pyisy.networking.NetworkResources>`
+- Clock Info: :class:`isy.clock<pyisy.clock.Clock>`
+- Configuration Info: :class:`isy.configuration<pyisy.configuration.Configuration>`
 
 
 Controlling a Node on the Insteon Network
@@ -93,17 +184,17 @@ called by their name.
     # interact with node using address
     NODE = '22 5C EB 1'
     node = isy.nodes[NODE]
-    node.off()
+    await node.turn_off()
     sleep(5)
-    node.on()
+    await node.turn_on()
 
 .. code:: python
 
     # interact with node using name
     node = isy.nodes['Living Room Lights']
-    node.off()
+    await node.turn_off()
     sleep(5)
-    node.on()
+    await node.turn_on()
 
 Controlling a Scene (Group) on the Insteon Network
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -119,16 +210,16 @@ be referenced by either name or address.
 
     # control scene by address
     SCENE = '28614'
-    isy.nodes[SCENE].off()
-    sleep(5)
-    isy.nodes[SCENE].on()
+    await isy.nodes[SCENE].turn_off()
+    asyncio.sleep(5)
+    await isy.nodes[SCENE].turn_on()
 
 .. code:: python
 
     # control scene by name
-    isy.nodes['Downstairs Dim'].off()
-    sleep(5)
-    isy.nodes['Downstairs Dim'].on()
+    await isy.nodes['Downstairs Dim'].turn_off()
+    asyncio.sleep(5)
+    await isy.nodes['Downstairs Dim'].turn_on()
 
 Controlling an ISY Program
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -142,11 +233,11 @@ programs, you can also interact directly with folders.
 
     # controlling a program
     PROG = '005E'
-    isy.programs[PROG].run()
-    sleep(3)
-    isy.programs[PROG].runElse()
-    sleep(3)
-    isy.programs[PROG].runThen()
+    await isy.programs[PROG].run()
+    asyncio.sleep(3)
+    await isy.programs[PROG].run_else()
+    asyncio.sleep(3)
+    await isy.programs[PROG].run_then()
 
 In order to interact with a folder as if it were a program, there is one
 extra step involved.
@@ -155,7 +246,7 @@ extra step involved.
 
     PROG_FOLDER = '0061'
     # the leaf property must be used to get an object that acts like program
-    isy.programs[PROG_FOLDER].leaf.run()
+    await isy.programs[PROG_FOLDER].leaf.run()
 
 Controlling ISY Variables
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -168,10 +259,10 @@ called with a 2. Below is an example of both.
 
     # controlling an integer variable
     var = isy.variables[1][3]
-    var.val = 0
-    print(var.val)
-    var.val = 6
-    print(var.val)
+    await var.set_value(0)
+    print(var.status)
+    await var.set_value(6)
+    print(var.status)
 
 
 .. parsed-literal::
@@ -182,71 +273,18 @@ called with a 2. Below is an example of both.
 
 .. code:: python
 
-    # controlling a state variable
+    # controlling a state variable (Type 2) init value
     var = isy.variables[2][14]
-    var.val = 0
-    print(var.val)
-    var.val = 6
-    print(var.val)
+    await var.set_init(0)
+    print(var.init)
+    await var.set_init(6)
+    print(var.init)
 
 
 .. parsed-literal::
 
     0
     6
-
-
-Interacting with the Climate Module
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-This one is pretty straight forward. Everyone of the parameters can be
-pulled in the same way.
-
-.. code:: python
-
-    # test climate
-    print(repr(isy.climate))
-    print(isy.climate.Dew_Point)
-    print(isy.climate.Dew_Point_units)
-
-
-.. parsed-literal::
-
-    Climate Module
-      Average_Temperature_Tomorrow = 0
-      Dew_Point = 0
-      Elevation = 0
-      Evapotranspiration = 0
-      Feels_Like = 0
-      Forecast_Average_Temperature = 0
-      Forecast_High_Temperature = 0
-      Forecast_Humidity = 0
-      Forecast_Low_Temperature = 0
-      Forecast_Rain = 0
-      Forecast_Snow = 0
-      Gust_Speed = 0
-      Gust_Speed_Tomorrow = 0
-      High_Temperature_Tomorrow = 0
-      Humidity = 0
-      Humidity_Tomorrow = 0
-      Irrigation_Requirement = 0
-      Light = 0
-      Low_Temperature_Tomorrow = 0
-      Pressure = 0
-      Rain_Tomorrow = 0
-      Snow_Tomorrow = 0
-      Temperature = 0
-      Temperature_Average = 0
-      Temperature_High = 0
-      Temperature_Low = 0
-      Total_Rain_Today = 0
-      Water_Deficit_Yesterday = 0
-      Wind_Direction = 0
-      Wind_Speed = 0
-      Wind_Speed_Tomorrow = 0
-
-    0
-
 
 
 Controlling the Networking Module
@@ -259,13 +297,17 @@ Event Updates
 
 This library can subscribe to the ISY's Event Stream to receive updates
 on devices as they are manipulated. This means that your program can
-respond to events on your controller in real time. This is powered
-primarily by the VarEvents library and I won't go too much into the
-inner workings of that library here, but I'll give a quick overview of
-using the events system.
+respond to events on your controller in real time using websockets and
+a subscription-based event notification.
 
 Subscribing to Updates
 ~~~~~~~~~~~~~~~~~~~~~~
+
+.. warning::
+
+    THIS DOCUMENTATION IS STILL A WORK-IN-PROGRESS. The details have not yet been updated
+    for Version 2 or Version 3 of the PyISY Module. If you would like to help, please contribute
+    on GitHub.
 
 The ISY class will not be receiving updates by default. It is, however,
 easy to enable, and it is done like so.
@@ -328,35 +370,3 @@ Now we can unsubscribe from the event using the handler.
 
 More details about event handling are discussed inside the rest of the
 documentation, but that is the basics.
-
-Using HTTPS Encryption
-----------------------
-
-Many users may prefer to have the data transferred between their ISY and
-their application to be done so in a secure, encrypted way. This is what
-HTTPS does. In order to user HTTPS, the following requirements must be
-met:
-
--  OpenSSL version 1.0.1 or greater must be present on the machine.
-   OpenSSL 1.0.1g or greater is strongly recommended because those
-   version include the patch for the Heartbleen vulnerability.
--  Python must have been compiled against one of the required OpenSSL
-   libraries.
--  For Python 2, version 2.7.9 or newer must be used.
--  For Python 3, version 3.4 or newer must be used.
-
-If those requirements are not met, HTTPS will not work. Unfortunately,
-there is no way to get around those requirements. HTTP will remain
-functioning perfectly fine without these requirements.
-
-HTTPS is enabled when creating the ISY object. In order to do that, you
-will need to know the version of TLS your ISY controller is configured
-to use. It will be either 1.1 or 1.2. If you are unsure, try 1.1 first.
-Below is an example of connecting with HTTPS.
-
-.. code:: python
-
-    HTTPS = True
-    TLS = 1.1
-
-    isy = PyISY.ISY(ADDR, PORT, USER, PASS, HTTPS, TLS)
