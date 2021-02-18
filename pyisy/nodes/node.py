@@ -215,7 +215,7 @@ class Node(NodeBase):
         """Return the Z-Wave Properties (used for Z-Wave devices)."""
         return self._zwave_props
 
-    async def update(self, event=None, wait_time=0, hint=None, xmldoc=None):
+    async def update(self, event=None, wait_time=0, xmldoc=None):
         """Update the value of the node from the controller."""
         if not self.isy.auto_update and not xmldoc:
             await asyncio.sleep(wait_time)
@@ -228,11 +228,6 @@ class Node(NodeBase):
             except XML_ERRORS:
                 _LOGGER.error("%s: Nodes", XML_PARSE_ERROR)
                 raise ISYResponseParseError(XML_PARSE_ERROR)
-        elif hint is not None:
-            # assume value was set correctly, auto update will correct errors
-            self.status = hint
-            _LOGGER.debug("ISY updated node: %s", self._id)
-            return
 
         if xmldoc is None:
             _LOGGER.warning("ISY could not update node: %s", self._id)
