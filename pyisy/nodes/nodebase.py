@@ -21,13 +21,11 @@ from ..constants import (
     COMMAND_FRIENDLY_NAME,
     METHOD_COMMAND,
     NODE_FAMILY_ID,
-    PROP_ON_LEVEL,
     TAG_ADDRESS,
     TAG_DESCRIPTION,
     TAG_IS_LOAD,
     TAG_LOCATION,
     TAG_SPOKEN,
-    UPDATE_INTERVAL,
     URL_NODES,
     URL_NOTES,
     XML_TRUE,
@@ -200,7 +198,7 @@ class NodeBase:
             TAG_LOCATION: location,
         }
 
-    def update(self, event=None, wait_time=0, hint=None, xmldoc=None):
+    def update(self, event=None, wait_time=0, xmldoc=None):
         """Update the group with values from the controller."""
         self.update_last_update()
 
@@ -254,21 +252,6 @@ class NodeBase:
         _LOGGER.debug(
             "ISY command %s sent to %s.", COMMAND_FRIENDLY_NAME.get(cmd), self._id
         )
-
-        # Calculate hint to use if status is updated
-        hint = self.status
-        if cmd == CMD_ON:
-            if val is not None:
-                hint = int(val)
-            elif PROP_ON_LEVEL in self._aux_properties:
-                hint = self._aux_properties[PROP_ON_LEVEL].value
-            else:
-                hint = 255
-        elif cmd == CMD_ON_FAST:
-            hint = 255
-        elif cmd in [CMD_OFF, CMD_OFF_FAST]:
-            hint = 0
-        await self.update(wait_time=UPDATE_INTERVAL, hint=hint)
         return True
 
     async def beep(self):

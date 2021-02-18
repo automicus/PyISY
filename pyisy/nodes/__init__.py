@@ -276,7 +276,7 @@ class Nodes:
             return
         node = value_from_xml(xmldoc, TAG_NODE)
         if action == NC_NODE_ERROR:
-            _LOGGER.warning("ISY Could not communicate with device: %s", node)
+            _LOGGER.error("ISY Could not communicate with device: %s", node)
         # FUTURE: Handle additional node change actions to force updates.
 
     def parse(self, xml):
