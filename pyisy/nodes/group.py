@@ -1,10 +1,5 @@
 """Representation of groups (scenes) from an ISY."""
-from ..constants import (
-    _LOGGER,
-    INSTEON_BATTERY_NODEDEFID,
-    ISY_VALUE_UNKNOWN,
-    PROTO_GROUP,
-)
+from ..constants import INSTEON_BATTERY_NODEDEFID, ISY_VALUE_UNKNOWN, PROTO_GROUP
 from ..helpers import now
 from .nodebase import NodeBase
 
@@ -101,7 +96,6 @@ class Group(NodeBase):
             )
         ]
         on_nodes = [node for node in valid_nodes if int(self._nodes[node].status) > 0]
-        _LOGGER.info("Group %s has these nodes on: %s", self.name, on_nodes)
         if on_nodes:
             self.group_all_on = len(on_nodes) == len(valid_nodes)
             self.status = 255
