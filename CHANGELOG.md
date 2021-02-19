@@ -4,8 +4,9 @@
 
 #### Breaking Changes
 
-- Module now uses asynchronous commiciations via `asyncio` and `aiohttp` for communicating with the ISY. Updates are required to run the module in an asyncio event loop.
+- Module now uses asynchronous communications via `asyncio` and `aiohttp` for communicating with the ISY. Updates are required to run the module in an asyncio event loop.
 - Connection with the ISY is no longer automatically initialized when the `ISY` or `Connection` classes are initialized. The `await isy.initialize()` function must be called when ready to connect. To test a connection only, you can use `Connection.test_connection()` after initializing at least a `Connection` class.
+- Group/Scene Status now excludes the state of any Insteon battery powered devices (on ISYv5 firmware only). These devices often have stale states and only update when they change, not when other controllers in the scene change; this leads to incorrect or misleading Group/Scene states.
 
 #### Changed
 
@@ -20,12 +21,11 @@
 - `Node.is_dimmable` will only include the first subnode for Insteon devices in type 1. This should represent the main (load) button for KeypadLincs and the light for FanLincs, all other subnodes (KPL buttons and Fan Motor) are not dimmable (fixes #110)
 - This removes the `log=` parameter when initializing new `Connection` and `ISY` class instances. Please update any loading functions you may use to remove this `log=` parameter.
 
-
 #### Changed / Fixed
 
 - Changed the default Status Property (`ST`) unit of measurement (UOM) to `ISY_PROP_NOT_SET = "-1"`: Some NodeServer and Z-Wave nodes do not make use of the `ST` (or status) property in the ISY and only report `aux_properties`; in addition, most NodeServer nodes do not report the `ST` property when all nodes are retrieved, they only report it when queried directly or in the Event Stream. Previously, there was no way to differentiate between Insteon Nodes that don't have a valid status yet (after ISY reboot) and the other types of nodes that don't report the property correctly since they both reported `ISY_VALUE_UNKNOWN`. The `ISY_PROP_NOT_SET` allows differentiation between the two conditions based on having a valid UOM or not. Fixes #98.
 - Rewrite the Node status update receiver: currently, when a Node's status is updated, the `formatted` property is not updated and the `uom`/`prec` are updated with separate functions from outside of the Node's class. This updates the receiver to pass a `NodeProperty` instance into the Node, and allows the Node to update all of it's properties if they've changed, before reporting the status change to the subscribers. This makes the `formatted` property actually useful.
-- Logging Cleanup: Removes reliance on `isy` parent objects to provide logger and uses a module-wide `_LOGGER`.  Everything will be logged under the `pyisy` namespace except Events. Events maintains a separate logger namespace to allow targeting in handlers of `pyisy.events`.
+- Logging Cleanup: Removes reliance on `isy` parent objects to provide logger and uses a module-wide `_LOGGER`. Everything will be logged under the `pyisy` namespace except Events. Events maintains a separate logger namespace to allow targeting in handlers of `pyisy.events`.
 
 #### Added
 
