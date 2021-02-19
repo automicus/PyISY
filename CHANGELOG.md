@@ -13,6 +13,7 @@
 
 - Module can now be used/tested from the command-line with the new `__main__.py` script; you can test a connection with `python3 -m pyisy http://your-isy-url:80 username password`.
 - A new helper function has been added to create an `aiohttp.ClientSession` compliant with the ISY: `Connection.get_new_client_session(use_https, tls_ver=1.1)` will return a web session that can be passed to the init functions of `ISY` and `Connection` classes.
+- Allow renaming of nodes and groups for ISY v5.2.0 or later using the `node.rename()` method.
 - Add support for setting and retrieving Z-Wave Device Parameters using `node.set_zwave_parameter()` and `node.get_zwave_parameter()`.
 
 ### [v2.1.0] - Property Updates, Timestamps, Status Handling, and more...

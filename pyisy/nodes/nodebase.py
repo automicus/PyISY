@@ -25,7 +25,9 @@ from ..constants import (
     TAG_DESCRIPTION,
     TAG_IS_LOAD,
     TAG_LOCATION,
+    TAG_NAME,
     TAG_SPOKEN,
+    URL_CHANGE,
     URL_NODES,
     URL_NOTES,
     XML_TRUE,
@@ -327,3 +329,24 @@ class NodeBase:
             cmd = CMD_OFF
             val = None
         return await self.send_cmd(cmd, val)
+
+    async def rename(self, new_name):
+        """
+        Rename the node or group in the ISY.
+
+        Note: Feature was added in ISY v5.2.0, this will fail on earlier versions.
+        """
+
+        # /rest/nodes/<nodeAddress>/change?name=<newName>
+        req_url = self.isy.conn.compile_url(
+            [URL_NODES, self._id, URL_CHANGE], query={TAG_NAME: new_name},
+        )
+        if not await self.isy.conn.request(req_url):
+            _LOGGER.warning(
+                "ISY could not update name for %s.", self._id,
+            )
+            return False
+        _LOGGER.debug("ISY renamed %s to %s.", self._id, new_name)
+
+        self._name = new_name
+        return True
