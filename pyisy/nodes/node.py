@@ -234,7 +234,7 @@ class Node(NodeBase):
     async def get_zwave_parameter(self, parameter):
         """Retrieve a Z-Wave Parameter from the ISY."""
 
-        if not self.type == PROTO_ZWAVE:
+        if not self.protocol == PROTO_ZWAVE:
             _LOGGER.warning("Cannot retrieve parameters of non-Z-Wave device")
             return
 
@@ -247,11 +247,11 @@ class Node(NodeBase):
         # <config paramNum="2" size="1" value="80"/>
         parameter_xml = await self.isy.conn.request(
             self.isy.conn.compile_url(
-                [URL_ZWAVE, URL_NODE, self._id, URL_CONFIG, URL_QUERY, parameter]
+                [URL_ZWAVE, URL_NODE, self._id, URL_CONFIG, URL_QUERY, str(parameter)]
             )
         )
 
-        if parameter_xml is None or parameter_xml != "":
+        if parameter_xml is None or parameter_xml == "":
             _LOGGER.warning("Error fetching parameter from ISY")
             return False
 
@@ -278,21 +278,32 @@ class Node(NodeBase):
     async def set_zwave_parameter(self, parameter, value, size):
         """Set a Z-Wave Parameter on an end device via the ISY."""
 
-        if not self.type == PROTO_ZWAVE:
+        if not self.protocol == PROTO_ZWAVE:
             _LOGGER.warning("Cannot set parameters of non-Z-Wave device")
             return False
 
-        if not isinstance(parameter, int):
+        try:
+            int(parameter)
+        except ValueError:
             _LOGGER.error("Parameter must be an integer")
             return False
 
-        if size not in [1, 2, 4]:
+        if size not in [1, "1", 2, "2", 4, "4"]:
             _LOGGER.error("Size must either 1, 2, or 4 (bytes)")
             return False
 
-        if not isinstance(value, int) and not value.startswith("0x"):
-            _LOGGER.error("Value must be an integer or hex byte string.")
-            return False
+        if str(value).startswith("0x"):
+            try:
+                int(value, base=16)
+            except ValueError:
+                _LOGGER.error("Value must be valid hex byte string or integer.")
+                return False
+        else:
+            try:
+                int(value)
+            except ValueError:
+                _LOGGER.error("Value must be valid hex byte string or integer.")
+                return False
 
         # /rest/zwave/node/<nodeAddress>/config/set/<parameterNumber>/<value>/<size>
         req_url = self.isy.conn.compile_url(
@@ -302,9 +313,9 @@ class Node(NodeBase):
                 self._id,
                 URL_CONFIG,
                 METHOD_SET,
-                parameter,
-                value,
-                size,
+                str(parameter),
+                str(value),
+                str(size),
             ]
         )
         if not await self.isy.conn.request(req_url):
