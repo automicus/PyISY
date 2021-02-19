@@ -167,6 +167,7 @@ PROP_UOM = "UOM"
 METHOD_GET = "get"
 METHOD_COMMAND = "cmd"
 
+URL_CHANGE = "change"
 URL_CLOCK = "time"
 URL_CONFIG = "config"
 URL_DEFINITIONS = "definitions"
