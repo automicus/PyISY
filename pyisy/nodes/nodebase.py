@@ -93,6 +93,11 @@ class NodeBase:
         return self._family
 
     @property
+    def folder(self):
+        """Return the folder of the current node as a property."""
+        return self._nodes.get_folder(self.address)
+
+    @property
     def is_load(self):
         """Return the isLoad property of the node from it's notes."""
         if self._notes is None:
