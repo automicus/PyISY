@@ -530,6 +530,17 @@ class Nodes:
             self.ntypes,
         )
 
+    def get_folder(self, address):
+        """Return the folder of a given node address."""
+        parent = self.nparents[self.addresses.index(address)]
+        if parent is None:
+            # Node is in the root folder.
+            return None
+        parent_index = self.addresses.index(parent)
+        if self.ntypes[parent_index] != TAG_FOLDER:
+            return self.get_folder(parent)
+        return self.nnames[parent_index]
+
     @property
     def children(self):
         """Return the children of the class."""
