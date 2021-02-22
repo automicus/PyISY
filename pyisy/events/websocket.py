@@ -248,10 +248,10 @@ class WebSocketClient:
             aiohttp.client_exceptions.ServerDisconnectedError,
         ):
             _LOGGER.debug("Websocket Server Not Ready.")
-        except aiohttp.ClientConnectorError:
-            _LOGGER.error("Websocket Client Connector Error.")
+        except aiohttp.ClientConnectorError as err:
+            _LOGGER.error("Websocket Client Connector Error %s", err, exc_info=True)
         except Exception as err:
-            _LOGGER.error("Unexpected websocket error %s", err)
+            _LOGGER.error("Unexpected websocket error %s", err, exc_info=True)
         else:
             if isinstance(ws.exception(), asyncio.TimeoutError):
                 _LOGGER.debug("Websocket Timeout.")
