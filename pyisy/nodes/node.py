@@ -16,24 +16,40 @@ from ..constants import (
     INSTEON_TYPE_LOCK,
     INSTEON_TYPE_THERMOSTAT,
     METHOD_GET,
+    METHOD_SET,
     PROP_ON_LEVEL,
     PROP_RAMP_RATE,
     PROP_SETPOINT_COOL,
     PROP_SETPOINT_HEAT,
     PROP_STATUS,
+    PROP_ZWAVE_PREFIX,
     PROTO_INSTEON,
     PROTO_ZWAVE,
+    TAG_CONFIG,
     TAG_GROUP,
+    TAG_PARAMETER,
+    TAG_SIZE,
+    TAG_VALUE,
     UOM_CLIMATE_MODES,
     UOM_FAN_MODES,
     UOM_TO_STATES,
+    URL_CONFIG,
+    URL_NODE,
     URL_NODES,
+    URL_QUERY,
+    URL_ZWAVE,
     ZWAVE_CAT_DIMMABLE,
     ZWAVE_CAT_LOCK,
     ZWAVE_CAT_THERMOSTAT,
 )
 from ..exceptions import XML_ERRORS, XML_PARSE_ERROR, ISYResponseParseError
-from ..helpers import EventEmitter, NodeProperty, now, parse_xml_properties
+from ..helpers import (
+    EventEmitter,
+    NodeProperty,
+    attr_from_xml,
+    now,
+    parse_xml_properties,
+)
 from .nodebase import NodeBase
 
 
@@ -214,6 +230,111 @@ class Node(NodeBase):
     def zwave_props(self):
         """Return the Z-Wave Properties (used for Z-Wave devices)."""
         return self._zwave_props
+
+    async def get_zwave_parameter(self, parameter):
+        """Retrieve a Z-Wave Parameter from the ISY."""
+
+        if not self.protocol == PROTO_ZWAVE:
+            _LOGGER.warning("Cannot retrieve parameters of non-Z-Wave device")
+            return
+
+        if not isinstance(parameter, int):
+            _LOGGER.error("Parameter must be an integer")
+            return
+
+        # /rest/zwave/node/<nodeAddress>/config/query/<parameterNumber>
+        # returns something like:
+        # <config paramNum="2" size="1" value="80"/>
+        parameter_xml = await self.isy.conn.request(
+            self.isy.conn.compile_url(
+                [URL_ZWAVE, URL_NODE, self._id, URL_CONFIG, URL_QUERY, str(parameter)]
+            )
+        )
+
+        if parameter_xml is None or parameter_xml == "":
+            _LOGGER.warning("Error fetching parameter from ISY")
+            return False
+
+        try:
+            parameterdom = minidom.parseString(parameter_xml)
+        except XML_ERRORS:
+            _LOGGER.error("%s: Node Parameter %s", XML_PARSE_ERROR, parameter_xml)
+            raise ISYResponseParseError()
+
+        size = int(attr_from_xml(parameterdom, TAG_CONFIG, TAG_SIZE))
+        value = attr_from_xml(parameterdom, TAG_CONFIG, TAG_VALUE)
+
+        # Add/update the aux_properties to include the parameter.
+        node_prop = NodeProperty(
+            f"{PROP_ZWAVE_PREFIX}{parameter}",
+            value,
+            uom=f"{PROP_ZWAVE_PREFIX}{size}",
+            address=self._id,
+        )
+        self.update_property(node_prop)
+
+        return {TAG_PARAMETER: parameter, TAG_SIZE: size, TAG_VALUE: value}
+
+    async def set_zwave_parameter(self, parameter, value, size):
+        """Set a Z-Wave Parameter on an end device via the ISY."""
+
+        if not self.protocol == PROTO_ZWAVE:
+            _LOGGER.warning("Cannot set parameters of non-Z-Wave device")
+            return False
+
+        try:
+            int(parameter)
+        except ValueError:
+            _LOGGER.error("Parameter must be an integer")
+            return False
+
+        if size not in [1, "1", 2, "2", 4, "4"]:
+            _LOGGER.error("Size must either 1, 2, or 4 (bytes)")
+            return False
+
+        if str(value).startswith("0x"):
+            try:
+                int(value, base=16)
+            except ValueError:
+                _LOGGER.error("Value must be valid hex byte string or integer.")
+                return False
+        else:
+            try:
+                int(value)
+            except ValueError:
+                _LOGGER.error("Value must be valid hex byte string or integer.")
+                return False
+
+        # /rest/zwave/node/<nodeAddress>/config/set/<parameterNumber>/<value>/<size>
+        req_url = self.isy.conn.compile_url(
+            [
+                URL_ZWAVE,
+                URL_NODE,
+                self._id,
+                URL_CONFIG,
+                METHOD_SET,
+                str(parameter),
+                str(value),
+                str(size),
+            ]
+        )
+        if not await self.isy.conn.request(req_url):
+            _LOGGER.warning(
+                "ISY could not set parameter %s on %s.", parameter, self._id,
+            )
+            return False
+        _LOGGER.debug("ISY set parameter %s sent to %s.", parameter, self._id)
+
+        # Add/update the aux_properties to include the parameter.
+        node_prop = NodeProperty(
+            f"{PROP_ZWAVE_PREFIX}{parameter}",
+            value,
+            uom=f"{PROP_ZWAVE_PREFIX}{size}",
+            address=self._id,
+        )
+        self.update_property(node_prop)
+
+        return True
 
     async def update(self, event=None, wait_time=0, xmldoc=None):
         """Update the value of the node from the controller."""
