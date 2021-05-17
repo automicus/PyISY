@@ -7,6 +7,7 @@
 - Module now uses asynchronous communications via `asyncio` and `aiohttp` for communicating with the ISY. Updates are required to run the module in an asyncio event loop.
 - Connection with the ISY is no longer automatically initialized when the `ISY` or `Connection` classes are initialized. The `await isy.initialize()` function must be called when ready to connect. To test a connection only, you can use `Connection.test_connection()` after initializing at least a `Connection` class.
 - When sending a command, the node status is no longer updated presumptively using a `hint` value. If you are not using either the websocket or event stream, you will need to manually call `node.update(wait_time=UPDATE_INTERVAL)` for the node after calling the `node.send_cmd()` to update the value of the node.
+- Group/Scene Status now excludes the state of any Insteon battery powered devices (on ISYv5 firmware only). These devices often have stale states and only update when they change, not when other controllers in the scene change; this leads to incorrect or misleading Group/Scene states.
 
 #### Changed
 

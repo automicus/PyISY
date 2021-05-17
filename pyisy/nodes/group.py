@@ -1,5 +1,10 @@
 """Representation of groups (scenes) from an ISY."""
-from ..constants import ISY_VALUE_UNKNOWN, PROTO_GROUP
+from ..constants import (
+    FAMILY_GENERIC,
+    INSTEON_BATTERY_NODEDEFID,
+    ISY_VALUE_UNKNOWN,
+    PROTO_GROUP,
+)
 from ..helpers import now
 from .nodebase import NodeBase
 
@@ -30,7 +35,7 @@ class Group(NodeBase):
         name,
         members=None,
         controllers=None,
-        family_id="6",
+        family_id=FAMILY_GENERIC,
         pnode=None,
     ):
         """Initialize a Group class."""
@@ -92,10 +97,10 @@ class Group(NodeBase):
             if (
                 self._nodes[node].status is not None
                 and self._nodes[node].status != ISY_VALUE_UNKNOWN
+                and self._nodes[node].node_def_id not in INSTEON_BATTERY_NODEDEFID
             )
         ]
         on_nodes = [node for node in valid_nodes if int(self._nodes[node].status) > 0]
-
         if on_nodes:
             self.group_all_on = len(on_nodes) == len(valid_nodes)
             self.status = 255
