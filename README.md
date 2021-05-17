@@ -16,7 +16,7 @@ See the [examples](examples/) folder for connection examples.
 
 - Greg Laabs ([@overloadut]) - Maintainer
 - Ryan Kraus ([@rmkraus]) - Creator
-- Tim Bond ([@shbatm]) - Version 2 Contributor
+- Tim ([@shbatm]) - Version 2 Contributor
 
 ### Contributing
 
