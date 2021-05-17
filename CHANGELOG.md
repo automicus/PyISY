@@ -1,20 +1,25 @@
 ## CHANGELOG
 
-### [v3.x.x] - Async All the Things
+### [v3.0.0] - Async All the Things
 
 #### Breaking Changes
 
 - Module now uses asynchronous communications via `asyncio` and `aiohttp` for communicating with the ISY. Updates are required to run the module in an asyncio event loop.
 - Connection with the ISY is no longer automatically initialized when the `ISY` or `Connection` classes are initialized. The `await isy.initialize()` function must be called when ready to connect. To test a connection only, you can use `Connection.test_connection()` after initializing at least a `Connection` class.
-- When sending a command, the node status is no longer updated presumptively using a `hint` value. If you are not using either the websocket or event stream, you will need to manually call `node.update(wait_time=UPDATE_INTERVAL)` for the node after calling the `node.send_cmd()` to update the value of the node.
-- Group/Scene Status now excludes the state of any Insteon battery powered devices (on ISYv5 firmware only). These devices often have stale states and only update when they change, not when other controllers in the scene change; this leads to incorrect or misleading Group/Scene states.
+- When sending a command, the node status is no longer updated presumptively using a `hint` value. If you are not using either the websocket or event stream, you will need to manually call `node.update(wait_time=UPDATE_INTERVAL)` for the node after calling the `node.send_cmd()` to update the value of the node (#155).
+- Group/Scene Status now excludes the state of any Insteon battery powered devices (on ISYv5 firmware only). These devices often have stale states and only update when they change, not when other controllers in the scene change; this leads to incorrect or misleading Group/Scene states (#156).
 
 #### Changed
 
 - Module can now be used/tested from the command-line with the new `__main__.py` script; you can test a connection with `python3 -m pyisy http://your-isy-url:80 username password`.
 - A new helper function has been added to create an `aiohttp.ClientSession` compliant with the ISY: `Connection.get_new_client_session(use_https, tls_ver=1.1)` will return a web session that can be passed to the init functions of `ISY` and `Connection` classes.
 - Add support for setting and retrieving Z-Wave Device Parameters using `node.set_zwave_parameter()` and `node.get_zwave_parameter()`.
-- Allow renaming of nodes and groups for ISY v5.2.0 or later using the `node.rename()` method.
+- Allow renaming of nodes and groups for ISY v5.2.0 or later using the `node.rename()` method (#157).
+- Add a folder property to each node and group (#159)
+- Force UTF-8 decoding of responses and ignore errors (#126)
+- Re-instate Documentation via Sphinx and ReadTheDocs (#150) (still a work in progress...)
+- Fix Group All On improper reporting (7a4b3b4)
+- Add DevContainer for development in VS Code.
 
 ### [v2.1.0] - Property Updates, Timestamps, Status Handling, and more...
 
