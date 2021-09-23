@@ -6,5 +6,5 @@ flake8-docstrings==1.6.0
 flake8==3.9.2
 isort==5.8.0
 pydocstyle==6.0.0
-pyupgrade==2.16.0
+pyupgrade==2.27.0
 pre-commit>=2.4.0
