@@ -4,7 +4,7 @@ black==21.12b0
 codespell==2.0.0
 flake8-docstrings==1.6.0
 flake8==3.9.2
-isort==5.8.0
+isort==5.10.1
 pydocstyle==6.0.0
 pyupgrade==2.29.1
 pre-commit>=2.4.0
