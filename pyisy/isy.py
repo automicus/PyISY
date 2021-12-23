@@ -138,7 +138,9 @@ class ISY:
         self.nodes = Nodes(self, xml=isy_setup_results[2])
         self.programs = Programs(self, xml=isy_setup_results[3])
         self.variables = Variables(
-            self, def_xml=isy_setup_results[4], var_xml=isy_setup_results[5],
+            self,
+            def_xml=isy_setup_results[4],
+            var_xml=isy_setup_results[5],
         )
         if self.configuration["Networking Module"]:
             self.networking = NetworkResources(self, xml=isy_setup_results[6])

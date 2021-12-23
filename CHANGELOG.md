@@ -1,5 +1,15 @@
 ## CHANGELOG
 
+### [v3.0.1] - Fix Unsubscribe SOAP Message and Dependency Updates
+
+- Bump codespell from 2.0.0 to 2.1.0 (#195)
+- Bump flake8 from 3.9.2 to 4.0.1 (#229)
+- Bump isort from 5.8.0 to 5.10.1 (#232)
+- Bump pyupgrade from 2.16.0 to 2.29.1 (#234)
+- Bump black from 21.5b1 to 21.12b0 (#238)
+- Bump pylint from 2.8.2 to 2.12.2 (#239)
+- Fixed Unsubscribe soap body (#240)
+
 ### [v3.0.0] - Async All the Things
 
 #### Breaking Changes

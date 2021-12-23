@@ -344,11 +344,13 @@ class NodeBase:
 
         # /rest/nodes/<nodeAddress>/change?name=<newName>
         req_url = self.isy.conn.compile_url(
-            [URL_NODES, self._id, URL_CHANGE], query={TAG_NAME: new_name},
+            [URL_NODES, self._id, URL_CHANGE],
+            query={TAG_NAME: new_name},
         )
         if not await self.isy.conn.request(req_url):
             _LOGGER.warning(
-                "ISY could not update name for %s.", self._id,
+                "ISY could not update name for %s.",
+                self._id,
             )
             return False
         _LOGGER.debug("ISY renamed %s to %s.", self._id, new_name)

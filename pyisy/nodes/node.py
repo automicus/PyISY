@@ -320,7 +320,9 @@ class Node(NodeBase):
         )
         if not await self.isy.conn.request(req_url):
             _LOGGER.warning(
-                "ISY could not set parameter %s on %s.", parameter, self._id,
+                "ISY could not set parameter %s on %s.",
+                parameter,
+                self._id,
             )
             return False
         _LOGGER.debug("ISY set parameter %s sent to %s.", parameter, self._id)

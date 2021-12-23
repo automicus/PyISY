@@ -32,7 +32,7 @@ SOAPAction: urn:udi-com:device:X_Insteon_Lighting_Service:1#Unsubscribe\r
     "body": """<s:Envelope><s:Body>
 <u:Unsubscribe xmlns:u="urn:udi-com:service:X_Insteon_Lighting_Service:1">
 <SID>{sid}</SID>
-</u:Subscribe></s:Body></s:Envelope>
+</u:Unsubscribe></s:Body></s:Envelope>
 \r
 """,
 }
