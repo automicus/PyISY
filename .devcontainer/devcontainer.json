@@ -1,11 +1,19 @@
 {
   "name": "PyISY Devcontainer",
-  "context": "..",
-  "dockerFile": "Dockerfile",
-  "postCreateCommand": ".devcontainer/postCreate.sh",
+  "build": {
+        "context": "..",
+        "dockerfile": "Dockerfile",
+        "args": {
+            // Update 'VARIANT' to pick a Python version: 3, 3.9, 3.8, 3.7, 3.6.
+            // Append -bullseye or -buster to pin to an OS version.
+            // Use -bullseye variants on local on arm64/Apple Silicon.
+            "VARIANT": "3.9-bullseye"
+        }
+    },
   "runArgs": ["-e", "GIT_EDITOR=code --wait"],
+  "postCreateCommand": ".devcontainer/postCreate.sh",
   "extensions": [
-    "ms-python.python",
+    "ms-python.vscode-pylance",
     "visualstudioexptteam.vscodeintellicode",
     "esbenp.prettier-vscode"
   ],
@@ -14,10 +22,16 @@
     "python.linting.pylintEnabled": true,
     "python.linting.enabled": true,
     "python.formatting.provider": "black",
+    "python.testing.pytestArgs": ["--no-cov"],
     "editor.formatOnPaste": false,
     "editor.formatOnSave": true,
     "editor.formatOnType": true,
     "files.trimTrailingWhitespace": true,
-    "terminal.integrated.shell.linux": "/bin/bash"
+    "terminal.integrated.profiles.linux": {
+      "zsh": {
+        "path": "/usr/bin/zsh"
+      }
+    },
+    "terminal.integrated.defaultProfile.linux": "zsh"
   }
 }

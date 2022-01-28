@@ -1,5 +1,11 @@
 ## CHANGELOG
 
+### [v2.1.3] - Unsubscribe on Lost Connection
+
+- Attempt to unsubscribe instead of hard disconnect on non-critical socket errors
+- Bump pyupgrade from 2.29.1 to 2.31.0
+- Update `.devcontainer` to latest VSCode Template
+
 ### [v2.1.2] - Fix Unsubscribe SOAP Message and Dependency Updates
 
 - Bump codespell from 2.0.0 to 2.1.0 (#195)
