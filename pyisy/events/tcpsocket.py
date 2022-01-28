@@ -133,7 +133,7 @@ class EventStream:
     def update_received(self, xmldoc):
         """Set the socket ID."""
         self.data[ATTR_STREAM_ID] = attr_from_xml(xmldoc, "Event", ATTR_STREAM_ID)
-        _LOGGER.debug("ISY Updated Events Stream ID")
+        _LOGGER.debug("ISY Updated Events Stream ID %s", self.data[ATTR_STREAM_ID])
 
     @property
     def running(self):
@@ -211,7 +211,13 @@ class EventStream:
         """Unsubscribe from the Event Stream."""
         if self._subscribed and self._connected:
             msg = self._create_message(strings.UNSUB_MSG)
-            self.write(msg)
+            try:
+                self.write(msg)
+            except OSError as ex:
+                _LOGGER.error(
+                    "PyISY encountered a socket error while writing unsubscribe message to the socket: %s.",
+                    ex,
+                )
             self._subscribed = False
             self.disconnect()
 
@@ -229,9 +235,9 @@ class EventStream:
 
     def _lost_connection(self, delay=0):
         """React when the event stream connection is lost."""
-        self.disconnect()
         _LOGGER.warning("PyISY lost connection to the ISY event stream.")
         self.isy.connection_events.notify(ES_LOST_STREAM_CONNECTION)
+        self.unsubscribe()
         if self._on_lost_function is not None:
             time.sleep(delay)
             self._on_lost_function()
