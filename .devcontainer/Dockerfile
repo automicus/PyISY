@@ -1,7 +1,11 @@
-FROM python:3.8
+ARG VARIANT=3-bullseye
+FROM mcr.microsoft.com/vscode/devcontainers/python:0-${VARIANT}
+
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 RUN \
-    apt-get update && apt-get install -y --no-install-recommends \
+    apt-get update \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
         git \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*

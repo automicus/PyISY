@@ -1,5 +1,11 @@
 ## CHANGELOG
 
+### [v2.1.3] - Unsubscribe on Lost Connection
+
+- Attempt to unsubscribe instead of hard disconnect on non-critical socket errors
+- Bump pyupgrade from 2.29.1 to 2.31.0
+- Update `.devcontainer` to latest VSCode Template
+
 ### [v3.0.1] - Fix Unsubscribe SOAP Message and Dependency Updates
 
 - Bump codespell from 2.0.0 to 2.1.0 (#195)
@@ -22,6 +28,7 @@
 #### Changed
 
 - Module can now be used/tested from the command-line with the new `__main__.py` script; you can test a connection with `python3 -m pyisy http://your-isy-url:80 username password`.
+- Module now supports using the Websocket connections to the ISY instead of a SOAP-message based socket. This can be enabled by setting the `use_websocket=True` keyword parameter when initializing the `ISY()` class.
 - A new helper function has been added to create an `aiohttp.ClientSession` compliant with the ISY: `Connection.get_new_client_session(use_https, tls_ver=1.1)` will return a web session that can be passed to the init functions of `ISY` and `Connection` classes.
 - Add support for setting and retrieving Z-Wave Device Parameters using `node.set_zwave_parameter()` and `node.get_zwave_parameter()`.
 - Allow renaming of nodes and groups for ISY v5.2.0 or later using the `node.rename()` method (#157).
