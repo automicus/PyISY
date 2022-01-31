@@ -1,5 +1,9 @@
 ## CHANGELOG
 
+### [v2.1.4] - Maintenance Release
+
+- Bump black from 21.12b0 to 22.1.0 (#247)
+
 ### [v2.1.3] - Unsubscribe on Lost Connection
 
 - Attempt to unsubscribe instead of hard disconnect on non-critical socket errors
