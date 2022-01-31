@@ -1,10 +1,11 @@
 ## CHANGELOG
 
-### [v2.1.3] - Unsubscribe on Lost Connection
+### [v3.0.2] - Unsubscribe on Lost Connection
 
-- Attempt to unsubscribe instead of hard disconnect on non-critical socket errors
+- Attempt to unsubscribe instead of hard disconnect on non-critical socket errors (TCP Socket only, does not affect websockets).
 - Bump pyupgrade from 2.29.1 to 2.31.0
 - Update `.devcontainer` to latest VSCode Template
+- Bump black from 21.12b0 to 22.1.0 (#247)
 
 ### [v3.0.1] - Fix Unsubscribe SOAP Message and Dependency Updates
 
