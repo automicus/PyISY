@@ -1,5 +1,9 @@
 ## CHANGELOG
 
+### [v2.1.5] - Maintenance Release
+
+- Prevent callback exception from disconnecting websocket (#248)
+
 ### [v2.1.4] - Maintenance Release
 
 - Bump black from 21.12b0 to 22.1.0 (#247)
