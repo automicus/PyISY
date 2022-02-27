@@ -3,6 +3,7 @@ import datetime
 import time
 
 from .constants import (
+    _LOGGER,
     ATTR_FORMATTED,
     ATTR_ID,
     ATTR_PRECISION,
@@ -176,7 +177,11 @@ class EventEmitter:
     def notify(self, event):
         """Notify a listener."""
         for subscriber in self._subscribers:
-            subscriber.callback(event)
+            # Guard against downstream errors interrupting the socket connection (#248)
+            try:
+                subscriber.callback(event)
+            except Exception:  # pylint: disable=broad-except
+                _LOGGER.exception("Error during callback of %s", event)
 
 
 class EventListener:
