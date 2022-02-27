@@ -1,5 +1,9 @@
 ## CHANGELOG
 
+### [v3.0.3] - Maintenance Release
+
+- Prevent callback exception from disconnecting websocket (#248)
+
 ### [v3.0.2] - Unsubscribe on Lost Connection
 
 - Attempt to unsubscribe instead of hard disconnect on non-critical socket errors (TCP Socket only, does not affect websockets).
