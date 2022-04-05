@@ -2,6 +2,13 @@
 
 ### [v3.0.6] Fix Group States for Stateless Controllers
 
+-   Fix Group States for Stateless Controllers (Fixes #256)
+    -   ControlLinc and RemoteLinc (v1) devices are excluded from group states to correctly reflect the state since these devices don't update
+        the controller status unless a button is pushed.
+-   Bump pyupgrade from 2.31.0 to 2.31.1
+-   Bump pylint from 2.12.2 to 2.13.4
+-   Bump black from 22.1.0 to 22.3.0
+
 ### [v3.0.5] Forced Republish of Package
 
 -   No changes
