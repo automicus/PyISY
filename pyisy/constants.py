@@ -732,14 +732,15 @@ INSTEON_SUBNODE_DIMMABLE = " 1"
 ZWAVE_CAT_DIMMABLE = ["109", "119", "186"]
 
 # Insteon Battery Devices - States are ignored when checking the status of a group.
-INSTEON_BATTERY_TYPE = ["0.16.", "0.17.", "0.18.", "16."]
-INSTEON_BATTERY_NODEDEFID = [
+INSTEON_STATELESS_TYPE = ["0.16.", "0.17.", "0.18.", "16."]  # Not Used
+INSTEON_STATELESS_NODEDEFID = [
     "BinaryAlarm",
     "BinaryAlarm_ADV",
     "BinaryControl",
     "BinaryControl_ADV",
     "RemoteLinc2",
     "RemoteLinc2_ADV",
+    "DimmerSwitchOnly",
 ]
 
 # Referenced from ISY-WSDK 4_fam.xml

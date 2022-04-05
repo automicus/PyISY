@@ -1,7 +1,7 @@
 """Representation of groups (scenes) from an ISY."""
 from ..constants import (
     FAMILY_GENERIC,
-    INSTEON_BATTERY_NODEDEFID,
+    INSTEON_STATELESS_NODEDEFID,
     ISY_VALUE_UNKNOWN,
     PROTO_GROUP,
 )
@@ -97,7 +97,7 @@ class Group(NodeBase):
             if (
                 self._nodes[node].status is not None
                 and self._nodes[node].status != ISY_VALUE_UNKNOWN
-                and self._nodes[node].node_def_id not in INSTEON_BATTERY_NODEDEFID
+                and self._nodes[node].node_def_id not in INSTEON_STATELESS_NODEDEFID
             )
         ]
         on_nodes = [node for node in valid_nodes if int(self._nodes[node].status) > 0]
