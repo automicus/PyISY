@@ -177,7 +177,7 @@ class EventEmitter:
     def notify(self, event):
         """Notify a listener."""
         for subscriber in self._subscribers:
-            # Guard against downstream errors interrupting the socket connection (#248)
+            # Guard against downstream errors interrupting the socket connection (#249)
             try:
                 subscriber.callback(event)
             except Exception:  # pylint: disable=broad-except
