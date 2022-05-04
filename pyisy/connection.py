@@ -198,9 +198,8 @@ class Connection:
             return retry_result
         # fail for good
         _LOGGER.error(
-            "Bad ISY Request: %s %s: Failed after %s retries.",
+            "Bad ISY Request: (%s) Failed after %s retries.",
             url,
-            res.status,
             retries,
         )
         return None
