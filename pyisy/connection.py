@@ -199,7 +199,7 @@ class Connection:
         # fail for good
         _LOGGER.error(
             "Bad ISY Request: (%s) Failed after %s retries.",
-            url
+            url,
             retries,
         )
         return None
