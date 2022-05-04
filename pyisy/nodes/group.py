@@ -1,9 +1,5 @@
 """Representation of groups (scenes) from an ISY."""
-from ..constants import (
-    INSTEON_STATELESS_NODEDEFID,
-    ISY_VALUE_UNKNOWN,
-    PROTO_GROUP,
-)
+from ..constants import INSTEON_STATELESS_NODEDEFID, ISY_VALUE_UNKNOWN, PROTO_GROUP
 from ..helpers import now
 from .nodebase import NodeBase
 
