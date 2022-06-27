@@ -720,7 +720,7 @@ INSTEON_RAMP_RATES = {
 
 # Thermostat Types/Categories. 4.8 Trane, 5.3 venstar, 5.10 Insteon Wireless,
 #  5.11 Insteon, 5.17 Insteon (EU), 5.18 Insteon (Aus/NZ)
-INSTEON_TYPE_THERMOSTAT = ["4.8", "5.3", "5.10", "5.11", "5.17", "5.18"]
+INSTEON_TYPE_THERMOSTAT = ["4.8", "5.3", "5.10", "5.11", "5.14", "5.17", "5.18"]
 ZWAVE_CAT_THERMOSTAT = ["140"]
 
 # Other special categories or types
