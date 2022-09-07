@@ -51,7 +51,7 @@ class Group(NodeBase):
         ]
 
         # get and update the status
-        self.isy.loop.create_task(self.update())
+        self._update()
 
     def __del__(self):
         """Cleanup event handlers before deleting."""
@@ -90,6 +90,10 @@ class Group(NodeBase):
 
     async def update(self, event=None, wait_time=0, xmldoc=None):
         """Update the group with values from the controller."""
+        return self._update(event, wait_time, xmldoc)
+
+    def _update(self, event=None, wait_time=0, xmldoc=None):
+        """Update the group with values from the controller."""
         self._last_update = now()
         valid_nodes = [
             node
@@ -110,4 +114,4 @@ class Group(NodeBase):
 
     def update_callback(self, event=None):
         """Handle synchronous callbacks for subscriber events."""
-        self.isy.loop.create_task(self.update(event))
+        self._update(event)
