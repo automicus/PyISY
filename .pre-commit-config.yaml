@@ -1,7 +1,7 @@
 ---
 repos:
     - repo: https://github.com/asottile/pyupgrade
-      rev: v2.34.0
+      rev: v2.37.3
       hooks:
           - id: pyupgrade
             args: [--py37-plus]
@@ -10,7 +10,7 @@ repos:
             files: ^((pyisy|examples)/.+)?[^/]+\.py$
             id: black
       repo: https://github.com/psf/black
-      rev: 22.3.0
+      rev: 22.8.0
     - hooks:
           - args:
                 [
@@ -21,14 +21,14 @@ repos:
             exclude_types: [json]
             id: codespell
       repo: https://github.com/codespell-project/codespell
-      rev: v2.1.0
+      rev: v2.2.1
     - hooks:
           - additional_dependencies:
                 [flake8-docstrings==1.6.0, pydocstyle==6.1.1]
             files: ^(pyisy)/.+\.py$
             id: flake8
       repo: https://gitlab.com/pycqa/flake8
-      rev: 4.0.1
+      rev: 5.0.4
     - hooks:
           - { id: isort }
       repo: https://github.com/pre-commit/mirrors-isort

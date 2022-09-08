@@ -12,5 +12,6 @@
   "cSpell.words": [
     "automodule"
   ],
-  "restructuredtext.languageServer.disabled": true
+  "restructuredtext.languageServer.disabled": true,
+  "editor.formatOnSaveMode": "modifications"
 }

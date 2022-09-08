@@ -1,5 +1,9 @@
 ## CHANGELOG
 
+### GitHub Release Versioning
+
+As of v3.0.7, this module will document all changes within the GitHub release information to avoid duplication.
+
 ### [v3.0.6] Fix Group States for Stateless Controllers
 
 -   Fix Group States for Stateless Controllers (Fixes #256)
