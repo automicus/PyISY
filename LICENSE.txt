@@ -1,4 +1,4 @@
-   Copyright 2014 Automicus (http://www.automic.us)
+   Copyright 2014 Automicus
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
