@@ -11,7 +11,7 @@
         }
     },
   "runArgs": ["-e", "GIT_EDITOR=code --wait"],
-  "postCreateCommand": ".devcontainer/postCreate.sh",
+  "postCreateCommand": ["/bin/bash", ".devcontainer/postCreate.sh"],
   "extensions": [
     "ms-python.vscode-pylance",
     "visualstudioexptteam.vscodeintellicode",
