@@ -3,7 +3,7 @@ pylint-strict-informational==0.1
 black==22.8.0
 codespell==2.2.1
 flake8-docstrings==1.6.0
-flake8==5.0.4
+flake8==6.0.0
 isort==5.10.1
 pydocstyle==6.1.1
 pyupgrade==2.37.3
