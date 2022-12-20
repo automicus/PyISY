@@ -15,7 +15,7 @@ repos:
           - args:
                 [
                     "--ignore-words-list=pyisy,hass,isy,nid,dof,dfof,don,dfon,tim",
-                    '--skip="./.*,*.json"',
+                    '--skip="./.*,*.json,LICENSE.txt"',
                     --quiet-level=2,
                 ]
             exclude_types: [json]
@@ -27,8 +27,8 @@ repos:
                 [flake8-docstrings==1.6.0, pydocstyle==6.1.1]
             files: ^(pyisy)/.+\.py$
             id: flake8
-      repo: https://gitlab.com/pycqa/flake8
-      rev: 4.0.1
+      repo: https://github.com/pycqa/flake8
+      rev: 6.0.0
     - hooks:
           - { id: isort }
       repo: https://github.com/pre-commit/mirrors-isort
