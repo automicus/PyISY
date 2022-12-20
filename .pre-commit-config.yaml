@@ -21,7 +21,7 @@ repos:
             exclude_types: [json]
             id: codespell
       repo: https://github.com/codespell-project/codespell
-      rev: v2.1.0
+      rev: v2.2.2
     - hooks:
           - additional_dependencies:
                 [flake8-docstrings==1.6.0, pydocstyle==6.1.1]
