@@ -93,6 +93,7 @@ class Node(NodeBase):
         node_server=None,
         protocol=None,
         family_id=None,
+        state_set=True,
     ):
         """Initialize a Node class."""
         self._enabled = enabled if enabled is not None else True
@@ -106,6 +107,7 @@ class Node(NodeBase):
         self._uom = state.uom
         self._zwave_props = zwave_props
         self.control_events = EventEmitter()
+        self._is_battery_node = not state_set
         super().__init__(
             nodes,
             address,
@@ -135,6 +137,15 @@ class Node(NodeBase):
     def formatted(self):
         """Return the formatted value with units, if provided."""
         return self._formatted
+
+    @property
+    def is_battery_node(self):
+        """
+        Confirm if this is a battery node or a normal node.
+
+        Battery nodes do not provide a 'ST' property, only 'BATLVL'.
+        """
+        return self._is_battery_node
 
     @property
     def is_dimmable(self):
@@ -357,7 +368,7 @@ class Node(NodeBase):
             return
 
         self._last_update = now()
-        state, aux_props = parse_xml_properties(xmldoc)
+        state, aux_props, _ = parse_xml_properties(xmldoc)
         self._aux_properties.update(aux_props)
         self.update_state(state)
         _LOGGER.debug("ISY updated node: %s", self._id)

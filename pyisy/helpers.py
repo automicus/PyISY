@@ -74,7 +74,7 @@ def parse_xml_properties(xmldoc):
                 result.uom = UOM_SECONDS
             aux_props[prop_id] = result
 
-    return state, aux_props
+    return state, aux_props, state_set
 
 
 def value_from_xml(xml, tag_name, default=None):
