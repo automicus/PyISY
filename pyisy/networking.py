@@ -10,7 +10,7 @@ from .constants import (
     URL_NETWORK,
     URL_RESOURCES,
 )
-from .exceptions import XML_ERRORS, XML_PARSE_ERROR, ISYResponseParseError
+from .exceptions import XML_ERRORS, XML_PARSE_ERROR
 from .helpers import value_from_xml
 
 
@@ -64,8 +64,8 @@ class NetworkResources:
         try:
             xmldoc = minidom.parseString(xml)
         except XML_ERRORS:
-            _LOGGER.error("%s: NetworkResources", XML_PARSE_ERROR)
-            raise ISYResponseParseError(XML_PARSE_ERROR)
+            _LOGGER.error("%s: NetworkResources, resources not loaded", XML_PARSE_ERROR)
+            return
 
         features = xmldoc.getElementsByTagName(TAG_NET_RULE)
         for feature in features:

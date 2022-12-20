@@ -70,10 +70,13 @@ class Variables:
             self.vobjs = vobjs
             return
 
+        valid_definitions = False
         if def_xml is not None:
-            self.parse_definitions(def_xml)
-        if var_xml is not None:
+            valid_definitions = self.parse_definitions(def_xml)
+        if valid_definitions and var_xml is not None:
             self.parse(var_xml)
+        else:
+            _LOGGER.warning("No valid variables defined")
 
     def __str__(self):
         """Return a string representation of the variable manager."""
@@ -92,21 +95,25 @@ class Variables:
 
     def parse_definitions(self, xmls):
         """Parse the XML Variable Definitions from the ISY."""
+        valid_definitions = False
         for ind in range(2):
             # parse definitions
             if xmls[ind] is None or xmls[ind] in EMPTY_VARIABLE_RESPONSES:
                 # No variables of this type defined.
+                _LOGGER.info("No Type %s variables defined", ind + 1)
                 continue
             try:
                 xmldoc = minidom.parseString(xmls[ind])
             except XML_ERRORS:
                 _LOGGER.error("%s: Type %s Variables", XML_PARSE_ERROR, ind + 1)
                 continue
-
-            features = xmldoc.getElementsByTagName(TAG_VARIABLE)
-            for feature in features:
-                vid = int(attr_from_element(feature, ATTR_ID))
-                self.vnames[ind + 1][vid] = attr_from_element(feature, TAG_NAME)
+            else:
+                features = xmldoc.getElementsByTagName(TAG_VARIABLE)
+                for feature in features:
+                    vid = int(attr_from_element(feature, ATTR_ID))
+                    self.vnames[ind + 1][vid] = attr_from_element(feature, TAG_NAME)
+                valid_definitions = True
+        return valid_definitions
 
     def parse(self, xml):
         """Parse XML from the controller with details about the variables."""
