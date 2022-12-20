@@ -18,6 +18,7 @@ from ..constants import (
     FAMILY_BRULTECH,
     FAMILY_NODESERVER,
     FAMILY_RCS,
+    FAMILY_ZMATTER_ZWAVE,
     FAMILY_ZWAVE,
     INSTEON_RAMP_RATES,
     ISY_VALUE_UNKNOWN,
@@ -312,7 +313,7 @@ class Nodes:
                 zwave_props = None
                 node_server = None
                 if family is not None:
-                    if family == FAMILY_ZWAVE:
+                    if family in (FAMILY_ZWAVE, FAMILY_ZMATTER_ZWAVE):
                         protocol = PROTO_ZWAVE
                         zwave_props = ZWaveProperties(
                             feature.getElementsByTagName(TAG_DEVICE_TYPE)[0]
