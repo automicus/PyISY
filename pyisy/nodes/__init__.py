@@ -301,6 +301,9 @@ class Nodes:
                 # Get Node Information
                 address = value_from_xml(feature, TAG_ADDRESS)
                 nname = value_from_xml(feature, TAG_NAME)
+
+                _LOGGER.debug("Parsing %s: %s [%s]", ntype, nname, address)
+
                 nparent = value_from_xml(feature, TAG_PARENT)
                 pnode = value_from_xml(feature, TAG_PRIMARY_NODE)
                 family = value_from_xml(feature, TAG_FAMILY)
