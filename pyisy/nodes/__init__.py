@@ -24,6 +24,7 @@ from ..constants import (
     ISY_VALUE_UNKNOWN,
     NC_NODE_ERROR,
     NODE_CHANGED_ACTIONS,
+    PROP_BATTERY_LEVEL,
     PROP_COMMS_ERROR,
     PROP_RAMP_RATE,
     PROP_STATUS,
@@ -265,6 +266,12 @@ class Nodes:
         ):
             # Clear a previous comms error
             del node.aux_properties[PROP_COMMS_ERROR]
+        if cntrl == PROP_BATTERY_LEVEL and node.is_battery_node:
+            # Update the state if this is a battery node
+            node.update_state(
+                NodeProperty(PROP_STATUS, value, prec, uom, formatted, address)
+            )
+            _LOGGER.debug("ISY Updated Node: " + address)
         elif cntrl not in EVENT_PROPS_IGNORED:
             node.update_property(node_property)
         node.control_events.notify(node_property)
@@ -336,7 +343,7 @@ class Nodes:
                     if address in self.addresses:
                         self.get_by_id(address).update(xmldoc=feature)
                         continue
-                    state, aux_props = parse_xml_properties(feature)
+                    state, aux_props, state_set = parse_xml_properties(feature)
                     self.insert(
                         address,
                         nname,
@@ -355,6 +362,7 @@ class Nodes:
                             node_server=node_server,
                             protocol=protocol,
                             family_id=family,
+                            state_set=state_set,
                         ),
                         ntype,
                     )
