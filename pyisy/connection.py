@@ -307,9 +307,15 @@ def get_sslcontext(use_https, tls_ver=1.1):
     if not use_https:
         return None
     if tls_ver == 1.1:
-        return ssl.SSLContext(ssl.PROTOCOL_TLSv1_1)
+        context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_1)
     elif tls_ver == 1.2:
-        return ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
+        context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
+
+    # Allow older ciphers for older ISYs
+    context.set_ciphers(
+        "DEFAULT:!aNULL:!eNULL:!MD5:!3DES:!DES:!RC4:!IDEA:!SEED:!aDSS:!SRP:!PSK"
+    )
+    return context
 
 
 def can_https(tls_ver):
