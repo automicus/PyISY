@@ -23,7 +23,7 @@ from ..constants import (
     XML_ON,
     XML_TRUE,
 )
-from ..exceptions import XML_ERRORS, XML_PARSE_ERROR, ISYResponseParseError
+from ..exceptions import XML_ERRORS, XML_PARSE_ERROR
 from ..helpers import attr_from_element, now, value_from_xml
 from ..nodes import NodeIterator as ProgramIterator
 from .folder import Folder
@@ -192,8 +192,8 @@ class Programs:
         try:
             xmldoc = minidom.parseString(xml)
         except XML_ERRORS:
-            _LOGGER.error("%s: Programs", XML_PARSE_ERROR)
-            raise ISYResponseParseError(XML_PARSE_ERROR)
+            _LOGGER.error("%s: Programs, programs not loaded", XML_PARSE_ERROR)
+            return
 
         plastup = now()
 
@@ -203,6 +203,9 @@ class Programs:
             # id, name, and status
             address = attr_from_element(feature, ATTR_ID)
             pname = value_from_xml(feature, TAG_NAME)
+
+            _LOGGER.debug("Parsing Program/Folder: %s [%s]", pname, address)
+
             pparent = attr_from_element(feature, ATTR_PARENT)
             pstatus = attr_from_element(feature, ATTR_STATUS) == XML_TRUE
 
