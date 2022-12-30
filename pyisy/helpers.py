@@ -44,7 +44,7 @@ def parse_xml_properties(xmldoc):
 
     props = xmldoc.getElementsByTagName(TAG_PROPERTY)
     if not props:
-        return state, aux_props
+        return state, aux_props, state_set
 
     for prop in props:
         prop_id = attr_from_element(prop, ATTR_ID)
