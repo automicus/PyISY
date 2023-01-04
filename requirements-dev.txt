@@ -5,7 +5,7 @@ codespell==2.2.2
 flake8-docstrings==1.6.0
 flake8==6.0.0
 isort==5.11.3
-pydocstyle==6.1.1
+pydocstyle==6.2.2
 pyupgrade==3.3.1
 pre-commit>=2.4.0
 sphinx>=3.4.3
