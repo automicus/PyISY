@@ -30,6 +30,6 @@ repos:
       repo: https://github.com/pycqa/flake8
       rev: 6.0.0
     - hooks:
-          - { id: isort }
-      repo: https://github.com/pre-commit/mirrors-isort
-      rev: v5.10.1
+          - id: isort
+      repo: https://github.com/PyCQA/isort
+      rev: 5.11.4
