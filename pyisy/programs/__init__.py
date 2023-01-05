@@ -255,7 +255,7 @@ class Programs:
                 pobj = self.get_by_id(address).leaf
                 asyncio.create_task(pobj.update(data=data))
 
-            _LOGGER.info("ISY Loaded/Updated Programs")
+        _LOGGER.info("ISY Loaded/Updated Programs")
 
     async def update(self, wait_time=UPDATE_INTERVAL, address=None):
         """
