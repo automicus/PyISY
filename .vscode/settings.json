@@ -13,5 +13,7 @@
     "automodule"
   ],
   "restructuredtext.languageServer.disabled": true,
-  "editor.formatOnSaveMode": "modifications"
+  "editor.formatOnSaveMode": "file",
+  "restructuredtext.syntaxHighlighting.disabled": true,
+  "esbonio.sphinx.confDir": "${workspaceFolder}/docs"
 }
