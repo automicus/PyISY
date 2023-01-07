@@ -21,7 +21,7 @@ from .constants import LOG_DATE_FORMAT, LOG_FORMAT, LOG_VERBOSE
 _LOGGER = logging.getLogger(__name__)
 
 
-async def main(url, username, password, tls_ver):
+async def main(url, username, password, tls_ver, events):
     """Execute connection to ISY and load all system info."""
     _LOGGER.info("Starting PyISY...")
     t0 = time.time()
@@ -70,7 +70,8 @@ async def main(url, username, password, tls_ver):
     _LOGGER.info("Total Loading time: %.2fs", time.time() - t0)
 
     try:
-        isy.websocket.start()
+        if events:
+            isy.websocket.start()
         while True:
             await asyncio.sleep(1)
     except asyncio.CancelledError:
@@ -86,6 +87,7 @@ if __name__ == "__main__":
     parser.add_argument("password", type=str)
     parser.add_argument("-t", "--tls-ver", dest="tls_ver", type=float)
     parser.add_argument("-v", "--verbose", action="store_true")
+    parser.add_argument("-q", "--no-events", dest="no_events", action="store_true")
     parser.set_defaults(use_https=False, tls_ver=1.1, verbose=False)
     args = parser.parse_args()
 
@@ -108,6 +110,7 @@ if __name__ == "__main__":
                 username=args.username,
                 password=args.password,
                 tls_ver=args.tls_ver,
+                events=(not args.no_events),
             )
         )
     except KeyboardInterrupt:
