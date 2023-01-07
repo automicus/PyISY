@@ -110,6 +110,7 @@ class ISY:
         self.configuration = None
         self.clock = None
         self.nodes = None
+        self.node_servers = None
         self.programs = None
         self.variables = None
         self.networking = None
@@ -145,6 +146,8 @@ class ISY:
         if self.configuration["Networking Module"]:
             self.networking = NetworkResources(self, xml=isy_setup_results[6])
         await self.nodes.update(xml=isy_setup_results[0])
+        if self.node_servers:
+            await self.node_servers.load_node_servers()
 
         self._connected = True
 

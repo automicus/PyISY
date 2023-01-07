@@ -57,6 +57,7 @@ from ..helpers import (
     parse_xml_properties,
     value_from_xml,
 )
+from ..node_servers import NodeServers
 from .group import Group
 from .node import Node
 
@@ -301,6 +302,7 @@ class Nodes:
 
         # get nodes
         ntypes = [TAG_FOLDER, TAG_NODE, TAG_GROUP]
+        node_servers = []
         for ntype in ntypes:
             features = xmldoc.getElementsByTagName(ntype)
 
@@ -335,6 +337,7 @@ class Nodes:
                         node_server = attr_from_xml(feature, TAG_FAMILY, ATTR_INSTANCE)
                         if node_server:
                             protocol = f"{PROTO_NODE_SERVER}_{node_server}"
+                            node_servers.append(node_server)
 
                 # Process the different node types
                 if ntype == TAG_FOLDER and address not in self.addresses:
@@ -401,6 +404,8 @@ class Nodes:
                         ntype,
                     )
             _LOGGER.debug("ISY Loaded %s", ntype)
+        if self.isy.node_servers is None:
+            self.isy.node_servers = NodeServers(self.isy, set(node_servers))
 
     async def update(self, wait_time=0, xml=None):
         """
