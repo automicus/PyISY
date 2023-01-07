@@ -144,16 +144,19 @@ class Connection:
                 timeout=HTTP_TIMEOUT,
                 ssl=self.sslcontext,
             ) as res:
+                endpoint = url.split("rest", 1)[1]
                 if res.status == HTTP_OK:
-                    _LOGGER.debug("ISY Response Received.")
+                    _LOGGER.debug("ISY Response Received: %s", endpoint)
                     results = await res.text(encoding="utf-8", errors="ignore")
                     return results
                 if res.status == HTTP_NOT_FOUND:
                     if ok404:
-                        _LOGGER.debug("ISY Response Received.")
+                        _LOGGER.debug("ISY Response Received %s", endpoint)
                         res.release()
                         return ""
-                    _LOGGER.error("ISY Reported an Invalid Command Received.")
+                    _LOGGER.error(
+                        "ISY Reported an Invalid Command Received %s", endpoint
+                    )
                     res.release()
                     return None
                 if res.status == HTTP_UNAUTHORIZED:
@@ -163,7 +166,7 @@ class Connection:
                         "Invalid credentials provided for ISY connection."
                     )
                 if res.status == HTTP_SERVICE_UNAVAILABLE:
-                    _LOGGER.warning("ISY too busy to process request.")
+                    _LOGGER.warning("ISY too busy to process request %s", endpoint)
                     res.release()
 
         except asyncio.TimeoutError:
