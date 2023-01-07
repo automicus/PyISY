@@ -1,35 +1,56 @@
----
 repos:
-    - repo: https://github.com/asottile/pyupgrade
-      rev: v3.3.1
-      hooks:
-          - id: pyupgrade
-            args: [--py37-plus]
-    - hooks:
-          - args: [--safe, --quiet]
-            files: ^((pyisy|examples)/.+)?[^/]+\.py$
-            id: black
-      repo: https://github.com/psf/black
-      rev: 22.12.0
-    - hooks:
-          - args:
-                [
-                    "--ignore-words-list=pyisy,hass,isy,nid,dof,dfof,don,dfon,tim,automic,automicus,BATLVL",
-                    '--skip="./.*,*.json"',
-                    --quiet-level=2,
-                ]
-            exclude_types: [json]
-            id: codespell
-      repo: https://github.com/codespell-project/codespell
-      rev: v2.2.2
-    - hooks:
-          - additional_dependencies:
-                [flake8-docstrings==1.6.0, pydocstyle==6.1.1]
-            files: ^(pyisy)/.+\.py$
-            id: flake8
-      repo: https://github.com/pycqa/flake8
-      rev: 6.0.0
-    - hooks:
-          - id: isort
-      repo: https://github.com/PyCQA/isort
-      rev: 5.11.4
+  - repo: https://github.com/asottile/pyupgrade
+    rev: v3.3.1
+    hooks:
+      - id: pyupgrade
+        args: [--py37-plus]
+  - repo: https://github.com/PyCQA/autoflake
+    rev: v2.0.0
+    hooks:
+      - id: autoflake
+        args:
+          - --in-place
+          - --remove-all-unused-imports
+  - hooks:
+      - args: [--safe, --quiet]
+        files: ^((pyisy|examples)/.+)?[^/]+\.py$
+        id: black
+    repo: https://github.com/psf/black
+    rev: 22.12.0
+  - hooks:
+      - args:
+          [
+            "--ignore-words-list=pyisy,hass,isy,nid,dof,dfof,don,dfon,tim,automic,automicus,BATLVL",
+            '--skip="./.*,*.json"',
+            --quiet-level=2,
+          ]
+        exclude_types: [json]
+        id: codespell
+    repo: https://github.com/codespell-project/codespell
+    rev: v2.2.2
+  - hooks:
+      - additional_dependencies:
+          - pycodestyle==2.10.0
+          - pyflakes==3.0.1
+          - flake8-docstrings==1.6.0
+          - pydocstyle==6.1.1
+          - flake8-comprehensions==3.10.1
+          - flake8-noqa==1.3.0
+          - mccabe==0.7.0
+        files: ^(pyisy)/.+\.py$
+        id: flake8
+    repo: https://github.com/pycqa/flake8
+    rev: 6.0.0
+
+  - hooks:
+      - id: isort
+    repo: https://github.com/PyCQA/isort
+    rev: 5.11.4
+  - repo: https://github.com/adrienverge/yamllint.git
+    rev: v1.28.0
+    hooks:
+      - id: yamllint
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v3.0.0-alpha.4
+    hooks:
+      - id: prettier
