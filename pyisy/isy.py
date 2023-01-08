@@ -122,6 +122,9 @@ class ISY:
         config_xml = await self.conn.test_connection()
         self.configuration = Configuration(xml=config_xml)
 
+        if not self.configuration["model"].startswith("ISY 994"):
+            self.conn.increase_available_connections()
+
         isy_setup_tasks = [
             self.conn.get_status(),
             self.conn.get_time(),
