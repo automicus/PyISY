@@ -5,6 +5,7 @@ from xml.dom import minidom
 from .constants import (
     _LOGGER,
     ATTR_ID,
+    PROTO_NETWORK_RESOURCE,
     TAG_NAME,
     TAG_NET_RULE,
     URL_NETWORK,
@@ -168,7 +169,12 @@ class NetworkCommand:
     @property
     def address(self):
         """Return the Resource ID for the Network Resource."""
-        return self._id
+        return str(self._id)
+
+    @property
+    def protocol(self):
+        """Return the Protocol for this node."""
+        return PROTO_NETWORK_RESOURCE
 
     async def run(self):
         """Execute the networking command."""
