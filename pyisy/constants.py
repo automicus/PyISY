@@ -191,6 +191,7 @@ URL_STATUS = "status"
 URL_SUBFOLDERS = "subfolders"
 URL_VARIABLES = "vars"
 URL_ZWAVE = "zwave"
+URL_PROFILE_NS = "profiles/ns"
 
 VAR_INTEGER = "1"
 VAR_STATE = "2"

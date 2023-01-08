@@ -33,8 +33,12 @@ from .constants import (
 from .exceptions import ISYConnectionError, ISYInvalidAuthError
 
 MAX_RETRIES = 5
-MAX_HTTPS_CONNECTIONS = 2
-MAX_HTTP_CONNECTIONS = 5
+
+MAX_HTTPS_CONNECTIONS_ISY = 2
+MAX_HTTP_CONNECTIONS_ISY = 5
+MAX_HTTPS_CONNECTIONS_IOX = 20
+MAX_HTTP_CONNECTIONS_IOX = 50
+
 RETRY_BACKOFF = [0.01, 0.10, 0.25, 1, 2]  # Seconds
 
 HTTP_OK = 200  # Valid request received, will run it
@@ -84,7 +88,7 @@ class Connection:
         self.use_https = use_https
 
         self.semaphore = asyncio.Semaphore(
-            MAX_HTTPS_CONNECTIONS if use_https else MAX_HTTP_CONNECTIONS
+            MAX_HTTPS_CONNECTIONS_ISY if use_https else MAX_HTTP_CONNECTIONS_ISY
         )
 
         if websession is None:
@@ -99,6 +103,13 @@ class Connection:
             _LOGGER.error("Could not connect to the ISY with the parameters provided.")
             raise ISYConnectionError()
         return config
+
+    def increase_connections(self):
+        """Increase the number of allowed connections for newer hardware."""
+        _LOGGER.debug("Increasing available simultaneous connections")
+        self.semaphore = asyncio.Semaphore(
+            MAX_HTTPS_CONNECTIONS_IOX if self.use_https else MAX_HTTP_CONNECTIONS_IOX
+        )
 
     async def close(self):
         """Cleanup connections and prepare for exit."""

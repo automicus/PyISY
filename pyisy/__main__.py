@@ -21,7 +21,7 @@ from .constants import LOG_DATE_FORMAT, LOG_FORMAT, LOG_VERBOSE
 _LOGGER = logging.getLogger(__name__)
 
 
-async def main(url, username, password, tls_ver, events):
+async def main(url, username, password, tls_ver, events, node_servers):
     """Execute connection to ISY and load all system info."""
     _LOGGER.info("Starting PyISY...")
     t0 = time.time()
@@ -53,7 +53,7 @@ async def main(url, username, password, tls_ver, events):
     )
 
     try:
-        await isy.initialize()
+        await isy.initialize(node_servers)
     except (ISYInvalidAuthError, ISYConnectionError):
         _LOGGER.error(
             "Failed to connect to the ISY, please adjust settings and try again."
@@ -88,6 +88,9 @@ if __name__ == "__main__":
     parser.add_argument("-t", "--tls-ver", dest="tls_ver", type=float)
     parser.add_argument("-v", "--verbose", action="store_true")
     parser.add_argument("-q", "--no-events", dest="no_events", action="store_true")
+    parser.add_argument(
+        "-n", "--node-servers", dest="node_servers", action="store_true"
+    )
     parser.set_defaults(use_https=False, tls_ver=1.1, verbose=False)
     args = parser.parse_args()
 
@@ -111,6 +114,7 @@ if __name__ == "__main__":
                 password=args.password,
                 tls_ver=args.tls_ver,
                 events=(not args.no_events),
+                node_servers=args.node_servers,
             )
         )
     except KeyboardInterrupt:
