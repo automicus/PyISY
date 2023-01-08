@@ -173,7 +173,7 @@ class NetworkCommand:
         return str(self._id)
 
     @property
-    
+
     def name(self):
         """Return the name of this entity."""
         return self._name
