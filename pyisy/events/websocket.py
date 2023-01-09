@@ -61,7 +61,7 @@ class WebSocketClient:
         websession=None,
     ):
         """Initialize a new Web Socket Client class."""
-        if not len(_LOGGER.handlers):
+        if not len(_LOGGER.handlers) > 0:
             logging.basicConfig(
                 format=LOG_FORMAT, datefmt=LOG_DATE_FORMAT, level=LOG_LEVEL
             )
@@ -168,9 +168,9 @@ class WebSocketClient:
         try:
             xmldoc = minidom.parseString(msg)
         except xml.parsers.expat.ExpatError:
-            _LOGGER.warning("ISY Received Malformed XML:\n" + msg)
+            _LOGGER.warning("ISY Received Malformed XML:\n%s", msg)
             return
-        _LOGGER.log(LOG_VERBOSE, "ISY Update Received:\n" + msg)
+        _LOGGER.log(LOG_VERBOSE, "ISY Update Received:\n%s", msg)
 
         # A wild stream id appears!
         if f"{ATTR_STREAM_ID}=" in msg and self._sid is None:
@@ -243,13 +243,14 @@ class WebSocketClient:
             return
         except asyncio.TimeoutError:
             _LOGGER.debug("Websocket Timeout.")
+        except aiohttp.ClientConnectorError as err:
+            _LOGGER.error("Websocket Client Connector Error %s", err, exc_info=True)
         except (
             aiohttp.ClientOSError,
             aiohttp.client_exceptions.ServerDisconnectedError,
         ):
             _LOGGER.debug("Websocket Server Not Ready.")
-        except aiohttp.ClientConnectorError as err:
-            _LOGGER.error("Websocket Client Connector Error %s", err, exc_info=True)
+        # pylint: disable=broad-except
         except Exception as err:
             _LOGGER.error("Unexpected websocket error %s", err, exc_info=True)
         else:
