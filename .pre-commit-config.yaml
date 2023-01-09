@@ -59,7 +59,7 @@ repos:
     hooks:
       - id: pylint
         name: pylint
-        entry: pylint -j 0
+        entry: python3 -m pylint -j 0
         language: system
         types: [python]
         files: ^pyisy/.+\.py$
