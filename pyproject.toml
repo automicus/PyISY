@@ -1,0 +1,64 @@
+[build-system]
+requires = ["setuptools~=62.3", "wheel","setuptools-git-versioning<2",]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pyisy"
+description = "Python module to talk to ISY devices from UDI."
+license     = {text = "Apache-2.0"}
+keywords = ["home", "automation", "isy", "isy994", "isy-994", "UDI", "polisy", "eisy"]
+authors = [
+    {name = "Ryan Kraus", email = "automicus@gmail.com"},
+    {name = "shbatm", email = "support@shbatm.com"}
+]
+readme = "README.md"
+classifiers=[
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: End Users/Desktop",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Topic :: Home Automation :: Libraries :: Python Modules",
+]
+dynamic = ["version"]
+requires-python = ">=3.8.2"
+
+dependencies = [
+    "aiohttp==3.8.1",
+    "python-dateutil>=2.8.1",
+    "requests==2.28.1",
+    "colorlog>=6.7.0",
+]
+
+[project.urls]
+"Source Code" = "https://github.com/automicus/PyISY"
+"Homepage" = "https://github.com/automicus/PyISY"
+
+[tool.setuptools-git-versioning]
+enabled = true
+template = "{tag}"
+dirty_template = "{tag}.dev{ccount}+dirty"
+
+[tool.black]
+target-version = ["py38", "py39", "py310"]
+
+[tool.isort]
+# https://github.com/timothycrosley/isort
+# https://github.com/timothycrosley/isort/wiki/isort-Settings
+# splits long import on multiple lines indented by 4 spaces
+multi_line_output = 3
+include_trailing_comma=true
+force_grid_wrap=0
+use_parentheses=true
+line_length=88
+indent = "    "
+# by default isort don't check module indexes
+not_skip = "__init__.py"
+# will group `import x` and `from x import` of the same module.
+force_sort_within_sections = true
+default_section = "THIRDPARTY"
+known_first_party = ["pyisy","tests"]
+forced_separate = ["tests"]
+combine_as_imports = true
