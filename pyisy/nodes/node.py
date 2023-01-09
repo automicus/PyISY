@@ -135,6 +135,12 @@ class Node(NodeBase):
         """Return if the device is enabled or not in the ISY."""
         return self._enabled
 
+    @enabled.setter
+    def enabled(self, value):
+        """Set if the device is enabled or not in the ISY."""
+        if self._enabled != value:
+            self._enabled = value
+
     @property
     def formatted(self):
         """Return the formatted value with units, if provided."""
