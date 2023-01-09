@@ -21,7 +21,8 @@ setup(
     zip_safe=False,
     include_package_data=True,
     platforms="any",
-    setup_requires=["setuptools-git-version"],
+    use_scm_version=True,
+    setup_requires=["setuptools_scm"],
     install_requires=[
         "aiohttp==3.8.1",
         "python-dateutil>=2.8.1",
