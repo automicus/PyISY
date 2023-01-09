@@ -5,7 +5,6 @@ from xml.dom import minidom
 from dateutil import parser
 
 from ..constants import (
-    _LOGGER,
     ATTR_ID,
     ATTR_INIT,
     ATTR_PRECISION,
@@ -18,6 +17,7 @@ from ..constants import (
 )
 from ..exceptions import XML_ERRORS, XML_PARSE_ERROR, ISYResponseParseError
 from ..helpers import attr_from_element, attr_from_xml, now, value_from_xml
+from ..logging import _LOGGER
 from .variable import Variable
 
 EMPTY_VARIABLE_RESPONSES = [

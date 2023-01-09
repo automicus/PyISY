@@ -3,7 +3,6 @@ import datetime
 import time
 
 from .constants import (
-    _LOGGER,
     ATTR_FORMATTED,
     ATTR_ID,
     ATTR_PRECISION,
@@ -25,6 +24,7 @@ from .constants import (
     UOM_SECONDS,
 )
 from .exceptions import XML_ERRORS
+from .logging import _LOGGER
 
 
 def parse_xml_properties(xmldoc):

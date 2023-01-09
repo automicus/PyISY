@@ -1,15 +1,7 @@
 """Constants for the PyISY Module."""
 import datetime
-import logging
-
-_LOGGER = logging.getLogger(__package__)
-LOG_LEVEL = logging.DEBUG
-LOG_VERBOSE = 5
-LOG_FORMAT = "%(asctime)s %(levelname)s [%(name)s] %(message)s"
-LOG_DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 UPDATE_INTERVAL = 0.5
-
 
 # Time Constants / Strings
 EMPTY_TIME = datetime.datetime(year=1, month=1, day=1)
@@ -923,38 +915,70 @@ NODE_CATEGORIES = {
 }
 
 # Node Change Actions
-NC_NODE_RENAMED = "NN"
-NC_NODE_REMOVED = "NR"
+NC_CLEAR_ERROR = "CE"
+NC_FOLDER_ADDED = "FD"
+NC_FOLDER_REMOVED = "FR"
+NC_FOLDER_RENAMED = "FN"
+NC_GROUP_ADDED = "GD"
+NC_GROUP_REMOVED = "GR"
+NC_GROUP_RENAMED = "GN"
+NC_NET_RENAMED = "WR"
+NC_NODE_ADDED = "ND"
+NC_NODE_ENABLED = "EN"
+NC_NODE_ERROR = "NE"
 NC_NODE_MOVED = "MV"
 NC_NODE_REMOVE_FROM_GROUP = "RG"
-NC_NODE_ENABLED = "RG"
-NC_PARENT_CHANGED = "PC"
-NC_GROUP_RENAMED = "GN"
-NC_GROUP_REMOVED = "GR"
-NC_GROUP_ADDED = "GD"
-NC_FOLDER_RENAMED = "FN"
-NC_FOLDER_REMOVED = "FR"
-NC_FOLDER_ADDED = "FD"
-NC_NODE_ERROR = "NE"
-NC_CLEAR_ERROR = "CE"
-NC_NET_RENAMED = "WR"
+NC_NODE_REMOVED = "NR"
+NC_NODE_RENAMED = "NN"
 NC_NODE_REVISED = "RV"
+NC_PARENT_CHANGED = "PC"
+NC_PENDING_DEVICE_OP = "WH"
+NC_PROGRAMMING_DEVICE = "WD"
 
-NODE_CHANGED_ACTIONS = [
-    NC_NODE_RENAMED,
-    NC_NODE_REMOVED,
-    NC_NODE_MOVED,
-    NC_NODE_REMOVE_FROM_GROUP,
-    NC_NODE_ENABLED,
-    NC_PARENT_CHANGED,
-    NC_GROUP_RENAMED,
-    NC_GROUP_REMOVED,
-    NC_GROUP_ADDED,
-    NC_FOLDER_RENAMED,
-    NC_FOLDER_REMOVED,
-    NC_FOLDER_ADDED,
-    NC_NODE_ERROR,
-    NC_CLEAR_ERROR,
-    NC_NET_RENAMED,
-    NC_NODE_REVISED,
-]
+# Node Change Code: (Description, EventInfo Tags)
+NODE_CHANGED_ACTIONS = {
+    NC_CLEAR_ERROR: ("Node Comm. Errors Cleared", []),
+    NC_FOLDER_ADDED: ("Folder Added", []),
+    NC_FOLDER_REMOVED: ("Folder Removed", []),
+    NC_FOLDER_RENAMED: ("Folder Renamed", ["newName"]),
+    NC_GROUP_ADDED: ("Group Added", ["groupName", "groupType"]),
+    NC_GROUP_REMOVED: ("Group Removed", []),
+    NC_GROUP_RENAMED: ("Group Renamed", ["newName"]),
+    NC_NET_RENAMED: ("Network Renamed", []),
+    NC_NODE_ADDED: ("Node Added", ["nodeName", "nodeType"]),
+    NC_NODE_ENABLED: ("Enabled/Disabled", ["enabled"]),
+    NC_NODE_ERROR: ("Node Comm. Errors", []),
+    NC_NODE_MOVED: ("Node moved into a Scene", ["movedNode", "linkType"]),
+    NC_NODE_REMOVE_FROM_GROUP: ("Removed from Group (Scene)", ["removedNode"]),
+    NC_NODE_REMOVED: ("Node Removed", []),
+    NC_NODE_RENAMED: ("Node Renamed", ["newName"]),
+    NC_NODE_REVISED: ("Node Revised (UPB)", []),
+    NC_PARENT_CHANGED: ("Parent Changed", ["node", "nodeType", "parent", "parentType"]),
+    NC_PENDING_DEVICE_OP: ("Pending Device Operation", []),
+    NC_PROGRAMMING_DEVICE: ("Programming Device", []),
+}
+
+SYSTEM_NOT_BUSY = "0"
+SYSTEM_BUSY = "1"
+SYSTEM_IDLE = "2"
+SYSTEM_SAFE_MODE = "3"
+
+SYSTEM_STATUS = {
+    SYSTEM_NOT_BUSY: "Not Busy",
+    SYSTEM_BUSY: "Busy",
+    SYSTEM_IDLE: "Idle",
+    SYSTEM_SAFE_MODE: "Safe Mode",
+}
+
+# Node Link Types
+NODE_IS_CONTROLLER = 0x10
+
+# Node operations flags
+NODE_IS_INIT = 0x01  # needs to be initialized
+NODE_TO_SCAN = 0x02  # needs to be scanned
+NODE_IS_A_GROUP = 0x04  # it’s a group!
+NODE_IS_ROOT = 0x08  # it’s the root group
+NODE_IS_IN_ERR = 0x10  # it’s in error!
+NODE_IS_NEW = 0x20  # brand new node
+NODE_TO_DELETE = 0x40  # has to be deleted later
+NODE_IS_DEVICE_ROOT = 0x80  # root device such as KPL load

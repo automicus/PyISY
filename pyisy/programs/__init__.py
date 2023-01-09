@@ -5,7 +5,6 @@ from xml.dom import minidom
 from dateutil import parser
 
 from ..constants import (
-    _LOGGER,
     ATTR_ID,
     ATTR_PARENT,
     ATTR_STATUS,
@@ -25,6 +24,7 @@ from ..constants import (
 )
 from ..exceptions import XML_ERRORS, XML_PARSE_ERROR
 from ..helpers import attr_from_element, now, value_from_xml
+from ..logging import _LOGGER
 from ..nodes import NodeIterator as ProgramIterator
 from .folder import Folder
 from .program import Program

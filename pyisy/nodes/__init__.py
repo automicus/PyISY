@@ -3,7 +3,6 @@ from asyncio import sleep
 from xml.dom import minidom
 
 from ..constants import (
-    _LOGGER,
     ATTR_ACTION,
     ATTR_CONTROL,
     ATTR_FLAG,
@@ -57,6 +56,7 @@ from ..helpers import (
     parse_xml_properties,
     value_from_xml,
 )
+from ..logging import _LOGGER
 from .group import Group
 from .node import Node
 
