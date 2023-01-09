@@ -189,15 +189,15 @@ class NodeBase:
         location = None
         if notes_xml is not None and notes_xml != "":
             try:
-                notesdom = minidom.parseString(notes_xml)
-            except XML_ERRORS:
+                notes_dom = minidom.parseString(notes_xml)
+            except XML_ERRORS as exc:
                 _LOGGER.error("%s: Node Notes %s", XML_PARSE_ERROR, notes_xml)
-                raise ISYResponseParseError()
+                raise ISYResponseParseError() from exc
 
-            spoken = value_from_xml(notesdom, TAG_SPOKEN)
-            location = value_from_xml(notesdom, TAG_LOCATION)
-            description = value_from_xml(notesdom, TAG_DESCRIPTION)
-            is_load = value_from_xml(notesdom, TAG_IS_LOAD)
+            spoken = value_from_xml(notes_dom, TAG_SPOKEN)
+            location = value_from_xml(notes_dom, TAG_LOCATION)
+            description = value_from_xml(notes_dom, TAG_DESCRIPTION)
+            is_load = value_from_xml(notes_dom, TAG_IS_LOAD)
         return {
             TAG_SPOKEN: spoken,
             TAG_IS_LOAD: is_load == XML_TRUE,
@@ -205,7 +205,7 @@ class NodeBase:
             TAG_LOCATION: location,
         }
 
-    def update(self, event=None, wait_time=0, xmldoc=None):
+    async def update(self, event=None, wait_time=0, xmldoc=None):
         """Update the group with values from the controller."""
         self.update_last_update()
 

@@ -2,6 +2,6 @@
   "recommendations": [
     "esbenp.prettier-vscode",
     "ms-python.python",
-    "lextudio.restructuredtext"
+    "ms-python.black-formatter"
   ]
 }

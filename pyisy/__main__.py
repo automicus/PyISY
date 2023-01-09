@@ -24,7 +24,7 @@ _LOGGER = logging.getLogger(__name__)
 async def main(url, username, password, tls_ver, events):
     """Execute connection to ISY and load all system info."""
     _LOGGER.info("Starting PyISY...")
-    t0 = time.time()
+    t_0 = time.time()
     host = urlparse(url)
     if host.scheme == "http":
         https = False
@@ -67,7 +67,7 @@ async def main(url, username, password, tls_ver, events):
 
     # Print a representation of all the Nodes
     _LOGGER.debug(repr(isy.nodes))
-    _LOGGER.info("Total Loading time: %.2fs", time.time() - t0)
+    _LOGGER.info("Total Loading time: %.2fs", time.time() - t_0)
 
     try:
         if events:
@@ -91,12 +91,13 @@ if __name__ == "__main__":
     parser.set_defaults(use_https=False, tls_ver=1.1, verbose=False)
     args = parser.parse_args()
 
-    loglevel = LOG_VERBOSE if args.verbose else logging.DEBUG
-    enable_logging(loglevel)
+    enable_logging(LOG_VERBOSE if args.verbose else logging.DEBUG)
 
     _LOGGER.info(
-        f"ISY URL: {args.url}, username: {args.username}, password: {args.password}, "
-        f"TLS Version: {args.tls_ver}"
+        "ISY URL: %s, username: %s, TLS: %s",
+        args.url,
+        args.username,
+        args.tls_ver,
     )
 
     try:

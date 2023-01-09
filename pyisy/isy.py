@@ -71,7 +71,7 @@ class ISY:
         self._reconnect_thread = None
         self._connected = False
 
-        if not len(_LOGGER.handlers):
+        if len(_LOGGER.handlers) == 0:
             enable_logging(add_null_handler=True)
 
         self.conn = Connection(

@@ -119,9 +119,9 @@ class Variables:
         """Parse XML from the controller with details about the variables."""
         try:
             xmldoc = minidom.parseString(xml)
-        except XML_ERRORS:
+        except XML_ERRORS as exc:
             _LOGGER.error("%s: Variables", XML_PARSE_ERROR)
-            raise ISYResponseParseError(XML_PARSE_ERROR)
+            raise ISYResponseParseError(XML_PARSE_ERROR) from exc
 
         features = xmldoc.getElementsByTagName(ATTR_VAR)
         for feature in features:
@@ -131,19 +131,19 @@ class Variables:
             prec = int(value_from_xml(feature, ATTR_PRECISION, 0))
             val = value_from_xml(feature, ATTR_VAL)
             ts_raw = value_from_xml(feature, ATTR_TS)
-            t_s = parser.parse(ts_raw)
+            timestamp = parser.parse(ts_raw)
             vname = self.vnames[vtype].get(vid, "")
 
             vobj = self.vobjs[vtype].get(vid)
             if vobj is None:
-                vobj = Variable(self, vid, vtype, vname, init, val, t_s, prec)
+                vobj = Variable(self, vid, vtype, vname, init, val, timestamp, prec)
                 self.vids[vtype].append(vid)
                 self.vobjs[vtype][vid] = vobj
             else:
                 vobj.init = init
                 vobj.status = val
                 vobj.prec = prec
-                vobj.last_edited = t_s
+                vobj.last_edited = timestamp
 
         _LOGGER.info("ISY Loaded Variables")
 

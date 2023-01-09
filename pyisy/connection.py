@@ -66,7 +66,7 @@ class Connection:
         websession=None,
     ):
         """Initialize the Connection object."""
-        if not len(_LOGGER.handlers):
+        if len(_LOGGER.handlers) == 0:
             enable_logging(add_null_handler=True)
 
         self._address = address
@@ -340,16 +340,14 @@ def can_https(tls_ver):
     # check that Python was compiled against correct OpenSSL lib
     if "PROTOCOL_TLSv1_1" not in dir(ssl):
         _LOGGER.error(
-            "PyISY cannot use HTTPS: Compiled against old OpenSSL "
-            + "library. See docs."
+            "PyISY cannot use HTTPS: Compiled against old OpenSSL library. See docs."
         )
         output = False
 
     # check the requested TLS version
     if tls_ver not in [1.1, 1.2]:
         _LOGGER.error(
-            "PyISY cannot use HTTPS: Only TLS 1.1 and 1.2 are supported "
-            + "by the ISY controller."
+            "PyISY cannot use HTTPS: Only TLS 1.1 and 1.2 are supported by the ISY controller."
         )
         output = False
 
