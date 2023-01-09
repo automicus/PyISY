@@ -35,6 +35,6 @@ setup(
         "Operating System :: OS Independent",
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
-        "Topic :: Home Automation :: Libraries :: Python Modules",
+        "Topic :: Home Automation",
     ],
 )
