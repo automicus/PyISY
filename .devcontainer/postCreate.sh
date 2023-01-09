@@ -2,9 +2,9 @@
 
 cd /workspaces/PyISY
 
-# Setup the test_scripts folder as copy of the example.
-mkdir -p test_scripts
-cp -r pyisy/__main__.py test_scripts/example_connection.py
+# Setup the example folder as copy of the example.
+mkdir -p example
+cp -r pyisy/__main__.py example/example_connection.py
 
 # Install the editable local package
 pip3 install -e .
