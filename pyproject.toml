@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools~=62.3", "wheel","setuptools-git-versioning<2",]
+requires = ["setuptools~=62.3", "wheel","setuptools_scm[toml]>=6.2",]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -36,10 +36,7 @@ dependencies = [
 "Source Code" = "https://github.com/automicus/PyISY"
 "Homepage" = "https://github.com/automicus/PyISY"
 
-[tool.setuptools-git-versioning]
-enabled = true
-template = "{tag}"
-dirty_template = "{tag}.dev{ccount}+dirty"
+[tool.setuptools_scm]
 
 [tool.black]
 target-version = ["py38", "py39", "py310"]

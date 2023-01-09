@@ -21,7 +21,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-import pkg_resources
+from importlib.metadata import PackageNotFoundError, version
 
 from .exceptions import (
     ISYConnectionError,
@@ -34,8 +34,8 @@ from .exceptions import (
 from .isy import ISY
 
 try:
-    __version__ = pkg_resources.get_distribution("pyisy").version
-except (pkg_resources.ResolutionError, pkg_resources.ExtractionError):
+    __version__ = version("pyisy")
+except PackageNotFoundError:
     __version__ = "unknown"
 
 __all__ = [
