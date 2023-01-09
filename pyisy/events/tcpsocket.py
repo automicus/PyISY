@@ -51,6 +51,7 @@ class EventStream:
         self._hbwait = 0
         self._loaded = None
         self._on_lost_function = on_lost_func
+        self._program_key = None
         self.cert = None
         self.data = connection_info
 
@@ -83,9 +84,9 @@ class EventStream:
         try:
             xmldoc = minidom.parseString(msg)
         except xml.parsers.expat.ExpatError:
-            _LOGGER.warning("ISY Received Malformed XML:\n" + msg)
+            _LOGGER.warning("ISY Received Malformed XML:\n%s", msg)
             return
-        _LOGGER.log(LOG_VERBOSE, "ISY Update Received:\n" + msg)
+        _LOGGER.log(LOG_VERBOSE, "ISY Update Received:\n%s", msg)
 
         # A wild stream id appears!
         if f"{ATTR_STREAM_ID}=" in msg and ATTR_STREAM_ID not in self.data:

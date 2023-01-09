@@ -75,7 +75,7 @@ class ISY:
         self._reconnect_thread = None
         self._connected = False
 
-        if not len(_LOGGER.handlers):
+        if not len(_LOGGER.handlers) > 0:
             logging.basicConfig(
                 format=LOG_FORMAT, datefmt=LOG_DATE_FORMAT, level=LOG_LEVEL
             )

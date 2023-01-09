@@ -221,7 +221,7 @@ class Nodes:
         node.update_state(
             NodeProperty(PROP_STATUS, value, prec, uom, formatted, address)
         )
-        _LOGGER.debug("ISY Updated Node: " + address)
+        _LOGGER.debug("ISY Updated Node: %s", address)
 
     def control_message_received(self, xmldoc):
         """
@@ -271,7 +271,7 @@ class Nodes:
             node.update_state(
                 NodeProperty(PROP_STATUS, value, prec, uom, formatted, address)
             )
-            _LOGGER.debug("ISY Updated Node: " + address)
+            _LOGGER.debug("ISY Updated Node: %s", address)
         elif cntrl not in EVENT_PROPS_IGNORED:
             node.update_property(node_property)
         node.control_events.notify(node_property)
@@ -295,9 +295,9 @@ class Nodes:
         """
         try:
             xmldoc = minidom.parseString(xml)
-        except XML_ERRORS:
+        except XML_ERRORS as exc:
             _LOGGER.error("%s: Nodes", XML_PARSE_ERROR)
-            raise ISYResponseParseError(XML_PARSE_ERROR)
+            raise ISYResponseParseError(XML_PARSE_ERROR) from exc
 
         # get nodes
         ntypes = [TAG_FOLDER, TAG_NODE, TAG_GROUP]
