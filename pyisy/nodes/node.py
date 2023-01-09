@@ -94,6 +94,7 @@ class Node(NodeBase):
         protocol=None,
         family_id=None,
         state_set=True,
+        flag=0,
     ):
         """Initialize a Node class."""
         self._enabled = enabled if enabled is not None else True
@@ -116,6 +117,7 @@ class Node(NodeBase):
             family_id=family_id,
             aux_properties=aux_properties,
             pnode=pnode,
+            flag=flag,
         )
 
     @property
