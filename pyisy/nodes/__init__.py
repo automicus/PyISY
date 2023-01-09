@@ -1,5 +1,6 @@
 """Representation of ISY Nodes."""
 from asyncio import sleep
+from dataclasses import dataclass
 from xml.dom import minidom
 
 from ..constants import (
@@ -21,6 +22,7 @@ from ..constants import (
     FAMILY_ZWAVE,
     INSTEON_RAMP_RATES,
     ISY_VALUE_UNKNOWN,
+    NC_NODE_ENABLED,
     NC_NODE_ERROR,
     NODE_CHANGED_ACTIONS,
     NODE_IS_CONTROLLER,
@@ -36,6 +38,7 @@ from ..constants import (
     TAG_ADDRESS,
     TAG_DEVICE_TYPE,
     TAG_ENABLED,
+    TAG_EVENT_INFO,
     TAG_FAMILY,
     TAG_FOLDER,
     TAG_FORMATTED,
@@ -51,6 +54,7 @@ from ..constants import (
 )
 from ..exceptions import XML_ERRORS, XML_PARSE_ERROR, ISYResponseParseError
 from ..helpers import (
+    EventEmitter,
     NodeProperty,
     ZWaveProperties,
     attr_from_element,
@@ -107,6 +111,8 @@ class Nodes:
         self.nparents = []
         self.nobjs = []
         self.ntypes = []
+
+        self.status_events = EventEmitter()
 
         if xml is not None:
             self.parse(xml)
@@ -284,9 +290,26 @@ class Nodes:
         action = value_from_xml(xmldoc, ATTR_ACTION)
         if not action or action not in NODE_CHANGED_ACTIONS:
             return
+        (event_desc, e_i_keys) = NODE_CHANGED_ACTIONS[action]
         node = value_from_xml(xmldoc, TAG_NODE)
+        detail = {}
+        if e_i_keys and xmldoc.getElementsByTagName(TAG_EVENT_INFO):
+            detail = {key: value_from_xml(xmldoc, key) for key in e_i_keys}
+
         if action == NC_NODE_ERROR:
             _LOGGER.error("ISY Could not communicate with device: %s", node)
+        elif action == NC_NODE_ENABLED and node in self.addresses:
+            node_obj: Node = self.get_by_id(node)
+            # pylint: disable=attribute-defined-outside-init
+            node_obj.enabled = detail[TAG_ENABLED] == XML_TRUE
+
+        self.status_events.notify(event=NodeChangedEvent(node, action, detail))
+        _LOGGER.debug(
+            "ISY received a %s event for node %s %s",
+            event_desc,
+            node,
+            detail if detail else "",
+        )
         # FUTURE: Handle additional node change actions to force updates.
 
     def parse(self, xml):
@@ -638,3 +661,12 @@ class NodeIterator:
     def __len__(self):
         """Return the number of elements."""
         return self._len
+
+
+@dataclass
+class NodeChangedEvent:
+    """Class representation of a node change event."""
+
+    address: str
+    action: str
+    event_info: dict
