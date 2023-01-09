@@ -201,8 +201,6 @@ class WebSocketClient:
                 await self.isy.programs.update()
         elif cntrl == "_3":  # Node Changed/Updated
             self.isy.nodes.node_changed_received(xmldoc)
-        elif cntrl == "_5":  # System status changed
-            self.isy.system_status_changed_received(xmldoc)
 
     def update_received(self, xmldoc):
         """Set the socket ID."""
