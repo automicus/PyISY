@@ -23,6 +23,8 @@ from ..constants import (
     ISY_VALUE_UNKNOWN,
     NC_NODE_ERROR,
     NODE_CHANGED_ACTIONS,
+    NODE_IS_CONTROLLER,
+    NODE_IS_ROOT,
     PROP_BATTERY_LEVEL,
     PROP_COMMS_ERROR,
     PROP_RAMP_RATE,
@@ -316,6 +318,7 @@ class Nodes:
                 family = value_from_xml(feature, TAG_FAMILY)
                 device_type = value_from_xml(feature, TAG_TYPE)
                 node_def_id = attr_from_element(feature, ATTR_NODE_DEF_ID)
+                flag = int(attr_from_element(feature, ATTR_FLAG, 0))
                 enabled = value_from_xml(feature, TAG_ENABLED) == XML_TRUE
 
                 # Assume Insteon, update as confirmed otherwise
@@ -363,18 +366,18 @@ class Nodes:
                             protocol=protocol,
                             family_id=family,
                             state_set=state_set,
+                            flag=flag,
                         ),
                         ntype,
                     )
                 elif ntype == TAG_GROUP and address not in self.addresses:
-                    flag = attr_from_element(feature, ATTR_FLAG)
                     # Ignore groups that contain 0x08 in the flag since
                     # that is a ISY scene that contains every device/
                     # scene so it will contain some scenes we have not
                     # seen yet so they are not defined and it includes
                     # the ISY MAC address in newer versions of
                     # ISY firmwares > 5.0.6+ ..
-                    if int(flag) & 0x08:
+                    if flag & NODE_IS_ROOT:
                         _LOGGER.debug("Skipping root group flag=%s %s", flag, address)
                         continue
                     mems = feature.getElementsByTagName(TAG_LINK)
@@ -383,7 +386,10 @@ class Nodes:
                     # Build list of controllers
                     controllers = []
                     for mem in mems:
-                        if int(attr_from_element(mem, TAG_TYPE, 0)) == 16:
+                        if (
+                            int(attr_from_element(mem, TAG_TYPE, 0))
+                            == NODE_IS_CONTROLLER
+                        ):
                             controllers.append(mem.firstChild.nodeValue)
                     self.insert(
                         address,
@@ -397,6 +403,7 @@ class Nodes:
                             controllers=controllers,
                             family_id=family,
                             pnode=pnode,
+                            flag=flag,
                         ),
                         ntype,
                     )

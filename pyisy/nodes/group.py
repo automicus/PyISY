@@ -37,12 +37,15 @@ class Group(NodeBase):
         controllers=None,
         family_id=FAMILY_GENERIC,
         pnode=None,
+        flag=0,
     ):
         """Initialize a Group class."""
         self._all_on = False
         self._controllers = controllers or []
         self._members = members or []
-        super().__init__(nodes, address, name, 0, family_id=family_id, pnode=pnode)
+        super().__init__(
+            nodes, address, name, 0, family_id=family_id, pnode=pnode, flag=flag
+        )
 
         # listen for changes in children
         self._members_handlers = [

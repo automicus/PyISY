@@ -50,6 +50,7 @@ class NodeBase:
         family_id=None,
         aux_properties=None,
         pnode=None,
+        flag=0,
     ):
         """Initialize a Node Base class."""
         self._aux_properties = aux_properties if aux_properties is not None else {}
@@ -59,6 +60,7 @@ class NodeBase:
         self._nodes = nodes
         self._notes = None
         self._primary_node = pnode
+        self._flag = flag
         self._status = status
         self._last_update = now()
         self._last_changed = now()
@@ -92,6 +94,11 @@ class NodeBase:
     def family(self):
         """Return the ISY Family category."""
         return self._family
+
+    @property
+    def flag(self):
+        """Return the flag of the current node as a property."""
+        return self._flag
 
     @property
     def folder(self):
