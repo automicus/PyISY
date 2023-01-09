@@ -22,7 +22,12 @@ setup(
     include_package_data=True,
     platforms="any",
     setup_requires=["setuptools-git-version"],
-    install_requires=["requests", "python-dateutil", "aiohttp"],
+    install_requires=[
+        "aiohttp==3.8.1",
+        "python-dateutil>=2.8.1",
+        "requests==2.28.1",
+        "colorlog>=6.7.0",
+    ],
     keywords=["home automation", "isy", "isy994", "isy-994", "UDI"],
     classifiers=[
         "Intended Audience :: Developers",
@@ -30,6 +35,6 @@ setup(
         "Operating System :: OS Independent",
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
-        "Topic :: Software Development :: Libraries :: Python Modules",
+        "Topic :: Home Automation :: Libraries :: Python Modules",
     ],
 )
