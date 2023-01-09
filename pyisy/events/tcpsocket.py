@@ -22,7 +22,6 @@ from ..constants import (
     ES_INITIALIZING,
     ES_LOADED,
     ES_LOST_STREAM_CONNECTION,
-    LOG_VERBOSE,
     POLL_TIME,
     PROP_STATUS,
     RECONNECT_DELAY,
@@ -31,6 +30,7 @@ from ..constants import (
 )
 from ..exceptions import ISYInvalidAuthError, ISYMaxConnections, ISYStreamDataError
 from ..helpers import attr_from_xml, now, value_from_xml
+from ..logging import LOG_VERBOSE
 from .eventreader import ISYEventReader
 
 _LOGGER = logging.getLogger(__name__)  # Allows targeting pyisy.events in handlers.

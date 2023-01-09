@@ -2,7 +2,6 @@
 from xml.dom import minidom
 
 from .constants import (
-    _LOGGER,
     ATTR_DESC,
     ATTR_ID,
     TAG_DESC,
@@ -18,6 +17,7 @@ from .constants import (
 )
 from .exceptions import XML_ERRORS, XML_PARSE_ERROR, ISYResponseParseError
 from .helpers import value_from_nested_xml, value_from_xml
+from .logging import _LOGGER
 
 
 class Configuration(dict):

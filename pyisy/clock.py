@@ -3,7 +3,6 @@ from asyncio import sleep
 from xml.dom import minidom
 
 from .constants import (
-    _LOGGER,
     EMPTY_TIME,
     TAG_DST,
     TAG_LATITUDE,
@@ -17,6 +16,7 @@ from .constants import (
 )
 from .exceptions import XML_ERRORS, XML_PARSE_ERROR, ISYResponseParseError
 from .helpers import ntp_to_system_time, value_from_xml
+from .logging import _LOGGER
 
 
 class Clock:

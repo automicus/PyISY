@@ -2,7 +2,6 @@
 from xml.dom import minidom
 
 from ..constants import (
-    _LOGGER,
     ATTR_LAST_CHANGED,
     ATTR_LAST_UPDATE,
     ATTR_STATUS,
@@ -34,6 +33,7 @@ from ..constants import (
 )
 from ..exceptions import XML_ERRORS, XML_PARSE_ERROR, ISYResponseParseError
 from ..helpers import EventEmitter, NodeProperty, now, value_from_xml
+from ..logging import _LOGGER
 
 
 class NodeBase:

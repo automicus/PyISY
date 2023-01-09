@@ -1,6 +1,5 @@
 """Connection to the ISY."""
 import asyncio
-import logging
 import ssl
 import sys
 from urllib.parse import quote, urlencode
@@ -8,10 +7,6 @@ from urllib.parse import quote, urlencode
 import aiohttp
 
 from .constants import (
-    _LOGGER,
-    LOG_DATE_FORMAT,
-    LOG_FORMAT,
-    LOG_LEVEL,
     METHOD_GET,
     URL_CLOCK,
     URL_CONFIG,
@@ -31,6 +26,7 @@ from .constants import (
     XML_TRUE,
 )
 from .exceptions import ISYConnectionError, ISYInvalidAuthError
+from .logging import _LOGGER, enable_logging
 
 MAX_RETRIES = 5
 
@@ -70,12 +66,8 @@ class Connection:
         websession=None,
     ):
         """Initialize the Connection object."""
-        if not len(_LOGGER.handlers) > 0:
-            logging.basicConfig(
-                format=LOG_FORMAT, datefmt=LOG_DATE_FORMAT, level=LOG_LEVEL
-            )
-            _LOGGER.addHandler(logging.NullHandler())
-            logging.getLogger("urllib3").setLevel(logging.WARNING)
+        if len(_LOGGER.handlers) == 0:
+            enable_logging(add_null_handler=True)
 
         self._address = address
         self._port = port

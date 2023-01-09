@@ -16,7 +16,7 @@ from urllib.parse import urlparse
 
 from . import ISY
 from .connection import ISYConnectionError, ISYInvalidAuthError, get_new_client_session
-from .constants import LOG_DATE_FORMAT, LOG_FORMAT, LOG_VERBOSE
+from .logging import LOG_VERBOSE, enable_logging
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -91,12 +91,7 @@ if __name__ == "__main__":
     parser.set_defaults(use_https=False, tls_ver=1.1, verbose=False)
     args = parser.parse_args()
 
-    logging.basicConfig(
-        format=LOG_FORMAT,
-        datefmt=LOG_DATE_FORMAT,
-        level=LOG_VERBOSE if args.verbose else logging.DEBUG,
-    )
-    logging.getLogger("urllib3").setLevel(logging.WARNING)
+    enable_logging(LOG_VERBOSE if args.verbose else logging.DEBUG)
 
     _LOGGER.info(
         "ISY URL: %s, username: %s, TLS: %s",

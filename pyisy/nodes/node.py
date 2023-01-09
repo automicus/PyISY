@@ -4,7 +4,6 @@ from math import isnan
 from xml.dom import minidom
 
 from ..constants import (
-    _LOGGER,
     CLIMATE_SETPOINT_MIN_GAP,
     CMD_CLIMATE_FAN_SETTING,
     CMD_CLIMATE_MODE,
@@ -50,6 +49,7 @@ from ..helpers import (
     now,
     parse_xml_properties,
 )
+from ..logging import _LOGGER
 from .nodebase import NodeBase
 
 

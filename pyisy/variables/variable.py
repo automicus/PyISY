@@ -1,6 +1,5 @@
 """Manage variables from the ISY."""
 from ..constants import (
-    _LOGGER,
     ATTR_INIT,
     ATTR_LAST_CHANGED,
     ATTR_LAST_UPDATE,
@@ -15,6 +14,7 @@ from ..constants import (
     VAR_INTEGER,
 )
 from ..helpers import EventEmitter, now
+from ..logging import _LOGGER
 
 
 class Variable:

@@ -1,28 +1,24 @@
 """Module for connecting to and interacting with the ISY."""
 import asyncio
-import logging
 from threading import Thread
 
 from .clock import Clock
 from .configuration import Configuration
 from .connection import Connection
 from .constants import (
-    _LOGGER,
     CMD_X10,
     ES_CONNECTED,
     ES_RECONNECT_FAILED,
     ES_RECONNECTING,
     ES_START_UPDATES,
     ES_STOP_UPDATES,
-    LOG_DATE_FORMAT,
-    LOG_FORMAT,
-    LOG_LEVEL,
     URL_QUERY,
     X10_COMMANDS,
 )
 from .events.tcpsocket import EventStream
 from .events.websocket import WebSocketClient
 from .helpers import EventEmitter
+from .logging import _LOGGER, enable_logging
 from .networking import NetworkResources
 from .nodes import Nodes
 from .programs import Programs
@@ -75,12 +71,8 @@ class ISY:
         self._reconnect_thread = None
         self._connected = False
 
-        if not len(_LOGGER.handlers) > 0:
-            logging.basicConfig(
-                format=LOG_FORMAT, datefmt=LOG_DATE_FORMAT, level=LOG_LEVEL
-            )
-            _LOGGER.addHandler(logging.NullHandler())
-            logging.getLogger("urllib3").setLevel(logging.WARNING)
+        if len(_LOGGER.handlers) == 0:
+            enable_logging(add_null_handler=True)
 
         self.conn = Connection(
             address=address,

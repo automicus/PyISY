@@ -3,7 +3,6 @@ from asyncio import sleep
 from xml.dom import minidom
 
 from .constants import (
-    _LOGGER,
     ATTR_ID,
     PROTO_NETWORK_RESOURCE,
     TAG_NAME,
@@ -13,6 +12,7 @@ from .constants import (
 )
 from .exceptions import XML_ERRORS, XML_PARSE_ERROR
 from .helpers import value_from_xml
+from .logging import _LOGGER
 
 
 class NetworkResources:
