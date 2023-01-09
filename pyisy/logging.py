@@ -4,7 +4,7 @@ import logging
 
 _LOGGER = logging.getLogger(__package__)
 LOG_LEVEL = logging.DEBUG
-LOG_VERBOSE = logging.NOTSET
+LOG_VERBOSE = 5
 LOG_FORMAT = "%(asctime)s %(levelname)s [%(name)s] %(message)s"
 LOG_DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 
