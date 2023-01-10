@@ -6,7 +6,6 @@ from typing import Dict, List
 from xml.dom import getDOMImplementation, minidom
 
 from .constants import (
-    _LOGGER,
     ATTR_ID,
     ATTR_UNIT_OF_MEASURE,
     TAG_ENABLED,
@@ -16,6 +15,7 @@ from .constants import (
 )
 from .exceptions import XML_ERRORS, XML_PARSE_ERROR, ISYResponseParseError
 from .helpers import attr_from_element, value_from_xml
+from .logging import _LOGGER
 
 ATTR_DIR = "dir"
 ATTR_EDITOR = "editor"
@@ -28,7 +28,8 @@ TAG_CMD = "cmd"
 TAG_CONNECTION = "connection"
 TAG_FILE = "file"
 TAG_FILES = "files"
-TAG_IP_BASE_URL = "ipbaseurl"
+TAG_IP = "ip"
+TAG_BASE_URL = "baseurl"
 TAG_ISY_USER_NUM = "isyusernum"
 TAG_NODE_DEF = "nodeDef"
 TAG_NS_USER = "nsuser"
@@ -92,9 +93,9 @@ class NodeServers:
 
         try:
             connections_xml = minidom.parseString(result)
-        except XML_ERRORS:
+        except XML_ERRORS as exc:
             _LOGGER.error("%s while parsing Node Server connections", XML_PARSE_ERROR)
-            raise ISYResponseParseError(XML_PARSE_ERROR)
+            raise ISYResponseParseError(XML_PARSE_ERROR) from exc
 
         connections = connections_xml.getElementsByTagName(TAG_CONNECTION)
         for connection in connections:
@@ -108,7 +109,8 @@ class NodeServers:
                     port=value_from_xml(connection, TAG_PORT),
                     timeout=value_from_xml(connection, TAG_TIMEOUT),
                     isy_user_num=value_from_xml(connection, TAG_ISY_USER_NUM),
-                    ip_base_url=value_from_xml(connection, TAG_IP_BASE_URL),
+                    ip=value_from_xml(connection, TAG_IP),
+                    base_url=value_from_xml(connection, TAG_BASE_URL),
                     ns_user=value_from_xml(connection, TAG_NS_USER),
                 )
             )
@@ -127,9 +129,9 @@ class NodeServers:
 
         try:
             file_list_xml = minidom.parseString(node_server_file_list)
-        except XML_ERRORS:
+        except XML_ERRORS as exc:
             _LOGGER.error("%s while parsing Node Server files", XML_PARSE_ERROR)
-            raise ISYResponseParseError(XML_PARSE_ERROR)
+            raise ISYResponseParseError(XML_PARSE_ERROR) from exc
 
         file_list: List[str] = []
 
@@ -323,7 +325,8 @@ class NodeServerConnection:
     port: str
     timeout: str
     isy_user_num: str
-    ip_base_url: str
+    ip: str
+    base_url: str
     ns_user: str
 
     def configuration_url(self) -> str:
