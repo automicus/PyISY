@@ -28,13 +28,12 @@ from .constants import (
 from .exceptions import ISYConnectionError, ISYInvalidAuthError
 from .logging import _LOGGER, enable_logging
 
-MAX_RETRIES = 5
-
 MAX_HTTPS_CONNECTIONS_ISY = 2
 MAX_HTTP_CONNECTIONS_ISY = 5
 MAX_HTTPS_CONNECTIONS_IOX = 20
 MAX_HTTP_CONNECTIONS_IOX = 50
 
+MAX_RETRIES = 5
 RETRY_BACKOFF = [0.01, 0.10, 0.25, 1, 2]  # Seconds
 
 HTTP_OK = 200  # Valid request received, will run it
@@ -49,6 +48,8 @@ HTTP_HEADERS = {
     "Keep-Alive": "5000",
     "Accept-Encoding": "gzip, deflate",
 }
+
+EMPTY_XML_RESPONSE = '<?xml version="1.0" encoding="UTF-8"?>'
 
 
 class Connection:
@@ -151,7 +152,10 @@ class Connection:
                 if res.status == HTTP_OK:
                     _LOGGER.debug("ISY Response Received: %s", endpoint)
                     results = await res.text(encoding="utf-8", errors="ignore")
-                    return results
+                    if results != EMPTY_XML_RESPONSE:
+                        return results
+                    _LOGGER.debug("Invalid empty XML returned: %s", endpoint)
+                    res.release()
                 if res.status == HTTP_NOT_FOUND:
                     if ok404:
                         _LOGGER.debug("ISY Response Received %s", endpoint)

@@ -105,6 +105,7 @@ class ISY:
         self.configuration = None
         self.clock = None
         self.nodes = None
+        self.node_servers = None
         self.programs = None
         self.variables = None
         self.networking = None
@@ -114,7 +115,7 @@ class ISY:
         self.system_status = SYSTEM_BUSY
         self.loop = asyncio.get_running_loop()
 
-    async def initialize(self):
+    async def initialize(self, with_node_servers=False):
         """Initialize the connection with the ISY."""
         config_xml = await self.conn.test_connection()
         self.configuration = Configuration(xml=config_xml)
@@ -145,6 +146,8 @@ class ISY:
         if self.configuration["Networking Module"]:
             self.networking = NetworkResources(self, xml=isy_setup_results[6])
         await self.nodes.update(xml=isy_setup_results[0])
+        if self.node_servers and with_node_servers:
+            await self.node_servers.load_node_servers()
 
         self._connected = True
 
