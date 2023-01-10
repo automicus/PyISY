@@ -114,12 +114,13 @@ class ISY:
         self.status_events = EventEmitter()
         self.system_status = SYSTEM_BUSY
         self.loop = asyncio.get_running_loop()
+        self._uuid = None
 
     async def initialize(self, with_node_servers=False):
         """Initialize the connection with the ISY."""
         config_xml = await self.conn.test_connection()
         self.configuration = Configuration(xml=config_xml)
-
+        self._uuid = self.configuration["uuid"]
         if not self.configuration["model"].startswith("ISY 994"):
             self.conn.increase_available_connections()
 
@@ -161,6 +162,11 @@ class ISY:
         await self.conn.close()
 
     @property
+    def conf(self):
+        """Return the status of the connection (shortcut property)."""
+        return self.configuration
+
+    @property
     def connected(self):
         """Return the status of the connection."""
         return self._connected
@@ -195,6 +201,11 @@ class ISY:
     def hostname(self):
         """Return the hostname."""
         return self._hostname
+
+    @property
+    def uuid(self):
+        """Return the ISY's uuid."""
+        return self._uuid
 
     def _on_lost_event_stream(self):
         """Handle lost connection to event stream."""

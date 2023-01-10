@@ -79,6 +79,7 @@ class Connection:
         self.req_session = websession
         self._tls_ver = tls_ver
         self.use_https = use_https
+        self._url = f"http{'s' if self.use_https else ''}://{self._address}:{self._port}{self._webroot}"
 
         self.semaphore = asyncio.Semaphore(
             MAX_HTTPS_CONNECTIONS_ISY if use_https else MAX_HTTP_CONNECTIONS_ISY
@@ -122,11 +123,15 @@ class Connection:
 
         return connection_info
 
+    @property
+    def url(self):
+        """Return the full connection url."""
+        return self._url
+
     # COMMON UTILITIES
     def compile_url(self, path, query=None):
         """Compile the URL to fetch from the ISY."""
-        url = "https://" if self.use_https else "http://"
-        url += f"{self._address}:{self._port}{self._webroot}"
+        url = self.url
         if path is not None:
             url += "/rest/" + "/".join([quote(item) for item in path])
 

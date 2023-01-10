@@ -4,7 +4,7 @@ from xml.dom import minidom
 
 from .constants import (
     ATTR_ID,
-    PROTO_NETWORK_RESOURCE,
+    PROTO_NETWORK,
     TAG_NAME,
     TAG_NET_RULE,
     URL_NETWORK,
@@ -180,7 +180,7 @@ class NetworkCommand:
     @property
     def protocol(self):
         """Return the Protocol for this node."""
-        return PROTO_NETWORK_RESOURCE
+        return PROTO_NETWORK
 
     async def run(self):
         """Execute the networking command."""
