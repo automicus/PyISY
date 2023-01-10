@@ -1,6 +1,5 @@
 """ISY Program Folders."""
 from ..constants import (
-    _LOGGER,
     ATTR_LAST_CHANGED,
     ATTR_LAST_UPDATE,
     ATTR_STATUS,
@@ -17,6 +16,7 @@ from ..constants import (
     URL_PROGRAMS,
 )
 from ..helpers import EventEmitter, now
+from ..logging import _LOGGER
 
 
 class Folder:

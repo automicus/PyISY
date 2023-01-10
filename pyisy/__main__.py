@@ -16,7 +16,9 @@ from urllib.parse import urlparse
 
 from . import ISY
 from .connection import ISYConnectionError, ISYInvalidAuthError, get_new_client_session
-from .constants import LOG_DATE_FORMAT, LOG_FORMAT, LOG_VERBOSE
+from .constants import NODE_CHANGED_ACTIONS, SYSTEM_STATUS
+from .logging import LOG_VERBOSE, enable_logging
+from .nodes import NodeChangedEvent
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -24,7 +26,7 @@ _LOGGER = logging.getLogger(__name__)
 async def main(url, username, password, tls_ver, events, node_servers):
     """Execute connection to ISY and load all system info."""
     _LOGGER.info("Starting PyISY...")
-    t0 = time.time()
+    t_0 = time.time()
     host = urlparse(url)
     if host.scheme == "http":
         https = False
@@ -67,16 +69,43 @@ async def main(url, username, password, tls_ver, events, node_servers):
 
     # Print a representation of all the Nodes
     _LOGGER.debug(repr(isy.nodes))
-    _LOGGER.info("Total Loading time: %.2fs", time.time() - t0)
+    _LOGGER.info("Total Loading time: %.2fs", time.time() - t_0)
+
+    node_changed_subscriber = None
+    system_status_subscriber = None
+
+    def node_changed_handler(event: NodeChangedEvent) -> None:
+        """Handle a node changed event sent from Nodes class."""
+        (event_desc, _) = NODE_CHANGED_ACTIONS[event.action]
+        _LOGGER.info(
+            "Subscriber--Node %s Changed: %s %s",
+            event.address,
+            event_desc,
+            event.event_info if event.event_info else "",
+        )
+
+    def system_status_handler(event: str) -> None:
+        """Handle a system status changed event sent ISY class."""
+        _LOGGER.info("System Status Changed: %s", SYSTEM_STATUS.get(event))
 
     try:
         if events:
             isy.websocket.start()
+            node_changed_subscriber = isy.nodes.status_events.subscribe(
+                node_changed_handler
+            )
+            system_status_subscriber = isy.status_events.subscribe(
+                system_status_handler
+            )
         while True:
             await asyncio.sleep(1)
     except asyncio.CancelledError:
         pass
     finally:
+        if node_changed_subscriber:
+            node_changed_subscriber.unsubscribe()
+        if system_status_subscriber:
+            system_status_subscriber.unsubscribe()
         await isy.shutdown()
 
 
@@ -94,16 +123,13 @@ if __name__ == "__main__":
     parser.set_defaults(use_https=False, tls_ver=1.1, verbose=False)
     args = parser.parse_args()
 
-    loglevel = logging.DEBUG
-    if args.verbose:
-        loglevel = LOG_VERBOSE
-
-    logging.basicConfig(format=LOG_FORMAT, datefmt=LOG_DATE_FORMAT, level=loglevel)
-    logging.getLogger("urllib3").setLevel(logging.WARNING)
+    enable_logging(LOG_VERBOSE if args.verbose else logging.DEBUG)
 
     _LOGGER.info(
-        f"ISY URL: {args.url}, username: {args.username}, password: {args.password}, "
-        f"TLS Version: {args.tls_ver}"
+        "ISY URL: %s, username: %s, TLS: %s",
+        args.url,
+        args.username,
+        args.tls_ver,
     )
 
     try:

@@ -1,28 +1,27 @@
 """Module for connecting to and interacting with the ISY."""
 import asyncio
-import logging
 from threading import Thread
 
 from .clock import Clock
 from .configuration import Configuration
 from .connection import Connection
 from .constants import (
-    _LOGGER,
+    ATTR_ACTION,
     CMD_X10,
     ES_CONNECTED,
     ES_RECONNECT_FAILED,
     ES_RECONNECTING,
     ES_START_UPDATES,
     ES_STOP_UPDATES,
-    LOG_DATE_FORMAT,
-    LOG_FORMAT,
-    LOG_LEVEL,
+    SYSTEM_BUSY,
+    SYSTEM_STATUS,
     URL_QUERY,
     X10_COMMANDS,
 )
 from .events.tcpsocket import EventStream
 from .events.websocket import WebSocketClient
-from .helpers import EventEmitter
+from .helpers import EventEmitter, value_from_xml
+from .logging import _LOGGER, enable_logging
 from .networking import NetworkResources
 from .nodes import Nodes
 from .programs import Programs
@@ -75,12 +74,8 @@ class ISY:
         self._reconnect_thread = None
         self._connected = False
 
-        if not len(_LOGGER.handlers):
-            logging.basicConfig(
-                format=LOG_FORMAT, datefmt=LOG_DATE_FORMAT, level=LOG_LEVEL
-            )
-            _LOGGER.addHandler(logging.NullHandler())
-            logging.getLogger("urllib3").setLevel(logging.WARNING)
+        if len(_LOGGER.handlers) == 0:
+            enable_logging(add_null_handler=True)
 
         self.conn = Connection(
             address=address,
@@ -116,6 +111,8 @@ class ISY:
         self.networking = None
         self._hostname = address
         self.connection_events = EventEmitter()
+        self.status_events = EventEmitter()
+        self.system_status = SYSTEM_BUSY
         self.loop = asyncio.get_running_loop()
 
     async def initialize(self, with_node_servers=False):
@@ -123,8 +120,8 @@ class ISY:
         config_xml = await self.conn.test_connection()
         self.configuration = Configuration(xml=config_xml)
 
-        if not self.configuration["model"].startswith("ISY 994i"):
-            self.conn.increase_connections()
+        if not self.configuration["model"].startswith("ISY 994"):
+            self.conn.increase_available_connections()
 
         isy_setup_tasks = [
             self.conn.get_status(),
@@ -265,3 +262,11 @@ class ISY:
                 _LOGGER.info("ISY Sent X10 Command: %s To: %s", cmd, address)
             else:
                 _LOGGER.error("ISY Failed to send X10 Command: %s To: %s", cmd, address)
+
+    def system_status_changed_received(self, xmldoc):
+        """Handle System Status events from an event stream message."""
+        action = value_from_xml(xmldoc, ATTR_ACTION)
+        if not action or action not in SYSTEM_STATUS:
+            return
+        self.system_status = action
+        self.status_events.notify(action)

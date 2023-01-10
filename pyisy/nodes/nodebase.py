@@ -2,7 +2,6 @@
 from xml.dom import minidom
 
 from ..constants import (
-    _LOGGER,
     ATTR_LAST_CHANGED,
     ATTR_LAST_UPDATE,
     ATTR_STATUS,
@@ -34,6 +33,7 @@ from ..constants import (
 )
 from ..exceptions import XML_ERRORS, XML_PARSE_ERROR, ISYResponseParseError
 from ..helpers import EventEmitter, NodeProperty, now, value_from_xml
+from ..logging import _LOGGER
 
 
 class NodeBase:
@@ -50,6 +50,7 @@ class NodeBase:
         family_id=None,
         aux_properties=None,
         pnode=None,
+        flag=0,
     ):
         """Initialize a Node Base class."""
         self._aux_properties = aux_properties if aux_properties is not None else {}
@@ -59,6 +60,7 @@ class NodeBase:
         self._nodes = nodes
         self._notes = None
         self._primary_node = pnode
+        self._flag = flag
         self._status = status
         self._last_update = now()
         self._last_changed = now()
@@ -92,6 +94,11 @@ class NodeBase:
     def family(self):
         """Return the ISY Family category."""
         return self._family
+
+    @property
+    def flag(self):
+        """Return the flag of the current node as a property."""
+        return self._flag
 
     @property
     def folder(self):
@@ -189,15 +196,15 @@ class NodeBase:
         location = None
         if notes_xml is not None and notes_xml != "":
             try:
-                notesdom = minidom.parseString(notes_xml)
-            except XML_ERRORS:
+                notes_dom = minidom.parseString(notes_xml)
+            except XML_ERRORS as exc:
                 _LOGGER.error("%s: Node Notes %s", XML_PARSE_ERROR, notes_xml)
-                raise ISYResponseParseError()
+                raise ISYResponseParseError() from exc
 
-            spoken = value_from_xml(notesdom, TAG_SPOKEN)
-            location = value_from_xml(notesdom, TAG_LOCATION)
-            description = value_from_xml(notesdom, TAG_DESCRIPTION)
-            is_load = value_from_xml(notesdom, TAG_IS_LOAD)
+            spoken = value_from_xml(notes_dom, TAG_SPOKEN)
+            location = value_from_xml(notes_dom, TAG_LOCATION)
+            description = value_from_xml(notes_dom, TAG_DESCRIPTION)
+            is_load = value_from_xml(notes_dom, TAG_IS_LOAD)
         return {
             TAG_SPOKEN: spoken,
             TAG_IS_LOAD: is_load == XML_TRUE,
@@ -205,7 +212,7 @@ class NodeBase:
             TAG_LOCATION: location,
         }
 
-    def update(self, event=None, wait_time=0, xmldoc=None):
+    async def update(self, event=None, wait_time=0, xmldoc=None):
         """Update the group with values from the controller."""
         self.update_last_update()
 

@@ -1,6 +1,5 @@
 """Manage variables from the ISY."""
 from ..constants import (
-    _LOGGER,
     ATTR_INIT,
     ATTR_LAST_CHANGED,
     ATTR_LAST_UPDATE,
@@ -15,6 +14,7 @@ from ..constants import (
     VAR_INTEGER,
 )
 from ..helpers import EventEmitter, now
+from ..logging import _LOGGER
 
 
 class Variable:
@@ -36,12 +36,12 @@ class Variable:
     :ivar val: Watched property that represents the value of the variable.
     """
 
-    def __init__(self, variables, vid, vtype, vname, init, status, ts, prec):
+    def __init__(self, variables, vid, vtype, vname, init, status, timestamp, prec):
         """Initialize a Variable class."""
         super().__init__()
         self._id = vid
         self._init = init
-        self._last_edited = ts
+        self._last_edited = timestamp
         self._last_update = now()
         self._last_changed = now()
         self._name = vname

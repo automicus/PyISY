@@ -1,6 +1,5 @@
 """Connection to the ISY."""
 import asyncio
-import logging
 import ssl
 import sys
 from urllib.parse import quote, urlencode
@@ -8,10 +7,6 @@ from urllib.parse import quote, urlencode
 import aiohttp
 
 from .constants import (
-    _LOGGER,
-    LOG_DATE_FORMAT,
-    LOG_FORMAT,
-    LOG_LEVEL,
     METHOD_GET,
     URL_CLOCK,
     URL_CONFIG,
@@ -31,8 +26,10 @@ from .constants import (
     XML_TRUE,
 )
 from .exceptions import ISYConnectionError, ISYInvalidAuthError
+from .logging import _LOGGER, enable_logging
 
 MAX_RETRIES = 5
+
 
 MAX_HTTPS_CONNECTIONS_ISY = 2
 MAX_HTTP_CONNECTIONS_ISY = 5
@@ -72,12 +69,8 @@ class Connection:
         websession=None,
     ):
         """Initialize the Connection object."""
-        if not len(_LOGGER.handlers):
-            logging.basicConfig(
-                format=LOG_FORMAT, datefmt=LOG_DATE_FORMAT, level=LOG_LEVEL
-            )
-            _LOGGER.addHandler(logging.NullHandler())
-            logging.getLogger("urllib3").setLevel(logging.WARNING)
+        if len(_LOGGER.handlers) == 0:
+            enable_logging(add_null_handler=True)
 
         self._address = address
         self._port = port
@@ -106,7 +99,7 @@ class Connection:
             raise ISYConnectionError()
         return config
 
-    def increase_connections(self):
+    def increase_available_connections(self):
         """Increase the number of allowed connections for newer hardware."""
         _LOGGER.debug("Increasing available simultaneous connections")
         self.semaphore = asyncio.Semaphore(
@@ -353,16 +346,14 @@ def can_https(tls_ver):
     # check that Python was compiled against correct OpenSSL lib
     if "PROTOCOL_TLSv1_1" not in dir(ssl):
         _LOGGER.error(
-            "PyISY cannot use HTTPS: Compiled against old OpenSSL "
-            + "library. See docs."
+            "PyISY cannot use HTTPS: Compiled against old OpenSSL library. See docs."
         )
         output = False
 
     # check the requested TLS version
     if tls_ver not in [1.1, 1.2]:
         _LOGGER.error(
-            "PyISY cannot use HTTPS: Only TLS 1.1 and 1.2 are supported "
-            + "by the ISY controller."
+            "PyISY cannot use HTTPS: Only TLS 1.1 and 1.2 are supported by the ISY controller."
         )
         output = False
 

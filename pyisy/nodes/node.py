@@ -4,7 +4,6 @@ from math import isnan
 from xml.dom import minidom
 
 from ..constants import (
-    _LOGGER,
     CLIMATE_SETPOINT_MIN_GAP,
     CMD_CLIMATE_FAN_SETTING,
     CMD_CLIMATE_MODE,
@@ -50,6 +49,7 @@ from ..helpers import (
     now,
     parse_xml_properties,
 )
+from ..logging import _LOGGER
 from .nodebase import NodeBase
 
 
@@ -94,6 +94,7 @@ class Node(NodeBase):
         protocol=None,
         family_id=None,
         state_set=True,
+        flag=0,
     ):
         """Initialize a Node class."""
         self._enabled = enabled if enabled is not None else True
@@ -116,6 +117,7 @@ class Node(NodeBase):
             family_id=family_id,
             aux_properties=aux_properties,
             pnode=pnode,
+            flag=flag,
         )
 
     @property
@@ -132,6 +134,12 @@ class Node(NodeBase):
     def enabled(self):
         """Return if the device is enabled or not in the ISY."""
         return self._enabled
+
+    @enabled.setter
+    def enabled(self, value):
+        """Set if the device is enabled or not in the ISY."""
+        if self._enabled != value:
+            self._enabled = value
 
     @property
     def formatted(self):
@@ -159,7 +167,7 @@ class Node(NodeBase):
             or (
                 self._protocol == PROTO_INSTEON
                 and self.type
-                and any([self.type.startswith(t) for t in INSTEON_TYPE_DIMMABLE])
+                and any({self.type.startswith(t) for t in INSTEON_TYPE_DIMMABLE})
                 and self._id.endswith(INSTEON_SUBNODE_DIMMABLE)
             )
             or (
@@ -174,7 +182,7 @@ class Node(NodeBase):
     def is_lock(self):
         """Determine if this device is a door lock type."""
         return (
-            self.type and any([self.type.startswith(t) for t in INSTEON_TYPE_LOCK])
+            self.type and any({self.type.startswith(t) for t in INSTEON_TYPE_LOCK})
         ) or (
             self.protocol == PROTO_ZWAVE
             and self.zwave_props.category
@@ -186,7 +194,7 @@ class Node(NodeBase):
         """Determine if this device is a thermostat/climate control device."""
         return (
             self.type
-            and any([self.type.startswith(t) for t in INSTEON_TYPE_THERMOSTAT])
+            and any({self.type.startswith(t) for t in INSTEON_TYPE_THERMOSTAT})
         ) or (
             self._protocol == PROTO_ZWAVE
             and self.zwave_props.category
@@ -267,13 +275,13 @@ class Node(NodeBase):
             return False
 
         try:
-            parameterdom = minidom.parseString(parameter_xml)
-        except XML_ERRORS:
+            parameter_dom = minidom.parseString(parameter_xml)
+        except XML_ERRORS as exc:
             _LOGGER.error("%s: Node Parameter %s", XML_PARSE_ERROR, parameter_xml)
-            raise ISYResponseParseError()
+            raise ISYResponseParseError() from exc
 
-        size = int(attr_from_xml(parameterdom, TAG_CONFIG, TAG_SIZE))
-        value = attr_from_xml(parameterdom, TAG_CONFIG, TAG_VALUE)
+        size = int(attr_from_xml(parameter_dom, TAG_CONFIG, TAG_SIZE))
+        value = attr_from_xml(parameter_dom, TAG_CONFIG, TAG_VALUE)
 
         # Add/update the aux_properties to include the parameter.
         node_prop = NodeProperty(
@@ -359,9 +367,9 @@ class Node(NodeBase):
             xml = await self.isy.conn.request(req_url)
             try:
                 xmldoc = minidom.parseString(xml)
-            except XML_ERRORS:
+            except XML_ERRORS as exc:
                 _LOGGER.error("%s: Nodes", XML_PARSE_ERROR)
-                raise ISYResponseParseError(XML_PARSE_ERROR)
+                raise ISYResponseParseError(XML_PARSE_ERROR) from exc
 
         if xmldoc is None:
             _LOGGER.warning("ISY could not update node: %s", self._id)
@@ -385,7 +393,7 @@ class Node(NodeBase):
             self._prec = state.prec
             changed = True
 
-        if state.uom != self._uom and state.uom != "":
+        if state.uom not in (self._uom, ""):
             self._uom = state.uom
             changed = True
 
@@ -535,13 +543,13 @@ class Node(NodeBase):
     async def start_manual_dimming(self):
         """Begin manually dimming a device."""
         _LOGGER.warning(
-            f"'{CMD_MANUAL_DIM_BEGIN}' is depreciated. Use Fade Commands instead."
+            "'%s' is depreciated, use FADE__ commands instead", CMD_MANUAL_DIM_BEGIN
         )
         return await self.send_cmd(CMD_MANUAL_DIM_BEGIN)
 
     async def stop_manual_dimming(self):
         """Stop manually dimming  a device."""
         _LOGGER.warning(
-            f"'{CMD_MANUAL_DIM_STOP}' is depreciated. Use Fade Commands instead."
+            "'%s' is depreciated, use FADE__ commands instead", CMD_MANUAL_DIM_STOP
         )
         return await self.send_cmd(CMD_MANUAL_DIM_STOP)

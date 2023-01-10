@@ -5,7 +5,6 @@ from xml.dom import minidom
 from dateutil import parser
 
 from ..constants import (
-    _LOGGER,
     ATTR_ID,
     ATTR_PARENT,
     ATTR_STATUS,
@@ -25,6 +24,7 @@ from ..constants import (
 )
 from ..exceptions import XML_ERRORS, XML_PARSE_ERROR
 from ..helpers import attr_from_element, now, value_from_xml
+from ..logging import _LOGGER
 from ..nodes import NodeIterator as ProgramIterator
 from .folder import Folder
 from .program import Program
@@ -146,42 +146,47 @@ class Programs:
 
     def update_received(self, xmldoc):
         """Update programs from EventStream message."""
+        # pylint: disable=attribute-defined-outside-init
         xml = xmldoc.toxml()
         address = value_from_xml(xmldoc, ATTR_ID).zfill(4)
         try:
             pobj = self.get_by_id(address).leaf
         except ValueError:
-            pobj = None  # this is a new program that hasn't been registered
+            _LOGGER.warning(
+                "ISY received program update for new program; reload the module to update"
+            )
+            return  # this is a new program that hasn't been registered
 
-        if isinstance(pobj, Program):
-            new_status = False
-            if f"<{TAG_PRGM_STATUS}>" in xml:
-                status = value_from_xml(xmldoc, TAG_PRGM_STATUS)
-                if status == "21":
-                    pobj.ran_then += 1
-                    new_status = True
-                elif status == "31":
-                    pobj.ran_else += 1
+        if not isinstance(pobj, Program):
+            return
 
-            if f"<{TAG_PRGM_RUN}>" in xml:
-                pobj.last_run = parser.parse(value_from_xml(xmldoc, TAG_PRGM_RUN))
+        new_status = False
 
-            if f"<{TAG_PRGM_FINISH}>" in xml:
-                pobj.last_finished = parser.parse(
-                    value_from_xml(xmldoc, TAG_PRGM_FINISH)
-                )
+        if f"<{TAG_PRGM_STATUS}>" in xml:
+            status = value_from_xml(xmldoc, TAG_PRGM_STATUS)
+            if status == "21":
+                pobj.ran_then += 1
+                new_status = True
+            elif status == "31":
+                pobj.ran_else += 1
 
-            if XML_ON in xml or XML_OFF in xml:
-                pobj.enabled = XML_ON in xml
+        if f"<{TAG_PRGM_RUN}>" in xml:
+            pobj.last_run = parser.parse(value_from_xml(xmldoc, TAG_PRGM_RUN))
 
-            # Update Status last and make sure the change event fires, but only once.
-            if pobj.status != new_status:
-                pobj.status = new_status
-            else:
-                # Status didn't change, but something did, so fire the event.
-                pobj.status_events.notify(new_status)
+        if f"<{TAG_PRGM_FINISH}>" in xml:
+            pobj.last_finished = parser.parse(value_from_xml(xmldoc, TAG_PRGM_FINISH))
 
-        _LOGGER.debug("ISY Updated Program: " + address)
+        if XML_ON in xml or XML_OFF in xml:
+            pobj.enabled = XML_ON in xml
+
+        # Update Status last and make sure the change event fires, but only once.
+        if pobj.status != new_status:
+            pobj.status = new_status
+        else:
+            # Status didn't change, but something did, so fire the event.
+            pobj.status_events.notify(new_status)
+
+        _LOGGER.debug("ISY Updated Program: %s", address)
 
     def parse(self, xml):
         """
@@ -361,9 +366,9 @@ class Programs:
     def children(self):
         """Return the children of the class."""
         out = []
-        for ind in range(len(self.pnames)):
+        for ind, name in enumerate(self.pnames):
             if self.pparents[ind] == self.root:
-                out.append((self.ptypes[ind], self.pnames[ind], self.addresses[ind]))
+                out.append((self.ptypes[ind], name, self.addresses[ind]))
         return out
 
     @property

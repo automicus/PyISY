@@ -20,7 +20,7 @@ repos:
   - hooks:
       - args:
           [
-            "--ignore-words-list=pyisy,hass,isy,nid,dof,dfof,don,dfon,tim,automic,automicus,BATLVL",
+            "--ignore-words-list=pyisy,hass,isy,nid,dof,dfof,don,dfon,tim,automic,automicus,BATLVL,homeassistant,colorlog,nd",
             '--skip="./.*,*.json"',
             --quiet-level=2,
           ]
@@ -54,3 +54,13 @@ repos:
     rev: v3.0.0-alpha.4
     hooks:
       - id: prettier
+
+  - repo: local
+    hooks:
+      - id: pylint
+        name: pylint
+        entry: python3 -m pylint -j 0
+        language: system
+        types: [python]
+        files: ^pyisy/.+\.py$
+        args: ["-rn", "-sn"]

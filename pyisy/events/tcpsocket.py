@@ -22,7 +22,6 @@ from ..constants import (
     ES_INITIALIZING,
     ES_LOADED,
     ES_LOST_STREAM_CONNECTION,
-    LOG_VERBOSE,
     POLL_TIME,
     PROP_STATUS,
     RECONNECT_DELAY,
@@ -31,6 +30,7 @@ from ..constants import (
 )
 from ..exceptions import ISYInvalidAuthError, ISYMaxConnections, ISYStreamDataError
 from ..helpers import attr_from_xml, now, value_from_xml
+from ..logging import LOG_VERBOSE
 from .eventreader import ISYEventReader
 
 _LOGGER = logging.getLogger(__name__)  # Allows targeting pyisy.events in handlers.
@@ -51,6 +51,7 @@ class EventStream:
         self._hbwait = 0
         self._loaded = None
         self._on_lost_function = on_lost_func
+        self._program_key = None
         self.cert = None
         self.data = connection_info
 
@@ -83,9 +84,9 @@ class EventStream:
         try:
             xmldoc = minidom.parseString(msg)
         except xml.parsers.expat.ExpatError:
-            _LOGGER.warning("ISY Received Malformed XML:\n" + msg)
+            _LOGGER.warning("ISY Received Malformed XML:\n%s", msg)
             return
-        _LOGGER.log(LOG_VERBOSE, "ISY Update Received:\n" + msg)
+        _LOGGER.log(LOG_VERBOSE, "ISY Update Received:\n%s", msg)
 
         # A wild stream id appears!
         if f"{ATTR_STREAM_ID}=" in msg and ATTR_STREAM_ID not in self.data:

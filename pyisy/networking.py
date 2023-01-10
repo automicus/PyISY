@@ -3,8 +3,8 @@ from asyncio import sleep
 from xml.dom import minidom
 
 from .constants import (
-    _LOGGER,
     ATTR_ID,
+    PROTO_NETWORK_RESOURCE,
     TAG_NAME,
     TAG_NET_RULE,
     URL_NETWORK,
@@ -12,6 +12,7 @@ from .constants import (
 )
 from .exceptions import XML_ERRORS, XML_PARSE_ERROR
 from .helpers import value_from_xml
+from .logging import _LOGGER
 
 
 class NetworkResources:
@@ -72,7 +73,7 @@ class NetworkResources:
             address = int(value_from_xml(feature, ATTR_ID))
             if address not in self.addresses:
                 nname = value_from_xml(feature, TAG_NAME)
-                nobj = NetworkCommand(self, address)
+                nobj = NetworkCommand(self, address, nname)
                 self.addresses.append(address)
                 self.nnames.append(nname)
                 self.nobjs.append(nobj)
@@ -155,7 +156,7 @@ class NetworkCommand:
 
     """
 
-    def __init__(self, network_resources, address):
+    def __init__(self, network_resources, address, name):
         """Initialize network command class.
 
         network_resources: NetworkResources class
@@ -164,11 +165,22 @@ class NetworkCommand:
         self._network_resources = network_resources
         self.isy = network_resources.isy
         self._id = address
+        self._name = name
 
     @property
     def address(self):
         """Return the Resource ID for the Network Resource."""
-        return self._id
+        return str(self._id)
+
+    @property
+    def name(self):
+        """Return the name of this entity."""
+        return self._name
+
+    @property
+    def protocol(self):
+        """Return the Protocol for this node."""
+        return PROTO_NETWORK_RESOURCE
 
     async def run(self):
         """Execute the networking command."""
