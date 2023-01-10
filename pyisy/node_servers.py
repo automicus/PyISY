@@ -40,8 +40,6 @@ TAG_SSL = "ssl"
 TAG_ST = "st"
 TAG_TIMEOUT = "timeout"
 
-EMPTY_XML_RESPONSE = '<?xml version="1.0" encoding="UTF-8"?>'
-
 
 class NodeServers:
     """
@@ -151,24 +149,6 @@ class NodeServers:
             for file in file_list
         ]
         file_contents: List[str] = await asyncio.gather(*file_tasks)
-
-        file_tasks = []
-        for index, content in enumerate(file_contents):
-            _LOGGER.debug("Checking file %s", index)
-            if content == EMPTY_XML_RESPONSE:
-                _LOGGER.info(
-                    "ISY sent invalid XML for file %s, retrying in 5 seconds",
-                    file_list[index],
-                )
-                await asyncio.sleep(5)
-                content = await self.isy.conn.request(
-                    self.isy.conn.compile_url([URL_PROFILE_NS, file_list[index]])
-                )
-                if content == EMPTY_XML_RESPONSE:
-                    _LOGGER.error(
-                        "ISY sent invalid XML for %s on 2 attempts", file_list[index]
-                    )
-
         self._profiles: dict = dict(zip(file_list, file_contents))
 
         _LOGGER.info("ISY downloaded node server files")
