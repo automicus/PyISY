@@ -441,9 +441,9 @@ class Node(NodeBase):
         return groups
 
     def get_property_uom(self, prop):
-        """Get the Unit of Measurement for Z-Wave Climate Settings."""
-        if self._protocol == PROTO_ZWAVE and self._aux_properties.get(prop):
-            return self._aux_properties[prop].uom
+        """Get the Unit of Measurement an aux property."""
+        if aux_prop := self._aux_properties.get(prop):
+            return aux_prop.uom
         return None
 
     async def secure_lock(self):
@@ -467,8 +467,7 @@ class Node(NodeBase):
                 "Failed to set setpoint on %s, it is not a thermostat node.",
                 self.address,
             )
-        cmd_value = self.get_command_value(UOM_CLIMATE_MODES, cmd)
-        if cmd_value:
+        if cmd_value := self.get_command_value(UOM_CLIMATE_MODES, cmd):
             return await self.send_cmd(CMD_CLIMATE_MODE, cmd_value)
         return False
 
