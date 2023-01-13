@@ -24,9 +24,9 @@ setup(
     use_scm_version=True,
     setup_requires=["setuptools_scm"],
     install_requires=[
-        "aiohttp==3.8.1",
+        "aiohttp>=3.8.1",
         "python-dateutil>=2.8.1",
-        "requests==2.28.1",
+        "requests>=2.28.1",
         "colorlog>=6.6.0",
     ],
     keywords=["home automation", "isy", "isy994", "isy-994", "UDI"],
