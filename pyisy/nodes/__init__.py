@@ -353,9 +353,11 @@ class Nodes:
                 if family is not None:
                     if family in (FAMILY_ZWAVE, FAMILY_ZMATTER_ZWAVE):
                         protocol = PROTO_ZWAVE
-                        zwave_props = ZWaveProperties(
-                            feature.getElementsByTagName(TAG_DEVICE_TYPE)[0]
-                        )
+                        zwave_prop_xml = feature.getElementsByTagName(TAG_DEVICE_TYPE)
+                        if zwave_prop_xml:
+                            zwave_props = ZWaveProperties.from_xml(zwave_prop_xml[0])
+                        else:
+                            ZWaveProperties()
                     elif family in (FAMILY_BRULTECH, FAMILY_RCS):
                         protocol = PROTO_ZIGBEE
                     elif family == FAMILY_NODESERVER:

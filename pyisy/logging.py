@@ -23,7 +23,8 @@ def enable_logging(
 
             # basicConfig must be called after importing colorlog in order to
             # ensure that the handlers it sets up wraps the correct streams.
-            logging.basicConfig(level=LOG_LEVEL)
+            logging.basicConfig(level=level)
+            logging.addLevelName(LOG_VERBOSE, "VERBOSE")
 
             colorfmt = f"%(log_color)s{LOG_FORMAT}%(reset)s"
             logging.getLogger().handlers[0].setFormatter(
@@ -32,6 +33,7 @@ def enable_logging(
                     datefmt=LOG_DATE_FORMAT,
                     reset=True,
                     log_colors={
+                        "VERBOSE": "blue",
                         "DEBUG": "cyan",
                         "INFO": "green",
                         "WARNING": "yellow",
