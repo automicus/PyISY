@@ -201,6 +201,8 @@ class WebSocketClient:
                 await self.isy.programs.update()
         elif cntrl == "_3":  # Node Changed/Updated
             self.isy.nodes.node_changed_received(xmldoc)
+        elif cntrl == "_5":  # System Status Changed
+            self.isy.system_status_changed_received(xmldoc)
 
     def update_received(self, xmldoc):
         """Set the socket ID."""
@@ -244,6 +246,8 @@ class WebSocketClient:
             aiohttp.client_exceptions.ServerDisconnectedError,
         ):
             _LOGGER.debug("Websocket Server Not Ready.")
+        except aiohttp.client_exceptions.WSServerHandshakeError as err:
+            _LOGGER.warning("Web socket server response error: %s", err.message)
         # pylint: disable=broad-except
         except Exception as err:
             _LOGGER.error("Unexpected websocket error %s", err, exc_info=True)
