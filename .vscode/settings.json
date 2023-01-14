@@ -6,12 +6,7 @@
   "editor.formatOnSave": true,
   "editor.formatOnType": true,
   "files.trimTrailingWhitespace": true,
-  "terminal.integrated.shell.linux": "/bin/bash",
   "python.linting.flake8Enabled": false,
-  "restructuredtext.confPath": "${workspaceFolder}/docs",
   "cSpell.words": ["automodule"],
-  "restructuredtext.languageServer.disabled": true,
-  "editor.formatOnSaveMode": "file",
-  "restructuredtext.syntaxHighlighting.disabled": true,
-  "esbonio.sphinx.confDir": "${workspaceFolder}/docs"
+  "editor.formatOnSaveMode": "file"
 }
