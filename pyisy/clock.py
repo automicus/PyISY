@@ -1,5 +1,8 @@
 """ISY Clock/Location Information."""
+from __future__ import annotations
+
 from asyncio import sleep
+from typing import TYPE_CHECKING
 from xml.dom import minidom
 
 from .constants import (
@@ -17,6 +20,9 @@ from .constants import (
 from .exceptions import XML_ERRORS, XML_PARSE_ERROR, ISYResponseParseError
 from .helpers import ntp_to_system_time, value_from_xml
 from .logging import _LOGGER
+
+if TYPE_CHECKING:
+    from . import ISY
 
 
 class Clock:
@@ -39,7 +45,7 @@ class Clock:
 
     """
 
-    def __init__(self, isy, xml=None):
+    def __init__(self, isy: ISY, xml: str | None = None):
         """
         Initialize the network resources class.
 
@@ -96,7 +102,7 @@ class Clock:
 
         _LOGGER.info("ISY Loaded Clock Information")
 
-    async def update(self, wait_time=0):
+    async def update(self, wait_time: float = 0):
         """
         Update the contents of the networking class.
 

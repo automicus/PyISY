@@ -5,6 +5,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, is_dataclass
 import datetime
 import time
+from xml.dom.minidom import Element as XmlElement
 
 from .constants import (
     ATTR_FORMATTED,
@@ -31,7 +32,7 @@ from .exceptions import XML_ERRORS
 from .logging import _LOGGER
 
 
-def parse_xml_properties(xmldoc):
+def parse_xml_properties(xmldoc: XmlElement):
     """
     Parse the xml properties string.
 
@@ -42,9 +43,9 @@ def parse_xml_properties(xmldoc):
         (state_val, state_uom, state_prec, aux_props)
 
     """
-    aux_props = {}
-    state_set = False
-    state = NodeProperty(PROP_STATUS, uom=ISY_PROP_NOT_SET)
+    aux_props: dict[str, NodeProperty] = {}
+    state_set: bool = False
+    state: NodeProperty = NodeProperty(PROP_STATUS, uom=ISY_PROP_NOT_SET)
 
     props = xmldoc.getElementsByTagName(TAG_PROPERTY)
     if not props:
@@ -53,19 +54,22 @@ def parse_xml_properties(xmldoc):
     for prop in props:
         prop_id = attr_from_element(prop, ATTR_ID)
         uom = attr_from_element(prop, ATTR_UNIT_OF_MEASURE, DEFAULT_UNIT_OF_MEASURE)
-        value = attr_from_element(prop, ATTR_VALUE, "").strip()
+        value_str = attr_from_element(prop, ATTR_VALUE, "").strip()
         prec = attr_from_element(prop, ATTR_PRECISION, DEFAULT_PRECISION)
-        formatted = attr_from_element(prop, ATTR_FORMATTED, value)
+        formatted = attr_from_element(prop, ATTR_FORMATTED, value_str)
 
         # ISY firmwares < 5 return a list of possible units.
         # ISYv5+ returns a UOM string which is checked against the SDK.
         # Only return a list if the UOM should be a list.
+        uom_list: list[str] = []
         if "/" in uom and uom != "n/a":
-            uom = uom.split("/")
+            uom_list = uom.split("/")
 
-        value = int(value) if value.strip() != "" else ISY_VALUE_UNKNOWN
+        value = int(value_str) if value_str.strip() != "" else ISY_VALUE_UNKNOWN
 
-        result = NodeProperty(prop_id, value, prec, uom, formatted)
+        result = NodeProperty(
+            prop_id, value, prec, uom_list if uom_list else uom, formatted
+        )
 
         if prop_id == PROP_STATUS:
             state = result
@@ -74,14 +78,14 @@ def parse_xml_properties(xmldoc):
             state = result
         else:
             if prop_id == PROP_RAMP_RATE:
-                result.value = INSTEON_RAMP_RATES.get(value, value)
+                result.value = INSTEON_RAMP_RATES.get(value_str, value)
                 result.uom = UOM_SECONDS
             aux_props[prop_id] = result
 
     return state, aux_props, state_set
 
 
-def value_from_xml(xml, tag_name, default=None):
+def value_from_xml(xml: XmlElement, tag_name: str, default: str = "") -> str:
     """Extract a value from the XML element."""
     value = default
     try:
@@ -91,7 +95,9 @@ def value_from_xml(xml, tag_name, default=None):
     return value
 
 
-def attr_from_xml(xml, tag_name, attr_name, default=None):
+def attr_from_xml(
+    xml: XmlElement, tag_name: str, attr_name: str, default: str = ""
+) -> str:
     """Extract an attribute value from the raw XML."""
     value = default
     try:
@@ -102,7 +108,7 @@ def attr_from_xml(xml, tag_name, attr_name, default=None):
     return value
 
 
-def attr_from_element(element, attr_name, default=None):
+def attr_from_element(element: XmlElement, attr_name: str, default: str = "") -> str:
     """Extract an attribute value from an XML element."""
     value = default
     if attr_name in element.attributes.keys():
@@ -110,7 +116,7 @@ def attr_from_element(element, attr_name, default=None):
     return value
 
 
-def value_from_nested_xml(base, chain, default=None):
+def value_from_nested_xml(base: XmlElement, chain: list[str], default: str = "") -> str:
     """Extract a value from multiple nested tags."""
     value = default
     result = None
@@ -150,7 +156,7 @@ def ntp_to_system_time(timestamp):
     return datetime.datetime.fromtimestamp(timestamp - ntp_delta)
 
 
-def now():
+def now() -> datetime.datetime:
     """Get the current system time.
 
     Note: this module uses naive datetimes because the
@@ -166,13 +172,16 @@ class EventEmitter:
 
     _subscribers: list[EventListener]
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize a new Event Emitter class."""
         self._subscribers = []
 
     def subscribe(
-        self, callback: Callable, event_filter: dict | str = None, key: str = None
-    ):
+        self,
+        callback: Callable,
+        event_filter: dict | str | None = None,
+        key: str | None = None,
+    ) -> EventListener:
         """Subscribe to the events."""
         listener = EventListener(
             emitter=self, callback=callback, event_filter=event_filter, key=key
@@ -180,11 +189,11 @@ class EventEmitter:
         self._subscribers.append(listener)
         return listener
 
-    def unsubscribe(self, listener):
+    def unsubscribe(self, listener) -> None:
         """Unsubscribe from the events."""
         self._subscribers.remove(listener)
 
-    def notify(self, event):
+    def notify(self, event: NodeProperty | NodeChangedEvent | str | None) -> None:
         """Notify a listener."""
         for subscriber in self._subscribers:
             # Guard against downstream errors interrupting the socket connection (#249)
@@ -210,8 +219,8 @@ class EventListener:
 
     emitter: EventEmitter
     callback: Callable
-    event_filter: dict | str
-    key: str
+    event_filter: dict | str | None
+    key: str | None
 
     def unsubscribe(self):
         """Unsubscribe from the events."""
@@ -225,9 +234,9 @@ class NodeProperty:
     control: str
     value: int | float = ISY_VALUE_UNKNOWN
     prec: str = DEFAULT_PRECISION
-    uom: str = DEFAULT_UNIT_OF_MEASURE
-    formatted: str = None
-    address: str = None
+    uom: str | list[str] = DEFAULT_UNIT_OF_MEASURE
+    formatted: str = ""
+    address: str | None = None
 
 
 @dataclass
@@ -275,3 +284,22 @@ class ZWaveProperties:
             product_id=product_id,
             raw=raw,
         )
+
+
+@dataclass
+class NodeChangedEvent:
+    """Class representation of a node change event."""
+
+    address: str
+    action: str
+    event_info: dict
+
+
+@dataclass
+class NodeNotes:
+    """Dataclass for holding node notes information."""
+
+    spoken: str = ""
+    is_load: bool = False
+    description: str = ""
+    location: str = ""

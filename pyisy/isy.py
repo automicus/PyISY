@@ -1,4 +1,6 @@
 """Module for connecting to and interacting with the ISY."""
+from __future__ import annotations
+
 import asyncio
 from threading import Thread
 
@@ -245,7 +247,7 @@ class ISY:
 
         self._reconnect_thread = None
 
-    async def query(self, address=None):
+    async def query(self, address: str | None = None) -> bool:
         """Query all the nodes or a specific node if an address is provided .
 
         Args:

@@ -1,5 +1,8 @@
 """ISY Network Resources Module."""
+from __future__ import annotations
+
 from asyncio import sleep
+from typing import TYPE_CHECKING
 from xml.dom import minidom
 
 from .constants import (
@@ -13,6 +16,9 @@ from .constants import (
 from .exceptions import XML_ERRORS, XML_PARSE_ERROR
 from .helpers import value_from_xml
 from .logging import _LOGGER
+
+if TYPE_CHECKING:
+    from . import ISY
 
 
 class NetworkResources:
@@ -40,7 +46,7 @@ class NetworkResources:
 
     """
 
-    def __init__(self, isy, xml=None):
+    def __init__(self, isy: ISY, xml=None):
         """
         Initialize the network resources class.
 
@@ -80,7 +86,7 @@ class NetworkResources:
 
         _LOGGER.info("ISY Loaded Network Resources Commands")
 
-    async def update(self, wait_time=0):
+    async def update(self, wait_time: float = 0):
         """
         Update the contents of the networking class.
 

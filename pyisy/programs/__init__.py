@@ -1,5 +1,8 @@
 """Init for management of ISY Programs."""
+from __future__ import annotations
+
 import asyncio
+from typing import TYPE_CHECKING
 from xml.dom import minidom
 
 from dateutil import parser
@@ -28,6 +31,9 @@ from ..logging import _LOGGER
 from ..nodes import NodeIterator as ProgramIterator
 from .folder import Folder
 from .program import Program
+
+if TYPE_CHECKING:
+    from .isy import ISY  # pylint: disable=import-self
 
 
 class Programs:
@@ -59,7 +65,7 @@ class Programs:
 
     def __init__(
         self,
-        isy,
+        isy: ISY,
         root=None,
         addresses=None,
         pnames=None,

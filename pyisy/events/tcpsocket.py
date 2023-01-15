@@ -1,10 +1,13 @@
 """ISY Event Stream."""
+from __future__ import annotations
+
 import asyncio
 import logging
 import socket
 import ssl
 from threading import Thread, ThreadError
 import time
+from typing import TYPE_CHECKING
 import xml
 from xml.dom import minidom
 
@@ -33,13 +36,17 @@ from ..helpers import attr_from_xml, now, value_from_xml
 from ..logging import LOG_VERBOSE
 from .eventreader import ISYEventReader
 
+if TYPE_CHECKING:
+    from . import ISY
+
+
 _LOGGER = logging.getLogger(__name__)  # Allows targeting pyisy.events in handlers.
 
 
 class EventStream:
     """Class to represent the Event Stream from the ISY."""
 
-    def __init__(self, isy, connection_info, on_lost_func=None):
+    def __init__(self, isy: ISY, connection_info, on_lost_func=None):
         """Initialize the EventStream class."""
         self.isy = isy
         self._running = False

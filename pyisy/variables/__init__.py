@@ -1,5 +1,8 @@
 """ISY Variables."""
+from __future__ import annotations
+
 from asyncio import sleep
+from typing import TYPE_CHECKING
 from xml.dom import minidom
 
 from dateutil import parser
@@ -19,6 +22,10 @@ from ..exceptions import XML_ERRORS, XML_PARSE_ERROR, ISYResponseParseError
 from ..helpers import attr_from_element, attr_from_xml, now, value_from_xml
 from ..logging import _LOGGER
 from .variable import Variable
+
+if TYPE_CHECKING:
+    from .isy import ISY  # pylint: disable=import-self
+
 
 EMPTY_VARIABLE_RESPONSES = [
     "/CONF/INTEGER.VAR not found",
@@ -48,7 +55,7 @@ class Variables:
 
     def __init__(
         self,
-        isy,
+        isy: ISY,
         root=None,
         vids=None,
         vnames=None,
@@ -147,7 +154,7 @@ class Variables:
 
         _LOGGER.info("ISY Loaded Variables")
 
-    async def update(self, wait_time=0):
+    async def update(self, wait_time: float = 0):
         """
         Update the variable objects with data from the controller.
 

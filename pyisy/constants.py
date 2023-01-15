@@ -1,4 +1,6 @@
 """Constants for the PyISY Module."""
+from __future__ import annotations
+
 import datetime
 
 UPDATE_INTERVAL = 0.5
@@ -938,7 +940,7 @@ NC_PENDING_DEVICE_OP = "WH"
 NC_PROGRAMMING_DEVICE = "WD"
 
 # Node Change Code: (Description, EventInfo Tags)
-NODE_CHANGED_ACTIONS = {
+NODE_CHANGED_ACTIONS: dict[str, tuple[str, list[str]]] = {
     NC_CLEAR_ERROR: ("Node Comm. Errors Cleared", []),
     NC_FOLDER_ADDED: ("Folder Added", []),
     NC_FOLDER_REMOVED: ("Folder Removed", []),

@@ -1,4 +1,6 @@
 """ISY Program Folders."""
+from __future__ import annotations
+
 from ..constants import (
     ATTR_LAST_CHANGED,
     ATTR_LAST_UPDATE,

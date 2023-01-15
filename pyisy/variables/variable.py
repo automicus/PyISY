@@ -164,7 +164,7 @@ class Variable:
         """Return the Variable ID."""
         return self._id
 
-    async def update(self, wait_time=0):
+    async def update(self, wait_time: float = 0):
         """
         Update the object with the variable's parameters from the controller.
 

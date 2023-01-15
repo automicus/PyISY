@@ -1,6 +1,8 @@
 """Representation of ISY Nodes."""
+from __future__ import annotations
+
 from asyncio import sleep
-from dataclasses import dataclass
+from typing import TYPE_CHECKING, cast
 from xml.dom import minidom
 
 from ..constants import (
@@ -55,6 +57,7 @@ from ..constants import (
 from ..exceptions import XML_ERRORS, XML_PARSE_ERROR, ISYResponseParseError
 from ..helpers import (
     EventEmitter,
+    NodeChangedEvent,
     NodeProperty,
     ZWaveProperties,
     attr_from_element,
@@ -66,6 +69,9 @@ from ..logging import _LOGGER
 from ..node_servers import NodeServers
 from .group import Group
 from .node import Node
+
+if TYPE_CHECKING:
+    from .isy import ISY  # pylint: disable=import-self
 
 
 class Nodes:
@@ -92,40 +98,41 @@ class Nodes:
     :ivar name: The name of the current folder in navigation.
     """
 
+    isy: ISY
+    root: str
+    addresses: list[str] = []
+    nnames: list[str] = []
+    nparents: list[str] = []
+    nobjs: list[Node | Group] = []
+    ntypes: list[str] = []
+
     def __init__(
         self,
-        isy,
-        root=None,
-        addresses=None,
-        nnames=None,
-        nparents=None,
-        nobjs=None,
-        ntypes=None,
-        xml=None,
+        isy: ISY,
+        root: str | None = None,
+        addresses: list[str] | None = None,
+        nnames: list[str] | None = None,
+        nparents: list[str] | None = None,
+        nobjs: list[Node | Group] | None = None,
+        ntypes: list[str] | None = None,
+        xml: str | None = None,
     ):
         """Initialize the Nodes ISY Node Manager class."""
         self.isy = isy
         self.root = root
-
-        self.addresses = []
-        self.nnames = []
-        self.nparents = []
-        self.nobjs = []
-        self.ntypes = []
-
         self.status_events = EventEmitter()
 
         if xml is not None:
             self.parse(xml)
             return
 
-        self.addresses = addresses
-        self.nnames = nnames
-        self.nparents = nparents
-        self.nobjs = nobjs
-        self.ntypes = ntypes
+        self.addresses = addresses if addresses is not None else []
+        self.nnames = nnames if nnames is not None else []
+        self.nparents = nparents if nparents is not None else []
+        self.nobjs = nobjs if nobjs is not None else []
+        self.ntypes = ntypes if ntypes is not None else []
 
-    def __str__(self):
+    def __str__(self) -> str:
         """Return string representation of the nodes/folders/groups."""
         if self.root is None:
             return "Folder <root>"
@@ -136,7 +143,7 @@ class Nodes:
             return f"Group ({self.root})"
         return f"Node ({self.root})"
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """Create a pretty representation of the nodes/folders/groups."""
         # get and sort children
         folders = []
@@ -218,8 +225,8 @@ class Nodes:
                 address,
             )
             return
-        value = value_from_xml(xmldoc, ATTR_ACTION, "")
-        value = int(value) if value != "" else ISY_VALUE_UNKNOWN
+        value_str = value_from_xml(xmldoc, ATTR_ACTION, "")
+        value = int(value_str) if value_str.strip() != "" else ISY_VALUE_UNKNOWN
         prec = attr_from_xml(xmldoc, ATTR_ACTION, ATTR_PRECISION, DEFAULT_PRECISION)
         uom = attr_from_xml(
             xmldoc, ATTR_ACTION, ATTR_UNIT_OF_MEASURE, DEFAULT_UNIT_OF_MEASURE
@@ -256,8 +263,8 @@ class Nodes:
 
         # Process the action and value if provided in event data.
         node.update_last_update()
-        value = value_from_xml(xmldoc, ATTR_ACTION, 0)
-        value = int(value) if value != "" else ISY_VALUE_UNKNOWN
+        value_str = value_from_xml(xmldoc, ATTR_ACTION, "0")
+        value = int(value_str) if value_str.strip() != "" else ISY_VALUE_UNKNOWN
         prec = attr_from_xml(xmldoc, ATTR_ACTION, ATTR_PRECISION, DEFAULT_PRECISION)
         uom = attr_from_xml(
             xmldoc, ATTR_ACTION, ATTR_UNIT_OF_MEASURE, DEFAULT_UNIT_OF_MEASURE
@@ -265,7 +272,7 @@ class Nodes:
         formatted = value_from_xml(xmldoc, TAG_FORMATTED)
 
         if cntrl == PROP_RAMP_RATE:
-            value = INSTEON_RAMP_RATES.get(value, value)
+            value = INSTEON_RAMP_RATES.get(value_str, value)
             uom = UOM_SECONDS
         node_property = NodeProperty(cntrl, value, prec, uom, formatted, address)
         if (
@@ -343,7 +350,7 @@ class Nodes:
                 family = value_from_xml(feature, TAG_FAMILY)
                 device_type = value_from_xml(feature, TAG_TYPE)
                 node_def_id = attr_from_element(feature, ATTR_NODE_DEF_ID)
-                flag = int(attr_from_element(feature, ATTR_FLAG, 0))
+                flag = int(attr_from_element(feature, ATTR_FLAG, "0"))
                 enabled = value_from_xml(feature, TAG_ENABLED) == XML_TRUE
 
                 # Assume Insteon, update as confirmed otherwise
@@ -415,7 +422,7 @@ class Nodes:
                     controllers = []
                     for mem in mems:
                         if (
-                            int(attr_from_element(mem, TAG_TYPE, 0))
+                            int(attr_from_element(mem, TAG_TYPE, "0"))
                             == NODE_IS_CONTROLLER
                         ):
                             controllers.append(mem.firstChild.nodeValue)
@@ -439,7 +446,7 @@ class Nodes:
         if self.isy.node_servers is None:
             self.isy.node_servers = NodeServers(self.isy, set(node_servers))
 
-    async def update(self, wait_time=0, xml=None):
+    async def update(self, wait_time: float = 0, xml=None):
         """
         Update the status and properties of the nodes in the class.
 
@@ -472,7 +479,7 @@ class Nodes:
 
         _LOGGER.info("ISY Updated Node Statuses.")
 
-    async def update_nodes(self, wait_time=0):
+    async def update_nodes(self, wait_time: float = 0):
         """
         Update the contents of the class.
 
@@ -579,7 +586,7 @@ class Nodes:
             self.ntypes,
         )
 
-    def get_folder(self, address):
+    def get_folder(self, address: str) -> str:
         """Return the folder of a given node address."""
         parent = self.nparents[self.addresses.index(address)]
         if parent is None:
@@ -588,7 +595,7 @@ class Nodes:
         parent_index = self.addresses.index(parent)
         if self.ntypes[parent_index] != TAG_FOLDER:
             return self.get_folder(parent)
-        return self.nnames[parent_index]
+        return cast(str, self.nnames[parent_index])
 
     @property
     def children(self):
@@ -668,12 +675,3 @@ class NodeIterator:
     def __len__(self):
         """Return the number of elements."""
         return self._len
-
-
-@dataclass
-class NodeChangedEvent:
-    """Class representation of a node change event."""
-
-    address: str
-    action: str
-    event_info: dict

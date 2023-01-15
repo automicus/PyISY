@@ -1,6 +1,8 @@
 """Representation of a node from an ISY."""
+from __future__ import annotations
+
 import asyncio
-from math import isnan
+from typing import TYPE_CHECKING
 from xml.dom import minidom
 
 from ..constants import (
@@ -45,12 +47,17 @@ from ..exceptions import XML_ERRORS, XML_PARSE_ERROR, ISYResponseParseError
 from ..helpers import (
     EventEmitter,
     NodeProperty,
+    ZWaveProperties,
     attr_from_xml,
     now,
     parse_xml_properties,
 )
 from ..logging import _LOGGER
+from .group import Group
 from .nodebase import NodeBase
+
+if TYPE_CHECKING:
+    from . import Nodes
 
 
 class Node(NodeBase):
@@ -78,22 +85,35 @@ class Node(NodeBase):
     :ivar has_children: Property indicating that there are no more children.
     """
 
+    _enabled: bool
+    _formatted: str
+    _node_def_id: str | None
+    _node_server: str | None
+    _parent_node: str | None
+    _prec: str
+    _protocol: str
+    _type: str
+    _uom: str | list
+    _zwave_props: ZWaveProperties | None
+    control_events: EventEmitter
+    _is_battery_node: bool
+
     def __init__(
         self,
-        nodes,
-        address,
-        name,
-        state,
-        aux_properties=None,
-        zwave_props=None,
-        node_def_id=None,
-        pnode=None,
+        nodes: Nodes,
+        address: str,
+        name: str,
+        state: NodeProperty,
+        aux_properties: dict[str, NodeProperty] | None = None,
+        zwave_props: ZWaveProperties | None = None,
+        node_def_id: str | None = None,
+        pnode: str = "",
         device_type=None,
-        enabled=None,
-        node_server=None,
-        protocol=None,
-        family_id=None,
-        state_set=True,
+        enabled: bool = True,
+        node_server: str | None = None,
+        protocol: str = "",
+        family_id: str = "",
+        state_set: bool = True,
         flag=0,
     ):
         """Initialize a Node class."""
@@ -121,7 +141,7 @@ class Node(NodeBase):
         )
 
     @property
-    def dimmable(self):
+    def dimmable(self) -> bool:
         """
         Return the best guess if this is a dimmable node.
 
@@ -131,23 +151,23 @@ class Node(NodeBase):
         return self.is_dimmable
 
     @property
-    def enabled(self):
+    def enabled(self) -> bool:
         """Return if the device is enabled or not in the ISY."""
         return self._enabled
 
     @enabled.setter
-    def enabled(self, value):
+    def enabled(self, value: bool) -> None:
         """Set if the device is enabled or not in the ISY."""
         if self._enabled != value:
             self._enabled = value
 
     @property
-    def formatted(self):
+    def formatted(self) -> str:
         """Return the formatted value with units, if provided."""
         return self._formatted
 
     @property
-    def is_battery_node(self):
+    def is_battery_node(self) -> bool:
         """
         Confirm if this is a battery node or a normal node.
 
@@ -172,47 +192,47 @@ class Node(NodeBase):
             )
             or (
                 self._protocol == PROTO_ZWAVE
-                and self._zwave_props is not None
-                and self._zwave_props.category in ZWAVE_CAT_DIMMABLE
+                and self.zwave_props is not None
+                and self.zwave_props.category in ZWAVE_CAT_DIMMABLE
             )
         )
         return dimmable
 
     @property
-    def is_lock(self):
+    def is_lock(self) -> bool:
         """Determine if this device is a door lock type."""
         return (
             self.type and any({self.type.startswith(t) for t in INSTEON_TYPE_LOCK})
         ) or (
             self.protocol == PROTO_ZWAVE
-            and self.zwave_props.category
+            and self.zwave_props is not None
             and self.zwave_props.category in ZWAVE_CAT_LOCK
         )
 
     @property
-    def is_thermostat(self):
+    def is_thermostat(self) -> bool:
         """Determine if this device is a thermostat/climate control device."""
         return (
             self.type
             and any({self.type.startswith(t) for t in INSTEON_TYPE_THERMOSTAT})
         ) or (
             self._protocol == PROTO_ZWAVE
-            and self.zwave_props.category
+            and self.zwave_props is not None
             and self.zwave_props.category in ZWAVE_CAT_THERMOSTAT
         )
 
     @property
-    def node_def_id(self):
+    def node_def_id(self) -> str | None:
         """Return the node definition id (used for ISYv5)."""
         return self._node_def_id
 
     @property
-    def node_server(self):
+    def node_server(self) -> str | None:
         """Return the node server parent slot (used for v5 Node Server devices)."""
         return self._node_server
 
     @property
-    def parent_node(self):
+    def parent_node(self) -> Node | Group | None:
         """
         Return the parent node object of this node.
 
@@ -226,40 +246,40 @@ class Node(NodeBase):
         return None
 
     @property
-    def prec(self):
+    def prec(self) -> str:
         """Return the precision of the raw device value."""
         return self._prec
 
     @property
-    def protocol(self):
+    def protocol(self) -> str:
         """Return the device standard used (Z-Wave, Zigbee, Insteon, Node Server)."""
         return self._protocol
 
     @property
-    def type(self):
+    def type(self) -> str:
         """Return the device typecode (Used for Insteon)."""
         return self._type
 
     @property
-    def uom(self):
+    def uom(self) -> str | list:
         """Return the unit of measurement for the device."""
         return self._uom
 
     @property
-    def zwave_props(self):
+    def zwave_props(self) -> ZWaveProperties | None:
         """Return the Z-Wave Properties (used for Z-Wave devices)."""
         return self._zwave_props
 
-    async def get_zwave_parameter(self, parameter):
+    async def get_zwave_parameter(self, parameter: int) -> dict | None:
         """Retrieve a Z-Wave Parameter from the ISY."""
 
-        if not self.protocol == PROTO_ZWAVE:
+        if self.protocol != PROTO_ZWAVE:
             _LOGGER.warning("Cannot retrieve parameters of non-Z-Wave device")
-            return
+            return None
 
         if not isinstance(parameter, int):
             _LOGGER.error("Parameter must be an integer")
-            return
+            return None
 
         # /rest/zwave/node/<nodeAddress>/config/query/<parameterNumber>
         # returns something like:
@@ -272,7 +292,7 @@ class Node(NodeBase):
 
         if parameter_xml is None or parameter_xml == "":
             _LOGGER.warning("Error fetching parameter from ISY")
-            return False
+            return None
 
         try:
             parameter_dom = minidom.parseString(parameter_xml)
@@ -281,7 +301,7 @@ class Node(NodeBase):
             raise ISYResponseParseError() from exc
 
         size = int(attr_from_xml(parameter_dom, TAG_CONFIG, TAG_SIZE))
-        value = attr_from_xml(parameter_dom, TAG_CONFIG, TAG_VALUE)
+        value = int(attr_from_xml(parameter_dom, TAG_CONFIG, TAG_VALUE))
 
         # Add/update the aux_properties to include the parameter.
         node_prop = NodeProperty(
@@ -294,10 +314,12 @@ class Node(NodeBase):
 
         return {TAG_PARAMETER: parameter, TAG_SIZE: size, TAG_VALUE: value}
 
-    async def set_zwave_parameter(self, parameter, value, size):
+    async def set_zwave_parameter(
+        self, parameter: int, value: int | str, size: int
+    ) -> bool:
         """Set a Z-Wave Parameter on an end device via the ISY."""
 
-        if not self.protocol == PROTO_ZWAVE:
+        if self.protocol != PROTO_ZWAVE:
             _LOGGER.warning("Cannot set parameters of non-Z-Wave device")
             return False
 
@@ -307,13 +329,13 @@ class Node(NodeBase):
             _LOGGER.error("Parameter must be an integer")
             return False
 
-        if size not in [1, "1", 2, "2", 4, "4"]:
+        if int(size) not in [1, 2, 4]:
             _LOGGER.error("Size must either 1, 2, or 4 (bytes)")
             return False
 
         if str(value).startswith("0x"):
             try:
-                int(value, base=16)
+                int(str(value), base=16)
             except ValueError:
                 _LOGGER.error("Value must be valid hex byte string or integer.")
                 return False
@@ -349,7 +371,7 @@ class Node(NodeBase):
         # Add/update the aux_properties to include the parameter.
         node_prop = NodeProperty(
             f"{PROP_ZWAVE_PREFIX}{parameter}",
-            value,
+            int(value),
             uom=f"{PROP_ZWAVE_PREFIX}{size}",
             address=self._id,
         )
@@ -357,7 +379,12 @@ class Node(NodeBase):
 
         return True
 
-    async def update(self, event=None, wait_time=0, xmldoc=None):
+    async def update(
+        self,
+        event: NodeProperty | None = None,
+        wait_time: float = 0,
+        xmldoc: minidom.Element | None = None,
+    ) -> None:
         """Update the value of the node from the controller."""
         if not self.isy.auto_update and not xmldoc:
             await asyncio.sleep(wait_time)
@@ -381,7 +408,7 @@ class Node(NodeBase):
         self.update_state(state)
         _LOGGER.debug("ISY updated node: %s", self._id)
 
-    def update_state(self, state):
+    def update_state(self, state: NodeProperty) -> None:
         """Update the various state properties when received."""
         if not isinstance(state, NodeProperty):
             _LOGGER.error("Could not update state values. Invalid type provided.")
@@ -397,7 +424,7 @@ class Node(NodeBase):
             self._uom = state.uom
             changed = True
 
-        if state.formatted != self._formatted:
+        if state.formatted is not None and state.formatted != self._formatted:
             self._formatted = state.formatted
             changed = True
 
@@ -410,7 +437,7 @@ class Node(NodeBase):
             self._last_changed = now()
             self.status_events.notify(self.status_feedback)
 
-    def get_command_value(self, uom, cmd):
+    def get_command_value(self, uom: str, cmd: str) -> str | None:
         """Check against the list of UOM States if this is a valid command."""
         if cmd not in UOM_TO_STATES[uom].values():
             _LOGGER.warning(
@@ -421,7 +448,7 @@ class Node(NodeBase):
             list(UOM_TO_STATES[uom].values()).index(cmd)
         ]
 
-    def get_groups(self, controller=True, responder=True):
+    def get_groups(self, controller: bool = True, responder: bool = True) -> list[str]:
         """
         Return the groups (scenes) of which this node is a member.
 
@@ -440,27 +467,27 @@ class Node(NodeBase):
                         groups.append(child[2])
         return groups
 
-    def get_property_uom(self, prop):
+    def get_property_uom(self, prop: str) -> str | list | None:
         """Get the Unit of Measurement an aux property."""
         if aux_prop := self._aux_properties.get(prop):
             return aux_prop.uom
         return None
 
-    async def secure_lock(self):
+    async def secure_lock(self) -> bool:
         """Send a command to securely lock a lock device."""
         if not self.is_lock:
             _LOGGER.warning("Failed to lock %s, it is not a lock node.", self.address)
-            return
+            return False
         return await self.send_cmd(CMD_SECURE, "1")
 
-    async def secure_unlock(self):
+    async def secure_unlock(self) -> bool:
         """Send a command to securely lock a lock device."""
         if not self.is_lock:
             _LOGGER.warning("Failed to unlock %s, it is not a lock node.", self.address)
-            return
+            return False
         return await self.send_cmd(CMD_SECURE, "0")
 
-    async def set_climate_mode(self, cmd):
+    async def set_climate_mode(self, cmd: str) -> bool:
         """Send a command to the device to set the climate mode."""
         if not self.is_thermostat:
             _LOGGER.warning(
@@ -471,14 +498,14 @@ class Node(NodeBase):
             return await self.send_cmd(CMD_CLIMATE_MODE, cmd_value)
         return False
 
-    async def set_climate_setpoint(self, val):
+    async def set_climate_setpoint(self, val: int) -> bool:
         """Send a command to the device to set the system setpoints."""
         if not self.is_thermostat:
             _LOGGER.warning(
                 "Failed to set setpoint on %s, it is not a thermostat node.",
                 self.address,
             )
-            return
+            return False
         adjustment = int(CLIMATE_SETPOINT_MIN_GAP / 2.0)
 
         commands = [
@@ -488,15 +515,17 @@ class Node(NodeBase):
         result = await asyncio.gather(*commands, return_exceptions=True)
         return all(result)
 
-    async def set_climate_setpoint_heat(self, val):
+    async def set_climate_setpoint_heat(self, val: int) -> bool:
         """Send a command to the device to set the system heat setpoint."""
         return await self._set_climate_setpoint(val, "heat", PROP_SETPOINT_HEAT)
 
-    async def set_climate_setpoint_cool(self, val):
+    async def set_climate_setpoint_cool(self, val: int) -> bool:
         """Send a command to the device to set the system heat setpoint."""
         return await self._set_climate_setpoint(val, "cool", PROP_SETPOINT_COOL)
 
-    async def _set_climate_setpoint(self, val, setpoint_name, setpoint_prop):
+    async def _set_climate_setpoint(
+        self, val: int, setpoint_name: str, setpoint_prop: str
+    ) -> bool:
         """Send a command to the device to set the system heat setpoint."""
         if not self.is_thermostat:
             _LOGGER.warning(
@@ -504,7 +533,7 @@ class Node(NodeBase):
                 setpoint_name,
                 self.address,
             )
-            return
+            return False
         # ISY wants 2 times the temperature for Insteon in order to not lose precision
         if self._uom in ["101", "degrees"]:
             val = 2 * val
@@ -512,25 +541,25 @@ class Node(NodeBase):
             setpoint_prop, str(val), self.get_property_uom(setpoint_prop)
         )
 
-    async def set_fan_mode(self, cmd):
+    async def set_fan_mode(self, cmd: str) -> bool:
         """Send a command to the device to set the fan mode setting."""
         cmd_value = self.get_command_value(UOM_FAN_MODES, cmd)
         if cmd_value:
             return await self.send_cmd(CMD_CLIMATE_FAN_SETTING, cmd_value)
         return False
 
-    async def set_on_level(self, val):
+    async def set_on_level(self, val: int | str) -> bool:
         """Set the ON Level for a device."""
-        if not val or isnan(val) or int(val) not in range(256):
+        if not val or int(val) not in range(256):
             _LOGGER.warning(
                 "Invalid value for On Level for %s. Valid values are 0-255.", self._id
             )
             return False
         return await self.send_cmd(PROP_ON_LEVEL, str(val))
 
-    async def set_ramp_rate(self, val):
+    async def set_ramp_rate(self, val: int | str) -> bool:
         """Set the Ramp Rate for a device."""
-        if not val or isnan(val) or int(val) not in range(32):
+        if not val or int(val) not in range(32):
             _LOGGER.warning(
                 "Invalid value for Ramp Rate for %s. "
                 "Valid values are 0-31. See 'INSTEON_RAMP_RATES' in constants.py for values.",
@@ -539,14 +568,14 @@ class Node(NodeBase):
             return False
         return await self.send_cmd(PROP_RAMP_RATE, str(val))
 
-    async def start_manual_dimming(self):
+    async def start_manual_dimming(self) -> bool:
         """Begin manually dimming a device."""
         _LOGGER.warning(
             "'%s' is depreciated, use FADE__ commands instead", CMD_MANUAL_DIM_BEGIN
         )
         return await self.send_cmd(CMD_MANUAL_DIM_BEGIN)
 
-    async def stop_manual_dimming(self):
+    async def stop_manual_dimming(self) -> bool:
         """Stop manually dimming  a device."""
         _LOGGER.warning(
             "'%s' is depreciated, use FADE__ commands instead", CMD_MANUAL_DIM_STOP
