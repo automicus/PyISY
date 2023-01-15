@@ -192,13 +192,13 @@ class EventEmitter:
                 if e_filter := subscriber.event_filter:
                     if is_dataclass(event) and isinstance(e_filter, dict):
                         if not (e_filter.items() <= event.__dict__.items()):
-                            return
+                            continue
                     elif event != e_filter:
-                        return
+                        continue
 
                 if subscriber.key:
                     subscriber.callback(event, subscriber.key)
-                    return
+                    continue
                 subscriber.callback(event)
             except Exception:  # pylint: disable=broad-except
                 _LOGGER.exception("Error during callback of %s", event)

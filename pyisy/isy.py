@@ -13,6 +13,7 @@ from .constants import (
     ES_RECONNECTING,
     ES_START_UPDATES,
     ES_STOP_UPDATES,
+    PROTO_ISY,
     SYSTEM_BUSY,
     SYSTEM_STATUS,
     URL_QUERY,
@@ -201,6 +202,11 @@ class ISY:
     def hostname(self):
         """Return the hostname."""
         return self._hostname
+
+    @property
+    def protocol(self):
+        """Return the protocol for this entity."""
+        return PROTO_ISY
 
     @property
     def uuid(self):
