@@ -4,6 +4,7 @@ from math import isnan
 from xml.dom import minidom
 
 from ..constants import (
+    BACKLIGHT_SUPPORT,
     CLIMATE_SETPOINT_MIN_GAP,
     CMD_CLIMATE_FAN_SETTING,
     CMD_CLIMATE_MODE,
@@ -156,7 +157,16 @@ class Node(NodeBase):
         return self._is_battery_node
 
     @property
-    def is_dimmable(self):
+    def is_backlight_supported(self) -> bool:
+        """Confirm if this node supports setting backlight."""
+        return (
+            (self.protocol == PROTO_INSTEON)
+            and self.node_def_id is not None
+            and (self.node_def_id in BACKLIGHT_SUPPORT)
+        )
+
+    @property
+    def is_dimmable(self) -> bool:
         """
         Return the best guess if this is a dimmable node.
 
