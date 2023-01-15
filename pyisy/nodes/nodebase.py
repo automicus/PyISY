@@ -373,7 +373,6 @@ class NodeBase:
 
         Note: Feature was added in ISY v5.2.0, this will fail on earlier versions.
         """
-
         # /rest/nodes/<nodeAddress>/change?name=<newName>
         req_url = self.isy.conn.compile_url(
             [URL_NODES, self._id, URL_CHANGE],
