@@ -194,6 +194,7 @@ VAR_STATE = "2"
 
 CLIMATE_SETPOINT_MIN_GAP = 2
 
+CMD_BACKLIGHT = "BL"
 CMD_BEEP = "BEEP"
 CMD_BRIGHTEN = "BRT"
 CMD_CLIMATE_FAN_SETTING = "CLIFS"
@@ -340,6 +341,7 @@ COMMAND_FRIENDLY_NAME = {
     "WINDCH": "wind_chill",
     "WINDDIR": "wind_direction",
     "WVOL": "water_volume",
+    CMD_BACKLIGHT: "backlight",
     CMD_BEEP: "beep",
     CMD_BRIGHTEN: "bright",
     CMD_CLIMATE_FAN_SETTING: "fan_state",
@@ -409,11 +411,13 @@ NODE_FAMILY_ID = {
     FAMILY_ZMATTER_ZWAVE: "ZMatter_Z-Wave",
 }
 
-UOM_SECONDS = "57"
-UOM_FAN_MODES = "99"
 UOM_CLIMATE_MODES = "98"
 UOM_CLIMATE_MODES_ZWAVE = "67"
 UOM_DOUBLE_TEMP = "101"
+UOM_FAN_MODES = "99"
+UOM_INDEX = "25"
+UOM_PERCENTAGE = "51"
+UOM_SECONDS = "57"
 
 UOM_FRIENDLY_NAME = {
     "1": "A",
@@ -438,7 +442,7 @@ UOM_FRIENDLY_NAME = {
     "22": "%RH",
     "23": "inHg",
     "24": "in/hr",
-    "25": "index",
+    UOM_INDEX: "index",
     "26": "K",
     "27": "keyword",
     "28": "kg",
@@ -464,7 +468,7 @@ UOM_FRIENDLY_NAME = {
     "48": "MPH",
     "49": "m/s",
     "50": "Ω",
-    "51": "%",
+    UOM_PERCENTAGE: "%",
     "52": "lbs",
     "53": "pf",
     "54": "ppm",
@@ -938,6 +942,8 @@ NC_NODE_REVISED = "RV"
 NC_PARENT_CHANGED = "PC"
 NC_PENDING_DEVICE_OP = "WH"
 NC_PROGRAMMING_DEVICE = "WD"
+DEV_WRITING = "_7A"
+DEV_MEMORY = "_7M"
 
 # Node Change Code: (Description, EventInfo Tags)
 NODE_CHANGED_ACTIONS: dict[str, tuple[str, list[str]]] = {
@@ -960,6 +966,8 @@ NODE_CHANGED_ACTIONS: dict[str, tuple[str, list[str]]] = {
     NC_PARENT_CHANGED: ("Parent Changed", ["node", "nodeType", "parent", "parentType"]),
     NC_PENDING_DEVICE_OP: ("Pending Device Operation", []),
     NC_PROGRAMMING_DEVICE: ("Programming Device", []),
+    DEV_WRITING: ("Progress Report", ["message"]),
+    DEV_MEMORY: ("Memory Write", ["memory", "cmd1", "cmd2", "value"]),
 }
 
 SYSTEM_NOT_BUSY = "0"
@@ -986,3 +994,160 @@ NODE_IS_IN_ERR = 0x10  # it’s in error!
 NODE_IS_NEW = 0x20  # brand new node
 NODE_TO_DELETE = 0x40  # has to be deleted later
 NODE_IS_DEVICE_ROOT = 0x80  # root device such as KPL load
+
+DEV_CMD_MEMORY_WRITE = "0x2E"
+DEV_BL_ADDR = "0x0264"
+DEV_OL_ADDR = "0x0032"
+DEV_RR_ADDR = "0x0021"
+
+BACKLIGHT_SUPPORT = {
+    "DimmerMotorSwitch": UOM_PERCENTAGE,
+    "DimmerMotorSwitch_ADV": UOM_PERCENTAGE,
+    "DimmerLampSwitch": UOM_PERCENTAGE,
+    "DimmerLampSwitch_ADV": UOM_PERCENTAGE,
+    "DimmerSwitchOnly": UOM_PERCENTAGE,
+    "DimmerSwitchOnly_ADV": UOM_PERCENTAGE,
+    "KeypadDimmer": UOM_INDEX,
+    "KeypadDimmer_ADV": UOM_INDEX,
+    "RelayLampSwitch": UOM_PERCENTAGE,
+    "RelayLampSwitch_ADV": UOM_PERCENTAGE,
+    "RelaySwitchOnlyPlusQuery": UOM_PERCENTAGE,
+    "RelaySwitchOnlyPlusQuery_ADV": UOM_PERCENTAGE,
+    "RelaySwitchOnly": UOM_PERCENTAGE,
+    "RelaySwitchOnly_ADV": UOM_PERCENTAGE,
+    "KeypadRelay": UOM_INDEX,
+    "KeypadRelay_ADV": UOM_INDEX,
+    "KeypadButton": UOM_INDEX,
+    "KeypadButton_ADV": UOM_INDEX,
+}
+
+BACKLIGHT_INDEX = [
+    "On  0 / Off 0",
+    "On  1 / Off 0",
+    "On  2 / Off 0",
+    "On  3 / Off 0",
+    "On  4 / Off 0",
+    "On  5 / Off 0",
+    "On  6 / Off 0",
+    "On  7 / Off 0",
+    "On  8 / Off 0",
+    "On  9 / Off 0",
+    "On 10 / Off 0",
+    "On 11 / Off 0",
+    "On 12 / Off 0",
+    "On 13 / Off 0",
+    "On 14 / Off 0",
+    "On 15 / Off 0",
+    "On  0 / Off 1",
+    "On  1 / Off 1",
+    "On  2 / Off 1",
+    "On  3 / Off 1",
+    "On  4 / Off 1",
+    "On  5 / Off 1",
+    "On  6 / Off 1",
+    "On  7 / Off 1",
+    "On  8 / Off 1",
+    "On  9 / Off 1",
+    "On 10 / Off 1",
+    "On 11 / Off 1",
+    "On 12 / Off 1",
+    "On 13 / Off 1",
+    "On 14 / Off 1",
+    "On 15 / Off 1",
+    "On  0 / Off 2",
+    "On  1 / Off 2",
+    "On  2 / Off 2",
+    "On  3 / Off 2",
+    "On  4 / Off 2",
+    "On  5 / Off 2",
+    "On  6 / Off 2",
+    "On  7 / Off 2",
+    "On  8 / Off 2",
+    "On  9 / Off 2",
+    "On 10 / Off 2",
+    "On 11 / Off 2",
+    "On 12 / Off 2",
+    "On 13 / Off 2",
+    "On 14 / Off 2",
+    "On 15 / Off 2",
+    "On  0 / Off 3",
+    "On  1 / Off 3",
+    "On  2 / Off 3",
+    "On  3 / Off 3",
+    "On  4 / Off 3",
+    "On  5 / Off 3",
+    "On  6 / Off 3",
+    "On  7 / Off 3",
+    "On  8 / Off 3",
+    "On  9 / Off 3",
+    "On 10 / Off 3",
+    "On 11 / Off 3",
+    "On 12 / Off 3",
+    "On 13 / Off 3",
+    "On 14 / Off 3",
+    "On 15 / Off 3",
+    "On  0 / Off 4",
+    "On  1 / Off 4",
+    "On  2 / Off 4",
+    "On  3 / Off 4",
+    "On  4 / Off 4",
+    "On  5 / Off 4",
+    "On  6 / Off 4",
+    "On  7 / Off 4",
+    "On  8 / Off 4",
+    "On  9 / Off 4",
+    "On 10 / Off 4",
+    "On 11 / Off 4",
+    "On 12 / Off 4",
+    "On 13 / Off 4",
+    "On 14 / Off 4",
+    "On 15 / Off 4",
+    "On  0 / Off 5",
+    "On  1 / Off 5",
+    "On  2 / Off 5",
+    "On  3 / Off 5",
+    "On  4 / Off 5",
+    "On  5 / Off 5",
+    "On  6 / Off 5",
+    "On  7 / Off 5",
+    "On  8 / Off 5",
+    "On  9 / Off 5",
+    "On 10 / Off 5",
+    "On 11 / Off 5",
+    "On 12 / Off 5",
+    "On 13 / Off 5",
+    "On 14 / Off 5",
+    "On 15 / Off 5",
+    "On  0 / Off 6",
+    "On  1 / Off 6",
+    "On  2 / Off 6",
+    "On  3 / Off 6",
+    "On  4 / Off 6",
+    "On  5 / Off 6",
+    "On  6 / Off 6",
+    "On  7 / Off 6",
+    "On  8 / Off 6",
+    "On  9 / Off 6",
+    "On 10 / Off 6",
+    "On 11 / Off 6",
+    "On 12 / Off 6",
+    "On 13 / Off 6",
+    "On 14 / Off 6",
+    "On 15 / Off 6",
+    "On  0 / Off 7",
+    "On  1 / Off 7",
+    "On  2 / Off 7",
+    "On  3 / Off 7",
+    "On  4 / Off 7",
+    "On  5 / Off 7",
+    "On  6 / Off 7",
+    "On  7 / Off 7",
+    "On  8 / Off 7",
+    "On  9 / Off 7",
+    "On 10 / Off 7",
+    "On 11 / Off 7",
+    "On 12 / Off 7",
+    "On 13 / Off 7",
+    "On 14 / Off 7",
+    "On 15 / Off 7",
+]
