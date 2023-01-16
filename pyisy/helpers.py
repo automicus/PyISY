@@ -7,7 +7,7 @@ import datetime
 import time
 from xml.dom.minidom import Element as XmlElement
 
-from .constants import (
+from pyisy.constants import (
     ATTR_FORMATTED,
     ATTR_ID,
     ATTR_PRECISION,
@@ -28,8 +28,9 @@ from .constants import (
     TAG_PROPERTY,
     UOM_SECONDS,
 )
-from .exceptions import XML_ERRORS
-from .logging import _LOGGER
+from pyisy.entity import EntityStatus
+from pyisy.exceptions import XML_ERRORS
+from pyisy.logging import _LOGGER
 
 
 def parse_xml_properties(xmldoc: XmlElement):
@@ -193,7 +194,9 @@ class EventEmitter:
         """Unsubscribe from the events."""
         self._subscribers.remove(listener)
 
-    def notify(self, event: NodeProperty | NodeChangedEvent | str | None) -> None:
+    def notify(
+        self, event: EntityStatus | NodeProperty | NodeChangedEvent | str | None
+    ) -> None:
         """Notify a listener."""
         for subscriber in self._subscribers:
             # Guard against downstream errors interrupting the socket connection (#249)

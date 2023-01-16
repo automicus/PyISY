@@ -1,7 +1,7 @@
 """ISY Configuration Lookup."""
 from xml.dom import minidom
 
-from .constants import (
+from pyisy.constants import (
     ATTR_DESC,
     ATTR_ID,
     TAG_DESC,
@@ -15,9 +15,9 @@ from .constants import (
     TAG_VARIABLES,
     XML_TRUE,
 )
-from .exceptions import XML_ERRORS, XML_PARSE_ERROR, ISYResponseParseError
-from .helpers import value_from_nested_xml, value_from_xml
-from .logging import _LOGGER
+from pyisy.exceptions import XML_ERRORS, XML_PARSE_ERROR, ISYResponseParseError
+from pyisy.helpers import value_from_nested_xml, value_from_xml
+from pyisy.logging import _LOGGER
 
 
 class Configuration(dict):

@@ -6,7 +6,7 @@ import re
 from typing import TYPE_CHECKING, cast
 from xml.dom import minidom
 
-from ..constants import (
+from pyisy.constants import (
     ATTR_ACTION,
     ATTR_CONTROL,
     ATTR_FLAG,
@@ -57,8 +57,8 @@ from ..constants import (
     UOM_SECONDS,
     XML_TRUE,
 )
-from ..exceptions import XML_ERRORS, XML_PARSE_ERROR, ISYResponseParseError
-from ..helpers import (
+from pyisy.exceptions import XML_ERRORS, XML_PARSE_ERROR, ISYResponseParseError
+from pyisy.helpers import (
     EventEmitter,
     NodeChangedEvent,
     NodeProperty,
@@ -68,13 +68,13 @@ from ..helpers import (
     parse_xml_properties,
     value_from_xml,
 )
-from ..logging import _LOGGER
-from ..node_servers import NodeServers
-from .group import Group
-from .node import Node
+from pyisy.logging import _LOGGER
+from pyisy.node_servers import NodeServers
+from pyisy.nodes.group import Group
+from pyisy.nodes.node import Node
 
 if TYPE_CHECKING:
-    from .isy import ISY  # pylint: disable=import-self
+    from pyisy.nodes.isy import ISY  # pylint: disable=import-self
 
 MEMORY_REGEX = (
     r".*dbAddr=(?P<dbAddr>[A-F0-9x]*) \[(?P<value>[A-F0-9]{2})\] "

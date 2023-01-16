@@ -1,12 +1,12 @@
 """Representation of a program from the ISY."""
-from ..constants import (
+from pyisy.constants import (
     CMD_DISABLE_RUN_AT_STARTUP,
     CMD_ENABLE_RUN_AT_STARTUP,
     PROTO_PROGRAM,
     TAG_PROGRAM,
     UPDATE_INTERVAL,
 )
-from .folder import Folder
+from pyisy.programs.folder import Folder
 
 
 class Program(Folder):
@@ -45,6 +45,7 @@ class Program(Folder):
     ):
         """Initialize a Program class."""
         super().__init__(programs, address, pname, pstatus, plastup)
+        self._protocol = PROTO_PROGRAM
         self._enabled = penabled
         self._last_finished = plastfin
         self._last_run = plastrun
@@ -52,18 +53,6 @@ class Program(Folder):
         self._ran_then = 0
         self._run_at_startup = pstartrun
         self._running = prunning
-
-    @property
-    def enabled(self):
-        """Return if the program is enabled on the controller."""
-        return self._enabled
-
-    @enabled.setter
-    def enabled(self, value):
-        """Set if the program is enabled on the controller."""
-        if self._enabled != value:
-            self._enabled = value
-        return self._enabled
 
     @property
     def last_finished(self):
@@ -88,11 +77,6 @@ class Program(Folder):
         if self._last_run != value:
             self._last_run = value
         return self._last_run
-
-    @property
-    def protocol(self):
-        """Return the protocol for this entity."""
-        return PROTO_PROGRAM
 
     @property
     def ran_else(self):
@@ -163,7 +147,7 @@ class Program(Folder):
                 # Status didn't change, but something did, so fire the event.
                 self.status_events.notify(self.status)
             return
-        await self._programs.update(wait_time, address=self._id)
+        await self._programs.update(wait_time, address=self.address)
 
     async def enable_run_at_startup(self):
         """Send command to the program to enable it to run at startup."""

@@ -5,7 +5,7 @@ from asyncio import sleep
 from typing import TYPE_CHECKING
 from xml.dom import minidom
 
-from .constants import (
+from pyisy.constants import (
     EMPTY_TIME,
     TAG_DST,
     TAG_LATITUDE,
@@ -17,12 +17,12 @@ from .constants import (
     TAG_TZ_OFFSET,
     XML_TRUE,
 )
-from .exceptions import XML_ERRORS, XML_PARSE_ERROR, ISYResponseParseError
-from .helpers import ntp_to_system_time, value_from_xml
-from .logging import _LOGGER
+from pyisy.exceptions import XML_ERRORS, XML_PARSE_ERROR, ISYResponseParseError
+from pyisy.helpers import ntp_to_system_time, value_from_xml
+from pyisy.logging import _LOGGER
 
 if TYPE_CHECKING:
-    from . import ISY
+    from pyisy.isy import ISY
 
 
 class Clock:

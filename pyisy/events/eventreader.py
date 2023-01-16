@@ -3,8 +3,8 @@ import errno
 import select
 import ssl
 
-from ..constants import SOCKET_BUFFER_SIZE
-from ..exceptions import (
+from pyisy.constants import SOCKET_BUFFER_SIZE
+from pyisy.exceptions import (
     ISYInvalidAuthError,
     ISYMaxConnections,
     ISYStreamDataError,

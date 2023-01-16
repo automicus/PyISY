@@ -5,7 +5,7 @@ from asyncio import sleep
 from typing import TYPE_CHECKING
 from xml.dom import minidom
 
-from .constants import (
+from pyisy.constants import (
     ATTR_ID,
     PROTO_NETWORK,
     TAG_NAME,
@@ -13,12 +13,12 @@ from .constants import (
     URL_NETWORK,
     URL_RESOURCES,
 )
-from .exceptions import XML_ERRORS, XML_PARSE_ERROR
-from .helpers import value_from_xml
-from .logging import _LOGGER
+from pyisy.exceptions import XML_ERRORS, XML_PARSE_ERROR
+from pyisy.helpers import value_from_xml
+from pyisy.logging import _LOGGER
 
 if TYPE_CHECKING:
-    from . import ISY
+    from pyisy.isy import ISY
 
 
 class NetworkResources:

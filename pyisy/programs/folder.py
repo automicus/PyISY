@@ -1,10 +1,9 @@
 """ISY Program Folders."""
 from __future__ import annotations
 
-from ..constants import (
-    ATTR_LAST_CHANGED,
-    ATTR_LAST_UPDATE,
-    ATTR_STATUS,
+from datetime import datetime
+
+from pyisy.constants import (
     CMD_DISABLE,
     CMD_ENABLE,
     CMD_RUN,
@@ -12,16 +11,15 @@ from ..constants import (
     CMD_RUN_THEN,
     CMD_STOP,
     PROTO_FOLDER,
-    TAG_ADDRESS,
     TAG_FOLDER,
     UPDATE_INTERVAL,
     URL_PROGRAMS,
 )
-from ..helpers import EventEmitter, now
-from ..logging import _LOGGER
+from pyisy.entity import Entity
+from pyisy.logging import _LOGGER
 
 
-class Folder:
+class Folder(Entity):
     """
     Object representing a program folder on the ISY device.
 
@@ -39,85 +37,18 @@ class Folder:
 
     def __init__(self, programs, address, pname, pstatus, plastup):
         """Initialize the Folder class."""
-        self._id = address
+        self._address = address
+        self._protocol = PROTO_FOLDER
         self._last_update = plastup
-        self._last_changed = now()
         self._name = pname
         self._programs = programs
         self._status = pstatus
         self.isy = programs.isy
-        self.status_events = EventEmitter()
-
-    def __str__(self):
-        """Return a string representation of the node."""
-        return f"{type(self).__name__}({self._id})"
-
-    @property
-    def address(self):
-        """Return the program or folder ID."""
-        return self._id
-
-    @property
-    def last_changed(self):
-        """Return the last time the program was changed in this module."""
-        return self._last_changed
-
-    @last_changed.setter
-    def last_changed(self, value):
-        """Set the last time the program was changed."""
-        if self._last_changed != value:
-            self._last_changed = value
-        return self._last_changed
-
-    @property
-    def last_update(self):
-        """Return the last time the program was updated."""
-        return self._last_update
-
-    @last_update.setter
-    def last_update(self, value):
-        """Set the last time the program was updated."""
-        if self._last_update != value:
-            self._last_update = value
-        return self._last_update
 
     @property
     def leaf(self):
         """Get the leaf property."""
         return self
-
-    @property
-    def name(self):
-        """Return the name of the Node."""
-        return self._name
-
-    @property
-    def protocol(self):
-        """Return the protocol for this entity."""
-        return PROTO_FOLDER
-
-    @property
-    def status(self):
-        """Return the current node state."""
-        return self._status
-
-    @status.setter
-    def status(self, value):
-        """Set the current node state and notify listeners."""
-        if self._status != value:
-            self._status = value
-            self.status_events.notify(self._status)
-        return self._status
-
-    @property
-    def status_feedback(self):
-        """Return information for a status change event."""
-        return {
-            TAG_ADDRESS: self.address,
-            ATTR_STATUS: self._status,
-            ATTR_LAST_CHANGED: self._last_changed,
-            ATTR_LAST_UPDATE: self._last_update,
-        }
 
     async def update(self, wait_time=UPDATE_INTERVAL, data=None):
         """
@@ -127,19 +58,21 @@ class Folder:
         |  wait_time: [optional] Seconds to wait before updating.
         """
         if data is not None:
-            self._last_changed = now()
-            self.status = data["pstatus"]
+            self._last_changed = datetime.now()
+            self.update_status(data["pstatus"])
             return
-        await self._programs.update(wait_time=wait_time, address=self._id)
+        await self._programs.update(wait_time=wait_time, address=self.address)
 
     async def send_cmd(self, command):
         """Run the appropriate clause of the object."""
-        req_url = self.isy.conn.compile_url([URL_PROGRAMS, str(self._id), command])
+        req_url = self.isy.conn.compile_url([URL_PROGRAMS, str(self.address), command])
         result = await self.isy.conn.request(req_url)
         if not result:
-            _LOGGER.warning('ISY could not call "%s" on program: %s', command, self._id)
+            _LOGGER.warning(
+                'ISY could not call "%s" on program: %s', command, self.address
+            )
             return False
-        _LOGGER.debug('ISY ran "%s" on program: %s', command, self._id)
+        _LOGGER.debug('ISY ran "%s" on program: %s', command, self.address)
         if not self.isy.auto_update:
             await self.update()
         return True

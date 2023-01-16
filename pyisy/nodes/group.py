@@ -1,14 +1,14 @@
 """Representation of groups (scenes) from an ISY."""
 from __future__ import annotations
 
-from ..constants import (
+from pyisy.constants import (
     FAMILY_GENERIC,
     INSTEON_STATELESS_NODEDEFID,
     ISY_VALUE_UNKNOWN,
     PROTO_GROUP,
 )
-from ..helpers import EventListener, NodeProperty, now
-from .nodebase import NodeBase
+from pyisy.helpers import EventListener, NodeProperty, now
+from pyisy.nodes.nodebase import NodeBase
 
 
 class Group(NodeBase):

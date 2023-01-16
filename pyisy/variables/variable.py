@@ -1,23 +1,32 @@
 """Manage variables from the ISY."""
-from ..constants import (
+from __future__ import annotations
+
+from dataclasses import dataclass
+from datetime import datetime
+
+from pyisy.constants import (
     ATTR_INIT,
-    ATTR_LAST_CHANGED,
-    ATTR_LAST_UPDATE,
-    ATTR_PRECISION,
     ATTR_SET,
-    ATTR_STATUS,
-    ATTR_TS,
     PROTO_INT_VAR,
     PROTO_STATE_VAR,
-    TAG_ADDRESS,
     URL_VARIABLES,
     VAR_INTEGER,
 )
-from ..helpers import EventEmitter, now
-from ..logging import _LOGGER
+from pyisy.entity import Entity, EntityStatus
+from pyisy.helpers import now
+from pyisy.logging import _LOGGER
 
 
-class Variable:
+@dataclass
+class VariableStatus(EntityStatus):
+    """Dataclass to hold variable status."""
+
+    init: int | float
+    timestamp: datetime
+    prec: str = "0"
+
+
+class Variable(Entity):
     """
     Object representing a variable on the controller.
 
@@ -38,32 +47,25 @@ class Variable:
 
     def __init__(self, variables, vid, vtype, vname, init, status, timestamp, prec):
         """Initialize a Variable class."""
-        super().__init__()
-        self._id = vid
+        self._address = f"{vtype}.{vid}"
+        self._name = vname
+        self._protocol = PROTO_INT_VAR if vtype == VAR_INTEGER else PROTO_STATE_VAR
+        self._var_id = vid
+        self._var_type = vtype
         self._init = init
         self._last_edited = timestamp
-        self._last_update = now()
-        self._last_changed = now()
-        self._name = vname
         self._prec = prec
         self._status = status
-        self._type = vtype
         self._variables = variables
         self.isy = variables.isy
-        self.status_events = EventEmitter()
 
     def __str__(self):
         """Return a string representation of the variable."""
-        return f"Variable(type={self._type}, id={self._id}, value={self.status}, init={self.init})"
+        return f"Variable(type={self._var_type}, id={self._var_id}, value={self.status}, init={self.init})"
 
     def __repr__(self):
         """Return a string representation of the variable."""
         return str(self)
-
-    @property
-    def address(self):
-        """Return the formatted Variable Type and ID."""
-        return f"{self._type}.{self._id}"
 
     @property
     def init(self):
@@ -80,43 +82,14 @@ class Variable:
         return self._init
 
     @property
-    def last_changed(self):
-        """Return the UTC Time of the last status change for this node."""
-        return self._last_changed
-
-    @property
     def last_edited(self):
         """Return the last edit time."""
         return self._last_edited
 
-    @last_edited.setter
-    def last_edited(self, value):
-        """Set the last edited time."""
-        if self._last_edited != value:
-            self._last_edited = value
-        return self._last_edited
-
-    @property
-    def last_update(self):
-        """Return the UTC Time of the last update for this node."""
-        return self._last_update
-
-    @last_update.setter
-    def last_update(self, value):
-        """Set the last update time."""
-        if self._last_update != value:
-            self._last_update = value
-        return self._last_update
-
-    @property
-    def protocol(self):
-        """Return the protocol for this entity."""
-        return PROTO_INT_VAR if self._type == VAR_INTEGER else PROTO_STATE_VAR
-
-    @property
-    def name(self):
-        """Return the Variable Name."""
-        return self._name
+    def update_last_edited(self, timestamp: datetime) -> None:
+        """Set the UTC Time of the last edited time for this node."""
+        if self._last_edited != timestamp:
+            self._last_edited = timestamp
 
     @property
     def prec(self):
@@ -133,36 +106,22 @@ class Variable:
         return self._prec
 
     @property
-    def status(self):
-        """Return the current node state."""
-        return self._status
-
-    @status.setter
-    def status(self, value):
-        """Set the current node state and notify listeners."""
-        if self._status != value:
-            self._status = value
-            self._last_changed = now()
-            self.status_events.notify(self.status_feedback)
-        return self._status
-
-    @property
     def status_feedback(self):
         """Return information for a status change event."""
-        return {
-            TAG_ADDRESS: self.address,
-            ATTR_STATUS: self._status,
-            ATTR_INIT: self._init,
-            ATTR_PRECISION: self._prec,
-            ATTR_TS: self._last_edited,
-            ATTR_LAST_CHANGED: self._last_changed,
-            ATTR_LAST_UPDATE: self._last_update,
-        }
+        return VariableStatus(
+            address=self.address,
+            status=self.status,
+            last_changed=self.last_changed,
+            last_update=self.last_update,
+            init=self._init,
+            timestamp=self._last_edited,
+            prec=self._prec,
+        )
 
     @property
     def vid(self):
         """Return the Variable ID."""
-        return self._id
+        return self._var_id
 
     async def update(self, wait_time: float = 0):
         """
@@ -195,8 +154,8 @@ class Variable:
             [
                 URL_VARIABLES,
                 ATTR_INIT if init else ATTR_SET,
-                str(self._type),
-                str(self._id),
+                str(self._var_type),
+                str(self._var_id),
                 str(val),
             ]
         )
@@ -204,15 +163,15 @@ class Variable:
             _LOGGER.warning(
                 "ISY could not set variable%s: %s.%s",
                 " init value" if init else "",
-                str(self._type),
-                str(self._id),
+                str(self._var_type),
+                str(self._var_id),
             )
             return
         _LOGGER.debug(
             "ISY set variable%s: %s.%s",
             " init value" if init else "",
-            str(self._type),
-            str(self._id),
+            str(self._var_type),
+            str(self._var_id),
         )
         if not self.isy.auto_update:
             await self.update()

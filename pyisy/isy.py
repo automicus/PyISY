@@ -4,10 +4,10 @@ from __future__ import annotations
 import asyncio
 from threading import Thread
 
-from .clock import Clock
-from .configuration import Configuration
-from .connection import Connection
-from .constants import (
+from pyisy.clock import Clock
+from pyisy.configuration import Configuration
+from pyisy.connection import Connection
+from pyisy.constants import (
     ATTR_ACTION,
     CMD_X10,
     ES_CONNECTED,
@@ -21,14 +21,14 @@ from .constants import (
     URL_QUERY,
     X10_COMMANDS,
 )
-from .events.tcpsocket import EventStream
-from .events.websocket import WebSocketClient
-from .helpers import EventEmitter, value_from_xml
-from .logging import _LOGGER, enable_logging
-from .networking import NetworkResources
-from .nodes import Nodes
-from .programs import Programs
-from .variables import Variables
+from pyisy.events.tcpsocket import EventStream
+from pyisy.events.websocket import WebSocketClient
+from pyisy.helpers import EventEmitter, value_from_xml
+from pyisy.logging import _LOGGER, enable_logging
+from pyisy.networking import NetworkResources
+from pyisy.nodes import Nodes
+from pyisy.programs import Programs
+from pyisy.variables import Variables
 
 
 class ISY:

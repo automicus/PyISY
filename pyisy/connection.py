@@ -6,7 +6,7 @@ from urllib.parse import quote, urlencode
 
 import aiohttp
 
-from .constants import (
+from pyisy.constants import (
     METHOD_GET,
     URL_CLOCK,
     URL_CONFIG,
@@ -25,8 +25,8 @@ from .constants import (
     XML_FALSE,
     XML_TRUE,
 )
-from .exceptions import ISYConnectionError, ISYInvalidAuthError
-from .logging import _LOGGER, enable_logging
+from pyisy.exceptions import ISYConnectionError, ISYInvalidAuthError
+from pyisy.logging import _LOGGER, enable_logging
 
 MAX_HTTPS_CONNECTIONS_ISY = 2
 MAX_HTTP_CONNECTIONS_ISY = 5

@@ -23,7 +23,7 @@ limitations under the License.
 
 from importlib.metadata import PackageNotFoundError, version
 
-from .exceptions import (
+from pyisy.exceptions import (
     ISYConnectionError,
     ISYInvalidAuthError,
     ISYMaxConnections,
@@ -31,7 +31,7 @@ from .exceptions import (
     ISYStreamDataError,
     ISYStreamDisconnected,
 )
-from .isy import ISY
+from pyisy.isy import ISY
 
 try:
     __version__ = version("pyisy")

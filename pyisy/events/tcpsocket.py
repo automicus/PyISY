@@ -11,8 +11,7 @@ from typing import TYPE_CHECKING
 import xml
 from xml.dom import minidom
 
-from . import strings
-from ..constants import (
+from pyisy.constants import (
     ACTION_KEY,
     ACTION_KEY_CHANGED,
     ATTR_ACTION,
@@ -31,13 +30,14 @@ from ..constants import (
     TAG_EVENT_INFO,
     TAG_NODE,
 )
-from ..exceptions import ISYInvalidAuthError, ISYMaxConnections, ISYStreamDataError
-from ..helpers import attr_from_xml, now, value_from_xml
-from ..logging import LOG_VERBOSE
-from .eventreader import ISYEventReader
+from pyisy.events import strings
+from pyisy.events.eventreader import ISYEventReader
+from pyisy.exceptions import ISYInvalidAuthError, ISYMaxConnections, ISYStreamDataError
+from pyisy.helpers import attr_from_xml, now, value_from_xml
+from pyisy.logging import LOG_VERBOSE
 
 if TYPE_CHECKING:
-    from . import ISY
+    from pyisy.isy import ISY
 
 
 _LOGGER = logging.getLogger(__name__)  # Allows targeting pyisy.events in handlers.

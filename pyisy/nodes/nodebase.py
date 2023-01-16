@@ -5,10 +5,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 from xml.dom import minidom
 
-from ..constants import (
-    ATTR_LAST_CHANGED,
-    ATTR_LAST_UPDATE,
-    ATTR_STATUS,
+from pyisy.constants import (
     CMD_BEEP,
     CMD_BRIGHTEN,
     CMD_DIM,
@@ -24,7 +21,6 @@ from ..constants import (
     COMMAND_FRIENDLY_NAME,
     METHOD_COMMAND,
     NODE_FAMILY_ID,
-    TAG_ADDRESS,
     TAG_DESCRIPTION,
     TAG_IS_LOAD,
     TAG_LOCATION,
@@ -35,15 +31,16 @@ from ..constants import (
     URL_NOTES,
     XML_TRUE,
 )
-from ..exceptions import XML_ERRORS, XML_PARSE_ERROR, ISYResponseParseError
-from ..helpers import EventEmitter, NodeNotes, NodeProperty, now, value_from_xml
-from ..logging import _LOGGER
+from pyisy.entity import Entity, EntityStatus
+from pyisy.exceptions import XML_ERRORS, XML_PARSE_ERROR, ISYResponseParseError
+from pyisy.helpers import NodeNotes, NodeProperty, now, value_from_xml
+from pyisy.logging import _LOGGER
 
 if TYPE_CHECKING:
-    from . import Nodes
+    from pyisy.nodes import Nodes
 
 
-class NodeBase:
+class NodeBase(Entity):
     """Base Object for Nodes and Groups/Scenes."""
 
     has_children = False
@@ -73,7 +70,7 @@ class NodeBase:
         """Initialize a Node Base class."""
         self._aux_properties = aux_properties if aux_properties is not None else {}
         self._family = NODE_FAMILY_ID.get(family_id, family_id)
-        self._id = address
+        self._address = address
         self._name = name
         self._nodes = nodes
         self._notes = None
@@ -83,7 +80,6 @@ class NodeBase:
         self._last_update = now()
         self._last_changed = now()
         self.isy = nodes.isy
-        self.status_events: EventEmitter = EventEmitter()
 
     def __str__(self) -> str:
         """Return a string representation of the node."""
@@ -93,11 +89,6 @@ class NodeBase:
     def aux_properties(self) -> dict[str, NodeProperty]:
         """Return the aux properties that were in the Node Definition."""
         return self._aux_properties
-
-    @property
-    def address(self) -> str:
-        """Return the Node ID."""
-        return self._id
 
     @property
     def description(self) -> str:
@@ -135,16 +126,6 @@ class NodeBase:
         return self._notes.is_load
 
     @property
-    def last_changed(self) -> datetime:
-        """Return the UTC Time of the last status change for this node."""
-        return self._last_changed
-
-    @property
-    def last_update(self) -> datetime:
-        """Return the UTC Time of the last update for this node."""
-        return self._last_update
-
-    @property
     def location(self) -> str:
         """Return the location of the node from it's notes."""
         if self._notes is None:
@@ -153,11 +134,6 @@ class NodeBase:
             )
             return ""
         return self._notes.location
-
-    @property
-    def name(self) -> str:
-        """Return the name of the Node."""
-        return self._name
 
     @property
     def primary_node(self) -> str:
@@ -178,29 +154,6 @@ class NodeBase:
             )
             return ""
         return self._notes.spoken
-
-    @property
-    def status(self) -> int | float:
-        """Return the current node state."""
-        return self._status
-
-    @status.setter
-    def status(self, value: int | float) -> None:
-        """Set the current node state and notify listeners."""
-        if self._status != value:
-            self._status = value
-            self._last_changed = now()
-            self.status_events.notify(self.status_feedback)
-
-    @property
-    def status_feedback(self) -> dict:
-        """Return information for a status change event."""
-        return {
-            TAG_ADDRESS: self.address,
-            ATTR_STATUS: self._status,
-            ATTR_LAST_CHANGED: self._last_changed,
-            ATTR_LAST_UPDATE: self._last_update,
-        }
 
     async def get_notes(self) -> None:
         """Retrieve and parse the notes for a given node.
@@ -251,19 +204,11 @@ class NodeBase:
                 return
         self.aux_properties[prop.control] = prop
         self.update_last_changed()
-        self.status_events.notify(self.status_feedback)
-
-    def update_last_changed(self, timestamp: datetime | None = None) -> None:
-        """Set the UTC Time of the last status change for this node."""
-        if timestamp is None:
-            timestamp = now()
-        self._last_changed = timestamp
-
-    def update_last_update(self, timestamp: datetime | None = None) -> None:
-        """Set the UTC Time of the last update for this node."""
-        if timestamp is None:
-            timestamp = now()
-        self._last_update = timestamp
+        self.status_events.notify(
+            EntityStatus(
+                self.address, self.status, self._last_changed, self._last_update
+            )
+        )
 
     async def send_cmd(
         self,

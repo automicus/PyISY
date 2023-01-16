@@ -23,7 +23,7 @@ classifiers=[
     "Topic :: Home Automation",
 ]
 dynamic = ["version"]
-requires-python = ">=3.8.2"
+requires-python = ">=3.9"
 
 dependencies = [
     "aiohttp>=3.8.1",
@@ -39,7 +39,7 @@ dependencies = [
 [tool.setuptools_scm]
 
 [tool.black]
-target-version = ["py38", "py39", "py310"]
+target-version = ["py39", "py310", "py311"]
 
 [tool.isort]
 # https://github.com/timothycrosley/isort
@@ -60,7 +60,7 @@ combine_as_imports = true
 
 
 [tool.pylint.MAIN]
-py-version = "3.8"
+py-version = "3.9"
 ignore = [
     "tests",
 ]
