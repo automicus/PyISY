@@ -203,6 +203,8 @@ class WebSocketClient:
             self.isy.nodes.node_changed_received(xmldoc)
         elif cntrl == "_5":  # System Status Changed
             self.isy.system_status_changed_received(xmldoc)
+        elif cntrl == "_7":  # Progress report, device programming event
+            self.isy.nodes.progress_report_received(xmldoc)
 
     def update_received(self, xmldoc):
         """Set the socket ID."""
