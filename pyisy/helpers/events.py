@@ -3,13 +3,17 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass, is_dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, TypeVar
 
 from pyisy.logging import _LOGGER
 
 if TYPE_CHECKING:
     from pyisy.entity import EntityStatus
-    from pyisy.helpers import NodeProperty
+    from pyisy.helpers.models import NodeProperty
+
+_T = TypeVar("_T")
+
+_CallableT = TypeVar("_CallableT", bound=Callable[..., Any])
 
 
 class EventEmitter:
@@ -23,7 +27,7 @@ class EventEmitter:
 
     def subscribe(
         self,
-        callback: Callable,
+        callback: _CallableT,
         event_filter: dict | str | None = None,
         key: str | None = None,
     ) -> EventListener:
@@ -34,7 +38,7 @@ class EventEmitter:
         self._subscribers.append(listener)
         return listener
 
-    def unsubscribe(self, listener) -> None:
+    def unsubscribe(self, listener: EventListener) -> None:
         """Unsubscribe from the events."""
         self._subscribers.remove(listener)
 
@@ -69,7 +73,7 @@ class EventListener:
     event_filter: dict | str | None
     key: str | None
 
-    def unsubscribe(self):
+    def unsubscribe(self) -> None:
         """Unsubscribe from the events."""
         self.emitter.unsubscribe(self)
 

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from xml.dom import minidom
 
 from pyisy.constants import (
     DEFAULT_PRECISION,
@@ -52,7 +53,7 @@ class ZWaveProperties:
     raw: str = ""
 
     @classmethod
-    def from_xml(cls, xml):
+    def from_xml(cls, xml: minidom.Element) -> ZWaveProperties:
         """Return a Z-Wave Properties class from an xml DOM object."""
         category = value_from_xml(xml, TAG_CATEGORY)
         devtype_mfg = value_from_xml(xml, TAG_MFG)

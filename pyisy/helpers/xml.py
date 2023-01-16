@@ -34,8 +34,9 @@ def attr_from_element(
 ) -> str:
     """Extract an attribute value from an XML element."""
     value = default
-    if attr_name in element.attributes.keys():
-        value = element.attributes[attr_name].value
+    attributes: minidom.NamedNodeMap = element.attributes
+    if attr_name in attributes.keys():  # type: ignore[no-untyped-call]
+        value = attributes[attr_name].value
     return value
 
 
