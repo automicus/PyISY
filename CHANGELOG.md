@@ -25,3 +25,10 @@ As of v3.0.7, this module will document all changes within the GitHub release in
 #### Variables
 
 - No longer support direct setting of `status` property, use `update_status`
+
+#### Helpers
+
+- Moved to folder, default imports still work except:
+- `EventEmitter`, `EventListener` moved to `pyisy.helpers.events`
+- `NodeChangedEvent` moved from `pyisy.nodes` -> `pyisy.helpers.events`
+- `NodeProperty`, `ZWaveProperties` moved to `pyisy.helpers.models`

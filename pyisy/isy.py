@@ -23,7 +23,8 @@ from pyisy.constants import (
 )
 from pyisy.events.tcpsocket import EventStream
 from pyisy.events.websocket import WebSocketClient
-from pyisy.helpers import EventEmitter, value_from_xml
+from pyisy.helpers import value_from_xml
+from pyisy.helpers.events import EventEmitter
 from pyisy.logging import _LOGGER, enable_logging
 from pyisy.networking import NetworkResources
 from pyisy.nodes import Nodes
