@@ -1,13 +1,16 @@
 """Representation of groups (scenes) from an ISY."""
 from __future__ import annotations
 
+from datetime import datetime
+
 from pyisy.constants import (
     FAMILY_GENERIC,
     INSTEON_STATELESS_NODEDEFID,
     ISY_VALUE_UNKNOWN,
     PROTO_GROUP,
 )
-from pyisy.helpers import EventListener, NodeProperty, now
+from pyisy.helpers.events import EventListener
+from pyisy.helpers.models import NodeProperty
 from pyisy.nodes.nodebase import NodeBase
 
 
@@ -83,7 +86,7 @@ class Group(NodeBase):
         """Set the current node state and notify listeners."""
         if self._all_on != value:
             self._all_on = value
-            self._last_changed = now()
+            self._last_changed = datetime.now()
             # Re-publish the current status. Let users pick up the all on change.
             self.status_events.notify(self._status)
 
@@ -113,7 +116,7 @@ class Group(NodeBase):
         xmldoc: str | None = None,
     ) -> None:
         """Update the group with values from the controller."""
-        self._last_update = now()
+        self._last_update = datetime.now()
         valid_nodes = [
             node
             for node in self.members
@@ -126,9 +129,9 @@ class Group(NodeBase):
         on_nodes = [node for node in valid_nodes if int(self._nodes[node].status) > 0]
         if on_nodes:
             self.group_all_on = len(on_nodes) == len(valid_nodes)
-            self.status = 255
+            self.update_status(255)
             return
-        self.status = 0
+        self.update_status(0)
         self.group_all_on = False
 
     def update_callback(self, event: NodeProperty | None = None) -> None:

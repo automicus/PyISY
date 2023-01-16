@@ -6,11 +6,11 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import TYPE_CHECKING, TypeVar
 
-from pyisy.helpers import EventEmitter
-from pyisy.isy import ISY
+from pyisy.helpers.events import EventEmitter
 
 # Typing imports that create a circular dependency
 if TYPE_CHECKING:
+    from pyisy.isy import ISY
     from pyisy.networking import NetworkResources
     from pyisy.nodes import Nodes
     from pyisy.programs import Programs

@@ -3,10 +3,13 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass, is_dataclass
+from typing import TYPE_CHECKING
 
-from pyisy.entity import EntityStatus
-from pyisy.helpers import NodeProperty
 from pyisy.logging import _LOGGER
+
+if TYPE_CHECKING:
+    from pyisy.entity import EntityStatus
+    from pyisy.helpers import NodeProperty
 
 
 class EventEmitter:

@@ -170,13 +170,13 @@ class NetworkCommand:
         """
         self._network_resources = network_resources
         self.isy = network_resources.isy
-        self._id = address
+        self._address = address
         self._name = name
 
     @property
     def address(self):
         """Return the Resource ID for the Network Resource."""
-        return str(self._id)
+        return str(self._address)
 
     @property
     def name(self):
@@ -190,9 +190,13 @@ class NetworkCommand:
 
     async def run(self):
         """Execute the networking command."""
-        req_url = self.isy.conn.compile_url([URL_NETWORK, URL_RESOURCES, str(self._id)])
+        req_url = self.isy.conn.compile_url(
+            [URL_NETWORK, URL_RESOURCES, str(self._address)]
+        )
 
         if not await self.isy.conn.request(req_url, ok404=True):
-            _LOGGER.warning("ISY could not run networking command: %s", str(self._id))
+            _LOGGER.warning(
+                "ISY could not run networking command: %s", str(self._address)
+            )
             return
-        _LOGGER.debug("ISY ran networking command: %s", str(self._id))
+        _LOGGER.debug("ISY ran networking command: %s", str(self._address))

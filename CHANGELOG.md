@@ -16,6 +16,7 @@ As of v3.0.7, this module will document all changes within the GitHub release in
 #### Nodes
 
 - No longer support direct setting of `status` property, use `update_status`
+- `parse_xml_properties` moved from `pyisy.helpers` -> `pyisy.nodes.parser`
 
 #### Programs
 
@@ -32,3 +33,8 @@ As of v3.0.7, this module will document all changes within the GitHub release in
 - `EventEmitter`, `EventListener` moved to `pyisy.helpers.events`
 - `NodeChangedEvent` moved from `pyisy.nodes` -> `pyisy.helpers.events`
 - `NodeProperty`, `ZWaveProperties` moved to `pyisy.helpers.models`
+- `value_from_xml`,`attr_from_xml`,`attr_from_element`,`value_from_nested_xml` moved to `pyisy.helpers.xml`, but still importable from `pyisy.helpers`
+
+#### Networking
+
+- `._id` attribute renamed to `_address`, continue to use `address` property.

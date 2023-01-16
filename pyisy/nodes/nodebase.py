@@ -33,7 +33,8 @@ from pyisy.constants import (
 )
 from pyisy.entity import Entity, EntityStatus
 from pyisy.exceptions import XML_ERRORS, XML_PARSE_ERROR, ISYResponseParseError
-from pyisy.helpers import NodeNotes, NodeProperty, now, value_from_xml
+from pyisy.helpers import value_from_xml
+from pyisy.helpers.models import NodeNotes, NodeProperty
 from pyisy.logging import _LOGGER
 
 if TYPE_CHECKING:
@@ -77,13 +78,13 @@ class NodeBase(Entity):
         self._primary_node = pnode
         self._flag = flag
         self._status = status
-        self._last_update = now()
-        self._last_changed = now()
+        self._last_update = datetime.now()
+        self._last_changed = datetime.now()
         self.isy = nodes.isy
 
     def __str__(self) -> str:
         """Return a string representation of the node."""
-        return f"{type(self).__name__}({self._id})"
+        return f"{type(self).__name__}({self.address})"
 
     @property
     def aux_properties(self) -> dict[str, NodeProperty]:
@@ -162,7 +163,7 @@ class NodeBase(Entity):
         a call to this function.
         """
         notes_xml = await self.isy.conn.request(
-            self.isy.conn.compile_url([URL_NODES, self._id, URL_NOTES]), ok404=True
+            self.isy.conn.compile_url([URL_NODES, self.address, URL_NOTES]), ok404=True
         )
         if notes_xml is not None and notes_xml != "":
             try:
@@ -220,7 +221,7 @@ class NodeBase(Entity):
         """Send a command to the device."""
         value = str(val) if val is not None else None
         _uom = str(uom) if uom is not None else None
-        req = [URL_NODES, str(self._id), METHOD_COMMAND, cmd]
+        req = [URL_NODES, str(self.address), METHOD_COMMAND, cmd]
         if value:
             req.append(value)
         if _uom:
@@ -230,11 +231,11 @@ class NodeBase(Entity):
             _LOGGER.warning(
                 "ISY could not send %s command to %s.",
                 COMMAND_FRIENDLY_NAME.get(cmd),
-                self._id,
+                self.address,
             )
             return False
         _LOGGER.debug(
-            "ISY command %s sent to %s.", COMMAND_FRIENDLY_NAME.get(cmd), self._id
+            "ISY command %s sent to %s.", COMMAND_FRIENDLY_NAME.get(cmd), self.address
         )
         return True
 
@@ -253,18 +254,18 @@ class NodeBase(Entity):
     async def disable(self) -> bool:
         """Send command to the node to disable it."""
         if not await self.isy.conn.request(
-            self.isy.conn.compile_url([URL_NODES, str(self._id), CMD_DISABLE])
+            self.isy.conn.compile_url([URL_NODES, str(self.address), CMD_DISABLE])
         ):
-            _LOGGER.warning("ISY could not %s %s.", CMD_DISABLE, self._id)
+            _LOGGER.warning("ISY could not %s %s.", CMD_DISABLE, self.address)
             return False
         return True
 
     async def enable(self) -> bool:
         """Send command to the node to enable it."""
         if not await self.isy.conn.request(
-            self.isy.conn.compile_url([URL_NODES, str(self._id), CMD_ENABLE])
+            self.isy.conn.compile_url([URL_NODES, str(self.address), CMD_ENABLE])
         ):
-            _LOGGER.warning("ISY could not %s %s.", CMD_ENABLE, self._id)
+            _LOGGER.warning("ISY could not %s %s.", CMD_ENABLE, self.address)
             return False
         return True
 
@@ -320,16 +321,16 @@ class NodeBase(Entity):
         """
         # /rest/nodes/<nodeAddress>/change?name=<newName>
         req_url = self.isy.conn.compile_url(
-            [URL_NODES, self._id, URL_CHANGE],
+            [URL_NODES, self.address, URL_CHANGE],
             query={TAG_NAME: new_name},
         )
         if not await self.isy.conn.request(req_url):
             _LOGGER.warning(
                 "ISY could not update name for %s.",
-                self._id,
+                self.address,
             )
             return False
-        _LOGGER.debug("ISY renamed %s to %s.", self._id, new_name)
+        _LOGGER.debug("ISY renamed %s to %s.", self.address, new_name)
 
         self._name = new_name
         return True

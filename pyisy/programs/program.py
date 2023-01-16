@@ -142,7 +142,7 @@ class Program(Folder):
             self._running = (data["plastrun"] >= data["plastup"]) or data["prunning"]
             # Update Status last and make sure the change event fires, but only once.
             if self.status != data["pstatus"]:
-                self.status = data["pstatus"]
+                self.update_status(data["pstatus"])
             else:
                 # Status didn't change, but something did, so fire the event.
                 self.status_events.notify(self.status)

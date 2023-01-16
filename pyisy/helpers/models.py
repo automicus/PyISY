@@ -11,7 +11,7 @@ from pyisy.constants import (
     TAG_GENERIC,
     TAG_MFG,
 )
-from pyisy.helpers import value_from_xml
+from pyisy.helpers.xml import value_from_xml
 
 
 @dataclass

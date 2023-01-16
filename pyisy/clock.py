@@ -2,15 +2,18 @@
 from __future__ import annotations
 
 from asyncio import sleep
+from datetime import date, datetime
+import time
 from typing import TYPE_CHECKING
 from xml.dom import minidom
 
 from pyisy.constants import (
     EMPTY_TIME,
+    ISY_EPOCH_OFFSET,
     TAG_DST,
     TAG_LATITUDE,
     TAG_LONGITUDE,
-    TAG_MILIATRY_TIME,
+    TAG_MILITARY_TIME,
     TAG_NTP,
     TAG_SUNRISE,
     TAG_SUNSET,
@@ -18,11 +21,33 @@ from pyisy.constants import (
     XML_TRUE,
 )
 from pyisy.exceptions import XML_ERRORS, XML_PARSE_ERROR, ISYResponseParseError
-from pyisy.helpers import ntp_to_system_time, value_from_xml
+from pyisy.helpers import value_from_xml
 from pyisy.logging import _LOGGER
 
 if TYPE_CHECKING:
     from pyisy.isy import ISY
+
+
+def ntp_to_system_time(timestamp):
+    """Convert a ISY NTP time to system UTC time.
+
+    Adapted from Python ntplib module.
+    https://pypi.org/project/ntplib/
+
+    Parameters:
+    timestamp -- timestamp in NTP time
+
+    Returns:
+    corresponding system time
+
+    Note: The ISY uses a EPOCH_OFFSET in addition to standard NTP.
+
+    """
+    _system_epoch = date(*time.gmtime(0)[0:3])
+    _ntp_epoch = date(1900, 1, 1)
+    ntp_delta = ((_system_epoch - _ntp_epoch).days * 24 * 3600) - ISY_EPOCH_OFFSET
+
+    return datetime.fromtimestamp(timestamp - ntp_delta)
 
 
 class Clock:
@@ -31,6 +56,11 @@ class Clock:
 
     DESCRIPTION:
         This class handles the ISY clock/location info.
+
+        Note: this module uses naive datetimes because the
+        ISY is highly inconsistent with time conventions
+        and does not present enough information to accurately
+        manage DST without significant guessing and effort.
 
     ATTRIBUTES:
         isy: The ISY device class
@@ -95,7 +125,7 @@ class Clock:
         self._dst = value_from_xml(xmldoc, TAG_DST) == XML_TRUE
         self._latitude = float(value_from_xml(xmldoc, TAG_LATITUDE))
         self._longitude = float(value_from_xml(xmldoc, TAG_LONGITUDE))
-        self._military = value_from_xml(xmldoc, TAG_MILIATRY_TIME) == XML_TRUE
+        self._military = value_from_xml(xmldoc, TAG_MILITARY_TIME) == XML_TRUE
         self._last_called = ntp_to_system_time(int(value_from_xml(xmldoc, TAG_NTP)))
         self._sunrise = ntp_to_system_time(int(value_from_xml(xmldoc, TAG_SUNRISE)))
         self._sunset = ntp_to_system_time(int(value_from_xml(xmldoc, TAG_SUNSET)))

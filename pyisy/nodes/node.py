@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import asyncio
+from datetime import datetime
 from typing import TYPE_CHECKING
 from xml.dom import minidom
 
@@ -45,17 +46,13 @@ from pyisy.constants import (
     ZWAVE_CAT_THERMOSTAT,
 )
 from pyisy.exceptions import XML_ERRORS, XML_PARSE_ERROR, ISYResponseParseError
-from pyisy.helpers import (
-    EventEmitter,
-    NodeProperty,
-    ZWaveProperties,
-    attr_from_xml,
-    now,
-    parse_xml_properties,
-)
+from pyisy.helpers.events import EventEmitter
+from pyisy.helpers.models import NodeProperty, ZWaveProperties
+from pyisy.helpers.xml import attr_from_xml
 from pyisy.logging import _LOGGER
 from pyisy.nodes.group import Group
 from pyisy.nodes.nodebase import NodeBase
+from pyisy.nodes.parser import parse_xml_properties
 
 if TYPE_CHECKING:
     from pyisy.nodes import Nodes
@@ -198,7 +195,7 @@ class Node(NodeBase):
                 self._protocol == PROTO_INSTEON
                 and self.type
                 and any({self.type.startswith(t) for t in INSTEON_TYPE_DIMMABLE})
-                and self._id.endswith(INSTEON_SUBNODE_DIMMABLE)
+                and self.address.endswith(INSTEON_SUBNODE_DIMMABLE)
             )
             or (
                 self._protocol == PROTO_ZWAVE
@@ -296,7 +293,14 @@ class Node(NodeBase):
         # <config paramNum="2" size="1" value="80"/>
         parameter_xml = await self.isy.conn.request(
             self.isy.conn.compile_url(
-                [URL_ZWAVE, URL_NODE, self._id, URL_CONFIG, URL_QUERY, str(parameter)]
+                [
+                    URL_ZWAVE,
+                    URL_NODE,
+                    self.address,
+                    URL_CONFIG,
+                    URL_QUERY,
+                    str(parameter),
+                ]
             )
         )
 
@@ -318,7 +322,7 @@ class Node(NodeBase):
             f"{PROP_ZWAVE_PREFIX}{parameter}",
             value,
             uom=f"{PROP_ZWAVE_PREFIX}{size}",
-            address=self._id,
+            address=self.address,
         )
         self.update_property(node_prop)
 
@@ -361,7 +365,7 @@ class Node(NodeBase):
             [
                 URL_ZWAVE,
                 URL_NODE,
-                self._id,
+                self.address,
                 URL_CONFIG,
                 METHOD_SET,
                 str(parameter),
@@ -373,17 +377,17 @@ class Node(NodeBase):
             _LOGGER.warning(
                 "ISY could not set parameter %s on %s.",
                 parameter,
-                self._id,
+                self.address,
             )
             return False
-        _LOGGER.debug("ISY set parameter %s sent to %s.", parameter, self._id)
+        _LOGGER.debug("ISY set parameter %s sent to %s.", parameter, self.address)
 
         # Add/update the aux_properties to include the parameter.
         node_prop = NodeProperty(
             f"{PROP_ZWAVE_PREFIX}{parameter}",
             int(value),
             uom=f"{PROP_ZWAVE_PREFIX}{size}",
-            address=self._id,
+            address=self.address,
         )
         self.update_property(node_prop)
 
@@ -399,7 +403,7 @@ class Node(NodeBase):
         if not self.isy.auto_update and not xmldoc:
             await asyncio.sleep(wait_time)
             req_url = self.isy.conn.compile_url(
-                [URL_NODES, self._id, METHOD_GET, PROP_STATUS]
+                [URL_NODES, self.address, METHOD_GET, PROP_STATUS]
             )
             xml = await self.isy.conn.request(req_url)
             try:
@@ -409,14 +413,14 @@ class Node(NodeBase):
                 raise ISYResponseParseError(XML_PARSE_ERROR) from exc
 
         if xmldoc is None:
-            _LOGGER.warning("ISY could not update node: %s", self._id)
+            _LOGGER.warning("ISY could not update node: %s", self.address)
             return
 
-        self._last_update = now()
+        self._last_update = datetime.now()
         state, aux_props, _ = parse_xml_properties(xmldoc)
         self._aux_properties.update(aux_props)
         self.update_state(state)
-        _LOGGER.debug("ISY updated node: %s", self._id)
+        _LOGGER.debug("ISY updated node: %s", self.address)
 
     def update_state(self, state: NodeProperty) -> None:
         """Update the various state properties when received."""
@@ -424,7 +428,7 @@ class Node(NodeBase):
             _LOGGER.error("Could not update state values. Invalid type provided.")
             return
         changed = False
-        self._last_update = now()
+        self._last_update = datetime.now()
 
         if state.prec != self._prec:
             self._prec = state.prec
@@ -439,12 +443,12 @@ class Node(NodeBase):
             changed = True
 
         if state.value != self.status:
-            self.status = state.value
+            self.update_status(state.value)
             # Let Status setter throw event
             return
 
         if changed:
-            self._last_changed = now()
+            self._last_changed = datetime.now()
             self.status_events.notify(self.status_feedback)
 
     def get_command_value(self, uom: str, cmd: str) -> str | None:
@@ -470,10 +474,10 @@ class Node(NodeBase):
         for child in self._nodes.all_lower_nodes:
             if child[0] == TAG_GROUP:
                 if responder:
-                    if self._id in self._nodes[child[2]].members:
+                    if self.address in self._nodes[child[2]].members:
                         groups.append(child[2])
                 elif controller:
-                    if self._id in self._nodes[child[2]].controllers:
+                    if self.address in self._nodes[child[2]].controllers:
                         groups.append(child[2])
         return groups
 
@@ -562,7 +566,8 @@ class Node(NodeBase):
         """Set the ON Level for a device."""
         if not val or int(val) not in range(256):
             _LOGGER.warning(
-                "Invalid value for On Level for %s. Valid values are 0-255.", self._id
+                "Invalid value for On Level for %s. Valid values are 0-255.",
+                self.address,
             )
             return False
         return await self.send_cmd(PROP_ON_LEVEL, str(val))
@@ -573,7 +578,7 @@ class Node(NodeBase):
             _LOGGER.warning(
                 "Invalid value for Ramp Rate for %s. "
                 "Valid values are 0-31. See 'INSTEON_RAMP_RATES' in constants.py for values.",
-                self._id,
+                self.address,
             )
             return False
         return await self.send_cmd(PROP_RAMP_RATE, str(val))
