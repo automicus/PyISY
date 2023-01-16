@@ -940,6 +940,8 @@ NC_NODE_REVISED = "RV"
 NC_PARENT_CHANGED = "PC"
 NC_PENDING_DEVICE_OP = "WH"
 NC_PROGRAMMING_DEVICE = "WD"
+DEV_WRITING = "_7A"
+DEV_MEMORY = "_7M"
 
 # Node Change Code: (Description, EventInfo Tags)
 NODE_CHANGED_ACTIONS = {
@@ -962,6 +964,8 @@ NODE_CHANGED_ACTIONS = {
     NC_PARENT_CHANGED: ("Parent Changed", ["node", "nodeType", "parent", "parentType"]),
     NC_PENDING_DEVICE_OP: ("Pending Device Operation", []),
     NC_PROGRAMMING_DEVICE: ("Programming Device", []),
+    DEV_WRITING: ("Progress Report", ["message"]),
+    DEV_MEMORY: ("Memory Write", ["memory", "cmd1", "cmd2", "value"]),
 }
 
 SYSTEM_NOT_BUSY = "0"
@@ -988,6 +992,11 @@ NODE_IS_IN_ERR = 0x10  # it’s in error!
 NODE_IS_NEW = 0x20  # brand new node
 NODE_TO_DELETE = 0x40  # has to be deleted later
 NODE_IS_DEVICE_ROOT = 0x80  # root device such as KPL load
+
+DEV_CMD_MEMORY_WRITE = "0x2E"
+DEV_BL_ADDR = "0x0264"
+DEV_OL_ADDR = "0x0032"
+DEV_RR_ADDR = "0x0021"
 
 BACKLIGHT_SUPPORT = {
     "DimmerMotorSwitch": UOM_PERCENTAGE,

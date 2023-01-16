@@ -1,6 +1,7 @@
 """Representation of ISY Nodes."""
 from asyncio import sleep
 from dataclasses import dataclass
+import re
 from xml.dom import minidom
 
 from ..constants import (
@@ -14,6 +15,8 @@ from ..constants import (
     ATTR_UNIT_OF_MEASURE,
     DEFAULT_PRECISION,
     DEFAULT_UNIT_OF_MEASURE,
+    DEV_MEMORY,
+    DEV_WRITING,
     EVENT_PROPS_IGNORED,
     FAMILY_BRULTECH,
     FAMILY_NODESERVER,
@@ -66,6 +69,11 @@ from ..logging import _LOGGER
 from ..node_servers import NodeServers
 from .group import Group
 from .node import Node
+
+MEMORY_REGEX = (
+    r".*dbAddr=(?P<dbAddr>[A-F0-9x]*) \[(?P<value>[A-F0-9]{2})\] "
+    r"cmd1=(?P<cmd1>[A-F0-9x]{4}) cmd2=(?P<cmd2>[A-F0-9x]{4})"
+)
 
 
 class Nodes:
@@ -312,6 +320,33 @@ class Nodes:
             detail if detail else "",
         )
         # FUTURE: Handle additional node change actions to force updates.
+
+    def progress_report_received(self, xmldoc: minidom.Element) -> None:
+        """Handle Progress Report '_7' events from an event stream message."""
+        event_info = value_from_xml(xmldoc, TAG_EVENT_INFO)
+        address, _, message = event_info.partition("]")
+        address = address.strip("[ ")
+        message = message.strip()
+        action = DEV_WRITING
+        detail = {"message": message}
+
+        if address != "All" and message.startswith("Memory"):
+            action = DEV_MEMORY
+            regex = re.compile(MEMORY_REGEX)
+            if event := regex.search(event_info):
+                detail = {
+                    "memory": event.group("dbAddr"),
+                    "cmd1": event.group("cmd1"),
+                    "cmd2": event.group("cmd2"),
+                    "value": int(event.group("value"), 16),
+                }
+        self.status_events.notify(event=NodeChangedEvent(address, action, detail))
+        _LOGGER.debug(
+            "ISY received a progress report %s event for node %s %s",
+            action,
+            address,
+            detail if detail else "",
+        )
 
     def parse(self, xml):
         """
