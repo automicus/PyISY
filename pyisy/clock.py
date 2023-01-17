@@ -33,7 +33,7 @@ from pyisy.logging import _LOGGER
 if TYPE_CHECKING:
     from pyisy.isy import ISY
 
-URL_CLOCK = "/time"
+URL_CLOCK = "time"
 
 
 def ntp_to_system_time(timestamp: int) -> datetime:
@@ -98,7 +98,7 @@ class ClockData:
         """Return a ISY Clock class from an xml DOM object."""
         tz_offset_sec = int(value_from_xml(xmldoc, TAG_TZ_OFFSET))
         return ClockData(
-            tz_offset=tz_offset_sec / 3600,
+            tz_offset=round(tz_offset_sec / 3600, 1),
             dst=value_from_xml(xmldoc, TAG_DST) == XML_TRUE,
             latitude=float(value_from_xml(xmldoc, TAG_LATITUDE)),
             longitude=float(value_from_xml(xmldoc, TAG_LONGITUDE)),
@@ -121,7 +121,7 @@ class Clock:
         """Initialize a new Clock Updater class."""
         self.isy = isy
         self.clock_data = ClockData()
-        self.url = isy.conn.compile_url({URL_CLOCK})
+        self.url = isy.conn.compile_url([URL_CLOCK])
 
     async def update(self, wait_time: float = 0) -> None:
         """

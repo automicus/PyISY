@@ -132,14 +132,15 @@ class Connection:
         return self._url
 
     # COMMON UTILITIES
-    def compile_url(
-        self, path: set[str] | list[str], query: dict[str, str] = None
-    ) -> str:
+    def compile_url(self, path: str | list[str], query: dict[str, str] = None) -> str:
         """Compile the URL to fetch from the ISY."""
-        url = f"{self.url}/rest/{'/'.join({quote(item) for item in path})}"
+        if isinstance(path, str):
+            url = f"{self.url}/rest/{path.strip('/')}"
+        else:
+            url = f"{self.url}/rest/{'/'.join([quote(item) for item in path])}"
         if query is not None:
-            url = f"{url}?{urlencode(query)}"
-        return url.replace("//", "/")
+            url += f"?{urlencode(query)}"
+        return url
 
     async def request(
         self, url: str, retries: int = 0, ok404: bool = False, delay: float = 0
