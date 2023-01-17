@@ -148,6 +148,7 @@ class Nodes:
     def __repr__(self) -> str:
         """Create a pretty representation of the nodes/folders/groups."""
         # get and sort children
+        # TODO: This is not working
         folders = []
         groups = []
         nodes = []

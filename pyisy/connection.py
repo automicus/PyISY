@@ -7,6 +7,7 @@ from urllib.parse import ParseResult, quote, urlencode, urlparse
 
 import aiohttp
 
+from pyisy.configuration import Configuration, ConfigurationData
 from pyisy.constants import (
     METHOD_GET,
     URL_CONFIG,
@@ -100,13 +101,14 @@ class Connection:
         self.req_session = connection_info.websession
         self.sslcontext = get_sslcontext(connection_info)
 
-    async def test_connection(self):
+    async def test_connection(self) -> ConfigurationData:
         """Test the connection and get the config for the ISY."""
-        if not (config := await self.get_config(retries=None)):
+        config = Configuration()
+        if not (config_data := await config.update(self)):
             raise ISYConnectionError(
                 "Could not connect to the ISY with the parameters provided"
             )
-        return config
+        return config_data
 
     def increase_available_connections(self):
         """Increase the number of allowed connections for newer hardware."""

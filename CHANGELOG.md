@@ -62,3 +62,16 @@ Moved to helpers.session:
 get_new_client_session
 get_sslcontext
 can_https
+
+configuration shortened to config
+
+Intialiization can set options for what to load
+
+### Configuration
+
+no support for passing xml
+change to data class
+features moved to `Configuration.features`
+networking is top-level
+
+### I

@@ -75,6 +75,8 @@ ATTR_VAR = "var"
 DEFAULT_PRECISION = "0"
 DEFAULT_UNIT_OF_MEASURE = ""
 
+NET_MODULE = "Networking Module"
+
 TAG_ADDRESS = "address"
 TAG_CATEGORY = "cat"
 TAG_CONFIG = "config"

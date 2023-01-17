@@ -7,10 +7,17 @@
   "editor.formatOnType": true,
   "files.trimTrailingWhitespace": true,
   "python.linting.flake8Enabled": true,
-  "cSpell.words": ["automodule"],
+  "cSpell.words": ["automodule", "nodedefs", "qualname", "xmltodict"],
   "editor.formatOnSaveMode": "file",
   "editor.defaultFormatter": "ms-python.black-formatter",
   "python.linting.mypyEnabled": true,
   "python.linting.pycodestyleEnabled": false,
-  "python.linting.pydocstyleEnabled": true
+  "python.linting.pydocstyleEnabled": true,
+  "editor.quickSuggestions": {
+    "other": true,
+    "comments": true,
+    "strings": true
+  },
+  "python.analysis.autoImportCompletions": true,
+  "python.autoComplete.extraPaths": ["/workspaces"]
 }

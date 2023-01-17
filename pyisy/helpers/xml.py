@@ -3,7 +3,26 @@ from __future__ import annotations
 
 from xml.dom import minidom
 
-from pyisy.exceptions import XML_ERRORS
+import xmltodict
+
+from pyisy.exceptions import (
+    XML_ERRORS,
+    XML_PARSE_ERROR,
+    ISYResponseError,
+    ISYResponseParseError,
+)
+
+
+def parse_xml(xml: str | None) -> dict:
+    """Parse an XML string and return a dict object."""
+    if not xml:
+        raise ISYResponseError("Could not load response")
+
+    try:
+        xml_dict = xmltodict.parse(xml)
+    except XML_ERRORS as exc:
+        raise ISYResponseParseError(XML_PARSE_ERROR) from exc
+    return xml_dict
 
 
 def value_from_xml(xml: minidom.Element, tag_name: str, default: str = "") -> str:

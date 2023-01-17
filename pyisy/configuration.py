@@ -1,9 +1,13 @@
 """ISY Configuration Lookup."""
-from xml.dom import minidom
+from __future__ import annotations
+
+import asyncio
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Any
 
 from pyisy.constants import (
-    ATTR_DESC,
     ATTR_ID,
+    NET_MODULE,
     TAG_DESC,
     TAG_FEATURE,
     TAG_FIRMWARE,
@@ -13,16 +17,24 @@ from pyisy.constants import (
     TAG_PRODUCT,
     TAG_ROOT,
     TAG_VARIABLES,
-    XML_TRUE,
+    URL_CONFIG,
 )
-from pyisy.exceptions import XML_ERRORS, XML_PARSE_ERROR, ISYResponseParseError
-from pyisy.helpers import value_from_nested_xml, value_from_xml
+from pyisy.helpers.xml import parse_xml
 from pyisy.logging import _LOGGER
 
+if TYPE_CHECKING:
+    from pyisy.connection import Connection
 
-class Configuration(dict):
+TRUE = "true"
+TAG_FEATURES = "features"
+TAG_CONFIG = "configuration"
+TAG_PLATFORM = "platform"
+
+
+@dataclass
+class ConfigurationData:
     """
-    ISY Configuration class.
+    ISY Configuration Dataclass.
 
     DESCRIPTION:
         This class handles the ISY configuration.
@@ -35,7 +47,7 @@ class Configuration(dict):
         returned. With the exception of 'firmware' and 'uuid',
         which will return their respective values.
 
-    PARAMETERS:
+    FEATURES:
         Portal Integration - Check-it.ca
         Gas Meter
         SEP ESP
@@ -57,52 +69,62 @@ class Configuration(dict):
         Elk Security System
         Portal Integration - MobiLinc
         NorthWrite NOC Module
-
-    EXAMPLE:
-        # configuration['Networking Module']
-        True
-        # configuration['21040']
-        True
-
     """
 
-    def __init__(self, xml=None):
-        """
-        Initialize configuration class.
+    config: dict
+    firmware: str
+    uuid: str
+    name: str
+    model: str
+    platform: str
+    variables: bool
+    nodedefs: bool
+    networking: bool
+    features: list[dict[str, str]]
+    node_servers: bool = False
 
-        xml: String of xml data containing the configuration data
-        """
-        super().__init__()
+    def __getitem__(self, item: str) -> Any:
+        """Make subscriptable for backwards compatibility."""
+        return getattr(self, item)
 
-        if xml is not None:
-            self.parse(xml)
 
-    def parse(self, xml):
-        """
-        Parse the xml data.
+class Configuration:
+    """Class to update the ISY configuration information."""
 
-        xml: String of the xml data
-        """
-        try:
-            xmldoc = minidom.parseString(xml)
-        except XML_ERRORS as exc:
-            _LOGGER.error("%s: Configuration", XML_PARSE_ERROR)
-            raise ISYResponseParseError(XML_PARSE_ERROR) from exc
+    config_data: ConfigurationData = None  # type: ignore[assignment]
 
-        self["firmware"] = value_from_xml(xmldoc, TAG_FIRMWARE)
-        self["uuid"] = value_from_nested_xml(xmldoc, [TAG_ROOT, ATTR_ID])
-        self["name"] = value_from_nested_xml(xmldoc, [TAG_ROOT, TAG_NAME])
-        self["model"] = value_from_nested_xml(xmldoc, [TAG_PRODUCT, TAG_DESC], "ISY")
-        self["variables"] = bool(value_from_xml(xmldoc, TAG_VARIABLES) == XML_TRUE)
-        self["nodedefs"] = bool(value_from_xml(xmldoc, TAG_NODE_DEFS) == XML_TRUE)
+    async def update(self, conn: Connection, wait_time: float = 0) -> ConfigurationData:
+        """Update the contents of the networking class."""
+        await asyncio.sleep(wait_time)
+        xml_dict = parse_xml(await conn.request(conn.compile_url([URL_CONFIG])))
+        config = xml_dict[TAG_CONFIG]
+        features = config[TAG_FEATURES][TAG_FEATURE]
+        networking = any(
+            i
+            for i in features
+            if i[TAG_DESC] == NET_MODULE and i[TAG_INSTALLED] == TRUE
+        )
 
-        features = xmldoc.getElementsByTagName(TAG_FEATURE)
-        for feature in features:
-            idnum = value_from_xml(feature, ATTR_ID)
-            desc = value_from_xml(feature, ATTR_DESC)
-            installed_raw = value_from_xml(feature, TAG_INSTALLED)
-            installed = bool(installed_raw == XML_TRUE)
-            self[idnum] = installed
-            self[desc] = self[idnum]
+        self.config_data = ConfigurationData(
+            config=config,
+            firmware=config[TAG_FIRMWARE],
+            uuid=config[TAG_ROOT][ATTR_ID],
+            name=config[TAG_ROOT][TAG_NAME],
+            model=config[TAG_PRODUCT][TAG_DESC],
+            platform=config[TAG_PLATFORM],
+            variables=bool(config[TAG_VARIABLES] == TRUE),
+            nodedefs=bool(config[TAG_NODE_DEFS] == TRUE),
+            networking=networking,
+            features=features,
+        )
 
         _LOGGER.info("ISY Loaded Configuration")
+        return self.config_data
+
+    def __str__(self) -> str:
+        """Return string representation of Configuration data."""
+        return str(self.config_data)
+
+    def __repr__(self) -> str:
+        """Return string representation of Configuration data."""
+        return repr(self.config_data)

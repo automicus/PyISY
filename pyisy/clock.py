@@ -6,7 +6,6 @@ from dataclasses import dataclass
 from datetime import date, datetime
 import time
 from typing import TYPE_CHECKING
-from xml.dom import minidom
 
 from pyisy.constants import (
     EMPTY_TIME,
@@ -19,21 +18,16 @@ from pyisy.constants import (
     TAG_SUNRISE,
     TAG_SUNSET,
     TAG_TZ_OFFSET,
-    XML_TRUE,
 )
-from pyisy.exceptions import (
-    XML_ERRORS,
-    XML_PARSE_ERROR,
-    ISYResponseError,
-    ISYResponseParseError,
-)
-from pyisy.helpers import value_from_xml
+from pyisy.helpers.xml import parse_xml
 from pyisy.logging import _LOGGER
 
 if TYPE_CHECKING:
     from pyisy.isy import ISY
 
 URL_CLOCK = "time"
+TRUE_STR = "true"
+TAG_TZ_ID = "TzId"
 
 
 def ntp_to_system_time(timestamp: int) -> datetime:
@@ -92,20 +86,24 @@ class ClockData:
     sunrise: datetime = EMPTY_TIME
     sunset: datetime = EMPTY_TIME
     military: bool = False
+    tz_name: str | None = None
 
     @classmethod
-    def from_xml(cls, xmldoc: minidom.Element) -> ClockData:
+    def from_xml(cls, xml_dict: dict[str, str]) -> ClockData:
         """Return a ISY Clock class from an xml DOM object."""
-        tz_offset_sec = int(value_from_xml(xmldoc, TAG_TZ_OFFSET))
+        tz_offset = float(xml_dict[TAG_TZ_OFFSET])
         return ClockData(
-            tz_offset=round(tz_offset_sec / 3600, 1),
-            dst=value_from_xml(xmldoc, TAG_DST) == XML_TRUE,
-            latitude=float(value_from_xml(xmldoc, TAG_LATITUDE)),
-            longitude=float(value_from_xml(xmldoc, TAG_LONGITUDE)),
-            military=value_from_xml(xmldoc, TAG_MILITARY_TIME) == XML_TRUE,
-            last_called=ntp_to_system_time(int(value_from_xml(xmldoc, TAG_NTP))),
-            sunrise=ntp_to_system_time(int(value_from_xml(xmldoc, TAG_SUNRISE))),
-            sunset=ntp_to_system_time(int(value_from_xml(xmldoc, TAG_SUNSET))),
+            tz_offset=round(tz_offset / 3600, 1)
+            if (-12 > tz_offset > 12)  # Old firmware used seconds not hours
+            else tz_offset,
+            dst=xml_dict[TAG_DST] == TRUE_STR,
+            latitude=float(xml_dict[TAG_LATITUDE]),
+            longitude=float(xml_dict[TAG_LONGITUDE]),
+            military=xml_dict[TAG_MILITARY_TIME] == TRUE_STR,
+            last_called=ntp_to_system_time(int(xml_dict[TAG_NTP])),
+            sunrise=ntp_to_system_time(int(xml_dict[TAG_SUNRISE])),
+            sunset=ntp_to_system_time(int(xml_dict[TAG_SUNSET])),
+            tz_name=xml_dict.get(TAG_TZ_ID),  # Only in newer firmware
         )
 
 
@@ -125,22 +123,13 @@ class Clock:
 
     async def update(self, wait_time: float = 0) -> None:
         """
-        Update the contents of the networking class.
+        Update the contents of the clock class.
 
         wait_time: [optional] Amount of seconds to wait before updating
         """
         await sleep(wait_time)
-        xml = await self.isy.conn.request(self.url)
-
-        if not xml:
-            raise ISYResponseError("Could not load clock information")
-
-        try:
-            xmldoc = minidom.parseString(xml)
-        except XML_ERRORS as exc:
-            raise ISYResponseParseError(XML_PARSE_ERROR) from exc
-
-        self.clock_data = ClockData.from_xml(xmldoc)
+        xml_dict = parse_xml(await self.isy.conn.request(self.url))
+        self.clock_data = ClockData.from_xml(xml_dict["DT"])
         _LOGGER.debug("ISY loaded clock information")
 
     async def update_thread(self, interval: float) -> None:

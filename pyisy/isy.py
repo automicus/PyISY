@@ -2,10 +2,11 @@
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Callable
 from threading import Thread
 
 from pyisy.clock import Clock
-from pyisy.configuration import Configuration
+from pyisy.configuration import ConfigurationData
 from pyisy.connection import Connection, ISYConnectionInfo
 from pyisy.constants import (
     ATTR_ACTION,
@@ -27,6 +28,7 @@ from pyisy.helpers import value_from_xml
 from pyisy.helpers.events import EventEmitter
 from pyisy.logging import _LOGGER, enable_logging
 from pyisy.networking import NetworkResources
+from pyisy.node_servers import NodeServers
 from pyisy.nodes import Nodes
 from pyisy.programs import Programs
 from pyisy.variables import Variables
@@ -60,7 +62,20 @@ class ISY:
     """
 
     auto_reconnect = True
+    clock: Clock | None = None
+    conn: Connection
     connection_info: ISYConnectionInfo
+    config: ConfigurationData | None = None
+    nodes: Nodes | None = None
+    node_servers: NodeServers | None = None
+    programs: Programs | None = None
+    variables: Variables | None = None
+    networking: NetworkResources | None = None
+    system_status: str = SYSTEM_BUSY
+    websocket: WebSocketClient | None = None
+    connection_events: EventEmitter
+    status_events: EventEmitter
+    loop: asyncio.AbstractEventLoop | None
 
     def __init__(
         self, connection_info: ISYConnectionInfo, use_websocket: bool = True
@@ -80,50 +95,82 @@ class ISY:
         if use_websocket:
             self.websocket = WebSocketClient(self, connection_info)
 
-        self.configuration = None
         self.clock = Clock(self)
-        self.nodes = None
-        self.node_servers = None
-        self.programs = None
-        self.variables = None
-        self.networking = None
+
         self.connection_events = EventEmitter()
         self.status_events = EventEmitter()
-        self.system_status = SYSTEM_BUSY
         self.loop = asyncio.get_running_loop()
-        self._uuid = None
 
-    async def initialize(self, with_node_servers=False):
+    async def initialize(
+        self,
+        nodes: bool = True,
+        clock: bool = True,
+        programs: bool = True,
+        variables: bool = True,
+        networking: bool = True,
+        node_servers: bool = False,
+    ):
         """Initialize the connection with the ISY."""
-        config_xml = await self.conn.test_connection()
-        self.configuration = Configuration(xml=config_xml)
-        self._uuid = self.configuration["uuid"]
-        if not self.configuration["model"].startswith("ISY 994"):
+        self.config = await self.conn.test_connection()
+
+        if not self.config["model"].startswith("ISY 994"):
             self.conn.increase_available_connections()
 
-        isy_setup_tasks = [
-            self.conn.get_status(),
-            self.clock.update(),
-            self.conn.get_nodes(),
-            self.conn.get_programs(),
-            self.conn.get_variable_defs(),
-            self.conn.get_variables(),
-        ]
-        if self.configuration["Networking Module"]:
+        isy_setup_tasks: list[Callable] = []
+        isy_setup_index: list[str] = []
+        if nodes:
+            isy_setup_tasks.append(self.conn.get_status())
+            isy_setup_index.append(self.conn.get_status.__qualname__)
+            isy_setup_tasks.append(self.conn.get_nodes())
+            isy_setup_index.append(self.conn.get_nodes.__qualname__)
+
+        if clock:
+            isy_setup_tasks.append(self.clock.update())
+
+        if programs:
+            isy_setup_tasks.append(self.conn.get_programs())
+            isy_setup_index.append(self.conn.get_programs.__qualname__)
+
+        if variables:
+            isy_setup_tasks.append(self.conn.get_variable_defs())
+            isy_setup_index.append(self.conn.get_variable_defs.__qualname__)
+            isy_setup_tasks.append(self.conn.get_variables())
+            isy_setup_index.append(self.conn.get_variables.__qualname__)
+
+        if networking and self.config.networking:
             isy_setup_tasks.append(asyncio.create_task(self.conn.get_network()))
+
         isy_setup_results = await asyncio.gather(*isy_setup_tasks)
 
-        self.nodes = Nodes(self, xml=isy_setup_results[2])
-        self.programs = Programs(self, xml=isy_setup_results[3])
-        self.variables = Variables(
-            self,
-            def_xml=isy_setup_results[4],
-            var_xml=isy_setup_results[5],
-        )
-        if self.configuration["Networking Module"]:
-            self.networking = NetworkResources(self, xml=isy_setup_results[6])
-        await self.nodes.update(xml=isy_setup_results[0])
-        if self.node_servers and with_node_servers:
+        if nodes:
+            self.nodes = Nodes(
+                self,
+                xml=isy_setup_results[isy_setup_index.index("Connection.get_nodes")],
+            )
+            await self.nodes.update(
+                xml=isy_setup_results[isy_setup_index.index("Connection.get_status")]
+            )  # Node Status
+        if programs:
+            self.programs = Programs(
+                self,
+                xml=isy_setup_results[isy_setup_index.index("Connection.get_programs")],
+            )
+        if variables:
+            self.variables = Variables(
+                self,
+                def_xml=isy_setup_results[
+                    isy_setup_index.index("Connection.get_variable_defs")
+                ],
+                var_xml=isy_setup_results[
+                    isy_setup_index.index("Connection.get_variables")
+                ],
+            )
+        if networking and self.config.networking:
+            self.networking = NetworkResources(
+                self,
+                xml=isy_setup_results[isy_setup_index.index("Connection.get_network")],
+            )
+        if self.node_servers and node_servers:
             await self.node_servers.load_node_servers()
 
         self._connected = True
@@ -139,8 +186,11 @@ class ISY:
 
     @property
     def conf(self):
-        """Return the status of the connection (shortcut property)."""
-        return self.configuration
+        """Return the status of the connection.
+
+        Left for backwards compatibility.
+        """
+        return self.config
 
     @property
     def connected(self):
@@ -186,7 +236,7 @@ class ISY:
     @property
     def uuid(self):
         """Return the ISY's uuid."""
-        return self._uuid
+        return self.config.uuid
 
     def _on_lost_event_stream(self):
         """Handle lost connection to event stream."""

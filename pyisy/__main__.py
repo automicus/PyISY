@@ -37,7 +37,15 @@ async def main(url, username, password, tls_version, events, node_servers):
     )
 
     try:
-        await isy.initialize(node_servers)
+        # await isy.initialize(node_servers) TODO: revert
+        await isy.initialize(
+            nodes=False,
+            clock=True,
+            programs=False,
+            variables=False,
+            networking=False,
+            node_servers=False,
+        )
     except (ISYInvalidAuthError, ISYConnectionError):
         _LOGGER.error(
             "Failed to connect to the ISY, please adjust settings and try again."
