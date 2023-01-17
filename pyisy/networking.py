@@ -1,9 +1,8 @@
 """ISY Network Resources Module."""
 from __future__ import annotations
 
-from asyncio import sleep
-from typing import TYPE_CHECKING
-from xml.dom import minidom
+import copy
+from typing import TYPE_CHECKING, Any
 
 from pyisy.constants import (
     ATTR_ID,
@@ -13,88 +12,38 @@ from pyisy.constants import (
     URL_NETWORK,
     URL_RESOURCES,
 )
-from pyisy.exceptions import XML_ERRORS, XML_PARSE_ERROR
-from pyisy.helpers import value_from_xml
+from pyisy.helpers.entity import Entity
+from pyisy.helpers.entity_platform import EntityPlatform
 from pyisy.logging import _LOGGER
 
 if TYPE_CHECKING:
     from pyisy.isy import ISY
 
 
-class NetworkResources:
-    """
-    Network Resources class cobject.
+class NetworkResources(EntityPlatform):
+    """Network Resources class."""
 
-    DESCRIPTION:
-        This class handles the ISY networking module.
-
-    USAGE:
-        This object may be used in a similar way as a
-        dictionary with the either networking command
-        names or ids being used as keys and the ISY
-        networking command class will be returned.
-
-    EXAMPLE:
-        # a = networking['test function']
-        # a.run()
-
-    ATTRIBUTES:
-        isy: The ISY device class
-        addresses: List of net command ids
-        nnames: List of net command names
-        nobjs: List of net command objects
-
-    """
-
-    def __init__(self, isy: ISY, xml=None):
+    def __init__(self, isy: ISY) -> None:
         """
         Initialize the network resources class.
 
         isy: ISY class
         xml: String of xml data containing the configuration data
         """
-        self.isy = isy
+        super().__init__(isy=isy, platform_name="networking")
+        self.url = self.isy.conn.compile_url([URL_NETWORK, URL_RESOURCES])
 
-        self.addresses = []
-        self.nnames = []
-        self.nobjs = []
-
-        if xml is not None:
-            self.parse(xml)
-
-    def parse(self, xml):
-        """
-        Parse the xml data.
-
-        xml: String of the xml data
-        """
-        try:
-            xmldoc = minidom.parseString(xml)
-        except XML_ERRORS:
-            _LOGGER.error("%s: NetworkResources, resources not loaded", XML_PARSE_ERROR)
-            return
-
-        features = xmldoc.getElementsByTagName(TAG_NET_RULE)
+    async def parse(self, xml_dict: dict[str, Any]) -> None:
+        """Parse the results from the ISY."""
+        features = xml_dict["NetConfig"][TAG_NET_RULE]
         for feature in features:
-            address = int(value_from_xml(feature, ATTR_ID))
-            if address not in self.addresses:
-                nname = value_from_xml(feature, TAG_NAME)
-                nobj = NetworkCommand(self, address, nname)
-                self.addresses.append(address)
-                self.nnames.append(nname)
-                self.nobjs.append(nobj)
+            address = feature[ATTR_ID]
+            name = feature[TAG_NAME]
+            detail = copy.deepcopy(feature)
+            entity = NetworkCommand(self, address, name, detail)
+            await self.add_or_update_entity(address, name, entity)
 
         _LOGGER.info("ISY Loaded Network Resources Commands")
-
-    async def update(self, wait_time: float = 0):
-        """
-        Update the contents of the networking class.
-
-        wait_time: [optional] Amount of seconds to wait before updating
-        """
-        await sleep(wait_time)
-        xml = await self.isy.conn.get_network()
-        self.parse(xml)
 
     async def update_threaded(self, interval):
         """
@@ -105,52 +54,8 @@ class NetworkResources:
         while self.isy.auto_update:
             await self.update(interval)
 
-    def __getitem__(self, val):
-        """Return the item from the collection."""
-        try:
-            val = int(val)
-            return self.get_by_id(val)
-        except (ValueError, KeyError):
-            return self.get_by_name(val)
 
-    def __setitem__(self, val, value):
-        """Set the item value."""
-        return None
-
-    def get_by_id(self, val):
-        """
-        Return command object being given a command id.
-
-        val: Integer representing command id
-        """
-        try:
-            ind = self.addresses.index(val)
-            return self.get_by_index(ind)
-        except (ValueError, KeyError):
-            return None
-
-    def get_by_name(self, val):
-        """
-        Return command object being given a command name.
-
-        val: String representing command name
-        """
-        try:
-            ind = self.nnames.index(val)
-            return self.get_by_index(ind)
-        except (ValueError, KeyError):
-            return None
-
-    def get_by_index(self, val):
-        """
-        Return command object being given a command index.
-
-        val: Integer representing command index in List
-        """
-        return self.nobjs[val]
-
-
-class NetworkCommand:
+class NetworkCommand(Entity):
     """
     Network Command Class.
 
@@ -158,45 +63,26 @@ class NetworkCommand:
         This class handles individual networking commands.
 
     ATTRIBUTES:
-        network_resources: The networkin resources class
+        network_resources: The networking resources class
 
     """
 
-    def __init__(self, network_resources, address, name):
-        """Initialize network command class.
-
-        network_resources: NetworkResources class
-        address: Integer of the command id
-        """
-        self._network_resources = network_resources
-        self.isy = network_resources.isy
+    def __init__(
+        self, platform: NetworkResources, address: str, name: str, detail: dict
+    ):
+        """Initialize network command class."""
+        self.platform = platform
+        self.isy = platform.isy
         self._address = address
         self._name = name
-
-    @property
-    def address(self):
-        """Return the Resource ID for the Network Resource."""
-        return str(self._address)
-
-    @property
-    def name(self):
-        """Return the name of this entity."""
-        return self._name
-
-    @property
-    def protocol(self):
-        """Return the Protocol for this node."""
-        return PROTO_NETWORK
+        self._protocol = PROTO_NETWORK
+        self.detail = detail
 
     async def run(self):
         """Execute the networking command."""
-        req_url = self.isy.conn.compile_url(
-            [URL_NETWORK, URL_RESOURCES, str(self._address)]
-        )
+        req_url = self.isy.conn.compile_url([URL_NETWORK, URL_RESOURCES, self.address])
 
         if not await self.isy.conn.request(req_url, ok404=True):
-            _LOGGER.warning(
-                "ISY could not run networking command: %s", str(self._address)
-            )
+            _LOGGER.warning("ISY could not run networking command: %s", self.address)
             return
-        _LOGGER.debug("ISY ran networking command: %s", str(self._address))
+        _LOGGER.debug("ISY ran networking command: %s", self.address)

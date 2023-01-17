@@ -10,7 +10,7 @@ LOG_DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 
 def enable_logging(
-    level=LOG_LEVEL,
+    level: int = LOG_LEVEL,
     add_null_handler: bool = False,
     log_no_color: bool = False,
 ) -> None:

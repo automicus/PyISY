@@ -10,11 +10,8 @@ from pyisy.helpers.events import EventEmitter
 
 # Typing imports that create a circular dependency
 if TYPE_CHECKING:
+    from pyisy.helpers.entity_platform import EntityPlatform
     from pyisy.isy import ISY
-    from pyisy.networking import NetworkResources
-    from pyisy.nodes import Nodes
-    from pyisy.programs import Programs
-    from pyisy.variables import Variables
 
 
 @dataclass
@@ -50,15 +47,16 @@ class Entity(ABC):
     # and removes the need for constant None checks or asserts.
     isy: ISY = None  # type: ignore[assignment]
 
-    # Owning platform instance. Will be set by platform
-    platform: Nodes | Programs | Variables | NetworkResources | None = None
+    # Owning platform instance. Will be set by EntityPlatform
+    platform: EntityPlatform | None = None
 
     _enabled: bool = True
     _last_changed: datetime
     _last_update: datetime
+    _status: int | float | bool
+    detail: dict | None
     _name: str = ""
     _protocol: str | None = None
-    _status: int | float | bool
     status_events: EventEmitter = EventEmitter()
 
     @property
@@ -67,7 +65,7 @@ class Entity(ABC):
         return self._address
 
     @property
-    def enabled(self):
+    def enabled(self) -> bool:
         """Return if the entity is enabled on the controller."""
         return self._enabled
 
@@ -96,11 +94,10 @@ class Entity(ABC):
         """Return the current entity state."""
         return self._status
 
-    def update_enabled(self, value):
+    def update_enabled(self, value: bool) -> None:
         """Set if the entity is enabled on the controller."""
         if self._enabled != value:
             self._enabled = value
-        return self._enabled
 
     def update_status(self, value: int | float | bool) -> None:
         """Set the current entity state and notify listeners."""

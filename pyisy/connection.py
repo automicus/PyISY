@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 from dataclasses import InitVar, dataclass, field
+from typing import cast
 from urllib.parse import ParseResult, quote, urlencode, urlparse
 
 import aiohttp
@@ -10,14 +11,11 @@ import aiohttp
 from pyisy.configuration import Configuration, ConfigurationData
 from pyisy.constants import (
     METHOD_GET,
-    URL_CONFIG,
     URL_DEFINITIONS,
     URL_MEMBERS,
-    URL_NETWORK,
     URL_NODES,
     URL_PING,
     URL_PROGRAMS,
-    URL_RESOURCES,
     URL_STATUS,
     URL_SUBFOLDERS,
     URL_VARIABLES,
@@ -69,7 +67,7 @@ class ISYConnectionInfo:
     websession: aiohttp.ClientSession | None = None
     tls_version: float | None = None
 
-    def __post_init__(self, username, password):
+    def __post_init__(self, username: str, password: str) -> None:
         """Post process the connection info."""
         self.rest_url = f"{self.url.rstrip('/')}/rest"
         self.ws_url = f"{self.rest_url.replace('http', 'ws').rstrip('/')}/subscribe"
@@ -83,7 +81,7 @@ class Connection:
 
     connection_info: ISYConnectionInfo
 
-    def __init__(self, connection_info: ISYConnectionInfo):
+    def __init__(self, connection_info: ISYConnectionInfo) -> None:
         """Initialize the Connection object."""
         if len(_LOGGER.handlers) == 0:
             enable_logging(add_null_handler=True)
@@ -110,7 +108,7 @@ class Connection:
             )
         return config_data
 
-    def increase_available_connections(self):
+    def increase_available_connections(self) -> None:
         """Increase the number of allowed connections for newer hardware."""
         _LOGGER.debug("Increasing available simultaneous connections")
         self.semaphore = asyncio.Semaphore(
@@ -119,7 +117,7 @@ class Connection:
             else MAX_HTTP_CONNECTIONS_IOX
         )
 
-    async def close(self):
+    async def close(self) -> None:
         """Cleanup connections and prepare for exit."""
         await self.req_session.close()
 
@@ -129,7 +127,7 @@ class Connection:
         return self.connection_info.url
 
     # COMMON UTILITIES
-    def compile_url(self, path: list[str], query: dict[str, str] = None) -> str:
+    def compile_url(self, path: list[str], query: dict[str, str] | None = None) -> str:
         """Compile the URL to fetch from the ISY."""
         url = f"{self.connection_info.rest_url}/{'/'.join([quote(item) for item in path])}"
         if query is not None:
@@ -156,7 +154,7 @@ class Connection:
                     _LOGGER.debug("ISY Response Received: %s", endpoint)
                     results = await res.text(encoding="utf-8", errors="ignore")
                     if results != EMPTY_XML_RESPONSE:
-                        return results
+                        return cast(str, results)
                     _LOGGER.debug("Invalid empty XML returned: %s", endpoint)
                     res.release()
                 if res.status == HTTP_NOT_FOUND:
@@ -217,24 +215,17 @@ class Connection:
         )
         return None
 
-    async def ping(self):
+    async def ping(self) -> bool:
         """Test connection to the ISY and return True if alive."""
         req_url = self.compile_url([URL_PING])
         result = await self.request(req_url, ok404=True)
         return result is not None
 
-    async def get_description(self):
+    async def get_description(self) -> str | None:
         """Fetch the services description from the ISY."""
-        result = await self.request(f"{self.connection_info.url}/desc")
-        return result
+        return await self.request(f"{self.connection_info.url}/desc")
 
-    async def get_config(self, retries=0):
-        """Fetch the configuration from the ISY."""
-        req_url = self.compile_url([URL_CONFIG])
-        result = await self.request(req_url, retries=retries)
-        return result
-
-    async def get_programs(self, address=None):
+    async def get_programs(self, address: str | None = None) -> str | None:
         """Fetch the list of programs from the ISY."""
         addr = [URL_PROGRAMS]
         if address is not None:
@@ -243,19 +234,19 @@ class Connection:
         result = await self.request(req_url)
         return result
 
-    async def get_nodes(self):
+    async def get_nodes(self) -> str | None:
         """Fetch the list of nodes/groups/scenes from the ISY."""
         req_url = self.compile_url([URL_NODES], {URL_MEMBERS: XML_FALSE})
         result = await self.request(req_url)
         return result
 
-    async def get_status(self):
+    async def get_status(self) -> str | None:
         """Fetch the status of nodes/groups/scenes from the ISY."""
         req_url = self.compile_url([URL_STATUS])
         result = await self.request(req_url)
         return result
 
-    async def get_variable_defs(self):
+    async def get_variable_defs(self) -> list[str] | None:
         """Fetch the list of variables from the ISY."""
         req_list = [
             [URL_VARIABLES, URL_DEFINITIONS, VAR_INTEGER],
@@ -267,7 +258,7 @@ class Connection:
         )
         return results
 
-    async def get_variables(self):
+    async def get_variables(self) -> str | None:
         """Fetch the variable details from the ISY to update local copy."""
         req_list = [
             [URL_VARIABLES, METHOD_GET, VAR_INTEGER],
@@ -282,10 +273,4 @@ class Connection:
         result = result.replace(
             '</vars><?xml version="1.0" encoding="UTF-8"?><vars>', ""
         )
-        return result
-
-    async def get_network(self):
-        """Fetch the list of network resources from the ISY."""
-        req_url = self.compile_url([URL_NETWORK, URL_RESOURCES])
-        result = await self.request(req_url)
         return result

@@ -31,9 +31,9 @@ from pyisy.constants import (
     URL_NOTES,
     XML_TRUE,
 )
-from pyisy.entity import Entity, EntityStatus
 from pyisy.exceptions import XML_ERRORS, XML_PARSE_ERROR, ISYResponseParseError
 from pyisy.helpers import value_from_xml
+from pyisy.helpers.entity import Entity, EntityStatus
 from pyisy.helpers.models import NodeNotes, NodeProperty
 from pyisy.logging import _LOGGER
 

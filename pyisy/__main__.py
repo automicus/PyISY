@@ -43,7 +43,7 @@ async def main(url, username, password, tls_version, events, node_servers):
             clock=True,
             programs=False,
             variables=False,
-            networking=False,
+            networking=True,
             node_servers=False,
         )
     except (ISYInvalidAuthError, ISYConnectionError):

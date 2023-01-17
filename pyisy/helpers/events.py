@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Any, TypeVar
 from pyisy.logging import _LOGGER
 
 if TYPE_CHECKING:
-    from pyisy.entity import EntityStatus
+    from pyisy.helpers.entity import EntityStatus
     from pyisy.helpers.models import NodeProperty
 
 _T = TypeVar("_T")

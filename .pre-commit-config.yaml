@@ -64,3 +64,9 @@ repos:
         types: [python]
         files: ^pyisy/.+\.py$
         args: ["-rn", "-sn"]
+      - id: mypy
+        name: mypy
+        entry: mypy
+        language: system
+        types: [python]
+        files: ^pyisy\/(clock|connection|configuration|__init__|logging|helpers\/.+)\.py$

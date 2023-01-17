@@ -15,7 +15,7 @@ from pyisy.constants import (
     UPDATE_INTERVAL,
     URL_PROGRAMS,
 )
-from pyisy.entity import Entity
+from pyisy.helpers.entity import Entity
 from pyisy.logging import _LOGGER
 
 

@@ -5,8 +5,10 @@ This module is a set of Python bindings for the ISY's REST API. The
 ISY is developed by Universal Devices and is a home automation
 controller for Insteon and X10 devices.
 
-Copyright 2015 Ryan M. Kraus
+Original Copyright 2015 Ryan M. Kraus
                rmkraus at gmail dot com
+
+Re-written for Version >2 by shbatm <support at shbatm com>
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -47,6 +49,6 @@ __all__ = [
     "ISYStreamDataError",
     "ISYStreamDisconnected",
 ]
-__author__ = "Ryan M. Kraus"
-__email__ = "rmkraus at gmail dot com"
-__date__ = "February 2020"
+__author__ = "shbatm"
+__email__ = "support@shbatm.com"
+__date__ = "February 2023"

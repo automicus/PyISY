@@ -12,8 +12,8 @@ from pyisy.constants import (
     URL_VARIABLES,
     VAR_INTEGER,
 )
-from pyisy.entity import Entity, EntityStatus
 from pyisy.helpers import now
+from pyisy.helpers.entity import Entity, EntityStatus
 from pyisy.logging import _LOGGER
 
 

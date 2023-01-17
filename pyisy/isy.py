@@ -88,15 +88,20 @@ class ISY:
         if len(_LOGGER.handlers) == 0:
             enable_logging(add_null_handler=True)
 
+        # Initialize connection info and connection
         self.connection_info = connection_info
         self.conn = Connection(connection_info)
 
+        # Setup websocket or fall back to TCP socket
         self.websocket = None
         if use_websocket:
             self.websocket = WebSocketClient(self, connection_info)
 
+        # Initialize platforms
         self.clock = Clock(self)
+        self.networking = NetworkResources(self)
 
+        # Setup event emitters and loop
         self.connection_events = EventEmitter()
         self.status_events = EventEmitter()
         self.loop = asyncio.get_running_loop()
@@ -113,7 +118,7 @@ class ISY:
         """Initialize the connection with the ISY."""
         self.config = await self.conn.test_connection()
 
-        if not self.config["model"].startswith("ISY 994"):
+        if self.config.platform == "IoX":
             self.conn.increase_available_connections()
 
         isy_setup_tasks: list[Callable] = []
@@ -138,7 +143,7 @@ class ISY:
             isy_setup_index.append(self.conn.get_variables.__qualname__)
 
         if networking and self.config.networking:
-            isy_setup_tasks.append(asyncio.create_task(self.conn.get_network()))
+            isy_setup_tasks.append(asyncio.create_task(self.networking.update()))
 
         isy_setup_results = await asyncio.gather(*isy_setup_tasks)
 
@@ -164,11 +169,6 @@ class ISY:
                 var_xml=isy_setup_results[
                     isy_setup_index.index("Connection.get_variables")
                 ],
-            )
-        if networking and self.config.networking:
-            self.networking = NetworkResources(
-                self,
-                xml=isy_setup_results[isy_setup_index.index("Connection.get_network")],
             )
         if self.node_servers and node_servers:
             await self.node_servers.load_node_servers()
