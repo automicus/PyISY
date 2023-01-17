@@ -12,13 +12,8 @@ import argparse
 import asyncio
 import logging
 import time
-from urllib.parse import urlparse
 
-from pyisy.connection import (
-    ISYConnectionError,
-    ISYInvalidAuthError,
-    get_new_client_session,
-)
+from pyisy.connection import ISYConnectionError, ISYConnectionInfo, ISYInvalidAuthError
 from pyisy.constants import NODE_CHANGED_ACTIONS, SYSTEM_STATUS
 from pyisy.isy import ISY
 from pyisy.logging import LOG_VERBOSE, enable_logging
@@ -27,34 +22,17 @@ from pyisy.nodes import NodeChangedEvent
 _LOGGER = logging.getLogger(__name__)
 
 
-async def main(url, username, password, tls_ver, events, node_servers):
+async def main(url, username, password, tls_version, events, node_servers):
     """Execute connection to ISY and load all system info."""
     _LOGGER.info("Starting PyISY...")
     t_0 = time.time()
-    host = urlparse(url)
-    if host.scheme == "http":
-        https = False
-        port = host.port or 80
-    elif host.scheme == "https":
-        https = True
-        port = host.port or 443
-    else:
-        _LOGGER.error("host value in configuration is invalid.")
-        return False
 
-    # Use the helper function to get a new aiohttp.ClientSession.
-    websession = get_new_client_session(https, tls_ver)
-
+    connection_info = ISYConnectionInfo(
+        url, username, password, tls_version=tls_version
+    )
     # Connect to ISY controller.
     isy = ISY(
-        host.hostname,
-        port,
-        username=username,
-        password=password,
-        use_https=https,
-        tls_ver=tls_ver,
-        webroot=host.path,
-        websession=websession,
+        connection_info,
         use_websocket=True,
     )
 
@@ -118,13 +96,13 @@ if __name__ == "__main__":
     parser.add_argument("url", type=str)
     parser.add_argument("username", type=str)
     parser.add_argument("password", type=str)
-    parser.add_argument("-t", "--tls-ver", dest="tls_ver", type=float)
+    parser.add_argument("-t", "--tls-ver", dest="tls_version", type=float)
     parser.add_argument("-v", "--verbose", action="store_true")
     parser.add_argument("-q", "--no-events", dest="no_events", action="store_true")
     parser.add_argument(
         "-n", "--node-servers", dest="node_servers", action="store_true"
     )
-    parser.set_defaults(use_https=False, tls_ver=1.1, verbose=False)
+    parser.set_defaults(use_https=False, tls_version=1.2, verbose=False)
     args = parser.parse_args()
 
     enable_logging(LOG_VERBOSE if args.verbose else logging.DEBUG)
@@ -133,7 +111,7 @@ if __name__ == "__main__":
         "ISY URL: %s, username: %s, TLS: %s",
         args.url,
         args.username,
-        args.tls_ver,
+        args.tls_version,
     )
 
     try:
@@ -142,7 +120,7 @@ if __name__ == "__main__":
                 url=args.url,
                 username=args.username,
                 password=args.password,
-                tls_ver=args.tls_ver,
+                tls_version=args.tls_version,
                 events=(not args.no_events),
                 node_servers=args.node_servers,
             )

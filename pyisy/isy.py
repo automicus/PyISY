@@ -6,7 +6,7 @@ from threading import Thread
 
 from pyisy.clock import Clock
 from pyisy.configuration import Configuration
-from pyisy.connection import Connection
+from pyisy.connection import Connection, ISYConnectionInfo
 from pyisy.constants import (
     ATTR_ACTION,
     CMD_X10,
@@ -60,19 +60,11 @@ class ISY:
     """
 
     auto_reconnect = True
+    connection_info: ISYConnectionInfo
 
     def __init__(
-        self,
-        address,
-        port,
-        username,
-        password,
-        use_https=False,
-        tls_ver=1.1,
-        webroot="",
-        websession=None,
-        use_websocket=False,
-    ):
+        self, connection_info: ISYConnectionInfo, use_websocket: bool = True
+    ) -> None:
         """Initialize the primary ISY Class."""
         self._events = None  # create this JIT so no socket reuse
         self._reconnect_thread = None
@@ -81,30 +73,12 @@ class ISY:
         if len(_LOGGER.handlers) == 0:
             enable_logging(add_null_handler=True)
 
-        self.conn = Connection(
-            address=address,
-            port=port,
-            username=username,
-            password=password,
-            use_https=use_https,
-            tls_ver=tls_ver,
-            webroot=webroot,
-            websession=websession,
-        )
+        self.connection_info = connection_info
+        self.conn = Connection(connection_info)
 
         self.websocket = None
         if use_websocket:
-            self.websocket = WebSocketClient(
-                isy=self,
-                address=address,
-                port=port,
-                username=username,
-                password=password,
-                use_https=use_https,
-                tls_ver=tls_ver,
-                webroot=webroot,
-                websession=websession,
-            )
+            self.websocket = WebSocketClient(self, connection_info)
 
         self.configuration = None
         self.clock = Clock(self)
@@ -113,7 +87,6 @@ class ISY:
         self.programs = None
         self.variables = None
         self.networking = None
-        self._hostname = address
         self.connection_events = EventEmitter()
         self.status_events = EventEmitter()
         self.system_status = SYSTEM_BUSY
@@ -203,7 +176,7 @@ class ISY:
     @property
     def hostname(self):
         """Return the hostname."""
-        return self._hostname
+        return self.connection_info.parsed_url.hostname
 
     @property
     def protocol(self):

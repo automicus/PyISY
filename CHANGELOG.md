@@ -45,3 +45,20 @@ As of v3.0.7, this module will document all changes within the GitHub release in
 - `Clock` information changed to dataclass `ClockData`, requires calling `.from_xml` instead of passing xml on init.
 - New `Clock` init split to separate class. Must call `update()` after creating class.
 - `Connection`.`get_clock` moved to `Clock`.`get_resource`
+
+### Connections
+
+- Use new `ISYConnectionInfo` class to build connection info
+- TLS Version set to None will auto-negotiate (newer models)
+
+### ISY Root
+
+    Removed:
+        port,
+        use_https=False,
+        webroot="",
+
+Moved to helpers.session:
+get_new_client_session
+get_sslcontext
+can_https

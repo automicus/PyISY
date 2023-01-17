@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Callable
 import logging
 import socket
 import ssl
@@ -11,6 +12,7 @@ from typing import TYPE_CHECKING
 import xml
 from xml.dom import minidom
 
+from pyisy.connection import ISYConnectionInfo
 from pyisy.constants import (
     ACTION_KEY,
     ACTION_KEY_CHANGED,
@@ -46,9 +48,16 @@ _LOGGER = logging.getLogger(__name__)  # Allows targeting pyisy.events in handle
 class EventStream:
     """Class to represent the Event Stream from the ISY."""
 
-    def __init__(self, isy: ISY, connection_info, on_lost_func=None):
+    isy: ISY
+    connection_info: ISYConnectionInfo
+    _on_lost_function: Callable[...] | None = None
+
+    def __init__(
+        self, isy: ISY, connection_info: ISYConnectionInfo, on_lost_func=None
+    ) -> None:
         """Initialize the EventStream class."""
         self.isy = isy
+        self._stream_id: str = ""
         self._running = False
         self._writer = None
         self._thread = None
@@ -60,18 +69,21 @@ class EventStream:
         self._on_lost_function = on_lost_func
         self._program_key = None
         self.cert = None
-        self.data = connection_info
+        self.connection_info = connection_info
 
         # create TLS encrypted socket if we're using HTTPS
-        if self.data.get("tls"):
-            if self.data["tls"] == 1.1:
+        if self.connection_info.use_https:
+            tls_ver = self.connection_info.tls_version
+            if tls_ver == 1.1:
                 context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_1)
-            else:
+            elif tls_ver == 1.2:
                 context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
+            else:
+                context = ssl.SSLContext(ssl.PROTOCOL_TLS)
             context.check_hostname = False
             self.socket = context.wrap_socket(
                 socket.socket(socket.AF_INET, socket.SOCK_STREAM),
-                server_hostname=f"https://{self.data['addr']}",
+                server_hostname=self.connection_info.url,
             )
         else:
             self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -80,9 +92,14 @@ class EventStream:
         """Prepare a message for sending."""
         head = msg["head"]
         body = msg["body"]
-        body = body.format(**self.data)
+        body = body.format(sid=self._stream_id)
         length = len(body)
-        head = head.format(length=length, **self.data)
+        parsed_url = self.connection_info.parsed_url
+        head = head.format(
+            length=length,
+            url=f"{parsed_url[1]}{parsed_url[2]}",
+            auth=self.connection_info.auth.encode(),
+        )
         return head + body
 
     def _route_message(self, msg):
@@ -96,7 +113,7 @@ class EventStream:
         _LOGGER.log(LOG_VERBOSE, "ISY Update Received:\n%s", msg)
 
         # A wild stream id appears!
-        if f"{ATTR_STREAM_ID}=" in msg and ATTR_STREAM_ID not in self.data:
+        if f"{ATTR_STREAM_ID}=" in msg and self._stream_id == "":
             self.update_received(xmldoc)
 
         # direct the event message
@@ -127,7 +144,9 @@ class EventStream:
             elif f"<{ATTR_ACTION}>" in msg:
                 action = value_from_xml(xmldoc, ATTR_ACTION)
                 if action == ACTION_KEY:
-                    self.data[ACTION_KEY] = value_from_xml(xmldoc, TAG_EVENT_INFO)
+                    self.connection_info[ACTION_KEY] = value_from_xml(
+                        xmldoc, TAG_EVENT_INFO
+                    )
                     return
                 if action == ACTION_KEY_CHANGED:
                     self._program_key = value_from_xml(xmldoc, TAG_NODE)
@@ -140,8 +159,8 @@ class EventStream:
 
     def update_received(self, xmldoc):
         """Set the socket ID."""
-        self.data[ATTR_STREAM_ID] = attr_from_xml(xmldoc, "Event", ATTR_STREAM_ID)
-        _LOGGER.debug("ISY Updated Events Stream ID %s", self.data[ATTR_STREAM_ID])
+        self._stream_id = attr_from_xml(xmldoc, "Event", ATTR_STREAM_ID)
+        _LOGGER.debug("ISY Updated Events Stream ID %s", self._stream_id)
 
     @property
     def running(self):
@@ -178,8 +197,10 @@ class EventStream:
         """Connect to the event stream socket."""
         if not self._connected:
             try:
-                self.socket.connect((self.data["addr"], self.data["port"]))
-                if self.data.get("tls"):
+                self.socket.connect(
+                    (self.connection_info["addr"], self.connection_info["port"])
+                )
+                if self.connection_info.get("tls"):
                     self.cert = self.socket.getpeercert()
             except OSError as err:
                 _LOGGER.exception(
@@ -207,7 +228,7 @@ class EventStream:
     def subscribe(self):
         """Subscribe to the Event Stream."""
         if not self._subscribed and self._connected:
-            if ATTR_STREAM_ID not in self.data:
+            if ATTR_STREAM_ID not in self.connection_info:
                 msg = self._create_message(strings.SUB_MSG)
                 self.write(msg)
             else:

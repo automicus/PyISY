@@ -2,9 +2,8 @@
 from __future__ import annotations
 
 import asyncio
-import ssl
-import sys
-from urllib.parse import quote, urlencode
+from dataclasses import InitVar, dataclass, field
+from urllib.parse import ParseResult, quote, urlencode, urlparse
 
 import aiohttp
 
@@ -27,6 +26,7 @@ from pyisy.constants import (
     XML_TRUE,
 )
 from pyisy.exceptions import ISYConnectionError, ISYInvalidAuthError
+from pyisy.helpers.session import get_new_client_session, get_sslcontext
 from pyisy.logging import _LOGGER, enable_logging
 
 MAX_HTTPS_CONNECTIONS_ISY = 2
@@ -53,59 +53,68 @@ HTTP_HEADERS = {
 EMPTY_XML_RESPONSE = '<?xml version="1.0" encoding="UTF-8"?>'
 
 
+@dataclass
+class ISYConnectionInfo:
+    """Dataclass to represent connection details."""
+
+    url: str
+    username: InitVar[str]
+    password: InitVar[str]
+    rest_url: str = field(init=False)
+    ws_url: str = field(init=False)
+    auth: aiohttp.BasicAuth = field(init=False)
+    parsed_url: ParseResult = field(init=False)
+    use_https: bool = field(init=False)
+    websession: aiohttp.ClientSession | None = None
+    tls_version: float | None = None
+
+    def __post_init__(self, username, password):
+        """Post process the connection info."""
+        self.rest_url = f"{self.url.rstrip('/')}/rest"
+        self.ws_url = f"{self.rest_url.replace('http', 'ws').rstrip('/')}/subscribe"
+        self.auth = aiohttp.BasicAuth(username, password)
+        self.parsed_url = urlparse(self.url)
+        self.use_https = self.url.startswith("https")
+
+
 class Connection:
     """Connection object to manage connection to and interaction with ISY."""
 
-    _url: str
+    connection_info: ISYConnectionInfo
 
-    def __init__(
-        self,
-        address,
-        port,
-        username,
-        password,
-        use_https=False,
-        tls_ver=1.1,
-        webroot="",
-        websession=None,
-    ):
+    def __init__(self, connection_info: ISYConnectionInfo):
         """Initialize the Connection object."""
         if len(_LOGGER.handlers) == 0:
             enable_logging(add_null_handler=True)
 
-        self._address = address
-        self._port = port
-        self._username = username
-        self._password = password
-        self._auth = aiohttp.BasicAuth(self._username, self._password)
-        self._webroot = webroot.rstrip("/")
-        self.req_session = websession
-        self._tls_ver = tls_ver
-        self.use_https = use_https
-        self._url = f"http{'s' if self.use_https else ''}://{self._address}:{self._port}{self._webroot}"
+        self.connection_info = connection_info
 
         self.semaphore = asyncio.Semaphore(
-            MAX_HTTPS_CONNECTIONS_ISY if use_https else MAX_HTTP_CONNECTIONS_ISY
+            MAX_HTTPS_CONNECTIONS_ISY
+            if connection_info.use_https
+            else MAX_HTTP_CONNECTIONS_ISY
         )
 
-        if websession is None:
-            websession = get_new_client_session(use_https, tls_ver)
-        self.req_session = websession
-        self.sslcontext = get_sslcontext(use_https, tls_ver)
+        if connection_info.websession is None:
+            connection_info.websession = get_new_client_session(connection_info)
+        self.req_session = connection_info.websession
+        self.sslcontext = get_sslcontext(connection_info)
 
     async def test_connection(self):
         """Test the connection and get the config for the ISY."""
-        config = await self.get_config(retries=None)
-        if not config:
-            _LOGGER.error("Could not connect to the ISY with the parameters provided.")
-            raise ISYConnectionError()
+        if not (config := await self.get_config(retries=None)):
+            raise ISYConnectionError(
+                "Could not connect to the ISY with the parameters provided"
+            )
         return config
 
     def increase_available_connections(self):
         """Increase the number of allowed connections for newer hardware."""
         _LOGGER.debug("Increasing available simultaneous connections")
         self.semaphore = asyncio.Semaphore(
-            MAX_HTTPS_CONNECTIONS_IOX if self.use_https else MAX_HTTP_CONNECTIONS_IOX
+            MAX_HTTPS_CONNECTIONS_IOX
+            if self.connection_info.use_https
+            else MAX_HTTP_CONNECTIONS_IOX
         )
 
     async def close(self):
@@ -113,31 +122,14 @@ class Connection:
         await self.req_session.close()
 
     @property
-    def connection_info(self):
-        """Return the connection info required to connect to the ISY."""
-        connection_info = {}
-        connection_info["auth"] = self._auth.encode()
-        connection_info["addr"] = self._address
-        connection_info["port"] = int(self._port)
-        connection_info["passwd"] = self._password
-        connection_info["webroot"] = self._webroot
-        if self.use_https and self._tls_ver:
-            connection_info["tls"] = self._tls_ver
-
-        return connection_info
-
-    @property
     def url(self) -> str:
         """Return the full connection url."""
-        return self._url
+        return self.connection_info.url
 
     # COMMON UTILITIES
-    def compile_url(self, path: str | list[str], query: dict[str, str] = None) -> str:
+    def compile_url(self, path: list[str], query: dict[str, str] = None) -> str:
         """Compile the URL to fetch from the ISY."""
-        if isinstance(path, str):
-            url = f"{self.url}/rest/{path.strip('/')}"
-        else:
-            url = f"{self.url}/rest/{'/'.join([quote(item) for item in path])}"
+        url = f"{self.connection_info.rest_url}/{'/'.join([quote(item) for item in path])}"
         if query is not None:
             url += f"?{urlencode(query)}"
         return url
@@ -152,7 +144,7 @@ class Connection:
         try:
             async with self.semaphore, self.req_session.get(
                 url,
-                auth=self._auth,
+                auth=self.connection_info.auth,
                 headers=HTTP_HEADERS,
                 timeout=HTTP_TIMEOUT,
                 ssl=self.sslcontext,
@@ -231,9 +223,7 @@ class Connection:
 
     async def get_description(self):
         """Fetch the services description from the ISY."""
-        url = "https://" if self.use_https else "http://"
-        url += f"{self._address}:{self._port}{self._webroot}/desc"
-        result = await self.request(url)
+        result = await self.request(f"{self.connection_info.url}/desc")
         return result
 
     async def get_config(self, retries=0):
@@ -297,65 +287,3 @@ class Connection:
         req_url = self.compile_url([URL_NETWORK, URL_RESOURCES])
         result = await self.request(req_url)
         return result
-
-
-def get_new_client_session(use_https, tls_ver=1.2):
-    """Create a new Client Session for Connecting."""
-    if use_https:
-        if not can_https(tls_ver):
-            raise (
-                ValueError(
-                    "PyISY could not connect to the ISY. "
-                    "Check log for SSL/TLS error."
-                )
-            )
-
-        return aiohttp.ClientSession(cookie_jar=aiohttp.CookieJar(unsafe=True))
-
-    return aiohttp.ClientSession()
-
-
-def get_sslcontext(use_https, tls_ver=1.2):
-    """Create an SSLContext object to use for the connections."""
-    if not use_https:
-        return None
-    if tls_ver == 1.1:
-        context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_1)
-    elif tls_ver == 1.2:
-        context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
-
-    # Allow older ciphers for older ISYs
-    context.set_ciphers(
-        "DEFAULT:!aNULL:!eNULL:!MD5:!3DES:!DES:!RC4:!IDEA:!SEED:!aDSS:!SRP:!PSK"
-    )
-    return context
-
-
-def can_https(tls_ver):
-    """
-    Verify minimum requirements to use an HTTPS connection.
-
-    Returns boolean indicating whether HTTPS is available.
-    """
-    output = True
-
-    # check python version
-    if sys.version_info < (3, 7):
-        _LOGGER.error("PyISY cannot use HTTPS: Invalid Python version. See docs.")
-        output = False
-
-    # check that Python was compiled against correct OpenSSL lib
-    if "PROTOCOL_TLSv1_1" not in dir(ssl):
-        _LOGGER.error(
-            "PyISY cannot use HTTPS: Compiled against old OpenSSL library. See docs."
-        )
-        output = False
-
-    # check the requested TLS version
-    if tls_ver not in [1.1, 1.2]:
-        _LOGGER.error(
-            "PyISY cannot use HTTPS: Only TLS 1.1 and 1.2 are supported by the ISY controller."
-        )
-        output = False
-
-    return output

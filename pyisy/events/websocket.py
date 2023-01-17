@@ -1,12 +1,15 @@
 """ISY Websocket Event Stream."""
+from __future__ import annotations
+
 import asyncio
 import logging
+from typing import TYPE_CHECKING
 import xml
 from xml.dom import minidom
 
 import aiohttp
 
-from pyisy.connection import get_new_client_session, get_sslcontext
+from pyisy.connection import ISYConnectionInfo
 from pyisy.constants import (
     ACTION_KEY,
     ACTION_KEY_CHANGED,
@@ -27,7 +30,12 @@ from pyisy.constants import (
     TAG_NODE,
 )
 from pyisy.helpers import attr_from_xml, now, value_from_xml
+from pyisy.helpers.session import get_new_client_session, get_sslcontext
 from pyisy.logging import LOG_VERBOSE, enable_logging
+
+if TYPE_CHECKING:
+    from pyisy.isy import ISY
+
 
 _LOGGER = logging.getLogger(__name__)  # Allows targeting pyisy.events in handlers.
 
@@ -45,48 +53,32 @@ WS_RETRY_BACKOFF = [0.01, 1, 10, 30, 60]  # Seconds
 class WebSocketClient:
     """Class for handling web socket communications with the ISY."""
 
-    def __init__(
-        self,
-        isy,
-        address,
-        port,
-        username,
-        password,
-        use_https=False,
-        tls_ver=1.1,
-        webroot="",
-        websession=None,
-    ):
+    isy: ISY
+    connection_info: ISYConnectionInfo
+
+    def __init__(self, isy: ISY, connection_info: ISYConnectionInfo):
         """Initialize a new Web Socket Client class."""
         if len(_LOGGER.handlers) == 0:
             enable_logging(add_null_handler=True)
 
         self.isy = isy
-        self._address = address
-        self._port = port
-        self._username = username
-        self._password = password
-        self._auth = aiohttp.BasicAuth(self._username, self._password)
-        self._webroot = webroot.rstrip("/")
-        self._tls_ver = tls_ver
-        self.use_https = use_https
+        self.connection_info = connection_info
         self._status = ES_NOT_STARTED
         self._lasthb = None
         self._hbwait = WS_HEARTBEAT
-        self._sid = None
+        self._stream_id: str = ""
         self._program_key = None
         self.websocket_task = None
         self.guardian_task = None
 
-        if websession is None:
-            websession = get_new_client_session(use_https, tls_ver)
+        if connection_info.websession is None:
+            connection_info.websession = get_new_client_session(connection_info)
 
-        self.req_session = websession
-        self.sslcontext = get_sslcontext(use_https, tls_ver)
+        self.req_session = connection_info.websession
+        self.sslcontext = get_sslcontext(connection_info)
         self._loop = asyncio.get_running_loop()
 
-        self._url = "wss://" if self.use_https else "ws://"
-        self._url += f"{self._address}:{self._port}{self._webroot}/rest/subscribe"
+        self._url = connection_info.ws_url
 
     def start(self, retries=0):
         """Start the websocket connection."""
@@ -167,7 +159,7 @@ class WebSocketClient:
         _LOGGER.log(LOG_VERBOSE, "ISY Update Received:\n%s", msg)
 
         # A wild stream id appears!
-        if f"{ATTR_STREAM_ID}=" in msg and self._sid is None:
+        if f"{ATTR_STREAM_ID}=" in msg and self._stream_id is None:
             self.update_received(xmldoc)
 
         # direct the event message
@@ -208,15 +200,15 @@ class WebSocketClient:
 
     def update_received(self, xmldoc):
         """Set the socket ID."""
-        self._sid = attr_from_xml(xmldoc, "Event", ATTR_STREAM_ID)
-        _LOGGER.debug("ISY Updated Events Stream ID: %s", self._sid)
+        self._stream_id = attr_from_xml(xmldoc, "Event", ATTR_STREAM_ID)
+        _LOGGER.debug("ISY Updated Events Stream ID: %s", self._stream_id)
 
     async def websocket(self, retries=0):
         """Start websocket connection."""
         try:
             async with self.req_session.ws_connect(
                 self._url,
-                auth=self._auth,
+                auth=self.connection_info.auth,
                 heartbeat=WS_HEARTBEAT,
                 headers=WS_HEADERS,
                 timeout=WS_TIMEOUT,
