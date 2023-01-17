@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     from pyisy.connection import ISYConnectionInfo
 
 
-def get_new_client_session(conn_info: ISYConnectionInfo):
+def get_new_client_session(conn_info: ISYConnectionInfo) -> aiohttp.ClientSession:
     """Create a new Client Session for Connecting."""
     if conn_info.use_https:
         if not can_https(conn_info.tls_version):
@@ -27,7 +27,7 @@ def get_new_client_session(conn_info: ISYConnectionInfo):
     return aiohttp.ClientSession()
 
 
-def get_sslcontext(conn_info: ISYConnectionInfo):
+def get_sslcontext(conn_info: ISYConnectionInfo) -> ssl.SSLContext | None:
     """Create an SSLContext object to use for the connections."""
     if not conn_info.use_https:
         return None

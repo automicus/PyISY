@@ -59,8 +59,8 @@ async def main(url, username, password, tls_version, events, node_servers):
 
     # Print a representation of all the Nodes
     # _LOGGER.debug(repr(isy.nodes))
-    _LOGGER.info(isy.networking["1"])
-    _LOGGER.info(repr(isy.networking["1"]))
+    _LOGGER.info(isy.variables["1.1"])
+    _LOGGER.info(repr(isy.variables["1.1"]))
     _LOGGER.info("Total Loading time: %.2fs", time.time() - t_0)
 
     node_changed_subscriber = None

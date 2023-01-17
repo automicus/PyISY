@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import asyncio
 from dataclasses import InitVar, dataclass, field
-from typing import cast
 from urllib.parse import ParseResult, quote, urlencode, urlparse
 
 import aiohttp
@@ -149,7 +148,7 @@ class Connection:
                     _LOGGER.debug("ISY Response Received: %s", endpoint)
                     results = await res.text(encoding="utf-8", errors="ignore")
                     if results != EMPTY_XML_RESPONSE:
-                        return cast(str, results)
+                        return results
                     _LOGGER.debug("Invalid empty XML returned: %s", endpoint)
                     res.release()
                 if res.status == HTTP_NOT_FOUND:

@@ -89,10 +89,3 @@ class NetworkCommand(Entity):
             _LOGGER.warning("ISY could not run networking command: %s", self.address)
             return
         _LOGGER.debug("ISY ran networking command: %s", self.address)
-
-    def __repr__(self) -> str:
-        """Return a string representation of the entity."""
-        return (
-            f"{type(self).__name__}(name='{self.name}' address='{self.address}'"
-            f" control={repr(self.detail['ControlInfo'])})"
-        )

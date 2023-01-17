@@ -4,6 +4,7 @@ from __future__ import annotations
 from abc import ABC
 from dataclasses import dataclass
 from datetime import datetime
+import json
 from typing import TYPE_CHECKING, TypeVar
 
 from pyisy.helpers.events import EventEmitter
@@ -140,7 +141,10 @@ class Entity(ABC):
 
     def __repr__(self) -> str:
         """Return a string representation of the entity."""
-        return f"{type(self).__name__}(name={self.name} address={self.address})"
+        return (
+            f"{type(self).__name__}(name='{self.name}' address='{self.address}')"
+            f" detail:\n{json.dumps(self.detail, indent=4, sort_keys=True)}"
+        )
 
         # for attr_name, value in (
         #     ("aliases", aliases),

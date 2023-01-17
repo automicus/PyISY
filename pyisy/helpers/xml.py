@@ -1,6 +1,7 @@
 """XML Helper Functions."""
 from __future__ import annotations
 
+from typing import cast
 from xml.dom import minidom
 
 import xmltodict
@@ -22,7 +23,7 @@ def parse_xml(xml: str | None) -> dict:
         xml_dict = xmltodict.parse(xml)
     except XML_ERRORS as exc:
         raise ISYResponseParseError(XML_PARSE_ERROR) from exc
-    return xml_dict
+    return cast(dict, xml_dict)
 
 
 def value_from_xml(xml: minidom.Element, tag_name: str, default: str = "") -> str:

@@ -52,14 +52,6 @@ class Variable(Entity):
             self._protocol = PROTO_STATE_VAR
         self.update_entity(name, detail)
 
-    def __str__(self):
-        """Return a string representation of the variable."""
-        return f"Variable(type={self._var_type}, id={self._var_id}, value={self.status}, init={self.init})"
-
-    def __repr__(self):
-        """Return a string representation of the variable."""
-        return str(self)
-
     def update_entity(self, name: str, detail: dict) -> None:
         """Update an entity information."""
         self._last_edited = parser.parse(detail["ts"])
@@ -108,16 +100,7 @@ class Variable(Entity):
         """Return the Variable ID."""
         return self._var_id
 
-    async def update(self, wait_time: float = 0):
-        """
-        Update the object with the variable's parameters from the controller.
-
-        |  wait_time: Seconds to wait before updating.
-        """
-        self._last_update = now()
-        await self.platform.update(wait_time)
-
-    async def set_init(self, val):
+    async def set_init(self, val):  # TODO: Need to check the precision/float
         """
         Set the initial value for the variable after the controller boots.
 
@@ -159,4 +142,4 @@ class Variable(Entity):
             str(self._var_id),
         )
         if not self.isy.auto_update:
-            await self.update()
+            await self.platform.update()
