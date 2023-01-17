@@ -61,7 +61,7 @@ def ntp_to_system_time(timestamp: int) -> datetime:
 @dataclass
 class ClockData:
     """
-    ISY Clock class cobject.
+    Dataclass representing the ISY Clock Data.
 
     DESCRIPTION:
         This class handles the ISY clock/location info.
@@ -138,11 +138,10 @@ class Clock:
         try:
             xmldoc = minidom.parseString(xml)
         except XML_ERRORS as exc:
-            _LOGGER.error("%s: Clock", XML_PARSE_ERROR)
             raise ISYResponseParseError(XML_PARSE_ERROR) from exc
 
         self.clock_data = ClockData.from_xml(xmldoc)
-        _LOGGER.info("ISY Loaded Clock Information")
+        _LOGGER.debug("ISY loaded clock information")
 
     async def update_thread(self, interval: float) -> None:
         """
