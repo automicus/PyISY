@@ -107,7 +107,7 @@ class ISY:
             )
 
         self.configuration = None
-        self.clock = None
+        self.clock = Clock(self)
         self.nodes = None
         self.node_servers = None
         self.programs = None
@@ -130,7 +130,7 @@ class ISY:
 
         isy_setup_tasks = [
             self.conn.get_status(),
-            self.conn.get_time(),
+            self.clock.update(),
             self.conn.get_nodes(),
             self.conn.get_programs(),
             self.conn.get_variable_defs(),
@@ -140,7 +140,6 @@ class ISY:
             isy_setup_tasks.append(asyncio.create_task(self.conn.get_network()))
         isy_setup_results = await asyncio.gather(*isy_setup_tasks)
 
-        self.clock = Clock(self, xml=isy_setup_results[1])
         self.nodes = Nodes(self, xml=isy_setup_results[2])
         self.programs = Programs(self, xml=isy_setup_results[3])
         self.variables = Variables(

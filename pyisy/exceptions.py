@@ -17,6 +17,10 @@ class ISYResponseParseError(Exception):
     """Error parsing a response provided by the ISY."""
 
 
+class ISYResponseError(Exception):
+    """Error receiving a response provided by the ISY."""
+
+
 class ISYStreamDataError(Exception):
     """Invalid data in the isy event stream."""
 

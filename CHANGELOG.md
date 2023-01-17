@@ -34,7 +34,14 @@ As of v3.0.7, this module will document all changes within the GitHub release in
 - `NodeChangedEvent` moved from `pyisy.nodes` -> `pyisy.helpers.events`
 - `NodeProperty`, `ZWaveProperties` moved to `pyisy.helpers.models`
 - `value_from_xml`,`attr_from_xml`,`attr_from_element`,`value_from_nested_xml` moved to `pyisy.helpers.xml`, but still importable from `pyisy.helpers`
+- `ntp_to_system_time` moved to `pyisy.clock`
 
 #### Networking
 
 - `._id` attribute renamed to `_address`, continue to use `address` property.
+
+### Clock
+
+- `Clock` information changed to dataclass `ClockData`, requires calling `.from_xml` instead of passing xml on init.
+- New `Clock` init split to separate class. Must call `update()` after creating class.
+- `Connection`.`get_clock` moved to `Clock`.`get_resource`

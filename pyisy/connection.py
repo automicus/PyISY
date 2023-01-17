@@ -1,4 +1,6 @@
 """Connection to the ISY."""
+from __future__ import annotations
+
 import asyncio
 import ssl
 import sys
@@ -8,7 +10,6 @@ import aiohttp
 
 from pyisy.constants import (
     METHOD_GET,
-    URL_CLOCK,
     URL_CONFIG,
     URL_DEFINITIONS,
     URL_MEMBERS,
@@ -54,6 +55,8 @@ EMPTY_XML_RESPONSE = '<?xml version="1.0" encoding="UTF-8"?>'
 
 class Connection:
     """Connection object to manage connection to and interaction with ISY."""
+
+    _url: str
 
     def __init__(
         self,
@@ -124,23 +127,23 @@ class Connection:
         return connection_info
 
     @property
-    def url(self):
+    def url(self) -> str:
         """Return the full connection url."""
         return self._url
 
     # COMMON UTILITIES
-    def compile_url(self, path, query=None):
+    def compile_url(
+        self, path: set[str] | list[str], query: dict[str, str] = None
+    ) -> str:
         """Compile the URL to fetch from the ISY."""
-        url = self.url
-        if path is not None:
-            url += "/rest/" + "/".join([quote(item) for item in path])
-
+        url = f"{self.url}/rest/{'/'.join({quote(item) for item in path})}"
         if query is not None:
-            url += "?" + urlencode(query)
+            url = f"{url}?{urlencode(query)}"
+        return url.replace("//", "/")
 
-        return url
-
-    async def request(self, url, retries=0, ok404=False, delay=0):
+    async def request(
+        self, url: str, retries: int = 0, ok404: bool = False, delay: float = 0
+    ) -> str | None:
         """Execute request to ISY REST interface."""
         _LOGGER.debug("ISY Request: %s", url)
         if delay:
@@ -294,14 +297,8 @@ class Connection:
         result = await self.request(req_url)
         return result
 
-    async def get_time(self):
-        """Fetch the system time info from the ISY."""
-        req_url = self.compile_url([URL_CLOCK])
-        result = await self.request(req_url)
-        return result
 
-
-def get_new_client_session(use_https, tls_ver=1.1):
+def get_new_client_session(use_https, tls_ver=1.2):
     """Create a new Client Session for Connecting."""
     if use_https:
         if not can_https(tls_ver):
@@ -317,7 +314,7 @@ def get_new_client_session(use_https, tls_ver=1.1):
     return aiohttp.ClientSession()
 
 
-def get_sslcontext(use_https, tls_ver=1.1):
+def get_sslcontext(use_https, tls_ver=1.2):
     """Create an SSLContext object to use for the connections."""
     if not use_https:
         return None

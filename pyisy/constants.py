@@ -171,7 +171,6 @@ METHOD_GET = "get"
 METHOD_SET = "set"
 
 URL_CHANGE = "change"
-URL_CLOCK = "time"
 URL_CONFIG = "config"
 URL_DEFINITIONS = "definitions"
 URL_MEMBERS = "members"

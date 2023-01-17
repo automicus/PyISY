@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from asyncio import sleep
+from dataclasses import dataclass
 from datetime import date, datetime
 import time
 from typing import TYPE_CHECKING
@@ -20,15 +21,22 @@ from pyisy.constants import (
     TAG_TZ_OFFSET,
     XML_TRUE,
 )
-from pyisy.exceptions import XML_ERRORS, XML_PARSE_ERROR, ISYResponseParseError
+from pyisy.exceptions import (
+    XML_ERRORS,
+    XML_PARSE_ERROR,
+    ISYResponseError,
+    ISYResponseParseError,
+)
 from pyisy.helpers import value_from_xml
 from pyisy.logging import _LOGGER
 
 if TYPE_CHECKING:
     from pyisy.isy import ISY
 
+URL_CLOCK = "/time"
 
-def ntp_to_system_time(timestamp):
+
+def ntp_to_system_time(timestamp: int) -> datetime:
     """Convert a ISY NTP time to system UTC time.
 
     Adapted from Python ntplib module.
@@ -50,7 +58,8 @@ def ntp_to_system_time(timestamp):
     return datetime.fromtimestamp(timestamp - ntp_delta)
 
 
-class Clock:
+@dataclass
+class ClockData:
     """
     ISY Clock class cobject.
 
@@ -75,74 +84,67 @@ class Clock:
 
     """
 
-    def __init__(self, isy: ISY, xml: str | None = None):
-        """
-        Initialize the network resources class.
+    last_called: datetime = EMPTY_TIME
+    tz_offset: float = 0
+    dst: bool = False
+    latitude: float = 0.0
+    longitude: float = 0.0
+    sunrise: datetime = EMPTY_TIME
+    sunset: datetime = EMPTY_TIME
+    military: bool = False
 
-        isy: ISY class
-        xml: String of xml data containing the configuration data
-        """
-        self.isy = isy
-        self._last_called = EMPTY_TIME
-        self._tz_offset = 0
-        self._dst = False
-        self._latitude = 0.0
-        self._longitude = 0.0
-        self._sunrise = EMPTY_TIME
-        self._sunset = EMPTY_TIME
-        self._military = False
-
-        if xml is not None:
-            self.parse(xml)
-
-    def __str__(self):
-        """Return a string representing the clock Class."""
-        return f"ISY Clock (Last Updated {self.last_called})"
-
-    def __repr__(self):
-        """Return a long string showing all the clock values."""
-        props = [
-            name for name, value in vars(Clock).items() if isinstance(value, property)
-        ]
-        return "ISY Clock: {!r}".format(
-            {prop: str(getattr(self, prop)) for prop in props}
+    @classmethod
+    def from_xml(cls, xmldoc: minidom.Element) -> ClockData:
+        """Return a ISY Clock class from an xml DOM object."""
+        tz_offset_sec = int(value_from_xml(xmldoc, TAG_TZ_OFFSET))
+        return ClockData(
+            tz_offset=tz_offset_sec / 3600,
+            dst=value_from_xml(xmldoc, TAG_DST) == XML_TRUE,
+            latitude=float(value_from_xml(xmldoc, TAG_LATITUDE)),
+            longitude=float(value_from_xml(xmldoc, TAG_LONGITUDE)),
+            military=value_from_xml(xmldoc, TAG_MILITARY_TIME) == XML_TRUE,
+            last_called=ntp_to_system_time(int(value_from_xml(xmldoc, TAG_NTP))),
+            sunrise=ntp_to_system_time(int(value_from_xml(xmldoc, TAG_SUNRISE))),
+            sunset=ntp_to_system_time(int(value_from_xml(xmldoc, TAG_SUNSET))),
         )
 
-    def parse(self, xml):
-        """
-        Parse the xml data.
 
-        xml: String of the xml data
-        """
-        try:
-            xmldoc = minidom.parseString(xml)
-        except XML_ERRORS as exc:
-            _LOGGER.error("%s: Clock", XML_PARSE_ERROR)
-            raise ISYResponseParseError(XML_PARSE_ERROR) from exc
+class Clock:
+    """Class to update the ISY clock information."""
 
-        tz_offset_sec = int(value_from_xml(xmldoc, TAG_TZ_OFFSET))
-        self._tz_offset = tz_offset_sec / 3600
-        self._dst = value_from_xml(xmldoc, TAG_DST) == XML_TRUE
-        self._latitude = float(value_from_xml(xmldoc, TAG_LATITUDE))
-        self._longitude = float(value_from_xml(xmldoc, TAG_LONGITUDE))
-        self._military = value_from_xml(xmldoc, TAG_MILITARY_TIME) == XML_TRUE
-        self._last_called = ntp_to_system_time(int(value_from_xml(xmldoc, TAG_NTP)))
-        self._sunrise = ntp_to_system_time(int(value_from_xml(xmldoc, TAG_SUNRISE)))
-        self._sunset = ntp_to_system_time(int(value_from_xml(xmldoc, TAG_SUNSET)))
+    __slots__ = ["isy", "clock_data", "url"]
+    isy: ISY
+    clock_data: ClockData
+    url: str
 
-        _LOGGER.info("ISY Loaded Clock Information")
+    def __init__(self, isy: ISY) -> None:
+        """Initialize a new Clock Updater class."""
+        self.isy = isy
+        self.clock_data = ClockData()
+        self.url = isy.conn.compile_url({URL_CLOCK})
 
-    async def update(self, wait_time: float = 0):
+    async def update(self, wait_time: float = 0) -> None:
         """
         Update the contents of the networking class.
 
         wait_time: [optional] Amount of seconds to wait before updating
         """
         await sleep(wait_time)
-        xml = await self.isy.conn.get_time()
-        self.parse(xml)
+        xml = await self.isy.conn.request(self.url)
 
-    async def update_thread(self, interval):
+        if not xml:
+            raise ISYResponseError("Could not load clock information")
+
+        try:
+            xmldoc = minidom.parseString(xml)
+        except XML_ERRORS as exc:
+            _LOGGER.error("%s: Clock", XML_PARSE_ERROR)
+            raise ISYResponseParseError(XML_PARSE_ERROR) from exc
+
+        self.clock_data = ClockData.from_xml(xmldoc)
+        _LOGGER.info("ISY Loaded Clock Information")
+
+    async def update_thread(self, interval: float) -> None:
         """
         Continually update the class until it is told to stop.
 
@@ -151,42 +153,10 @@ class Clock:
         while self.isy.auto_update:
             await self.update(interval)
 
-    @property
-    def last_called(self):
-        """Get the time of the last call to /rest/time in UTC."""
-        return self._last_called
+    def __str__(self) -> str:
+        """Return string representation of Clock data."""
+        return str(self.clock_data)
 
-    @property
-    def tz_offset(self):
-        """Provide the Time Zone Offset from the isy in Hours."""
-        return self._tz_offset
-
-    @property
-    def dst(self):
-        """Confirm if DST is enabled or not on the ISY."""
-        return self._dst
-
-    @property
-    def latitude(self):
-        """Provide the latitude information from the isy."""
-        return self._latitude
-
-    @property
-    def longitude(self):
-        """Provide the longitude information from the isy."""
-        return self._longitude
-
-    @property
-    def sunrise(self):
-        """Provide the sunrise information from the isy (UTC)."""
-        return self._sunrise
-
-    @property
-    def sunset(self):
-        """Provide the sunset information from the isy (UTC)."""
-        return self._sunset
-
-    @property
-    def military(self):
-        """Confirm if military time is in use or not on the isy."""
-        return self._military
+    def __repr__(self) -> str:
+        """Return string representation of Clock data."""
+        return repr(self.clock_data)
