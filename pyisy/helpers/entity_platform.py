@@ -6,7 +6,7 @@ homeassistant.helpers.entity_platform
 from __future__ import annotations
 
 import asyncio
-from collections.abc import Iterable
+from collections.abc import Iterable, ValuesView
 from pprint import pformat
 from typing import TYPE_CHECKING, Any, Protocol, TypeVar
 
@@ -67,7 +67,7 @@ class EntityPlatform:
 
     def __repr__(self) -> str:
         """Represent an EntityPlatform."""
-        return f"<EntityPlatform platform_name={self.platform_name}"
+        return f"<EntityPlatform platform_name={self.platform_name} entities={len(self.entities)} >"
 
     async def update(self, wait_time: float = 0) -> None:
         """Update the contents of the class."""
@@ -91,7 +91,7 @@ class EntityPlatform:
         if address in self.addresses:
             if entity.detail != self.entities[address].detail:
                 self.names[self.addresses.index(address)] = name
-                self.entities[address] = entity
+                self.entities[address].update_entity(name, entity.detail)
                 self.status_events.notify("NEED CHANGE EVENT")
             return
 
@@ -112,6 +112,10 @@ class EntityPlatform:
     def __setitem__(self, key: str, value: Any) -> None:
         """Set the item value (Not supported)."""
         return None
+
+    def values(self) -> ValuesView:
+        """Return the underlying values to avoid __iter__ overhead."""
+        return self.entities.values()
 
     def get_by_id(self, key: str) -> Entity | None:
         """Return entity given an address."""

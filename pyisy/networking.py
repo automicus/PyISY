@@ -5,8 +5,8 @@ import copy
 from typing import TYPE_CHECKING, Any
 
 from pyisy.constants import (
-    ATTR_ID,
     PROTO_NETWORK,
+    TAG_ID,
     TAG_NAME,
     TAG_NET_RULE,
     URL_NETWORK,
@@ -14,10 +14,13 @@ from pyisy.constants import (
 )
 from pyisy.helpers.entity import Entity
 from pyisy.helpers.entity_platform import EntityPlatform
+from pyisy.helpers.events import EventEmitter
 from pyisy.logging import _LOGGER
 
 if TYPE_CHECKING:
     from pyisy.isy import ISY
+
+PLATFORM = "networking"
 
 
 class NetworkResources(EntityPlatform):
@@ -27,17 +30,16 @@ class NetworkResources(EntityPlatform):
         """
         Initialize the network resources class.
 
-        isy: ISY class
-        xml: String of xml data containing the configuration data
+        Iterate over self.values()
         """
-        super().__init__(isy=isy, platform_name="networking")
+        super().__init__(isy=isy, platform_name=PLATFORM)
         self.url = self.isy.conn.compile_url([URL_NETWORK, URL_RESOURCES])
 
     async def parse(self, xml_dict: dict[str, Any]) -> None:
         """Parse the results from the ISY."""
         features = xml_dict["NetConfig"][TAG_NET_RULE]
         for feature in features:
-            address = feature[ATTR_ID]
+            address = feature[TAG_ID]
             name = feature[TAG_NAME]
             detail = copy.deepcopy(feature)
             entity = NetworkCommand(self, address, name, detail)
@@ -71,6 +73,7 @@ class NetworkCommand(Entity):
         self, platform: NetworkResources, address: str, name: str, detail: dict
     ):
         """Initialize network command class."""
+        self.status_events = EventEmitter()
         self.platform = platform
         self.isy = platform.isy
         self._address = address
@@ -86,3 +89,10 @@ class NetworkCommand(Entity):
             _LOGGER.warning("ISY could not run networking command: %s", self.address)
             return
         _LOGGER.debug("ISY ran networking command: %s", self.address)
+
+    def __repr__(self) -> str:
+        """Return a string representation of the entity."""
+        return (
+            f"{type(self).__name__}(name='{self.name}' address='{self.address}'"
+            f" control={repr(self.detail['ControlInfo'])})"
+        )

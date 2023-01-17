@@ -26,6 +26,7 @@ As of v3.0.7, this module will document all changes within the GitHub release in
 #### Variables
 
 - No longer support direct setting of `status` property, use `update_status`
+- Status represents raw values correctly, do not double convert
 
 #### Helpers
 

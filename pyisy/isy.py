@@ -100,6 +100,7 @@ class ISY:
         # Initialize platforms
         self.clock = Clock(self)
         self.networking = NetworkResources(self)
+        self.variables = Variables(self)
 
         # Setup event emitters and loop
         self.connection_events = EventEmitter()
@@ -137,10 +138,7 @@ class ISY:
             isy_setup_index.append(self.conn.get_programs.__qualname__)
 
         if variables:
-            isy_setup_tasks.append(self.conn.get_variable_defs())
-            isy_setup_index.append(self.conn.get_variable_defs.__qualname__)
-            isy_setup_tasks.append(self.conn.get_variables())
-            isy_setup_index.append(self.conn.get_variables.__qualname__)
+            isy_setup_tasks.append(self.variables.update())
 
         if networking and self.config.networking:
             isy_setup_tasks.append(asyncio.create_task(self.networking.update()))
@@ -160,16 +158,7 @@ class ISY:
                 self,
                 xml=isy_setup_results[isy_setup_index.index("Connection.get_programs")],
             )
-        if variables:
-            self.variables = Variables(
-                self,
-                def_xml=isy_setup_results[
-                    isy_setup_index.index("Connection.get_variable_defs")
-                ],
-                var_xml=isy_setup_results[
-                    isy_setup_index.index("Connection.get_variables")
-                ],
-            )
+
         if self.node_servers and node_servers:
             await self.node_servers.load_node_servers()
 

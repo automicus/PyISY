@@ -77,6 +77,7 @@ DEFAULT_UNIT_OF_MEASURE = ""
 
 NET_MODULE = "Networking Module"
 
+TAG_ID = "id"
 TAG_ADDRESS = "address"
 TAG_CATEGORY = "cat"
 TAG_CONFIG = "config"
@@ -411,6 +412,10 @@ NODE_FAMILY_ID = {
     FAMILY_NODESERVER: "Node_Server",
     FAMILY_ZMATTER_ZWAVE: "ZMatter_Z-Wave",
 }
+
+# Special Units of Measure
+UOM_ISYV4_DEGREES = "degrees"
+UOM_ISYV4_NONE = "n/a"
 
 UOM_CLIMATE_MODES = "98"
 UOM_CLIMATE_MODES_ZWAVE = "67"

@@ -10,17 +10,12 @@ import aiohttp
 
 from pyisy.configuration import Configuration, ConfigurationData
 from pyisy.constants import (
-    METHOD_GET,
-    URL_DEFINITIONS,
     URL_MEMBERS,
     URL_NODES,
     URL_PING,
     URL_PROGRAMS,
     URL_STATUS,
     URL_SUBFOLDERS,
-    URL_VARIABLES,
-    VAR_INTEGER,
-    VAR_STATE,
     XML_FALSE,
     XML_TRUE,
 )
@@ -244,33 +239,4 @@ class Connection:
         """Fetch the status of nodes/groups/scenes from the ISY."""
         req_url = self.compile_url([URL_STATUS])
         result = await self.request(req_url)
-        return result
-
-    async def get_variable_defs(self) -> list[str] | None:
-        """Fetch the list of variables from the ISY."""
-        req_list = [
-            [URL_VARIABLES, URL_DEFINITIONS, VAR_INTEGER],
-            [URL_VARIABLES, URL_DEFINITIONS, VAR_STATE],
-        ]
-        req_urls = [self.compile_url(req) for req in req_list]
-        results = await asyncio.gather(
-            *[self.request(req_url) for req_url in req_urls], return_exceptions=True
-        )
-        return results
-
-    async def get_variables(self) -> str | None:
-        """Fetch the variable details from the ISY to update local copy."""
-        req_list = [
-            [URL_VARIABLES, METHOD_GET, VAR_INTEGER],
-            [URL_VARIABLES, METHOD_GET, VAR_STATE],
-        ]
-        req_urls = [self.compile_url(req) for req in req_list]
-        results = await asyncio.gather(
-            *[self.request(req_url) for req_url in req_urls], return_exceptions=True
-        )
-        results = [r for r in results if r is not None]  # Strip any bad requests.
-        result = "".join(results)
-        result = result.replace(
-            '</vars><?xml version="1.0" encoding="UTF-8"?><vars>', ""
-        )
         return result

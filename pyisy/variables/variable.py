@@ -4,6 +4,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 
+from dateutil import parser
+
 from pyisy.constants import (
     ATTR_INIT,
     ATTR_SET,
@@ -12,8 +14,9 @@ from pyisy.constants import (
     URL_VARIABLES,
     VAR_INTEGER,
 )
-from pyisy.helpers import now
+from pyisy.helpers import convert_isy_raw_value, now
 from pyisy.helpers.entity import Entity, EntityStatus
+from pyisy.helpers.events import EventEmitter
 from pyisy.logging import _LOGGER
 
 
@@ -27,37 +30,27 @@ class VariableStatus(EntityStatus):
 
 
 class Variable(Entity):
-    """
-    Object representing a variable on the controller.
+    """Object representing a variable on the controller."""
 
-    |  variables: The variable manager object.
-    |  vid: List of variable IDs.
-    |  vtype: List of variable types.
-    |  init: List of values that variables initialize to when the controller
-             starts.
-    |  val: The current variable value.
-    |  ts: The timestamp for the last time the variable was edited.
+    _raw_value: int
+    _raw_init_value: int
+    _last_edited: datetime.datetime
+    _var_id: str
+    _var_type: str
 
-    :ivar init: Watched property that represents the value the variable
-                initializes to when the controller boots.
-    :ivar lastEdit: Watched property that indicates the last time the variable
-                    was edited.
-    :ivar val: Watched property that represents the value of the variable.
-    """
-
-    def __init__(self, variables, vid, vtype, vname, init, status, timestamp, prec):
+    def __init__(self, platform, address, name, detail):
         """Initialize a Variable class."""
-        self._address = f"{vtype}.{vid}"
-        self._name = vname
-        self._protocol = PROTO_INT_VAR if vtype == VAR_INTEGER else PROTO_STATE_VAR
-        self._var_id = vid
-        self._var_type = vtype
-        self._init = init
-        self._last_edited = timestamp
-        self._prec = prec
-        self._status = status
-        self._variables = variables
-        self.isy = variables.isy
+        self.status_events = EventEmitter()
+        self.platform = platform
+        self.isy = platform.isy
+        self._last_update = now()
+        self._address = address
+        self._var_type = detail["@type"]
+        if self._var_type == VAR_INTEGER:
+            self._protocol = PROTO_INT_VAR
+        else:
+            self._protocol = PROTO_STATE_VAR
+        self.update_entity(name, detail)
 
     def __str__(self):
         """Return a string representation of the variable."""
@@ -67,18 +60,24 @@ class Variable(Entity):
         """Return a string representation of the variable."""
         return str(self)
 
+    def update_entity(self, name: str, detail: dict) -> None:
+        """Update an entity information."""
+        self._last_edited = parser.parse(detail["ts"])
+        self._name = name
+        self._precision = detail["prec"]
+        self._raw_value = int(detail["val"])
+        self._status = convert_isy_raw_value(self._raw_value, "", self._precision)
+        self._raw_init_value = detail["init"]
+        self._init = convert_isy_raw_value(self._raw_init_value, "", self._precision)
+        self._var_id = detail["@id"]
+        self._var_type = detail["@type"]
+        self.detail = detail
+        self._last_changed = now()
+        self.status_events.notify(self.status_feedback)
+
     @property
     def init(self):
         """Return the initial state."""
-        return self._init
-
-    @init.setter
-    def init(self, value):
-        """Set the initial state and notify listeners."""
-        if self._init != value:
-            self._init = value
-            self._last_changed = now()
-            self.status_events.notify(self.status_feedback)
         return self._init
 
     @property
@@ -86,24 +85,10 @@ class Variable(Entity):
         """Return the last edit time."""
         return self._last_edited
 
-    def update_last_edited(self, timestamp: datetime) -> None:
-        """Set the UTC Time of the last edited time for this node."""
-        if self._last_edited != timestamp:
-            self._last_edited = timestamp
-
     @property
     def prec(self):
         """Return the Variable Precision."""
-        return self._prec
-
-    @prec.setter
-    def prec(self, value):
-        """Set the current node state and notify listeners."""
-        if self._prec != value:
-            self._prec = value
-            self._last_changed = now()
-            self.status_events.notify(self.status_feedback)
-        return self._prec
+        return self._precision
 
     @property
     def status_feedback(self):
@@ -115,7 +100,7 @@ class Variable(Entity):
             last_update=self.last_update,
             init=self._init,
             timestamp=self._last_edited,
-            prec=self._prec,
+            prec=self._precision,
         )
 
     @property
@@ -130,7 +115,7 @@ class Variable(Entity):
         |  wait_time: Seconds to wait before updating.
         """
         self._last_update = now()
-        await self._variables.update(wait_time)
+        await self.platform.update(wait_time)
 
     async def set_init(self, val):
         """

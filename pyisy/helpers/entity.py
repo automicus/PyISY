@@ -54,10 +54,10 @@ class Entity(ABC):
     _last_changed: datetime
     _last_update: datetime
     _status: int | float | bool
-    detail: dict | None
     _name: str = ""
     _protocol: str | None = None
-    status_events: EventEmitter = EventEmitter()
+    detail: dict = {}
+    status_events: EventEmitter
 
     @property
     def address(self) -> str:
@@ -99,6 +99,18 @@ class Entity(ABC):
         if self._enabled != value:
             self._enabled = value
 
+    def update_entity(self, name: str, detail: dict) -> None:
+        """Update an entity information."""
+        _changed = False
+        if name != self.name:
+            self._name = name
+            _changed = False
+        if detail != self.detail:
+            self.detail = detail
+            _changed = False
+        if _changed:
+            self.status_events.notify("SEND GENERIC UPDATE")
+
     def update_status(self, value: int | float | bool) -> None:
         """Set the current entity state and notify listeners."""
         if self._status != value:
@@ -124,4 +136,34 @@ class Entity(ABC):
 
     def __str__(self) -> str:
         """Return a string representation of the entity."""
-        return f"{type(self).__name__}({self.address})"
+        return f"{self.name} ({self.address})"
+
+    def __repr__(self) -> str:
+        """Return a string representation of the entity."""
+        return f"{type(self).__name__}(name={self.name} address={self.address})"
+
+        # for attr_name, value in (
+        #     ("aliases", aliases),
+        #     ("area_id", area_id),
+        #     ("capabilities", capabilities),
+        #     ("config_entry_id", config_entry_id),
+        #     ("device_class", device_class),
+        #     ("device_id", device_id),
+        #     ("disabled_by", disabled_by),
+        #     ("entity_category", entity_category),
+        #     ("hidden_by", hidden_by),
+        #     ("icon", icon),
+        #     ("has_entity_name", has_entity_name),
+        #     ("name", name),
+        #     ("options", options),
+        #     ("original_device_class", original_device_class),
+        #     ("original_icon", original_icon),
+        #     ("original_name", original_name),
+        #     ("platform", platform),
+        #     ("supported_features", supported_features),
+        #     ("translation_key", translation_key),
+        #     ("unit_of_measurement", unit_of_measurement),
+        # ):
+        #     if value is not UNDEFINED and value != getattr(old, attr_name):
+        #         new_values[attr_name] = value
+        #         old_values[attr_name] = getattr(old, attr_name)
