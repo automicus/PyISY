@@ -5,9 +5,10 @@ homeassistant.helpers.entity_platform
 """
 from __future__ import annotations
 
+from abc import ABC, abstractmethod
 import asyncio
 from collections.abc import Iterable, ValuesView
-from pprint import pformat
+import json
 from typing import TYPE_CHECKING, Any, Protocol, TypeVar
 
 from pyisy.helpers.entity import Entity
@@ -41,7 +42,7 @@ class EntityPlatformModule(Protocol):
         """Set up an integration platform async."""
 
 
-class EntityPlatform:
+class EntityPlatform(ABC):
     """Manage the entities for a single platform."""
 
     status_events: EventEmitter
@@ -67,15 +68,21 @@ class EntityPlatform:
 
     def __repr__(self) -> str:
         """Represent an EntityPlatform."""
-        return f"<EntityPlatform platform_name={self.platform_name} entities={len(self.entities)} >"
+        return f"<EntityPlatform platform={self.platform_name} entities={len(self.entities)}>"
 
     async def update(self, wait_time: float = 0) -> None:
         """Update the contents of the class."""
         await asyncio.sleep(wait_time)
-        xml_dict = parse_xml(await self.isy.conn.request(self.url))
-        _LOGGER.log(LOG_VERBOSE, "%s:\n%s", self.url, pformat(xml_dict))
+        xml_dict = parse_xml(await self.isy.conn.request(self.url), attr_prefix="")
+        _LOGGER.log(
+            LOG_VERBOSE,
+            "%s:\n%s",
+            self.url,
+            json.dumps(xml_dict, indent=4, sort_keys=True, default=str),
+        )
         await self.parse(xml_dict)
 
+    @abstractmethod
     async def parse(self, xml_dict: dict[str, Any]) -> None:
         """Parse the results from the ISY.
 

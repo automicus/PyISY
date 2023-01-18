@@ -5,7 +5,7 @@ from abc import ABC
 from dataclasses import dataclass
 from datetime import datetime
 import json
-from typing import TYPE_CHECKING, TypeVar
+from typing import TYPE_CHECKING, Generic, TypeVar
 
 from pyisy.helpers.events import EventEmitter
 
@@ -25,10 +25,15 @@ class EntityStatus:
     last_update: datetime
 
 
-_EntityT = TypeVar("_EntityT", bound="Entity")
+EntityDetailT = TypeVar("EntityDetailT", bound="EntityDetail")
 
 
-class Entity(ABC):
+@dataclass
+class EntityDetail:
+    """Dataclass to hold entity detail info."""
+
+
+class Entity(ABC, Generic[EntityDetailT]):
     """An abstract class for ISY entities.
 
     For consistency with downstream users of this module, every
@@ -57,7 +62,7 @@ class Entity(ABC):
     _status: int | float | bool
     _name: str = ""
     _protocol: str | None = None
-    detail: dict = {}
+    detail: EntityDetail
     status_events: EventEmitter
 
     @property
@@ -100,7 +105,7 @@ class Entity(ABC):
         if self._enabled != value:
             self._enabled = value
 
-    def update_entity(self, name: str, detail: dict) -> None:
+    def update_entity(self, name: str, detail: EntityDetailT) -> None:
         """Update an entity information."""
         _changed = False
         if name != self.name:
@@ -143,7 +148,7 @@ class Entity(ABC):
         """Return a string representation of the entity."""
         return (
             f"{type(self).__name__}(name='{self.name}' address='{self.address}')"
-            f" detail:\n{json.dumps(self.detail, indent=4, sort_keys=True)}"
+            f" detail:\n{json.dumps(self.detail.__dict__, indent=4, sort_keys=True, default=str)}"
         )
 
         # for attr_name, value in (

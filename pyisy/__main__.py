@@ -7,6 +7,7 @@ Use `python3 -m pyisy -h` for full usage information.
 This script can also be copied and used as a template for
 using this module.
 """
+from __future__ import annotations
 
 import argparse
 import asyncio
@@ -21,14 +22,16 @@ from pyisy.nodes import NodeChangedEvent
 
 _LOGGER = logging.getLogger(__name__)
 
+args: argparse.Namespace = None  # type: ignore[assignment]
 
-async def main(url, username, password, tls_version, events, node_servers):
+
+async def main(cl_args: argparse.Namespace) -> None:
     """Execute connection to ISY and load all system info."""
     _LOGGER.info("Starting PyISY...")
     t_0 = time.time()
 
     connection_info = ISYConnectionInfo(
-        url, username, password, tls_version=tls_version
+        cl_args.url, cl_args.username, cl_args.password, tls_version=cl_args.tls_version
     )
     # Connect to ISY controller.
     isy = ISY(
@@ -37,14 +40,13 @@ async def main(url, username, password, tls_version, events, node_servers):
     )
 
     try:
-        # await isy.initialize(node_servers) TODO: revert
         await isy.initialize(
-            nodes=False,
-            clock=False,
-            programs=True,
-            variables=False,
-            networking=False,
-            node_servers=False,
+            nodes=cl_args.nodes,
+            clock=cl_args.clock,
+            programs=cl_args.programs,
+            variables=cl_args.variables,
+            networking=cl_args.networking,
+            node_servers=cl_args.node_servers,
         )
     except (ISYInvalidAuthError, ISYConnectionError):
         _LOGGER.error(
@@ -58,9 +60,18 @@ async def main(url, username, password, tls_version, events, node_servers):
         raise
 
     # Print a representation of all the Nodes
-    # _LOGGER.debug(repr(isy.nodes))
-    _LOGGER.info(isy.variables["1.1"])
-    _LOGGER.info(repr(isy.variables["1.1"]))
+    if cl_args.nodes:
+        _LOGGER.debug(repr(isy.nodes))
+    if cl_args.programs:
+        _LOGGER.debug(repr(isy.programs))
+    if cl_args.variables:
+        _LOGGER.debug(repr(isy.variables))
+    if cl_args.networking:
+        _LOGGER.debug(repr(isy.networking))
+    if cl_args.node_servers:
+        _LOGGER.debug(repr(isy.node_servers))
+    if cl_args.clock:
+        _LOGGER.debug(repr(isy.clock))
     _LOGGER.info("Total Loading time: %.2fs", time.time() - t_0)
 
     node_changed_subscriber = None
@@ -81,7 +92,7 @@ async def main(url, username, password, tls_version, events, node_servers):
         _LOGGER.info("System Status Changed: %s", SYSTEM_STATUS.get(event))
 
     try:
-        if events:
+        if cl_args.events:
             isy.websocket.start()
             node_changed_subscriber = isy.nodes.status_events.subscribe(
                 node_changed_handler
@@ -102,38 +113,83 @@ async def main(url, username, password, tls_version, events, node_servers):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(prog=__package__)
+    parser = argparse.ArgumentParser(
+        prog=__package__,
+        description="Connect and interact with an Universal Devices, Inc, ISY/IoX device.",
+    )
     parser.add_argument("url", type=str)
     parser.add_argument("username", type=str)
     parser.add_argument("password", type=str)
-    parser.add_argument("-t", "--tls-ver", dest="tls_version", type=float)
-    parser.add_argument("-v", "--verbose", action="store_true")
-    parser.add_argument("-q", "--no-events", dest="no_events", action="store_true")
     parser.add_argument(
-        "-n", "--node-servers", dest="node_servers", action="store_true"
+        "-t",
+        "--tls-ver",
+        dest="tls_version",
+        type=float,
+        help="Set the TLS version (1.2 or 1.2) for older ISYs",
     )
-    parser.set_defaults(use_https=False, tls_version=1.2, verbose=False)
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        action="store_true",
+        help="Enable VERBOSE logging (default is DEBUG)",
+    )
+    parser.add_argument(
+        "-q",
+        "--no-events",
+        dest="events",
+        action="store_false",
+        help="Disable the event stream",
+    )
+    parser.add_argument(
+        "-n", "--no-nodes", dest="nodes", action="store_false", help="Do not load Nodes"
+    )
+    parser.add_argument(
+        "-c",
+        "--no-clock",
+        dest="clock",
+        action="store_false",
+        help="Do not load Clock Info",
+    )
+    parser.add_argument(
+        "-p",
+        "--no-programs",
+        dest="programs",
+        action="store_false",
+        help="Do not load Programs",
+    )
+    parser.add_argument(
+        "-i",
+        "--no-variables",
+        dest="variables",
+        action="store_false",
+        help="Do not load Variables",
+    )
+    parser.add_argument(
+        "-w",
+        "--no-network",
+        dest="networking",
+        action="store_false",
+        help="Do not load Network Resources",
+    )
+    parser.add_argument(
+        "-s",
+        "--node-servers",
+        dest="node_servers",
+        action="store_false",
+        help="Do not load Node Server Definitions",
+    )
+    parser.set_defaults(use_https=False, tls_version=None, verbose=False)
     args = parser.parse_args()
 
     enable_logging(LOG_VERBOSE if args.verbose else logging.DEBUG)
 
     _LOGGER.info(
-        "ISY URL: %s, username: %s, TLS: %s",
+        "ISY URL: %s, username: %s",
         args.url,
         args.username,
-        args.tls_version,
     )
 
     try:
-        asyncio.run(
-            main(
-                url=args.url,
-                username=args.username,
-                password=args.password,
-                tls_version=args.tls_version,
-                events=(not args.no_events),
-                node_servers=args.node_servers,
-            )
-        )
+        asyncio.run(main(args))
     except KeyboardInterrupt:
         _LOGGER.warning("KeyboardInterrupt received. Disconnecting!")

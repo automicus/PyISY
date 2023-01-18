@@ -1,11 +1,9 @@
 """Manage variables from the ISY."""
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import InitVar, dataclass, field
 from datetime import datetime
 from typing import TYPE_CHECKING
-
-from dateutil import parser
 
 from pyisy.constants import (
     ATTR_INIT,
@@ -16,7 +14,7 @@ from pyisy.constants import (
     VAR_INTEGER,
 )
 from pyisy.helpers import convert_isy_raw_value, now
-from pyisy.helpers.entity import Entity, EntityStatus
+from pyisy.helpers.entity import Entity, EntityDetail, EntityStatus
 from pyisy.helpers.events import EventEmitter
 from pyisy.logging import _LOGGER
 
@@ -33,18 +31,40 @@ class VariableStatus(EntityStatus):
     precision: int = 0
 
 
+@dataclass
+class VariableDetail(EntityDetail):
+    """Dataclass to hold variable detail info."""
+
+    init: InitVar[str] = "0"
+    val: InitVar[str] = "0"
+    id: str = ""
+    name: str = ""
+    type: str = "1"
+    ts: datetime = datetime.now()
+    precision: int = 0
+    value: int | float = field(init=False)
+    initial: int | float = field(init=False)
+
+    def __post_init__(
+        self,
+        init: str,
+        val: str,
+    ) -> None:
+        """Post process the entity detailed info."""
+        self.value = convert_isy_raw_value(int(val), "", self.precision)
+        self.initial = convert_isy_raw_value(int(init), "", self.precision)
+
+
 class Variable(Entity):
     """Object representing a variable on the controller."""
 
-    _raw_value: int
-    _raw_init_value: int
     _last_edited: datetime
     _var_id: str
     _var_type: str
     _precision: int
 
     def __init__(
-        self, platform: Variables, address: str, name: str, detail: dict
+        self, platform: Variables, address: str, name: str, detail: VariableDetail
     ) -> None:
         """Initialize a Variable class."""
         self.status_events = EventEmitter()
@@ -52,24 +72,22 @@ class Variable(Entity):
         self.isy = platform.isy
         self._last_update = now()
         self._address = address
-        self._var_type = detail["@type"]
+        self._var_type = detail.type
         if self._var_type == VAR_INTEGER:
             self._protocol = PROTO_INT_VAR
         else:
             self._protocol = PROTO_STATE_VAR
         self.update_entity(name, detail)
 
-    def update_entity(self, name: str, detail: dict) -> None:
+    def update_entity(self, name: str, detail: VariableDetail) -> None:
         """Update an entity information."""
-        self._last_edited = parser.parse(detail["ts"])
         self._name = name
-        self._precision = int(detail["prec"])
-        self._raw_value = int(detail["val"])
-        self._status = convert_isy_raw_value(self._raw_value, "", self._precision)
-        self._raw_init_value = int(detail["init"])
-        self._initial = convert_isy_raw_value(self._raw_init_value, "", self._precision)
-        self._var_id = detail["@id"]
-        self._var_type = detail["@type"]
+        self._last_edited = detail.ts
+        self._precision = detail.precision
+        self._status = detail.value
+        self._initial = detail.initial
+        self._var_id = detail.id
+        self._var_type = detail.type
         self.detail = detail
         self._last_changed = now()
         self.status_events.notify(self.status_feedback)

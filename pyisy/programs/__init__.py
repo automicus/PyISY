@@ -5,11 +5,15 @@ from typing import TYPE_CHECKING, Any
 
 from pyisy.constants import URL_PROGRAMS, URL_SUBFOLDERS, XML_TRUE
 from pyisy.helpers.entity_platform import EntityPlatform
+from pyisy.logging import _LOGGER, LOG_VERBOSE
+from pyisy.programs.folder import Folder, FolderDetail
+from pyisy.programs.program import Program, ProgramDetail
 
 if TYPE_CHECKING:
-    from pyisy.isy import ISY  # pylint: disable=import-self
+    from pyisy.isy import ISY
 
 PLATFORM = "programs"
+TRUE = "true"
 
 
 class Programs(EntityPlatform):
@@ -31,6 +35,28 @@ class Programs(EntityPlatform):
 
     async def parse(self, xml_dict: dict[str, Any]) -> None:
         """Parse the results from the ISY."""
+        if not (features := xml_dict["programs"]["program"]):
+            return
+
+        for feature in features:
+            await self.parse_entity(feature)
+        _LOGGER.info("Loaded %s", PLATFORM)
+
+    async def parse_entity(self, feature: dict[str, Any]) -> None:
+        """Parse a single value and add it to the platform."""
+        try:
+            address = feature["id"]
+            name = feature["name"]
+            _LOGGER.log(LOG_VERBOSE, "Parsing %s: %s (%s)", PLATFORM, name, address)
+
+            if feature["folder"]:
+                entity = Folder(self, address, name, FolderDetail(**feature))
+            else:
+                entity = Program(self, address, name, ProgramDetail(**feature))
+
+            await self.add_or_update_entity(address, name, entity)
+        except (TypeError, KeyError, ValueError) as exc:
+            _LOGGER.exception("Error loading %s: %s", PLATFORM, exc)
 
     # def __str__(self):
     #     """Return a string representation of the program manager."""

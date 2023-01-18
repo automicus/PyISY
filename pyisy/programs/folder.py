@@ -1,6 +1,7 @@
 """ISY Program Folders."""
 from __future__ import annotations
 
+from dataclasses import dataclass
 from datetime import datetime
 from typing import TYPE_CHECKING
 
@@ -13,15 +14,30 @@ from pyisy.constants import (
     CMD_STOP,
     PROTO_FOLDER,
     TAG_FOLDER,
-    UPDATE_INTERVAL,
     URL_PROGRAMS,
 )
-from pyisy.helpers.entity import Entity
+from pyisy.helpers.entity import Entity, EntityDetail
 from pyisy.helpers.events import EventEmitter
 from pyisy.logging import _LOGGER
 
 if TYPE_CHECKING:
     from pyisy.programs import Programs
+
+
+# Receiving exact keys from ISY, ignore naming issues
+# pylint: disable=invalid-name
+@dataclass
+class FolderDetail(EntityDetail):
+    """Details for the folder entity."""
+
+    id: str = ""
+    name: str = ""
+    status: bool = False
+    folder: bool = False
+    parent_id: str | None = None
+    last_finish_time: datetime | None = None
+    last_run_time: datetime | None = None
+    next_scheduled_run_time: datetime | None = None
 
 
 class Folder(Entity):
@@ -30,7 +46,7 @@ class Folder(Entity):
     dtype = TAG_FOLDER
 
     def __init__(
-        self, platform: Programs, address: str, name: str, detail: dict
+        self, platform: Programs, address: str, name: str, detail: FolderDetail
     ) -> None:
         """Initialize the Folder class."""
         self.status_events = EventEmitter()
@@ -39,30 +55,18 @@ class Folder(Entity):
         self._protocol = PROTO_FOLDER
         self._address = address
         self._name = name
-        self._last_update = detail["plastup"]
-        self._status = detail["pstatus"]
+        self._last_update = datetime.now()
+        self._status = detail.status
+        self.detail = detail
 
     @property
     def leaf(self) -> Folder:
         """Get the leaf property."""
         return self
 
-    async def update(self, wait_time=UPDATE_INTERVAL, data=None) -> None:
-        """
-        Update the status of the program.
-
-        |  data: [optional] The data to update the folder with.
-        |  wait_time: [optional] Seconds to wait before updating.
-        """
-        if data is not None:
-            self._last_changed = datetime.now()
-            self.update_status(data["pstatus"])
-            return
-        await self.platform.update(wait_time=wait_time, address=self.address)
-
-    async def send_cmd(self, command) -> bool:
+    async def send_cmd(self, command: str) -> bool:
         """Run the appropriate clause of the object."""
-        req_url = self.isy.conn.compile_url([URL_PROGRAMS, str(self.address), command])
+        req_url = self.isy.conn.compile_url([URL_PROGRAMS, self.address, command])
         result = await self.isy.conn.request(req_url)
         if not result:
             _LOGGER.warning(

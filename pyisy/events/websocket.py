@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import asyncio
+from datetime import datetime
 import logging
 from typing import TYPE_CHECKING
 import xml
@@ -44,7 +45,7 @@ WS_HEADERS = {
     "Sec-WebSocket-Version": "13",
     "Origin": "com.universal-devices.websockets.isy",
 }
-WS_HEARTBEAT = 30
+WS_HEARTBEAT = 30.0
 WS_TIMEOUT = 10.0
 WS_MAX_RETRIES = 4
 WS_RETRY_BACKOFF = [0.01, 1, 10, 30, 60]  # Seconds
@@ -55,21 +56,21 @@ class WebSocketClient:
 
     isy: ISY
     connection_info: ISYConnectionInfo
+    _last_heartbeat: datetime | None = None
+    _heartbeat_interval: float = WS_HEARTBEAT
+    _status: str = ES_NOT_STARTED
+    _stream_id: str = ""
+    _program_key: str = ""
+    websocket_task: asyncio.Task | None = None
+    guardian_task: asyncio.Task | None = None
 
-    def __init__(self, isy: ISY, connection_info: ISYConnectionInfo):
+    def __init__(self, isy: ISY, connection_info: ISYConnectionInfo) -> None:
         """Initialize a new Web Socket Client class."""
         if len(_LOGGER.handlers) == 0:
             enable_logging(add_null_handler=True)
 
         self.isy = isy
         self.connection_info = connection_info
-        self._status = ES_NOT_STARTED
-        self._lasthb = None
-        self._hbwait = WS_HEARTBEAT
-        self._stream_id: str = ""
-        self._program_key = None
-        self.websocket_task = None
-        self.guardian_task = None
 
         if connection_info.websession is None:
             connection_info.websession = get_new_client_session(connection_info)
@@ -80,7 +81,7 @@ class WebSocketClient:
 
         self._url = connection_info.ws_url
 
-    def start(self, retries=0):
+    def start(self, retries: int = 0) -> None:
         """Start the websocket connection."""
         if self.status != ES_CONNECTED:
             _LOGGER.debug("Starting websocket connection.")
@@ -88,7 +89,7 @@ class WebSocketClient:
             self.websocket_task = self._loop.create_task(self.websocket(retries))
             self.guardian_task = self._loop.create_task(self._websocket_guardian())
 
-    def stop(self):
+    def stop(self) -> None:
         """Close websocket connection."""
         self.status = ES_STOP_UPDATES
         if self.websocket_task is not None:
@@ -96,9 +97,9 @@ class WebSocketClient:
             self.websocket_task.cancel()
         if self.guardian_task is not None:
             self.guardian_task.cancel()
-            self._lasthb = None
+            self._last_heartbeat = None
 
-    async def reconnect(self, delay=None, retries=0):
+    async def reconnect(self, delay: float | None = None, retries: int = 0) -> None:
         """Reconnect to a disconnected websocket."""
         self.stop()
         self.status = ES_RECONNECTING
@@ -110,45 +111,45 @@ class WebSocketClient:
         self.start(retries)
 
     @property
-    def status(self):
+    def status(self) -> str:
         """Return if the websocket is running or not."""
         return self._status
 
     @status.setter
-    def status(self, value):
+    def status(self, value: str) -> None:
         """Set the current node state and notify listeners."""
         if self._status != value:
             self._status = value
             self.isy.connection_events.notify(self._status)
-        return self._status
 
     @property
-    def last_heartbeat(self):
+    def last_heartbeat(self) -> datetime | None:
         """Return the last received heartbeat time from the ISY."""
-        return self._lasthb
+        return self._last_heartbeat
 
     @property
-    def heartbeat_time(self):
+    def heartbeat_time(self) -> float:
         """Return the time since the last ISY Heartbeat."""
-        if self._lasthb is not None:
-            return (now() - self._lasthb).seconds
+        if self._last_heartbeat is not None:
+            return (now() - self._last_heartbeat).seconds
         return 0.0
 
-    async def _websocket_guardian(self):
+    async def _websocket_guardian(self) -> None:
         """Watch and reset websocket connection if no messages received."""
         while self.status != ES_STOP_UPDATES:
-            await asyncio.sleep(self._hbwait)
+            await asyncio.sleep(self._heartbeat_interval)
             if (
-                self.websocket_task.cancelled()
+                self.websocket_task is None
+                or self.websocket_task.cancelled()
                 or self.websocket_task.done()
-                or self.heartbeat_time > self._hbwait
+                or self.heartbeat_time > self._heartbeat_interval
             ):
                 _LOGGER.debug("Websocket missed a heartbeat, resetting connection.")
                 self.status = ES_LOST_STREAM_CONNECTION
                 self._loop.create_task(self.reconnect())
                 return
 
-    async def _route_message(self, msg):
+    async def _route_message(self, msg: str) -> None:
         """Route a received message from the event stream."""
         # check xml formatting
         try:
@@ -159,7 +160,7 @@ class WebSocketClient:
         _LOGGER.log(LOG_VERBOSE, "ISY Update Received:\n%s", msg)
 
         # A wild stream id appears!
-        if f"{ATTR_STREAM_ID}=" in msg and self._stream_id is None:
+        if f"{ATTR_STREAM_ID}=" in msg and self._stream_id != "":
             self.update_received(xmldoc)
 
         # direct the event message
@@ -167,9 +168,9 @@ class WebSocketClient:
         if not cntrl:
             return
         if cntrl == "_0":  # ISY HEARTBEAT
-            self._lasthb = now()
-            self._hbwait = int(value_from_xml(xmldoc, ATTR_ACTION))
-            _LOGGER.debug("ISY HEARTBEAT: %s", self._lasthb.isoformat())
+            self._last_heartbeat = datetime.now()
+            self._heartbeat_interval = int(value_from_xml(xmldoc, ATTR_ACTION))
+            _LOGGER.debug("ISY HEARTBEAT: %s", self._last_heartbeat.isoformat())
             self.isy.connection_events.notify(self._status)
         elif cntrl == PROP_STATUS:  # NODE UPDATE
             self.isy.nodes.update_received(xmldoc)
@@ -198,12 +199,12 @@ class WebSocketClient:
         elif cntrl == "_7":  # Progress report, device programming event
             self.isy.nodes.progress_report_received(xmldoc)
 
-    def update_received(self, xmldoc):
+    def update_received(self, xmldoc: minidom.Element) -> None:
         """Set the socket ID."""
         self._stream_id = attr_from_xml(xmldoc, "Event", ATTR_STREAM_ID)
         _LOGGER.debug("ISY Updated Events Stream ID: %s", self._stream_id)
 
-    async def websocket(self, retries=0):
+    async def websocket(self, retries: int = 0) -> None:
         """Start websocket connection."""
         try:
             async with self.req_session.ws_connect(
@@ -212,7 +213,7 @@ class WebSocketClient:
                 heartbeat=WS_HEARTBEAT,
                 headers=WS_HEADERS,
                 timeout=WS_TIMEOUT,
-                receive_timeout=self._hbwait,
+                receive_timeout=self._heartbeat_interval,
                 ssl=self.sslcontext,
             ) as ws:
                 self.status = ES_CONNECTED

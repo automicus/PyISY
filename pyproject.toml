@@ -94,6 +94,7 @@ good-names = [
     "ip",
     "ws",
     "st",
+    "ts",
 ]
 
 [tool.pylint."MESSAGES CONTROL"]

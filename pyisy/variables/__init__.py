@@ -2,8 +2,7 @@
 from __future__ import annotations
 
 import asyncio
-import copy
-from pprint import pformat
+import json
 from typing import TYPE_CHECKING, Any
 
 from pyisy.constants import (
@@ -16,7 +15,7 @@ from pyisy.constants import (
 from pyisy.helpers.entity_platform import EntityPlatform
 from pyisy.helpers.xml import parse_xml
 from pyisy.logging import _LOGGER, LOG_VERBOSE
-from pyisy.variables.variable import Variable
+from pyisy.variables.variable import Variable, VariableDetail
 
 if TYPE_CHECKING:
     from pyisy.isy import ISY
@@ -28,7 +27,6 @@ EMPTY_VARIABLES_RESPONSE = [
     "/CONF/STATE.VAR not found",
     '<CList type="VAR_INT"></CList>',
 ]
-ATTR_ID = "@id"
 
 
 class Variables(EntityPlatform):
@@ -66,62 +64,63 @@ class Variables(EntityPlatform):
 
         # Check if Integer Variables defined
         if not (results[0] is None or results[0] in EMPTY_VARIABLES_RESPONSE):
-            xml_int_def = parse_xml(results[0])
-            xml_int = parse_xml(results[2])
+            xml_int_def = parse_xml(results[0], attr_prefix="")
+            xml_int = parse_xml(results[2], attr_prefix="")
             int_dict = {
                 PLATFORM: [
                     v | xml_int["vars"]["var"][i]
-                    for i, v in enumerate(xml_int_def["CList"]["e"])
+                    for i, v in enumerate(xml_int_def["c_list"]["e"])
                 ]
             }
             _LOGGER.log(
                 LOG_VERBOSE,
                 "%s:\n%s",
                 urls[2],
-                pformat(int_dict),
+                json.dumps(int_dict, indent=4, sort_keys=True, default=str),
             )
             await self.parse(int_dict)
 
         # Check if State Variables defined
         if not (results[1] is None or results[1] in EMPTY_VARIABLES_RESPONSE):
-            xml_state_def = parse_xml(results[1])
-            xml_state = parse_xml(results[3])
+            xml_state_def = parse_xml(results[1], attr_prefix="")
+            xml_state = parse_xml(results[3], attr_prefix="")
             state_dict = {
                 PLATFORM: [
                     v | xml_state["vars"]["var"][i]
-                    for i, v in enumerate(xml_state_def["CList"]["e"])
+                    for i, v in enumerate(xml_state_def["c_list"]["e"])
                 ]
             }
             _LOGGER.log(
                 LOG_VERBOSE,
                 "%s:\n%s",
                 urls[3],
-                pformat(state_dict),
+                json.dumps(state_dict, indent=4, sort_keys=True, default=str),
             )
             await self.parse(state_dict)
 
-    async def parse(self, xml_dict: dict[str, Any]):
-        """Parse XML from the controller with details about the variables.
+    async def parse(self, xml_dict: dict[str, Any]) -> None:
+        """Parse XML from the controller with details about the variables."""
+        if not (features := xml_dict[PLATFORM]):
+            return
+        for feature in features:
+            await self.parse_entity(feature)
+        _LOGGER.info(
+            "Loaded %s %s",
+            "state" if features[0]["type"] == "2" else "integer",
+            PLATFORM,
+        )
 
-        Expected format for detailed information:
-        detail = {
-            "@id": "1",
-            "@name": "variable name",
-            "@type": "2",
-            "init": "0",
-            "prec": "0",
-            "ts": "20230102 14:02:07",
-            "val": "0",
-        }
-        """
-        for feature in xml_dict[PLATFORM]:
-            address = f"{feature['@type']}.{feature['@id']}"
-            name = feature["@name"]
-            detail = copy.deepcopy(feature)
+    async def parse_entity(self, feature: dict[str, Any]) -> None:
+        """Parse a single value and add it to the platform."""
+        try:
+            address = f"{feature['type']}.{feature['id']}"
+            name = feature["name"]
+            _LOGGER.log(LOG_VERBOSE, "Parsing %s: %s (%s)", PLATFORM, name, address)
+            detail = VariableDetail(**feature)
             entity = Variable(self, address, name, detail)
             await self.add_or_update_entity(address, name, entity)
-
-        _LOGGER.info("ISY Loaded Variables")
+        except (TypeError, KeyError, ValueError) as exc:
+            _LOGGER.exception("Error loading %s: %s", PLATFORM, exc)
 
     # def update_received(self, xmldoc):
     #     """Process an update received from the event stream."""
@@ -142,59 +141,3 @@ class Variables(EntityPlatform):
     #         vobj.last_edited = parser.parse(value_from_xml(xmldoc, ATTR_TS))
 
     #     _LOGGER.debug("ISY Updated Variable: %s.%s", str(vtype), str(vid))
-
-    # def __getitem__(self, val):
-    #     """
-    #     Navigate through the variables by ID or name.
-
-    #     |  val: Name or ID for navigation.
-    #     """
-    #     if self.root is None:
-    #         if val in [1, 2]:
-    #             return Variables(self.isy, val, self.vids, self.vnames, self.vobjs)
-    #         raise KeyError(f"Unknown variable type: {val}")
-    #     if isinstance(val, int):
-    #         try:
-    #             return self.vobjs[self.root][val]
-    #         except (ValueError, KeyError) as err:
-    #             raise KeyError(f"Unrecognized variable id: {val}") from err
-
-    #     for vid, vname in self.vnames[self.root]:
-    #         if vname == val:
-    #             return self.vobjs[self.root][vid]
-    #     raise KeyError(f"Unrecognized variable name: {val}")
-
-    # def __setitem__(self, val, value):
-    #     """Handle the setitem function for the Class."""
-    #     return None
-
-    # def get_by_name(self, val):
-    #     """
-    #     Get a variable with the given name.
-
-    #     |  val: The name of the variable to look for.
-    #     """
-    #     vtype, _, vid = next(item for item in self.children if val in item)
-    #     if not vid and vtype:
-    #         raise KeyError(f"Unrecognized variable name: {val}")
-    #     return self.vobjs[vtype].get(vid)
-
-    # @property
-    # def children(self):
-    #     """Get the children of the class."""
-    #     if self.root is None:
-    #         types = [1, 2]
-    #     else:
-    #         types = [self.root]
-
-    #     out = []
-    #     for vtype in types:
-    #         for ind in range(len(self.vids[vtype])):
-    #             out.append(
-    #                 (
-    #                     vtype,
-    #                     self.vnames[vtype].get(self.vids[vtype][ind], ""),
-    #                     self.vids[vtype][ind],
-    #                 )
-    #             )
-    #     return out

@@ -4,6 +4,7 @@ from __future__ import annotations
 from asyncio import sleep
 from dataclasses import dataclass
 from datetime import date, datetime
+import json
 import time
 from typing import TYPE_CHECKING
 
@@ -128,7 +129,7 @@ class Clock:
         wait_time: [optional] Amount of seconds to wait before updating
         """
         await sleep(wait_time)
-        xml_dict = parse_xml(await self.isy.conn.request(self.url))
+        xml_dict = parse_xml(await self.isy.conn.request(self.url), use_pp=False)
         self.clock_data = ClockData.from_xml(xml_dict["DT"])
         _LOGGER.debug("ISY loaded clock information")
 
@@ -143,8 +144,8 @@ class Clock:
 
     def __str__(self) -> str:
         """Return string representation of Clock data."""
-        return str(self.clock_data)
+        return f"<ClockData:\n{json.dumps(self.clock_data.__dict__, sort_keys=True, default=str)}>"
 
     def __repr__(self) -> str:
         """Return string representation of Clock data."""
-        return repr(self.clock_data)
+        return f"<ClockData:\n{json.dumps(self.clock_data.__dict__, indent=4, sort_keys=True, default=str)}>"

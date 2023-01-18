@@ -73,10 +73,10 @@ class ISY:
     variables: Variables
     networking: NetworkResources
     system_status: str = SYSTEM_BUSY
-    websocket: WebSocketClient | None = None
+    websocket: WebSocketClient = None  # type: ignore[assignment]
     connection_events: EventEmitter
     status_events: EventEmitter
-    loop: asyncio.AbstractEventLoop | None
+    loop: asyncio.AbstractEventLoop
 
     def __init__(
         self, connection_info: ISYConnectionInfo, use_websocket: bool = True

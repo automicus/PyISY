@@ -1,18 +1,11 @@
 """ISY Network Resources Module."""
 from __future__ import annotations
 
-import copy
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
-from pyisy.constants import (
-    PROTO_NETWORK,
-    TAG_ID,
-    TAG_NAME,
-    TAG_NET_RULE,
-    URL_NETWORK,
-    URL_RESOURCES,
-)
-from pyisy.helpers.entity import Entity
+from pyisy.constants import PROTO_NETWORK, TAG_ID, TAG_NAME, URL_NETWORK, URL_RESOURCES
+from pyisy.helpers.entity import Entity, EntityDetail
 from pyisy.helpers.entity_platform import EntityPlatform
 from pyisy.helpers.events import EventEmitter
 from pyisy.logging import _LOGGER
@@ -21,6 +14,16 @@ if TYPE_CHECKING:
     from pyisy.isy import ISY
 
 PLATFORM = "networking"
+
+
+@dataclass
+class NetworkCommandDetail(EntityDetail):
+    """Dataclass to hold entity detail info."""
+
+    control_info: dict[str, str | bool]
+    id: str
+    is_modified: bool
+    name: str
 
 
 class NetworkResources(EntityPlatform):
@@ -37,17 +40,26 @@ class NetworkResources(EntityPlatform):
 
     async def parse(self, xml_dict: dict[str, Any]) -> None:
         """Parse the results from the ISY."""
-        features = xml_dict["NetConfig"][TAG_NET_RULE]
+        if not (features := xml_dict["net_config"]["net_rule"]):
+            return
         for feature in features:
-            address = feature[TAG_ID]
-            name = feature[TAG_NAME]
-            detail = copy.deepcopy(feature)
-            entity = NetworkCommand(self, address, name, detail)
-            await self.add_or_update_entity(address, name, entity)
+            await self.parse_entity(feature)
 
         _LOGGER.info("ISY Loaded Network Resources Commands")
 
-    async def update_threaded(self, interval):
+    async def parse_entity(self, feature: dict[str, Any]) -> None:
+        """Parse a single value and add it to the platform."""
+        try:
+            address = feature[TAG_ID]
+            name = feature[TAG_NAME]
+            _LOGGER.debug("Parsing %s: %s (%s)", PLATFORM, name, address)
+            detail = NetworkCommandDetail(**feature)
+            entity = NetworkCommand(self, address, name, detail)
+            await self.add_or_update_entity(address, name, entity)
+        except (TypeError, KeyError, ValueError) as exc:
+            _LOGGER.exception("Error loading %s: %s", PLATFORM, exc)
+
+    async def update_threaded(self, interval: float) -> None:
         """
         Continually update the class until it is told to stop.
 
@@ -58,19 +70,14 @@ class NetworkResources(EntityPlatform):
 
 
 class NetworkCommand(Entity):
-    """
-    Network Command Class.
-
-    DESCRIPTION:
-        This class handles individual networking commands.
-
-    ATTRIBUTES:
-        network_resources: The networking resources class
-
-    """
+    """Network Command Class handles individual networking commands."""
 
     def __init__(
-        self, platform: NetworkResources, address: str, name: str, detail: dict
+        self,
+        platform: NetworkResources,
+        address: str,
+        name: str,
+        detail: NetworkCommandDetail,
     ):
         """Initialize network command class."""
         self.status_events = EventEmitter()
@@ -81,11 +88,17 @@ class NetworkCommand(Entity):
         self._protocol = PROTO_NETWORK
         self.detail = detail
 
-    async def run(self):
+    async def run(self) -> None:
         """Execute the networking command."""
         req_url = self.isy.conn.compile_url([URL_NETWORK, URL_RESOURCES, self.address])
 
         if not await self.isy.conn.request(req_url, ok404=True):
+            # We log this as a warning because the ISY is finicky about response codes.
+            #   it may report that it failed, but have worked fine.
             _LOGGER.warning("ISY could not run networking command: %s", self.address)
             return
         _LOGGER.debug("ISY ran networking command: %s", self.address)
+
+    def update_entity(self, name: str, detail: NetworkCommandDetail) -> None:
+        """Update an entity information."""
+        self.detail = detail

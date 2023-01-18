@@ -9,9 +9,11 @@
   "python.linting.flake8Enabled": true,
   "cSpell.words": [
     "automodule",
+    "BACKOFF",
     "dateutil",
     "nodedefs",
     "qualname",
+    "websession",
     "xmltodict"
   ],
   "editor.formatOnSaveMode": "file",

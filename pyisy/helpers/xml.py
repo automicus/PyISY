@@ -1,9 +1,11 @@
 """XML Helper Functions."""
 from __future__ import annotations
 
-from typing import cast
+import re
+from typing import Any, cast
 from xml.dom import minidom
 
+from dateutil import parser
 import xmltodict
 
 from pyisy.exceptions import (
@@ -13,14 +15,42 @@ from pyisy.exceptions import (
     ISYResponseParseError,
 )
 
+SNAKE = re.compile(r"(?<!^)(?=[A-Z])")
 
-def parse_xml(xml: str | None) -> dict:
+
+def post_processor(path: str, key: str, value: Any) -> tuple[str, Any]:
+    """Post-process XML Dict to snake case keys and interpret strings."""
+    # Convert boolean
+    if value == "true":
+        value = True
+    if value == "false":
+        value = False
+
+    # Make keys `snake_case`
+    key = SNAKE.sub("_", key).lower()
+
+    # Convert common keys
+    if key == "prec":
+        key = "precision"
+        value = int(cast(str, value))
+
+    # Convert known dates
+    if (key.endswith("_time") or key == "ts") and value is not None:
+        try:
+            value = parser.parse(cast(str, value))
+        except ValueError:
+            pass
+
+    return key, value
+
+
+def parse_xml(xml: str | None, attr_prefix: str = "", use_pp: bool = True) -> dict:
     """Parse an XML string and return a dict object."""
     if not xml:
         raise ISYResponseError("Could not load response")
-
+    post = post_processor if use_pp else None
     try:
-        xml_dict = xmltodict.parse(xml)
+        xml_dict = xmltodict.parse(xml, attr_prefix=attr_prefix, postprocessor=post)
     except XML_ERRORS as exc:
         raise ISYResponseParseError(XML_PARSE_ERROR) from exc
     return cast(dict, xml_dict)
