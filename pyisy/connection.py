@@ -8,16 +8,7 @@ from urllib.parse import ParseResult, quote, urlencode, urlparse
 import aiohttp
 
 from pyisy.configuration import Configuration, ConfigurationData
-from pyisy.constants import (
-    URL_MEMBERS,
-    URL_NODES,
-    URL_PING,
-    URL_PROGRAMS,
-    URL_STATUS,
-    URL_SUBFOLDERS,
-    XML_FALSE,
-    XML_TRUE,
-)
+from pyisy.constants import URL_MEMBERS, URL_NODES, URL_PING, URL_STATUS, XML_FALSE
 from pyisy.exceptions import ISYConnectionError, ISYInvalidAuthError
 from pyisy.helpers.session import get_new_client_session, get_sslcontext
 from pyisy.logging import _LOGGER, enable_logging
@@ -218,15 +209,6 @@ class Connection:
     async def get_description(self) -> str | None:
         """Fetch the services description from the ISY."""
         return await self.request(f"{self.connection_info.url}/desc")
-
-    async def get_programs(self, address: str | None = None) -> str | None:
-        """Fetch the list of programs from the ISY."""
-        addr = [URL_PROGRAMS]
-        if address is not None:
-            addr.append(str(address))
-        req_url = self.compile_url(addr, {URL_SUBFOLDERS: XML_TRUE})
-        result = await self.request(req_url)
-        return result
 
     async def get_nodes(self) -> str | None:
         """Fetch the list of nodes/groups/scenes from the ISY."""

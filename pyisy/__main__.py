@@ -41,8 +41,8 @@ async def main(url, username, password, tls_version, events, node_servers):
         await isy.initialize(
             nodes=False,
             clock=False,
-            programs=False,
-            variables=True,
+            programs=True,
+            variables=False,
             networking=False,
             node_servers=False,
         )

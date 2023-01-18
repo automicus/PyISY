@@ -2,8 +2,9 @@
 from __future__ import annotations
 
 import asyncio
-from collections.abc import Callable
+from collections.abc import Awaitable
 from threading import Thread
+from typing import Any
 
 from pyisy.clock import Clock
 from pyisy.configuration import ConfigurationData
@@ -62,15 +63,15 @@ class ISY:
     """
 
     auto_reconnect = True
-    clock: Clock | None = None
+    clock: Clock
     conn: Connection
     connection_info: ISYConnectionInfo
     config: ConfigurationData | None = None
     nodes: Nodes | None = None
     node_servers: NodeServers | None = None
-    programs: Programs | None = None
-    variables: Variables | None = None
-    networking: NetworkResources | None = None
+    programs: Programs
+    variables: Variables
+    networking: NetworkResources
     system_status: str = SYSTEM_BUSY
     websocket: WebSocketClient | None = None
     connection_events: EventEmitter
@@ -101,6 +102,7 @@ class ISY:
         self.clock = Clock(self)
         self.networking = NetworkResources(self)
         self.variables = Variables(self)
+        self.programs = Programs(self)
 
         # Setup event emitters and loop
         self.connection_events = EventEmitter()
@@ -115,14 +117,14 @@ class ISY:
         variables: bool = True,
         networking: bool = True,
         node_servers: bool = False,
-    ):
+    ) -> None:
         """Initialize the connection with the ISY."""
         self.config = await self.conn.test_connection()
 
         if self.config.platform == "IoX":
             self.conn.increase_available_connections()
 
-        isy_setup_tasks: list[Callable] = []
+        isy_setup_tasks: list[Awaitable[Any]] = []
         isy_setup_index: list[str] = []
         if nodes:
             isy_setup_tasks.append(self.conn.get_status())
@@ -134,14 +136,13 @@ class ISY:
             isy_setup_tasks.append(self.clock.update())
 
         if programs:
-            isy_setup_tasks.append(self.conn.get_programs())
-            isy_setup_index.append(self.conn.get_programs.__qualname__)
+            isy_setup_tasks.append(self.programs.update())
 
         if variables:
             isy_setup_tasks.append(self.variables.update())
 
         if networking and self.config.networking:
-            isy_setup_tasks.append(asyncio.create_task(self.networking.update()))
+            isy_setup_tasks.append(self.networking.update())
 
         isy_setup_results = await asyncio.gather(*isy_setup_tasks)
 
@@ -153,18 +154,13 @@ class ISY:
             await self.nodes.update(
                 xml=isy_setup_results[isy_setup_index.index("Connection.get_status")]
             )  # Node Status
-        if programs:
-            self.programs = Programs(
-                self,
-                xml=isy_setup_results[isy_setup_index.index("Connection.get_programs")],
-            )
 
         if self.node_servers and node_servers:
             await self.node_servers.load_node_servers()
 
         self._connected = True
 
-    async def shutdown(self):
+    async def shutdown(self) -> None:
         """Cleanup connections and prepare for exit."""
         if self.websocket is not None:
             self.websocket.stop()

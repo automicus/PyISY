@@ -78,4 +78,6 @@ change to data class
 features moved to `Configuration.features`
 networking is top-level
 
-### I
+### Auto-update
+
+You must manually refresh the platform after sending command when using auto_update=false
