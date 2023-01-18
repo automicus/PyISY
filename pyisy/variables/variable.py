@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 from dateutil import parser
 
@@ -19,14 +20,17 @@ from pyisy.helpers.entity import Entity, EntityStatus
 from pyisy.helpers.events import EventEmitter
 from pyisy.logging import _LOGGER
 
+if TYPE_CHECKING:
+    from pyisy.variables import Variables
+
 
 @dataclass
 class VariableStatus(EntityStatus):
     """Dataclass to hold variable status."""
 
-    init: int | float
+    initial: int | float
     timestamp: datetime
-    prec: str = "0"
+    precision: int = 0
 
 
 class Variable(Entity):
@@ -34,11 +38,14 @@ class Variable(Entity):
 
     _raw_value: int
     _raw_init_value: int
-    _last_edited: datetime.datetime
+    _last_edited: datetime
     _var_id: str
     _var_type: str
+    _precision: int
 
-    def __init__(self, platform, address, name, detail):
+    def __init__(
+        self, platform: Variables, address: str, name: str, detail: dict
+    ) -> None:
         """Initialize a Variable class."""
         self.status_events = EventEmitter()
         self.platform = platform
@@ -56,11 +63,11 @@ class Variable(Entity):
         """Update an entity information."""
         self._last_edited = parser.parse(detail["ts"])
         self._name = name
-        self._precision = detail["prec"]
+        self._precision = int(detail["prec"])
         self._raw_value = int(detail["val"])
         self._status = convert_isy_raw_value(self._raw_value, "", self._precision)
-        self._raw_init_value = detail["init"]
-        self._init = convert_isy_raw_value(self._raw_init_value, "", self._precision)
+        self._raw_init_value = int(detail["init"])
+        self._initial = convert_isy_raw_value(self._raw_init_value, "", self._precision)
         self._var_id = detail["@id"]
         self._var_type = detail["@type"]
         self.detail = detail
@@ -68,78 +75,68 @@ class Variable(Entity):
         self.status_events.notify(self.status_feedback)
 
     @property
-    def init(self):
+    def initial(self) -> int | float:
         """Return the initial state."""
-        return self._init
+        return self._initial
 
     @property
-    def last_edited(self):
+    def last_edited(self) -> datetime:
         """Return the last edit time."""
         return self._last_edited
 
     @property
-    def prec(self):
+    def precision(self) -> int:
         """Return the Variable Precision."""
         return self._precision
 
     @property
-    def status_feedback(self):
+    def status_feedback(self) -> VariableStatus:
         """Return information for a status change event."""
         return VariableStatus(
             address=self.address,
             status=self.status,
             last_changed=self.last_changed,
             last_update=self.last_update,
-            init=self._init,
+            initial=self._initial,
             timestamp=self._last_edited,
-            prec=self._precision,
+            precision=self._precision,
         )
 
     @property
-    def vid(self):
+    def variable_id(self) -> str:
         """Return the Variable ID."""
         return self._var_id
 
-    async def set_init(self, val):  # TODO: Need to check the precision/float
-        """
-        Set the initial value for the variable after the controller boots.
+    async def set_initial(self, value: int | float) -> bool:
+        """Set the initial value for the variable."""
+        return await self.set_value(value, True)
 
-        |  val: The value to have the variable initialize to.
-        """
-        if val is None:
-            raise ValueError("Variable init must be an integer. Got None.")
-        self.set_value(val, True)
+    async def set_value(self, value: int | float, init: bool = False) -> bool:
+        """Set the value of the variable.
 
-    async def set_value(self, val, init=False):
+        ISY Version 5 firmware will automatically convert float back to int.
         """
-        Set the value of the variable.
-
-        |  val: The value to set the variable to.
-        """
-        if val is None:
-            raise ValueError("Variable value must be an integer. Got None.")
         req_url = self.isy.conn.compile_url(
             [
                 URL_VARIABLES,
                 ATTR_INIT if init else ATTR_SET,
-                str(self._var_type),
-                str(self._var_id),
-                str(val),
+                self._var_type,
+                self._var_id,
+                str(value),
             ]
         )
         if not await self.isy.conn.request(req_url):
             _LOGGER.warning(
                 "ISY could not set variable%s: %s.%s",
                 " init value" if init else "",
-                str(self._var_type),
-                str(self._var_id),
+                self._var_type,
+                self._var_id,
             )
-            return
+            return False
         _LOGGER.debug(
             "ISY set variable%s: %s.%s",
             " init value" if init else "",
-            str(self._var_type),
-            str(self._var_id),
+            self._var_type,
+            self._var_id,
         )
-        if not self.isy.auto_update:
-            await self.platform.update()
+        return True

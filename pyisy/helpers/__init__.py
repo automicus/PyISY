@@ -35,11 +35,11 @@ def random_uuid_hex() -> str:
 
 
 def convert_isy_raw_value(
-    value: int | float | None,
+    value: int | float,
     uom: str | None,
     precision: int | str,
     fallback_precision: int | None = None,
-) -> float | int | None:
+) -> float | int:
     """Fix ISY Reported Values.
 
     ISY provides float values as an integer and precision component.
@@ -50,7 +50,7 @@ def convert_isy_raw_value(
     by sending a value of 2 times the Temp. Correct by dividing by 2 here.
     """
     if value is None or value == ISY_VALUE_UNKNOWN:
-        return None
+        return ISY_VALUE_UNKNOWN
     if uom in (UOM_DOUBLE_TEMP, UOM_ISYV4_DEGREES):
         return round(float(value) / 2.0, 1)
     if precision not in ("0", 0):

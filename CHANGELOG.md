@@ -27,6 +27,9 @@ As of v3.0.7, this module will document all changes within the GitHub release in
 
 - No longer support direct setting of `status` property, use `update_status`
 - Status represents raw values correctly, do not double convert
+- prec renamed to precision and returns an `int`
+- init renamed to initial
+- vid renamed to variable_id
 
 #### Helpers
 

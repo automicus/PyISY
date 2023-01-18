@@ -7,7 +7,13 @@
   "editor.formatOnType": true,
   "files.trimTrailingWhitespace": true,
   "python.linting.flake8Enabled": true,
-  "cSpell.words": ["automodule", "nodedefs", "qualname", "xmltodict"],
+  "cSpell.words": [
+    "automodule",
+    "dateutil",
+    "nodedefs",
+    "qualname",
+    "xmltodict"
+  ],
   "editor.formatOnSaveMode": "file",
   "editor.defaultFormatter": "ms-python.black-formatter",
   "python.linting.mypyEnabled": true,
