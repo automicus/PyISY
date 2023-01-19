@@ -37,6 +37,7 @@ WS_HEADERS = {
     "Origin": "com.universal-devices.websockets.isy",
 }
 WS_HEARTBEAT = 30
+WS_HB_GRACE = 2
 WS_TIMEOUT = 10.0
 WS_MAX_RETRIES = 4
 WS_RETRY_BACKOFF = [0.01, 1, 10, 30, 60]  # Seconds
@@ -149,7 +150,7 @@ class WebSocketClient:
             if (
                 self.websocket_task.cancelled()
                 or self.websocket_task.done()
-                or self.heartbeat_time > self._hbwait
+                or self.heartbeat_time > self._hbwait + WS_HB_GRACE
             ):
                 _LOGGER.debug("Websocket missed a heartbeat, resetting connection.")
                 self.status = ES_LOST_STREAM_CONNECTION
@@ -220,7 +221,7 @@ class WebSocketClient:
                 heartbeat=WS_HEARTBEAT,
                 headers=WS_HEADERS,
                 timeout=WS_TIMEOUT,
-                receive_timeout=self._hbwait,
+                receive_timeout=self._hbwait + WS_HB_GRACE,
                 ssl=self.sslcontext,
             ) as ws:
                 self.status = ES_CONNECTED
