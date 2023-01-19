@@ -14,13 +14,15 @@ if TYPE_CHECKING:
     from pyisy.helpers.entity_platform import EntityPlatform
     from pyisy.isy import ISY
 
+StatusT = TypeVar("StatusT", str, bool, int, float, None)
+
 
 @dataclass
-class EntityStatus:
+class EntityStatus(Generic[StatusT]):
     """Dataclass representation of a status update."""
 
     address: str
-    status: int | float | None
+    status: StatusT
     last_changed: datetime
     last_update: datetime
 
@@ -33,7 +35,7 @@ class EntityDetail:
     """Dataclass to hold entity detail info."""
 
 
-class Entity(ABC, Generic[EntityDetailT]):
+class Entity(ABC, Generic[EntityDetailT, StatusT]):
     """An abstract class for ISY entities.
 
     For consistency with downstream users of this module, every
@@ -59,7 +61,7 @@ class Entity(ABC, Generic[EntityDetailT]):
     _enabled: bool = True
     _last_changed: datetime
     _last_update: datetime
-    _status: int | float | bool
+    _status: StatusT
     _name: str = ""
     _protocol: str | None = None
     detail: EntityDetail
@@ -96,7 +98,7 @@ class Entity(ABC, Generic[EntityDetailT]):
         return self._protocol
 
     @property
-    def status(self) -> int | float | bool:
+    def status(self) -> StatusT:
         """Return the current entity state."""
         return self._status
 
@@ -115,12 +117,15 @@ class Entity(ABC, Generic[EntityDetailT]):
             self.detail = detail
             _changed = False
         if _changed:
-            self.status_events.notify("SEND GENERIC UPDATE")
+            self.update_status(self.status, force=True)
 
-    def update_status(self, value: int | float | bool) -> None:
+    def update_status(self, value: StatusT, force: bool = False) -> None:
         """Set the current entity state and notify listeners."""
         if self._status != value:
             self._status = value
+            force = True
+
+        if force:
             self._last_changed = datetime.now()
             self.status_events.notify(
                 EntityStatus(

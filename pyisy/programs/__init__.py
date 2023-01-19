@@ -1,9 +1,15 @@
 """Init for management of ISY Programs."""
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from collections.abc import Iterable
+import json
+from typing import TYPE_CHECKING, Any, cast
+
+from dateutil import parser
 
 from pyisy.constants import URL_PROGRAMS, URL_SUBFOLDERS, XML_TRUE
+from pyisy.events.router import EventData
+from pyisy.helpers.entity import Entity
 from pyisy.helpers.entity_platform import EntityPlatform
 from pyisy.logging import _LOGGER, LOG_VERBOSE
 from pyisy.programs.folder import Folder, FolderDetail
@@ -14,6 +20,19 @@ if TYPE_CHECKING:
 
 PLATFORM = "programs"
 TRUE = "true"
+
+RUN_STATUS: dict[str, str] = {
+    "1": "idle",
+    "2": "running_then",
+    "3": "running_else",
+}
+
+PROG_STATUS: dict[str, str | bool] = {
+    "1": "unknown",
+    "2": True,
+    "3": False,
+    "F": "not_loaded",
+}
 
 
 class Programs(EntityPlatform):
@@ -58,319 +77,87 @@ class Programs(EntityPlatform):
         except (TypeError, KeyError, ValueError) as exc:
             _LOGGER.exception("Error loading %s: %s", PLATFORM, exc)
 
-    # def __str__(self):
-    #     """Return a string representation of the program manager."""
-    #     if self.root is None:
-    #         return "Folder <root>"
-    #     ind = self.addresses.index(self.root)
-    #     if self.ptypes[ind] == TAG_FOLDER:
-    #         return f"Folder ({self.root})"
-    #     if self.ptypes[ind] == TAG_PROGRAM:
-    #         return f"Program ({self.root})"
-    #     return ""
+    async def get_children(self, address: str) -> set[Entity]:
+        """Return the children of the a given address."""
+        return {e for e in self.values() if e.detail.parent_id == address}
 
-    # def __repr__(self):
-    #     """Return a string showing the hierarchy of the program manager."""
-    #     # get and sort children
-    #     folders = []
-    #     programs = []
-    #     for child in self.children:
-    #         if child[0] == TAG_FOLDER:
-    #             folders.append(child)
-    #         elif child[0] == TAG_PROGRAM:
-    #             programs.append(child)
+    async def get_tree(self, address: str | None = None) -> dict:
+        """Return a tree representation of the entity platform."""
+        if address is None:
+            roots = {e for e in self.values() if e.detail.parent_id is None}
+        else:
+            roots = {self.entities[address]}
 
-    #     # initialize data
-    #     folders.sort(key=lambda x: x[1])
-    #     programs.sort(key=lambda x: x[1])
-    #     out = str(self) + "\n"
+        # traversal of the tree from top down
+        async def traverse(
+            hierarchy: dict[str, dict], entities: Iterable[Entity]
+        ) -> dict[str, dict]:
+            for i in entities:
+                children = await self.get_children(i.address)
+                hierarchy[i.name] = {
+                    "type": type(i).__name__,
+                    "address": i.address,
+                    "children": await traverse({}, children),
+                }
+            return hierarchy
 
-    #     # format folders
-    #     for fold in folders:
-    #         fold_obj = self[fold[2]]
-    #         out += f"  + {fold[1]}: Folder({fold[2]})\n"
-    #         for line in repr(fold_obj).split("\n")[1:]:
-    #             out += f"  |   {line}\n"
-    #         out += "  -\n"
+        tree = await traverse({}, roots)
+        _LOGGER.debug(json.dumps(tree, indent=4, default=str))
+        return tree
 
-    #     # format programs
-    #     for prog in programs:
-    #         out += f"  {prog[1]}: {self[prog[2]]}\n"
+    async def update_received(self, event: EventData) -> None:
+        """Update programs from EventStream message.
 
-    #     return out
+        <eventInfo>
+        <id></id>
+        <X/> ... X=on if enabled, and off if disabled
+        <Y/> ... Y=rr if run at reboot and nr if not run at reboot
+        <r> last run time in YYMMDD HH:MM:SS</r>
+        <f> last finish time in YYMMDD HH:MM:SS</f>
+        <s> status* </s>
+        </var>
+        </eventInfo>
+        """
+        event_info = cast(dict, event.event_info)
+        if (address := cast(str, event_info["id"]).zfill(4)) not in self.addresses:
+            # New/unknown program, refresh full set.
+            await self.update()
+            return
+        entity = self.entities[address]
+        detail = cast(ProgramDetail, entity.detail)
 
-    # def __iter__(self):
-    #     """
-    #     Return an iterator that iterates through all the programs.
+        if "on" in event_info:
+            detail.enabled = True
+        elif "off" in event_info:
+            detail.enabled = False
 
-    #     Does not iterate folders. Only Programs that are beneath the current
-    #     folder in navigation.
-    #     """
-    #     iter_data = self.all_lower_programs
-    #     return ProgramIterator(self, iter_data, delta=1)
+        if "rr" in event_info:
+            detail.run_at_startup = True
+        elif "nr" in event_info:
+            detail.run_at_startup = False
 
-    # def __reversed__(self):
-    #     """Return an iterator that goes in reverse order."""
-    #     iter_data = self.all_lower_programs
-    #     return ProgramIterator(self, iter_data, delta=-1)
+        if status := event_info.get("s"):
+            # Status is a bitwise OR of RUN_X and ST_X:
+            # RUN_IDLE = 0x01
+            # RUN_THEN = 0x02
+            # RUN_ELSE = 0x03
+            # ST_UNKNOWN = 0x10
+            # ST_TRUE = 0x20
+            # ST_FALSE = 0x30
+            # ST_NOT_LOADED = 0xF0
+            detail.status = PROG_STATUS[status[0]]
+            detail.running = RUN_STATUS[status[1]]
 
-    # def update_received(self, xmldoc):
-    #     """Update programs from EventStream message."""
-    #     # pylint: disable=attribute-defined-outside-init
-    #     xml = xmldoc.toxml()
-    #     address = value_from_xml(xmldoc, ATTR_ID).zfill(4)
-    #     try:
-    #         pobj = self.get_by_id(address).leaf
-    #     except ValueError:
-    #         _LOGGER.warning(
-    #             "ISY received program update for new program; reload the module to update"
-    #         )
-    #         return  # this is a new program that hasn't been registered
+        if last_run := event_info.get("r"):
+            detail.last_run_time = parser.parse(last_run)
 
-    #     if not isinstance(pobj, Program):
-    #         return
+        if last_finish := event_info.get("f"):
+            detail.last_finish_time = parser.parse(last_finish)
 
-    #     new_status = False
+        entity.update_status(entity.status, force=True)
 
-    #     if f"<{TAG_PRGM_STATUS}>" in xml:
-    #         status = value_from_xml(xmldoc, TAG_PRGM_STATUS)
-    #         if status == "21":
-    #             pobj.ran_then += 1
-    #             new_status = True
-    #         elif status == "31":
-    #             pobj.ran_else += 1
-
-    #     if f"<{TAG_PRGM_RUN}>" in xml:
-    #         pobj.last_run = parser.parse(value_from_xml(xmldoc, TAG_PRGM_RUN))
-
-    #     if f"<{TAG_PRGM_FINISH}>" in xml:
-    #         pobj.last_finished = parser.parse(value_from_xml(xmldoc, TAG_PRGM_FINISH))
-
-    #     if XML_ON in xml or XML_OFF in xml:
-    #         pobj.enabled = XML_ON in xml
-
-    #     # Update Status last and make sure the change event fires, but only once.
-    #     if pobj.status != new_status:
-    #         pobj.status = new_status
-    #     else:
-    #         # Status didn't change, but something did, so fire the event.
-    #         pobj.status_events.notify(new_status)
-
-    #     _LOGGER.debug("ISY Updated Program: %s", address)
-
-    # def parse(self, xml):
-    #     """
-    #     Parse the XML from the controller and updates the state of the manager.
-
-    #     xml: XML string from the controller.
-    #     """
-    #     try:
-    #         xmldoc = minidom.parseString(xml)
-    #     except XML_ERRORS:
-    #         _LOGGER.error("%s: Programs, programs not loaded", XML_PARSE_ERROR)
-    #         return
-
-    #     plastup = now()
-
-    #     # get nodes
-    #     features = xmldoc.getElementsByTagName(TAG_PROGRAM)
-    #     for feature in features:
-    #         # id, name, and status
-    #         address = attr_from_element(feature, ATTR_ID)
-    #         pname = value_from_xml(feature, TAG_NAME)
-
-    #         _LOGGER.debug("Parsing Program/Folder: %s [%s]", pname, address)
-
-    #         pparent = attr_from_element(feature, ATTR_PARENT)
-    #         pstatus = attr_from_element(feature, ATTR_STATUS) == XML_TRUE
-
-    #         if attr_from_element(feature, TAG_FOLDER) == XML_TRUE:
-    #             # folder specific parsing
-    #             ptype = TAG_FOLDER
-    #             data = {"pstatus": pstatus, "plastup": plastup}
-
-    #         else:
-    #             # program specific parsing
-    #             ptype = TAG_PROGRAM
-
-    #             # last run time
-    #             plastrun = value_from_xml(feature, "lastRunTime", EMPTY_TIME)
-    #             if plastrun != EMPTY_TIME:
-    #                 plastrun = parser.parse(plastrun)
-
-    #             # last finish time
-    #             plastfin = value_from_xml(feature, "lastFinishTime", EMPTY_TIME)
-    #             if plastfin != EMPTY_TIME:
-    #                 plastfin = parser.parse(plastfin)
-
-    #             # enabled, run at startup, running
-    #             penabled = bool(attr_from_element(feature, TAG_ENABLED) == XML_TRUE)
-    #             pstartrun = bool(attr_from_element(feature, "runAtStartup") == XML_TRUE)
-    #             prunning = bool(attr_from_element(feature, TAG_PRGM_RUNNING) != "idle")
-
-    #             # create data dictionary
-    #             data = {
-    #                 "pstatus": pstatus,
-    #                 "plastrun": plastrun,
-    #                 "plastfin": plastfin,
-    #                 "penabled": penabled,
-    #                 "pstartrun": pstartrun,
-    #                 "prunning": prunning,
-    #                 "plastup": plastup,
-    #             }
-
-    #         # add or update object if it already exists
-    #         if address not in self.addresses:
-    #             if ptype == TAG_FOLDER:
-    #                 pobj = Folder(self, address, pname, **data)
-    #             else:
-    #                 pobj = Program(self, address, pname, **data)
-    #             self.insert(address, pname, pparent, pobj, ptype)
-    #         else:
-    #             pobj = self.get_by_id(address).leaf
-    #             asyncio.create_task(pobj.update(data=data))
-
-    #     _LOGGER.info("ISY Loaded/Updated Programs")
-
-    # async def update(self, wait_time=UPDATE_INTERVAL, address=None):
-    #     """
-    #     Update the status of the programs and folders.
-
-    #     |  wait_time: How long to wait before updating.
-    #     |  address: The program ID to update.
-    #     """
-    #     await asyncio.sleep(wait_time)
-    #     xml = await self.isy.conn.get_programs(address)
-
-    #     if xml is not None:
-    #         self.parse(xml)
-    #     else:
-    #         _LOGGER.warning("ISY Failed to update programs.")
-
-    # def insert(self, address, pname, pparent, pobj, ptype):
-    #     """
-    #     Insert a new program or folder into the manager.
-
-    #     |  address: The ID of the program or folder.
-    #     |  pname: The name of the program or folder.
-    #     |  pparent: The parent of the program or folder.
-    #     |  pobj: The object representing the program or folder.
-    #     |  ptype: The type of the item being added (program/folder).
-    #     """
-    #     self.addresses.append(address)
-    #     self.pnames.append(pname)
-    #     self.pparents.append(pparent)
-    #     self.ptypes.append(ptype)
-    #     self.pobjs.append(pobj)
-
-    # def __getitem__(self, val):
-    #     """
-    #     Navigate through the hierarchy using names or IDs.
-
-    #     |  val: Name or ID to navigate to.
-    #     """
-    #     try:
-    #         self.addresses.index(val)
-    #         fun = self.get_by_id
-    #     except ValueError:
-    #         try:
-    #             self.pnames.index(val)
-    #             fun = self.get_by_name
-    #         except ValueError:
-    #             try:
-    #                 val = int(val)
-    #                 fun = self.get_by_index
-    #             except (TypeError, ValueError) as err:
-    #                 raise KeyError("Unrecognized Key: " + str(val)) from err
-
-    #     try:
-    #         return fun(val)
-    #     except (ValueError, KeyError, IndexError):
-    #         return None
-
-    # def __setitem__(self, val, value):
-    #     """Set the item value."""
-    #     return None
-
-    # def get_by_name(self, val):
-    #     """
-    #     Get a child program/folder with the given name.
-
-    #     |  val: The name of the child program/folder to look for.
-    #     """
-    #     for i in range(len(self.addresses)):
-    #         if (self.root is None or self.pparents[i] == self.root) and self.pnames[
-    #             i
-    #         ] == val:
-    #             return self.get_by_index(i)
-    #     return None
-
-    # def get_by_id(self, address):
-    #     """
-    #     Get a program/folder with the given ID.
-
-    #     |  address: The program/folder ID to look for.
-    #     """
-    #     i = self.addresses.index(address)
-    #     return self.get_by_index(i)
-
-    # def get_by_index(self, i):
-    #     """
-    #     Get the program/folder at the given index.
-
-    #     |  i: The program/folder index.
-    #     """
-    #     if self.ptypes[i] == TAG_FOLDER:
-    #         return Programs(
-    #             self.isy,
-    #             self.addresses[i],
-    #             self.addresses,
-    #             self.pnames,
-    #             self.pparents,
-    #             self.pobjs,
-    #             self.ptypes,
-    #         )
-    #     return self.pobjs[i]
-
-    # @property
-    # def children(self):
-    #     """Return the children of the class."""
-    #     out = []
-    #     for ind, name in enumerate(self.pnames):
-    #         if self.pparents[ind] == self.root:
-    #             out.append((self.ptypes[ind], name, self.addresses[ind]))
-    #     return out
-
-    # @property
-    # def leaf(self):
-    #     """Return the leaf property."""
-    #     if self.root is not None:
-    #         ind = self.addresses.index(self.root)
-    #         if self.pobjs[ind] is not None:
-    #             return self.pobjs[ind]
-    #     return self
-
-    # @property
-    # def name(self):
-    #     """Return the name of the path."""
-    #     if self.root is not None:
-    #         ind = self.addresses.index(self.root)
-    #         return self.pnames[ind]
-    #     return ""
-
-    # @property
-    # def all_lower_programs(self):
-    #     """Return all lower programs in a path."""
-    #     output = []
-    #     myname = self.name + "/"
-
-    #     for dtype, name, ident in self.children:
-    #         if dtype == TAG_PROGRAM:
-    #             output.append((dtype, myname + name, ident))
-
-    #         else:
-    #             output += [
-    #                 (dtype2, myname + name2, ident2)
-    #                 for (dtype2, name2, ident2) in self[ident].all_lower_programs
-    #             ]
-    #     return output
+        _LOGGER.debug(
+            "Updated program: address=%s, detail=%s",
+            address,
+            json.dumps(detail.__dict__, default=str),
+        )

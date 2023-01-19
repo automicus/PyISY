@@ -8,6 +8,7 @@ from xml.dom import minidom
 from dateutil import parser
 import xmltodict
 
+# from .timeit import timeit
 from pyisy.exceptions import (
     XML_ERRORS,
     XML_PARSE_ERROR,
@@ -33,6 +34,12 @@ def post_processor(path: str, key: str, value: Any) -> tuple[str, Any]:
     if key == "prec":
         key = "precision"
         value = int(cast(str, value))
+    if key == "_value":
+        key = "value"
+        try:
+            value = int(cast(str, value))
+        except ValueError:
+            pass
 
     # Convert known dates
     if (key.endswith("_time") or key == "ts") and value is not None:
@@ -44,13 +51,25 @@ def post_processor(path: str, key: str, value: Any) -> tuple[str, Any]:
     return key, value
 
 
-def parse_xml(xml: str | None, attr_prefix: str = "", use_pp: bool = True) -> dict:
+# @timeit
+def parse_xml(
+    xml: str | None,
+    attr_prefix: str = "",
+    cdata_key: str = "_value",
+    use_pp: bool = True,
+) -> dict:
     """Parse an XML string and return a dict object."""
     if not xml:
         raise ISYResponseError("Could not load response")
     post = post_processor if use_pp else None
     try:
-        xml_dict = xmltodict.parse(xml, attr_prefix=attr_prefix, postprocessor=post)
+        xml_dict = xmltodict.parse(
+            xml,
+            attr_prefix=attr_prefix,
+            cdata_key=cdata_key,
+            postprocessor=post,
+            dict_constructor=dict,
+        )
     except XML_ERRORS as exc:
         raise ISYResponseParseError(XML_PARSE_ERROR) from exc
     return cast(dict, xml_dict)

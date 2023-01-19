@@ -59,6 +59,7 @@ from pyisy.constants import (
 )
 from pyisy.exceptions import XML_ERRORS, XML_PARSE_ERROR, ISYResponseParseError
 from pyisy.helpers.events import EventEmitter, NodeChangedEvent
+from pyisy.events.router import EventData
 from pyisy.helpers.models import NodeProperty, ZWaveProperties
 from pyisy.helpers.xml import attr_from_element, attr_from_xml, value_from_xml
 from pyisy.logging import _LOGGER
@@ -296,15 +297,15 @@ class Nodes:
         node.control_events.notify(node_property)
         _LOGGER.debug("ISY Node Control Event: %s", node_property)
 
-    def node_changed_received(self, xmldoc):
+    def node_changed_received(self, event: EventData):
         """Handle Node Change/Update events from an event stream message."""
-        action = value_from_xml(xmldoc, ATTR_ACTION)
-        if not action or action not in NODE_CHANGED_ACTIONS:
+        if (action := event.action) not in NODE_CHANGED_ACTIONS:
             return
         (event_desc, e_i_keys) = NODE_CHANGED_ACTIONS[action]
-        node = value_from_xml(xmldoc, TAG_NODE)
+        node = event.node
         detail = {}
-        if e_i_keys and xmldoc.getElementsByTagName(TAG_EVENT_INFO):
+        # TODO: this is already a dict now, use it.
+        if e_i_keys and event.event_info:
             detail = {key: value_from_xml(xmldoc, key) for key in e_i_keys}
 
         if action == NC_NODE_ERROR:
@@ -323,10 +324,10 @@ class Nodes:
         )
         # FUTURE: Handle additional node change actions to force updates.
 
-    def progress_report_received(self, xmldoc: minidom.Element) -> None:
+    def progress_report_received(self, event_data: EventData) -> None:
         """Handle Progress Report '_7' events from an event stream message."""
-        event_info = value_from_xml(xmldoc, TAG_EVENT_INFO)
-        address, _, message = event_info.partition("]")
+        # TODO: Validate this
+        address, _, message = event_data.event_info.partition("]")
         address = address.strip("[ ")
         message = message.strip()
         action = DEV_WRITING
@@ -335,7 +336,7 @@ class Nodes:
         if address != "All" and message.startswith("Memory"):
             action = DEV_MEMORY
             regex = re.compile(MEMORY_REGEX)
-            if event := regex.search(event_info):
+            if event := regex.search(event_data.event_info):
                 detail = {
                     "memory": event.group("dbAddr"),
                     "cmd1": event.group("cmd1"),

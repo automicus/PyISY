@@ -13,7 +13,7 @@ import argparse
 import asyncio
 import logging
 import time
-
+from typing import Any
 from pyisy.connection import ISYConnectionError, ISYConnectionInfo, ISYInvalidAuthError
 from pyisy.constants import NODE_CHANGED_ACTIONS, SYSTEM_STATUS
 from pyisy.isy import ISY
@@ -59,24 +59,6 @@ async def main(cl_args: argparse.Namespace) -> None:
         await isy.shutdown()
         raise
 
-    # Print a representation of all the Nodes
-    if cl_args.nodes:
-        _LOGGER.debug(repr(isy.nodes))
-    if cl_args.programs:
-        _LOGGER.debug(repr(isy.programs))
-    if cl_args.variables:
-        _LOGGER.debug(repr(isy.variables))
-    if cl_args.networking:
-        _LOGGER.debug(repr(isy.networking))
-    if cl_args.node_servers:
-        _LOGGER.debug(repr(isy.node_servers))
-    if cl_args.clock:
-        _LOGGER.debug(repr(isy.clock))
-    _LOGGER.info("Total Loading time: %.2fs", time.time() - t_0)
-
-    node_changed_subscriber = None
-    system_status_subscriber = None
-
     def node_changed_handler(event: NodeChangedEvent) -> None:
         """Handle a node changed event sent from Nodes class."""
         (event_desc, _) = NODE_CHANGED_ACTIONS[event.action]
@@ -91,12 +73,38 @@ async def main(cl_args: argparse.Namespace) -> None:
         """Handle a system status changed event sent ISY class."""
         _LOGGER.info("System Status Changed: %s", SYSTEM_STATUS.get(event))
 
+    def status_handler(event: Any, key: str) -> None:
+        """Handle a generic status changed event sent."""
+        _LOGGER.info("%s status changed: %s", key.title(), event)
+
+    # Print a representation of all the Nodes
+    if cl_args.nodes:
+        _LOGGER.debug(repr(isy.nodes))
+    if cl_args.programs:
+        _LOGGER.debug(repr(isy.programs))
+        if cl_args.verbose:
+            await isy.programs.get_tree()
+        isy.programs.status_events.subscribe(status_handler, key="programs")
+    if cl_args.variables:
+        _LOGGER.debug(repr(isy.variables))
+    if cl_args.networking:
+        _LOGGER.debug(repr(isy.networking))
+    if cl_args.node_servers:
+        _LOGGER.debug(repr(isy.node_servers))
+    if cl_args.clock:
+        _LOGGER.debug(repr(isy.clock))
+    _LOGGER.info("Total Loading time: %.2fs", time.time() - t_0)
+
+    node_changed_subscriber = None
+    system_status_subscriber = None
+
     try:
         if cl_args.events:
             isy.websocket.start()
-            node_changed_subscriber = isy.nodes.status_events.subscribe(
-                node_changed_handler
-            )
+            if cl_args.nodes:
+                node_changed_subscriber = isy.nodes.status_events.subscribe(
+                    node_changed_handler
+                )
             system_status_subscriber = isy.status_events.subscribe(
                 system_status_handler
             )

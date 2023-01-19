@@ -32,7 +32,7 @@ class FolderDetail(EntityDetail):
 
     id: str = ""
     name: str = ""
-    status: bool = False
+    status: bool | str = "not_loaded"
     folder: bool = False
     parent_id: str | None = None
     last_finish_time: datetime | None = None
@@ -58,11 +58,6 @@ class Folder(Entity):
         self._last_update = datetime.now()
         self._status = detail.status
         self.detail = detail
-
-    @property
-    def leaf(self) -> Folder:
-        """Get the leaf property."""
-        return self
 
     async def send_cmd(self, command: str) -> bool:
         """Run the appropriate clause of the object."""

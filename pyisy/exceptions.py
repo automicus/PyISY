@@ -1,5 +1,7 @@
 """Exceptions used by the PyISY module."""
+# FUTURE: change to xmltodict.expat.ExpatError
 from xml.parsers.expat import ExpatError
+
 
 XML_ERRORS = (AttributeError, KeyError, ValueError, TypeError, IndexError, ExpatError)
 XML_PARSE_ERROR = "ISY Could not parse response, poorly formatted XML."
@@ -10,6 +12,10 @@ class ISYInvalidAuthError(Exception):
 
 
 class ISYConnectionError(Exception):
+    """Invalid connection parameters provided."""
+
+
+class ISYNotInitializedError(Exception):
     """Invalid connection parameters provided."""
 
 

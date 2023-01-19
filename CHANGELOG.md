@@ -67,7 +67,7 @@ get_new_client_session
 get_sslcontext
 can_https
 
-configuration shortened to config
+`conf` and `configuration` -> `config`
 
 Intialiization can set options for what to load
 

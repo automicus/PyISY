@@ -51,16 +51,16 @@ class EventStream:
     isy: ISY
     connection_info: ISYConnectionInfo
     _on_lost_function: Callable[...] | None = None
+    _stream_id: str = ""
+    _running: bool = False
+    _thread: Thread | None = None
 
     def __init__(
         self, isy: ISY, connection_info: ISYConnectionInfo, on_lost_func=None
     ) -> None:
         """Initialize the EventStream class."""
         self.isy = isy
-        self._stream_id: str = ""
-        self._running = False
         self._writer = None
-        self._thread = None
         self._subscribed = False
         self._connected = False
         self._lasthb = None
@@ -163,10 +163,12 @@ class EventStream:
         _LOGGER.debug("ISY Updated Events Stream ID %s", self._stream_id)
 
     @property
-    def running(self):
+    def running(self) -> bool:
         """Return the running state of the thread."""
         try:
-            return self._thread.isAlive()
+            if self._thread is None:
+                return False
+            return self._thread.is_alive()
         except (AttributeError, RuntimeError, ThreadError):
             return False
 

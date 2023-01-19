@@ -25,6 +25,7 @@ from pyisy.constants import (
 )
 from pyisy.events.tcpsocket import EventStream
 from pyisy.events.websocket import WebSocketClient
+from pyisy.exceptions import ISYConnectionError, ISYNotInitializedError
 from pyisy.helpers import value_from_xml
 from pyisy.helpers.events import EventEmitter
 from pyisy.logging import _LOGGER, enable_logging
@@ -62,7 +63,8 @@ class ISY:
     :ivar variables: Variable manager that interacts with ISY variables.
     """
 
-    auto_reconnect = True
+    _connected: bool = False
+    auto_reconnect: bool = True
     clock: Clock
     conn: Connection
     connection_info: ISYConnectionInfo
@@ -74,6 +76,8 @@ class ISY:
     networking: NetworkResources
     system_status: str = SYSTEM_BUSY
     websocket: WebSocketClient = None  # type: ignore[assignment]
+    _events: EventStream | None = None
+    _reconnect_thread: Thread | None = None
     connection_events: EventEmitter
     status_events: EventEmitter
     loop: asyncio.AbstractEventLoop
@@ -82,10 +86,6 @@ class ISY:
         self, connection_info: ISYConnectionInfo, use_websocket: bool = True
     ) -> None:
         """Initialize the primary ISY Class."""
-        self._events = None  # create this JIT so no socket reuse
-        self._reconnect_thread = None
-        self._connected = False
-
         if len(_LOGGER.handlers) == 0:
             enable_logging(add_null_handler=True)
 
@@ -94,7 +94,6 @@ class ISY:
         self.conn = Connection(connection_info)
 
         # Setup websocket or fall back to TCP socket
-        self.websocket = None
         if use_websocket:
             self.websocket = WebSocketClient(self, connection_info)
 
@@ -162,70 +161,64 @@ class ISY:
 
     async def shutdown(self) -> None:
         """Cleanup connections and prepare for exit."""
-        if self.websocket is not None:
+        if self.websocket:
             self.websocket.stop()
-        if self._events is not None and self._events.running:
+        if self._events and self._events.running:
             self.connection_events.notify(ES_STOP_UPDATES)
             self._events.running = False
         await self.conn.close()
 
     @property
-    def conf(self):
-        """Return the status of the connection.
-
-        Left for backwards compatibility.
-        """
-        return self.config
-
-    @property
-    def connected(self):
+    def connected(self) -> bool:
         """Return the status of the connection."""
         return self._connected
 
     @property
-    def auto_update(self):
+    def auto_update(self) -> bool:
         """Return the auto_update property."""
-        if self.websocket is not None:
+        if self.websocket:
             return self.websocket.status == ES_CONNECTED
         if self._events is not None:
             return self._events.running
         return False
 
     @auto_update.setter
-    def auto_update(self, val):
+    def auto_update(self, val: bool) -> None:
         """Set the auto_update property."""
-        if self.websocket is not None:
-            _LOGGER.warning(
+        if self.websocket:
+            raise ISYConnectionError(
                 "Websockets are enabled. Use isy.websocket.start() or .stop() instead."
             )
-            return
         if val and not self.auto_update:
             # create new event stream socket
             self._events = EventStream(
                 self, self.conn.connection_info, self._on_lost_event_stream
             )
-        if self._events is not None:
+        if self._events:
             self.connection_events.notify(ES_START_UPDATES if val else ES_STOP_UPDATES)
             self._events.running = val
 
     @property
-    def hostname(self):
+    def hostname(self) -> str | None:
         """Return the hostname."""
         return self.connection_info.parsed_url.hostname
 
     @property
-    def protocol(self):
+    def protocol(self) -> str:
         """Return the protocol for this entity."""
         return PROTO_ISY
 
     @property
-    def uuid(self):
+    def uuid(self) -> str | None:
         """Return the ISY's uuid."""
+        if self.config is None:
+            raise ISYNotInitializedError(
+                "Module connection to ISY must first be initialized with isy.initialize()"
+            )
         return self.config.uuid
 
-    def _on_lost_event_stream(self):
+    def _on_lost_event_stream(self) -> None:
         """Handle lost connection to event stream."""
-        del self._events
         self._events = None
 
         if self.auto_reconnect and self._reconnect_thread is None:
@@ -234,11 +227,11 @@ class ISY:
             self._reconnect_thread.daemon = True
             self._reconnect_thread.start()
 
-    def _auto_reconnecter(self):
+    def _auto_reconnecter(self) -> None:
         """Auto-reconnect to the event stream."""
         while self.auto_reconnect and not self.auto_update:
             _LOGGER.warning("PyISY attempting stream reconnect.")
-            del self._events
+            self._events = None
             self._events = EventStream(
                 self, self.conn.connection_info, self._on_lost_event_stream
             )
@@ -246,7 +239,6 @@ class ISY:
             self.connection_events.notify(ES_RECONNECTING)
 
         if not self.auto_update:
-            del self._events
             self._events = None
             _LOGGER.warning("PyISY could not reconnect to the event stream.")
             self.connection_events.notify(ES_RECONNECT_FAILED)
@@ -274,25 +266,24 @@ class ISY:
         _LOGGER.debug("ISY Query requested successfully.")
         return True
 
-    async def send_x10_cmd(self, address, cmd):
+    async def send_x10_cmd(self, address: str, cmd: str) -> None:
         """
         Send an X10 command.
 
         address: String of X10 device address (Ex: A10)
         cmd: String of command to execute. Any key of x10_commands can be used
         """
-        if cmd in X10_COMMANDS:
-            command = X10_COMMANDS.get(cmd)
-            req_url = self.conn.compile_url([CMD_X10, address, str(command)])
-            result = await self.conn.request(req_url)
-            if result is not None:
-                _LOGGER.info("ISY Sent X10 Command: %s To: %s", cmd, address)
-            else:
-                _LOGGER.error("ISY Failed to send X10 Command: %s To: %s", cmd, address)
+        if not (command := X10_COMMANDS.get(cmd)):
+            raise ValueError(f"Invalid X10 command: {cmd}")
 
-    def system_status_changed_received(self, xmldoc):
+        req_url = self.conn.compile_url([CMD_X10, address, str(command)])
+        if not await self.conn.request(req_url):
+            _LOGGER.error("ISY Failed to send X10 Command: %s To: %s", cmd, address)
+            return
+        _LOGGER.info("ISY Sent X10 Command: %s To: %s", cmd, address)
+
+    def system_status_changed_received(self, action: Any) -> None:
         """Handle System Status events from an event stream message."""
-        action = value_from_xml(xmldoc, ATTR_ACTION)
         if not action or action not in SYSTEM_STATUS:
             return
         self.system_status = action

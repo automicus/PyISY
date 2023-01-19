@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime
 from typing import TYPE_CHECKING
 
 from pyisy.constants import (
@@ -25,8 +24,6 @@ class ProgramDetail(FolderDetail):
     enabled: bool = True
     run_at_startup: bool = False
     running: str = ""
-    ran_then: datetime | None = None
-    ran_else: datetime | None = None
 
 
 class Program(Folder):

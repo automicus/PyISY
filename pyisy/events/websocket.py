@@ -33,6 +33,7 @@ from pyisy.constants import (
 from pyisy.helpers import attr_from_xml, now, value_from_xml
 from pyisy.helpers.session import get_new_client_session, get_sslcontext
 from pyisy.logging import LOG_VERBOSE, enable_logging
+from pyisy.events.router import Router
 
 if TYPE_CHECKING:
     from pyisy.isy import ISY
@@ -45,7 +46,8 @@ WS_HEADERS = {
     "Sec-WebSocket-Version": "13",
     "Origin": "com.universal-devices.websockets.isy",
 }
-WS_HEARTBEAT = 30.0
+WS_HEARTBEAT = 30
+WS_HB_GRACE = 5
 WS_TIMEOUT = 10.0
 WS_MAX_RETRIES = 4
 WS_RETRY_BACKOFF = [0.01, 1, 10, 30, 60]  # Seconds
@@ -57,12 +59,13 @@ class WebSocketClient:
     isy: ISY
     connection_info: ISYConnectionInfo
     _last_heartbeat: datetime | None = None
-    _heartbeat_interval: float = WS_HEARTBEAT
+    _heartbeat_interval: int = WS_HEARTBEAT
     _status: str = ES_NOT_STARTED
     _stream_id: str = ""
     _program_key: str = ""
     websocket_task: asyncio.Task | None = None
     guardian_task: asyncio.Task | None = None
+    router: Router
 
     def __init__(self, isy: ISY, connection_info: ISYConnectionInfo) -> None:
         """Initialize a new Web Socket Client class."""
@@ -71,6 +74,7 @@ class WebSocketClient:
 
         self.isy = isy
         self.connection_info = connection_info
+        self.router = Router(self)
 
         if connection_info.websession is None:
             connection_info.websession = get_new_client_session(connection_info)
@@ -142,66 +146,23 @@ class WebSocketClient:
                 self.websocket_task is None
                 or self.websocket_task.cancelled()
                 or self.websocket_task.done()
-                or self.heartbeat_time > self._heartbeat_interval
+                or self.heartbeat_time > self._heartbeat_interval + WS_HB_GRACE
             ):
                 _LOGGER.debug("Websocket missed a heartbeat, resetting connection.")
                 self.status = ES_LOST_STREAM_CONNECTION
                 self._loop.create_task(self.reconnect())
                 return
 
-    async def _route_message(self, msg: str) -> None:
-        """Route a received message from the event stream."""
-        # check xml formatting
-        try:
-            xmldoc = minidom.parseString(msg)
-        except xml.parsers.expat.ExpatError:
-            _LOGGER.warning("ISY Received Malformed XML:\n%s", msg)
-            return
-        _LOGGER.log(LOG_VERBOSE, "ISY Update Received:\n%s", msg)
+    def heartbeat(self, interval: int = WS_HEARTBEAT) -> None:
+        """Receive a heartbeat from the ISY event thread."""
+        self._last_heartbeat = datetime.now()
+        self._heartbeat_interval = interval
+        _LOGGER.debug("ISY HEARTBEAT: %s", self._last_heartbeat.isoformat())
+        self.isy.connection_events.notify(self._status)
 
-        # A wild stream id appears!
-        if f"{ATTR_STREAM_ID}=" in msg and self._stream_id != "":
-            self.update_received(xmldoc)
-
-        # direct the event message
-        cntrl = value_from_xml(xmldoc, ATTR_CONTROL)
-        if not cntrl:
-            return
-        if cntrl == "_0":  # ISY HEARTBEAT
-            self._last_heartbeat = datetime.now()
-            self._heartbeat_interval = int(value_from_xml(xmldoc, ATTR_ACTION))
-            _LOGGER.debug("ISY HEARTBEAT: %s", self._last_heartbeat.isoformat())
-            self.isy.connection_events.notify(self._status)
-        elif cntrl == PROP_STATUS:  # NODE UPDATE
-            self.isy.nodes.update_received(xmldoc)
-        elif cntrl[0] != "_":  # NODE CONTROL EVENT
-            self.isy.nodes.control_message_received(xmldoc)
-        elif cntrl == "_1":  # Trigger Update
-            if f"<{ATTR_VAR}" in msg:  # VARIABLE (action=6 or 7)
-                self.isy.variables.update_received(xmldoc)
-            elif f"<{ATTR_ID}>" in msg:  # PROGRAM (action=0)
-                self.isy.programs.update_received(xmldoc)
-            elif f"<{TAG_NODE}>" in msg and "[" in msg:  # Node Server Update
-                pass  # This is most likely a duplicate node update.
-            elif f"<{ATTR_ACTION}>" in msg:
-                action = value_from_xml(xmldoc, ATTR_ACTION)
-                if action == ACTION_KEY:
-                    self._program_key = value_from_xml(xmldoc, TAG_EVENT_INFO)
-                    return
-                if action == ACTION_KEY_CHANGED:
-                    self._program_key = value_from_xml(xmldoc, TAG_NODE)
-                # Need to reload programs
-                await self.isy.programs.update()
-        elif cntrl == "_3":  # Node Changed/Updated
-            self.isy.nodes.node_changed_received(xmldoc)
-        elif cntrl == "_5":  # System Status Changed
-            self.isy.system_status_changed_received(xmldoc)
-        elif cntrl == "_7":  # Progress report, device programming event
-            self.isy.nodes.progress_report_received(xmldoc)
-
-    def update_received(self, xmldoc: minidom.Element) -> None:
+    def update_stream_id(self, stream_id: str) -> None:
         """Set the socket ID."""
-        self._stream_id = attr_from_xml(xmldoc, "Event", ATTR_STREAM_ID)
+        self._stream_id = stream_id
         _LOGGER.debug("ISY Updated Events Stream ID: %s", self._stream_id)
 
     async def websocket(self, retries: int = 0) -> None:
@@ -213,7 +174,7 @@ class WebSocketClient:
                 heartbeat=WS_HEARTBEAT,
                 headers=WS_HEADERS,
                 timeout=WS_TIMEOUT,
-                receive_timeout=self._heartbeat_interval,
+                receive_timeout=self._heartbeat_interval + WS_HB_GRACE,
                 ssl=self.sslcontext,
             ) as ws:
                 self.status = ES_CONNECTED
@@ -222,7 +183,7 @@ class WebSocketClient:
 
                 async for msg in ws:
                     if msg.type == aiohttp.WSMsgType.TEXT:
-                        await self._route_message(msg.data)
+                        await self.router.parse_message(msg.data)
                     elif msg.type == aiohttp.WSMsgType.BINARY:
                         _LOGGER.warning("Unexpected binary message received.")
                     elif msg.type == aiohttp.WSMsgType.ERROR:
@@ -234,7 +195,9 @@ class WebSocketClient:
             return
         except asyncio.TimeoutError:
             _LOGGER.debug("Websocket Timeout.")
-        except aiohttp.ClientConnectorError as err:
+        except ConnectionRefusedError:
+            _LOGGER.error("Websocket connection refused")
+        except aiohttp.client_exceptions.ClientConnectorError as err:
             _LOGGER.error("Websocket Client Connector Error %s", err, exc_info=True)
         except (
             aiohttp.ClientOSError,
