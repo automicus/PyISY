@@ -18,7 +18,6 @@ from pyisy.constants import (
     INSTEON_TYPE_DIMMABLE,
     INSTEON_TYPE_LOCK,
     INSTEON_TYPE_THERMOSTAT,
-    METHOD_GET,
     METHOD_SET,
     PROP_ON_LEVEL,
     PROP_RAMP_RATE,
@@ -37,6 +36,7 @@ from pyisy.constants import (
     UOM_FAN_MODES,
     UOM_TO_STATES,
     URL_CONFIG,
+    URL_GET,
     URL_NODE,
     URL_NODES,
     URL_QUERY,
@@ -403,7 +403,7 @@ class Node(NodeBase):
         if not self.isy.auto_update and not xmldoc:
             await asyncio.sleep(wait_time)
             req_url = self.isy.conn.compile_url(
-                [URL_NODES, self.address, METHOD_GET, PROP_STATUS]
+                [URL_NODES, self.address, URL_GET, PROP_STATUS]
             )
             xml = await self.isy.conn.request(req_url)
             try:

@@ -111,8 +111,8 @@ class ClockData:
 class Clock:
     """Class to update the ISY clock information."""
 
-    __slots__ = ["isy", "clock_data", "url"]
     isy: ISY
+    loaded: bool = False
     clock_data: ClockData
     url: str
 
@@ -131,7 +131,8 @@ class Clock:
         await sleep(wait_time)
         xml_dict = parse_xml(await self.isy.conn.request(self.url), use_pp=False)
         self.clock_data = ClockData.from_xml(xml_dict["DT"])
-        _LOGGER.debug("ISY loaded clock information")
+        _LOGGER.debug("ISY loaded clock information: %s", str(self))
+        self.loaded = True
 
     async def update_thread(self, interval: float) -> None:
         """

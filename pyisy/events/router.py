@@ -7,6 +7,7 @@ import json
 import logging
 from typing import TYPE_CHECKING, Any, cast
 
+from pyisy.constants import PROP_STATUS
 from pyisy.exceptions import ISYResponseParseError
 from pyisy.helpers.xml import parse_xml
 from pyisy.logging import LOG_VERBOSE
@@ -39,6 +40,7 @@ class EventRouter:
     events: EventStream | WebSocketClient
     _stream_id: str = ""
     key: str = ""
+    _loaded: bool = False
 
     def __init__(self, events: EventStream | WebSocketClient) -> None:
         """Initialize a new router class."""
@@ -83,10 +85,10 @@ class EventRouter:
             return
         if control == "_0" and event.action is not None:  # ISY HEARTBEAT
             self.events.heartbeat(int(cast(str, event.action)))
-        # elif control == PROP_STATUS:  # NODE UPDATE
-        #     self.isy.nodes.update_received(xmldoc)
-        # elif control[0] != "_":  # NODE CONTROL EVENT
-        #     self.isy.nodes.control_message_received(xmldoc)
+        elif control == PROP_STATUS:  # NODE UPDATE
+            self.isy.nodes.update_received(event)
+        elif control[0] != "_":  # NODE CONTROL EVENT
+            self.isy.nodes.control_message_received(event)
         elif control == "_1":  # Trigger Update
             if event.action == "0":
                 # Event Status
@@ -98,7 +100,9 @@ class EventRouter:
                 return  # FUTURE: Call Node Status refresh
             if event.action == "2":
                 # Key Changed (node = key)
-                return  # FUTURE: Handle on event bus
+                self.key = cast(str, event.node)
+                _LOGGER.debug("Key changed: %s", self.key)
+                return
             if event.action in {"3", "4"}:  # Info string, IR Learn mode
                 return
             if event.action == "5":
@@ -107,59 +111,40 @@ class EventRouter:
             if event.action == "6":
                 # Variable status changed
                 if self.isy.variables.loaded:
-                    # <eventInfo>
-                    # <var id="<var-id>" type ="<var-type>">
-                    # <val>value</val>
-                    # <ts>YYYYMDD HH:MM:SS</ts>
-                    # </var>
-                    # </eventInfo>
                     await self.isy.variables.update_received(event)
+                return
             if event.action == "7":
                 # Variable init value set
                 if self.isy.variables.loaded:
-                    # <eventInfo>
-                    # <var id="<var-id>" type ="<var-type>">
-                    # <init>value</init>
-                    # </var>
-                    # </eventInfo>
                     await self.isy.variables.update_received(event, init=True)
+                return
             if event.action == "8":
                 # Key (event_info = key)
                 self.key = cast(str, event.event_info)
                 _LOGGER.debug("Key received: %s", self.key)
+                return
         elif control == "_2":
             # Driver specific events
             _LOGGER.debug(
-                "Event: %s",
+                "Driver specific event: %s",
                 json.dumps(event.__dict__, default=str),
             )
-
-        #     if f"<{ATTR_VAR}" in msg:  # VARIABLE (action=6 or 7)
-        #
-
-        #     elif f"<{TAG_NODE}>" in msg and "[" in msg:  # Node Server Update
-        #         pass  # This is most likely a duplicate node update.
-        #     elif f"<{ATTR_ACTION}>" in msg:
-        #         action = value_from_xml(xmldoc, ATTR_ACTION)
-        #         if action == ACTION_KEY:
-        #             self._program_key = value_from_xml(xmldoc, TAG_EVENT_INFO)
-        #             return
-        #         if action == ACTION_KEY_CHANGED:
-        #             self._program_key = value_from_xml(xmldoc, TAG_NODE)
-        #         # Need to reload programs
-        #         await self.isy.programs.update()
+            return
         elif control == "_3":
             # Node Changed/Updated
-            # self.isy.nodes.node_changed_received(event)
-            pass
+            self.isy.nodes.node_changed_received(event)
+            return
         elif control == "_4":
             # System Configuration Updated
-            pass
-            # action = "0" -> Time Changed
-            # action = "1" -> Time Configuration Changed
-            # action = "2" -> NTP Settings Updated
-            # action = "3" -> Notifications Settings Updated
-            # action = "4" -> NTP Communications Error
+            if event.action in {"0", "1", "2", "3", "4"}:
+                # "0" -> Time Changed
+                # "1" -> Time Configuration Changed
+                # "2" -> NTP Settings Updated
+                # "3" -> Notifications Settings Updated
+                # "4" -> NTP Communications Error
+                if self.isy.clock.loaded:
+                    await self.isy.clock.update()
+                return
             # action = "5" -> Batch Mode Updated
             # node = null
             # <eventInfo>
@@ -170,14 +155,16 @@ class EventRouter:
             # <eventInfo>
             # <status>"1"|"0"</status>
             # </eventInfo>
-
+            return
         elif control == "_5":
             # System Status Changed
             self.isy.system_status_changed_received(event.action)
+            return
 
         elif control == "_7":
             # Progress report, device programming event
             self.isy.nodes.progress_report_received(event)
+            return
 
 
 # 8.5.10 Security System Event (control = “_8”)

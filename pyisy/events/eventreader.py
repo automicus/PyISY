@@ -1,6 +1,10 @@
 """ISY TCP Socket Event Reader."""
+from __future__ import annotations
+
 import errno
+import logging
 import select
+import socket
 import ssl
 
 from pyisy.constants import SOCKET_BUFFER_SIZE
@@ -10,29 +14,34 @@ from pyisy.exceptions import (
     ISYStreamDataError,
     ISYStreamDisconnected,
 )
+from pyisy.logging import LOG_VERBOSE
+
+_LOGGER = logging.getLogger("pyisy.events")
+
+HTTP_HEADER_SEPERATOR = b"\r\n"
+HTTP_HEADER_BODY_SEPERATOR = b"\r\n\r\n"
+HTTP_HEADER_BODY_SEPERATOR_LEN = 4
+REACHED_MAX_CONNECTIONS_RESPONSE = b"HTTP/1.1 817"
+HTTP_NOT_AUTHORIZED_RESPONSE = b"HTTP/1.1 401"
+CONTENT_LENGTH_HEADER = b"content-length"
+HEADER_SEPERATOR = b":"
 
 
 class ISYEventReader:
     """Read in streams of ISY HTTP Events."""
 
-    HTTP_HEADER_SEPERATOR = b"\r\n"
-    HTTP_HEADER_BODY_SEPERATOR = b"\r\n\r\n"
-    HTTP_HEADER_BODY_SEPERATOR_LEN = 4
-    REACHED_MAX_CONNECTIONS_RESPONSE = b"HTTP/1.1 817"
-    HTTP_NOT_AUTHORIZED_RESPONSE = b"HTTP/1.1 401"
-    CONTENT_LENGTH_HEADER = b"content-length"
-    HEADER_SEPERATOR = b":"
+    _socket: socket.socket | ssl.SSLSocket
+    _event_content_length: int
+    _event_buffer = b""
+    _event_count: int = 0
 
-    def __init__(self, isy_read_socket):
+    def __init__(self, isy_read_socket: socket.socket | ssl.SSLSocket) -> None:
         """Initialize the ISYEventStream class."""
-        self._event_buffer = b""
-        self._event_content_length = None
-        self._event_count = 0
         self._socket = isy_read_socket
 
-    def read_events(self, timeout):
+    def read_events(self, timeout: int) -> list[str]:
         """Read events from the socket."""
-        events = []
+        events: list[str] = []
         # poll socket for new data
         if not self._receive_into_buffer(timeout):
             return events
@@ -40,12 +49,10 @@ class ISYEventReader:
         while True:
             # Read the headers if we do not have content length yet
             if not self._event_content_length:
-                seperator_position = self._event_buffer.find(
-                    self.HTTP_HEADER_BODY_SEPERATOR
-                )
-                if seperator_position == -1:
+                separator_position = self._event_buffer.find(HTTP_HEADER_BODY_SEPERATOR)
+                if separator_position == -1:
                     return events
-                self._parse_headers(seperator_position)
+                self._parse_headers(separator_position)
 
             # If we do not have a body yet
             if len(self._event_buffer) < self._event_content_length:
@@ -55,10 +62,10 @@ class ISYEventReader:
             body = self._event_buffer[0 : self._event_content_length]
             self._event_count += 1
             self._event_buffer = self._event_buffer[self._event_content_length :]
-            self._event_content_length = None
+            self._event_content_length = 0
             events.append(body.decode(encoding="utf-8", errors="ignore"))
 
-    def _receive_into_buffer(self, timeout):
+    def _receive_into_buffer(self, timeout: int) -> bool:
         """Receive data on available on the socket.
 
         If we get an empty read on the first read attempt
@@ -77,7 +84,9 @@ class ISYEventReader:
             # up to 32 * SOCKET_BUFFER_SIZE
             for read_count in range(0, 32):
                 new_data = self._socket.recv(SOCKET_BUFFER_SIZE)
-                print(f"read_count: {read_count} new_data: {new_data}")
+                _LOGGER.log(
+                    LOG_VERBOSE, "read_count: %s new_data: %s", read_count, new_data
+                )
                 if len(new_data) == 0:
                     if read_count != 0:
                         break
@@ -94,19 +103,19 @@ class ISYEventReader:
 
         return True
 
-    def _parse_headers(self, seperator_position):
+    def _parse_headers(self, separator_position: int) -> None:
         """Find the content-length in the headers."""
-        headers = self._event_buffer[0:seperator_position]
-        if headers.startswith(self.REACHED_MAX_CONNECTIONS_RESPONSE):
+        headers = self._event_buffer[0:separator_position]
+        if headers.startswith(REACHED_MAX_CONNECTIONS_RESPONSE):
             raise ISYMaxConnections(self._event_buffer)
-        if headers.startswith(self.HTTP_NOT_AUTHORIZED_RESPONSE):
+        if headers.startswith(HTTP_NOT_AUTHORIZED_RESPONSE):
             raise ISYInvalidAuthError(self._event_buffer)
         self._event_buffer = self._event_buffer[
-            seperator_position + self.HTTP_HEADER_BODY_SEPERATOR_LEN :
+            separator_position + HTTP_HEADER_BODY_SEPERATOR_LEN :
         ]
-        for header in headers.split(self.HTTP_HEADER_SEPERATOR)[1:]:
-            header_name, header_value = header.split(self.HEADER_SEPERATOR, 1)
-            if header_name.strip().lower() != self.CONTENT_LENGTH_HEADER:
+        for header in headers.split(HTTP_HEADER_SEPERATOR)[1:]:
+            header_name, header_value = header.split(HEADER_SEPERATOR, 1)
+            if header_name.strip().lower() != CONTENT_LENGTH_HEADER:
                 continue
             self._event_content_length = int(header_value.strip())
         if not self._event_content_length:

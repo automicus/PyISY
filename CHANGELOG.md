@@ -86,5 +86,9 @@ You must manually refresh the platform after sending command when using auto_upd
 
 isy.connection_events
 isy.programs.status_events
+isy.variables.status_events
 isy.nodes.status_events
 isy.status_events
+isy.nodes.update_received
+isy.nodes.control_message_received
+isy.nodes.node_changed_received

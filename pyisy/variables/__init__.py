@@ -6,8 +6,8 @@ import json
 from typing import TYPE_CHECKING, Any, cast
 
 from pyisy.constants import (
-    METHOD_GET,
     URL_DEFINITIONS,
+    URL_GET,
     URL_VARIABLES,
     VAR_INTEGER,
     VAR_STATE,
@@ -55,8 +55,8 @@ class Variables(EntityPlatform):
         endpoints = [
             [URL_VARIABLES, URL_DEFINITIONS, VAR_INTEGER],
             [URL_VARIABLES, URL_DEFINITIONS, VAR_STATE],
-            [URL_VARIABLES, METHOD_GET, VAR_INTEGER],
-            [URL_VARIABLES, METHOD_GET, VAR_STATE],
+            [URL_VARIABLES, URL_GET, VAR_INTEGER],
+            [URL_VARIABLES, URL_GET, VAR_STATE],
         ]
         urls = [compile_url(e) for e in endpoints]
 

@@ -13,6 +13,7 @@ from pyisy.constants import (
     ES_CONNECTED,
     ES_DISCONNECTED,
     ES_INITIALIZING,
+    ES_LOADED,
     ES_LOST_STREAM_CONNECTION,
     ES_NOT_STARTED,
     ES_RECONNECTING,
@@ -143,6 +144,12 @@ class WebSocketClient:
 
     def heartbeat(self, interval: int = WS_HEARTBEAT) -> None:
         """Receive a heartbeat from the ISY event thread."""
+        if self._status is ES_NOT_STARTED:
+            self._status = ES_INITIALIZING
+            self.isy.connection_events.notify(ES_INITIALIZING)
+        elif self._status == ES_INITIALIZING:
+            self._status = ES_LOADED
+            self.isy.connection_events.notify(ES_LOADED)
         self._last_heartbeat = datetime.now()
         self._heartbeat_interval = interval
         _LOGGER.debug("ISY HEARTBEAT: %s", self._last_heartbeat.isoformat())
