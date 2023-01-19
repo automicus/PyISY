@@ -13,7 +13,7 @@ from pyisy.constants import (
     URL_VARIABLES,
     VAR_INTEGER,
 )
-from pyisy.helpers import convert_isy_raw_value, now
+from pyisy.helpers import convert_isy_raw_value
 from pyisy.helpers.entity import Entity, EntityDetail, EntityStatus
 from pyisy.helpers.events import EventEmitter
 from pyisy.logging import _LOGGER
@@ -70,7 +70,7 @@ class Variable(Entity):
         self.status_events = EventEmitter()
         self.platform = platform
         self.isy = platform.isy
-        self._last_update = now()
+        self._last_update = datetime.now()
         self._address = address
         self._var_type = detail.type
         if self._var_type == VAR_INTEGER:
@@ -89,7 +89,7 @@ class Variable(Entity):
         self._var_id = detail.id
         self._var_type = detail.type
         self.detail = detail
-        self._last_changed = now()
+        self._last_changed = datetime.now()
         self.status_events.notify(self.status_feedback)
 
     @property

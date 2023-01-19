@@ -81,3 +81,10 @@ networking is top-level
 ### Auto-update
 
 You must manually refresh the platform after sending command when using auto_update=false
+
+### Event Listeners:
+
+isy.connection_events
+isy.programs.status_events
+isy.nodes.status_events
+isy.status_events

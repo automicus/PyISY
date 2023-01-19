@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import json
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 from pyisy.constants import (
     METHOD_GET,
@@ -12,6 +12,8 @@ from pyisy.constants import (
     VAR_INTEGER,
     VAR_STATE,
 )
+from pyisy.events.router import EventData
+from pyisy.helpers import convert_isy_raw_value
 from pyisy.helpers.entity_platform import EntityPlatform
 from pyisy.helpers.xml import parse_xml
 from pyisy.logging import _LOGGER, LOG_VERBOSE
@@ -79,6 +81,7 @@ class Variables(EntityPlatform):
                 json.dumps(int_dict, indent=4, sort_keys=True, default=str),
             )
             await self.parse(int_dict)
+            self.loaded = True
 
         # Check if State Variables defined
         if not (results[1] is None or results[1] in EMPTY_VARIABLES_RESPONSE):
@@ -97,6 +100,7 @@ class Variables(EntityPlatform):
                 json.dumps(state_dict, indent=4, sort_keys=True, default=str),
             )
             await self.parse(state_dict)
+            self.loaded = True
 
     async def parse(self, xml_dict: dict[str, Any]) -> None:
         """Parse XML from the controller with details about the variables."""
@@ -122,22 +126,26 @@ class Variables(EntityPlatform):
         except (TypeError, KeyError, ValueError) as exc:
             _LOGGER.exception("Error loading %s: %s", PLATFORM, exc)
 
-    # def update_received(self, xmldoc):
-    #     """Process an update received from the event stream."""
-    #     xml = xmldoc.toxml()
-    #     vtype = int(attr_from_xml(xmldoc, ATTR_VAR, TAG_TYPE))
-    #     vid = int(attr_from_xml(xmldoc, ATTR_VAR, ATTR_ID))
-    #     try:
-    #         vobj = self.vobjs[vtype][vid]
-    #     except KeyError:
-    #         return  # this is a new variable that hasn't been loaded
+    async def update_received(self, event: EventData, init: bool = False) -> None:
+        """Process an update received from the event stream."""
+        event_info: dict[str, dict] = cast(dict, event.event_info)
+        var_info = event_info["var"]
 
-    #     vobj.last_update = now()
-    #     if f"<{ATTR_INIT}>" in xml:
-    #         vobj.init = int(value_from_xml(xmldoc, ATTR_INIT))
-    #     else:
-    #         vobj.status = int(value_from_xml(xmldoc, ATTR_VAL))
-    #         vobj.prec = int(value_from_xml(xmldoc, ATTR_PRECISION, 0))
-    #         vobj.last_edited = parser.parse(value_from_xml(xmldoc, ATTR_TS))
+        if (address := f"{var_info['type']}.{var_info['id']}") not in self.addresses:
+            # New/unknown variable, refresh full set.
+            await self.update()
+            return
+        entity = self.entities[address]
+        detail = cast(VariableDetail, entity.detail)
 
-    #     _LOGGER.debug("ISY Updated Variable: %s.%s", str(vtype), str(vid))
+        detail.precision = var_info["precision"]
+        key = "init" if init else "val"
+        detail.value = convert_isy_raw_value(
+            int(var_info[key]), "", var_info["precision"]
+        )
+        entity.update_entity(name=entity.name, detail=detail)
+        _LOGGER.debug(
+            "Updated variable: %s detail=%s",
+            address,
+            json.dumps(detail.__dict__, default=str),
+        )

@@ -45,6 +45,7 @@ class EntityPlatformModule(Protocol):
 class EntityPlatform(ABC):
     """Manage the entities for a single platform."""
 
+    loaded: bool = False
     status_events: EventEmitter
     names: list[str] = []
     addresses: list[str] = []
@@ -81,6 +82,7 @@ class EntityPlatform(ABC):
             json.dumps(xml_dict, indent=4, sort_keys=True, default=str),
         )
         await self.parse(xml_dict)
+        self.loaded = True
 
     @abstractmethod
     async def parse(self, xml_dict: dict[str, Any]) -> None:

@@ -69,4 +69,4 @@ repos:
         entry: mypy
         language: system
         types: [python]
-        files: ^pyisy\/(clock|connection|configuration|__init__|logging|helpers\/.+|networking|variables\/.+|programs\/.+)\.py$
+        files: ^pyisy\/(clock|connection|configuration|__init__|logging|helpers\/.+|networking|variables\/.+|programs\/.+|events\/websocket|events\/router)\.py$

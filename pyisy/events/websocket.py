@@ -5,20 +5,11 @@ import asyncio
 from datetime import datetime
 import logging
 from typing import TYPE_CHECKING
-import xml
-from xml.dom import minidom
 
 import aiohttp
 
 from pyisy.connection import ISYConnectionInfo
 from pyisy.constants import (
-    ACTION_KEY,
-    ACTION_KEY_CHANGED,
-    ATTR_ACTION,
-    ATTR_CONTROL,
-    ATTR_ID,
-    ATTR_STREAM_ID,
-    ATTR_VAR,
     ES_CONNECTED,
     ES_DISCONNECTED,
     ES_INITIALIZING,
@@ -26,14 +17,11 @@ from pyisy.constants import (
     ES_NOT_STARTED,
     ES_RECONNECTING,
     ES_STOP_UPDATES,
-    PROP_STATUS,
-    TAG_EVENT_INFO,
-    TAG_NODE,
 )
-from pyisy.helpers import attr_from_xml, now, value_from_xml
+from pyisy.events.router import EventRouter
+from pyisy.helpers import now
 from pyisy.helpers.session import get_new_client_session, get_sslcontext
-from pyisy.logging import LOG_VERBOSE, enable_logging
-from pyisy.events.router import Router
+from pyisy.logging import enable_logging
 
 if TYPE_CHECKING:
     from pyisy.isy import ISY
@@ -65,7 +53,7 @@ class WebSocketClient:
     _program_key: str = ""
     websocket_task: asyncio.Task | None = None
     guardian_task: asyncio.Task | None = None
-    router: Router
+    router: EventRouter
 
     def __init__(self, isy: ISY, connection_info: ISYConnectionInfo) -> None:
         """Initialize a new Web Socket Client class."""
@@ -74,7 +62,7 @@ class WebSocketClient:
 
         self.isy = isy
         self.connection_info = connection_info
-        self.router = Router(self)
+        self.router = EventRouter(self)
 
         if connection_info.websession is None:
             connection_info.websession = get_new_client_session(connection_info)

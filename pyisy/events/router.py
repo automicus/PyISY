@@ -1,43 +1,20 @@
-"""Message Router for ISY Event Stream Messages."""
+"""Message EventRouter for ISY Event Stream Messages."""
 
 from __future__ import annotations
-import logging
-from typing import TYPE_CHECKING, TypedDict, Any, cast
-from dataclasses import dataclass
-from pprint import pprint
-import time
-import json
-from pyisy.constants import (
-    ACTION_KEY,
-    ACTION_KEY_CHANGED,
-    ATTR_ACTION,
-    ATTR_CONTROL,
-    ATTR_ID,
-    ATTR_STREAM_ID,
-    ATTR_VAR,
-    ES_CONNECTED,
-    ES_DISCONNECTED,
-    ES_INITIALIZING,
-    ES_LOST_STREAM_CONNECTION,
-    ES_NOT_STARTED,
-    ES_RECONNECTING,
-    ES_STOP_UPDATES,
-    PROP_STATUS,
-    TAG_EVENT_INFO,
-    TAG_NODE,
-)
 
+from dataclasses import dataclass
+import json
+import logging
+from typing import TYPE_CHECKING, Any, cast
+
+from pyisy.exceptions import ISYResponseParseError
+from pyisy.helpers.xml import parse_xml
 from pyisy.logging import LOG_VERBOSE
 
-from pyisy.helpers.xml import parse_xml
-from pyisy.helpers.timeit import timeit
-from pyisy.exceptions import ISYResponseParseError
-
-
 if TYPE_CHECKING:
-    from pyisy.isy import ISY
     from pyisy.events.tcpsocket import EventStream
     from pyisy.events.websocket import WebSocketClient
+    from pyisy.isy import ISY
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -55,7 +32,7 @@ class EventData:
     fmt_act: str | None = None
 
 
-class Router:
+class EventRouter:
     """Class to represent the message router for the event stream."""
 
     isy: ISY
@@ -113,7 +90,8 @@ class Router:
         elif control == "_1":  # Trigger Update
             if event.action == "0":
                 # Event Status
-                await self.isy.programs.update_received(event)
+                if self.isy.programs.loaded:
+                    await self.isy.programs.update_received(event)
             if event.action == "1":
                 # Get Status (subscribers should refresh)
 
@@ -128,21 +106,23 @@ class Router:
                 return
             if event.action == "6":
                 # Variable status changed
-                # <eventInfo>
-                # <var id="<var-id>" type ="<var-type>">
-                # <val>value</val>
-                # <ts>YYYYMDD HH:MM:SS</ts>
-                # </var>
-                # </eventInfo>
-                pass
+                if self.isy.variables.loaded:
+                    # <eventInfo>
+                    # <var id="<var-id>" type ="<var-type>">
+                    # <val>value</val>
+                    # <ts>YYYYMDD HH:MM:SS</ts>
+                    # </var>
+                    # </eventInfo>
+                    await self.isy.variables.update_received(event)
             if event.action == "7":
                 # Variable init value set
-                # <eventInfo>
-                # <var id="<var-id>" type ="<var-type>">
-                # <init>value</init>
-                # </var>
-                # </eventInfo>
-                pass
+                if self.isy.variables.loaded:
+                    # <eventInfo>
+                    # <var id="<var-id>" type ="<var-type>">
+                    # <init>value</init>
+                    # </var>
+                    # </eventInfo>
+                    await self.isy.variables.update_received(event, init=True)
             if event.action == "8":
                 # Key (event_info = key)
                 self.key = cast(str, event.event_info)
@@ -155,9 +135,8 @@ class Router:
             )
 
         #     if f"<{ATTR_VAR}" in msg:  # VARIABLE (action=6 or 7)
-        #         self.isy.variables.update_received(xmldoc)
-        #     elif f"<{ATTR_ID}>" in msg:  # PROGRAM (action=0)
-        #         self.isy.programs.update_received(xmldoc)
+        #
+
         #     elif f"<{TAG_NODE}>" in msg and "[" in msg:  # Node Server Update
         #         pass  # This is most likely a duplicate node update.
         #     elif f"<{ATTR_ACTION}>" in msg:
