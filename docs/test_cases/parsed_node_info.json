@@ -1,0 +1,50 @@
+{
+  "node_info": {
+    "node": {
+      "address": "57 3B C5 1",
+      "dc_period": "0",
+      "device_class": "0",
+      "enabled": true,
+      "end_delay": "0",
+      "flag": 128,
+      "name": "Art Light",
+      "node_def_id": "DimmerLampSwitch_ADV",
+      "parent": {
+        "address": "57370",
+        "type_": "3"
+      },
+      "pnode": "57 3B C5 1",
+      "prop": {
+        "formatted": "Off",
+        "id": "ST",
+        "uom": "100",
+        "value": "0"
+      },
+      "start_delay": "0",
+      "type_": "1.32.69.0",
+      "wattage": "0"
+    },
+    "properties": {
+      "prop": [
+        {
+          "formatted": "60%",
+          "id": "OL",
+          "uom": "100",
+          "value": "153"
+        },
+        {
+          "formatted": "0.5 seconds",
+          "id": "RR",
+          "uom": "25",
+          "value": "28"
+        },
+        {
+          "formatted": "Off",
+          "id": "ST",
+          "uom": "100",
+          "value": "0"
+        }
+      ]
+    }
+  }
+}

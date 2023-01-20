@@ -106,6 +106,7 @@ class Entity(ABC, Generic[EntityDetailT, StatusT]):
         """Set if the entity is enabled on the controller."""
         if self._enabled != value:
             self._enabled = value
+            self.update_status(self.status, force=True)
 
     def update_entity(self, name: str, detail: EntityDetailT) -> None:
         """Update an entity information."""

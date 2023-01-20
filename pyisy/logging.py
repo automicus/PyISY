@@ -7,6 +7,7 @@ LOG_LEVEL = logging.DEBUG
 LOG_VERBOSE = 5
 LOG_FORMAT = "%(asctime)s %(levelname)s [%(name)s] %(message)s"
 LOG_DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
+LOG_PRINT_TO_FILE = False
 
 
 def enable_logging(

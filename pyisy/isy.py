@@ -1,6 +1,7 @@
 """Module for connecting to and interacting with the ISY."""
 from __future__ import annotations
 
+import argparse
 import asyncio
 from collections.abc import Awaitable
 from threading import Thread
@@ -10,7 +11,6 @@ from pyisy.clock import Clock
 from pyisy.configuration import ConfigurationData
 from pyisy.connection import Connection, ISYConnectionInfo
 from pyisy.constants import (
-    ATTR_ACTION,
     CMD_X10,
     ES_CONNECTED,
     ES_RECONNECT_FAILED,
@@ -26,7 +26,6 @@ from pyisy.constants import (
 from pyisy.events.tcpsocket import EventStream
 from pyisy.events.websocket import WebSocketClient
 from pyisy.exceptions import ISYConnectionError, ISYNotInitializedError
-from pyisy.helpers import value_from_xml
 from pyisy.helpers.events import EventEmitter
 from pyisy.logging import _LOGGER, enable_logging
 from pyisy.networking import NetworkResources
@@ -37,31 +36,7 @@ from pyisy.variables import Variables
 
 
 class ISY:
-    """
-    This is the main class that handles interaction with the ISY device.
-
-    |  address: String of the IP address of the ISY device
-    |  port: String of the port over which the ISY is serving its API
-    |  username: String of the administrator username for the ISY
-    |  password: String of the administrator password for the ISY
-    |  use_https: [optional] Boolean of whether secured HTTP should be used
-    |  tls_ver: [optional] Number indicating the version of TLS encryption to
-       use. Valid options are 1.1 or 1.2.
-
-    :ivar auto_reconnect: Boolean value that indicates if the class should
-                          auto-reconnect to the event stream if the connection
-                          is lost.
-    :ivar auto_update: Boolean value that controls the class's subscription to
-                       the event stream that allows node, program
-                       values to be updated automatically.
-    :ivar connected: Read only boolean value indicating if the class is
-                     connected to the controller.
-    :ivar nodes: :class:`pyisy.nodes.Nodes` manager that interacts with
-                 Insteon nodes and groups.
-    :ivar programs: Program manager that interacts with ISY programs and i
-                    folders.
-    :ivar variables: Variable manager that interacts with ISY variables.
-    """
+    """This is the main class that handles interaction with the ISY device."""
 
     _connected: bool = False
     auto_reconnect: bool = True
@@ -81,11 +56,16 @@ class ISY:
     connection_events: EventEmitter
     status_events: EventEmitter
     loop: asyncio.AbstractEventLoop
+    args: argparse.Namespace | None = None
 
     def __init__(
-        self, connection_info: ISYConnectionInfo, use_websocket: bool = True
+        self,
+        connection_info: ISYConnectionInfo,
+        use_websocket: bool = True,
+        args: argparse.Namespace | None = None,
     ) -> None:
         """Initialize the primary ISY Class."""
+        self.args = args  # Store command-line args
         if len(_LOGGER.handlers) == 0:
             enable_logging(add_null_handler=True)
 
@@ -125,11 +105,8 @@ class ISY:
             self.conn.increase_available_connections()
 
         isy_setup_tasks: list[Awaitable[Any]] = []
-        isy_setup_index: list[str] = []
         if nodes:
-            # isy_setup_tasks.append(self.conn.get_status())
-            # isy_setup_index.append(self.conn.get_status.__qualname__)
-            isy_setup_tasks.append(self.nodes.update())
+            isy_setup_tasks.append(self.nodes.initialize())
 
         if clock:
             isy_setup_tasks.append(self.clock.update())
@@ -143,12 +120,7 @@ class ISY:
         if networking and self.config.networking:
             isy_setup_tasks.append(self.networking.update())
 
-        isy_setup_results = await asyncio.gather(*isy_setup_tasks)
-
-        # if nodes:
-        #     await self.nodes.update_status(
-        #         xml=isy_setup_results[isy_setup_index.index("Connection.get_status")]
-        #     )  # Node Status
+        await asyncio.gather(*isy_setup_tasks)
 
         if self.node_servers and node_servers:
             await self.node_servers.load_node_servers()

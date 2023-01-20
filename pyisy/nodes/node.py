@@ -2,13 +2,11 @@
 from __future__ import annotations
 
 import asyncio
+from dataclasses import dataclass, field
 from datetime import datetime
 from typing import TYPE_CHECKING
 from xml.dom import minidom
 
-from dataclasses import dataclass, field
-from datetime import datetime
-from typing import TYPE_CHECKING, Generic
 from pyisy.constants import (
     BACKLIGHT_SUPPORT,
     CLIMATE_SETPOINT_MIN_GAP,
@@ -19,7 +17,6 @@ from pyisy.constants import (
     CMD_SECURE,
     INSTEON_SUBNODE_DIMMABLE,
     INSTEON_TYPE_DIMMABLE,
-    PROTO_NODE_SERVER,
     INSTEON_TYPE_LOCK,
     INSTEON_TYPE_THERMOSTAT,
     METHOD_SET,
@@ -30,9 +27,9 @@ from pyisy.constants import (
     PROP_STATUS,
     PROP_ZWAVE_PREFIX,
     PROTO_INSTEON,
+    PROTO_NODE_SERVER,
     PROTO_ZWAVE,
     TAG_CONFIG,
-    TAG_GROUP,
     TAG_PARAMETER,
     TAG_SIZE,
     TAG_VALUE,
@@ -40,9 +37,7 @@ from pyisy.constants import (
     UOM_FAN_MODES,
     UOM_TO_STATES,
     URL_CONFIG,
-    URL_GET,
     URL_NODE,
-    URL_NODES,
     URL_QUERY,
     URL_ZWAVE,
     ZWAVE_CAT_DIMMABLE,
@@ -50,14 +45,12 @@ from pyisy.constants import (
     ZWAVE_CAT_THERMOSTAT,
 )
 from pyisy.exceptions import XML_ERRORS, XML_PARSE_ERROR, ISYResponseParseError
-from pyisy.helpers.events import EventEmitter
 from pyisy.helpers.entity import Entity, EntityStatus
+from pyisy.helpers.events import EventEmitter
 from pyisy.helpers.models import NodeProperty, ZWaveProperties
 from pyisy.helpers.xml import attr_from_xml
 from pyisy.logging import _LOGGER
-from pyisy.nodes.group import Group
 from pyisy.nodes.nodebase import NodeBase, NodeBaseDetail
-from pyisy.nodes.parser import parse_xml_properties
 
 if TYPE_CHECKING:
     from pyisy.nodes import Nodes
@@ -82,13 +75,12 @@ class NodeDetail(NodeBaseDetail):
     dc_period: str = "0"
     start_delay: str = "0"
     end_delay: str = "0"
-    prop: dict[str, str] = field(default_factory=dict)
+    prop: dict = field(default_factory=dict)
     rpnode: str = ""
     sgid: str = ""
-    custom: dict[str, str] = field(default_factory=dict)
-    devtype: dict[str, str] = field(default_factory=dict)
-    zwave_props: ZWaveProperties = field(init=False)
-    is_battery_node: bool = field(init=False)
+    custom: dict = field(default_factory=dict)
+    devtype: dict = field(default_factory=dict)
+    zwave_props: ZWaveProperties | None = field(init=False, default=None)
     protocol: str = PROTO_INSTEON
     node_server: str = ""
 
@@ -96,8 +88,6 @@ class NodeDetail(NodeBaseDetail):
         """Post-initialization of Node detail dataclass."""
         if self.devtype:
             self.zwave_props = ZWaveProperties(**self.devtype)
-        if not self.prop:
-            self.is_battery_node = True
         if self.protocol.startswith(f"{PROTO_NODE_SERVER}_"):
             _, _, self.node_server = self.protocol.rpartition("_")
 
@@ -110,6 +100,7 @@ class Node(NodeBase, Entity):
     _uom: str = ""
     _precision: int = 0
     _formatted: str = ""
+    _is_battery_node: bool = True
 
     detail: NodeDetail
     platform: Nodes
@@ -122,17 +113,14 @@ class Node(NodeBase, Entity):
         detail: NodeDetail,
     ):
         """Initialize a Node class."""
+        super().__init__(platform=platform, address=address, name=name, detail=detail)
         self._parent_node = detail.pnode if detail.pnode != address else None
         self._protocol = detail.protocol
+        self._enabled = detail.enabled
         self.control_events = EventEmitter()
-        # self.is_battery_node = not state_set # TODO correct this on status load
-
-        super().__init__(platform=platform, address=address, name=name, detail=detail)
-
-    @property
-    def enabled(self) -> bool:
-        """Return if the device is enabled or not in the ISY."""
-        return self.enabled
+        if detail.prop and PROP_STATUS in detail.prop:
+            self._is_battery_node = False
+            self.update_state(NodeProperty(**detail.prop))
 
     @property
     def formatted(self) -> str:
@@ -146,7 +134,12 @@ class Node(NodeBase, Entity):
 
         Battery nodes do not provide a 'ST' property, only 'BATLVL'.
         """
-        return self.detail.is_battery_node
+        return self._is_battery_node
+
+    @is_battery_node.setter
+    def is_battery_node(self, value: bool) -> None:
+        """Override automatic detection of battery node."""
+        self._is_battery_node = value
 
     @property
     def is_backlight_supported(self) -> bool:
@@ -224,7 +217,7 @@ class Node(NodeBase, Entity):
 
         """
         if self._parent_node:
-            return self.platform.get_by_id(self._parent_node)
+            return self.platform.entities.get(self._parent_node)
         return None
 
     @property
@@ -360,54 +353,37 @@ class Node(NodeBase, Entity):
 
         return True
 
-    # async def update(
-    #     self,
-    #     event: NodeProperty | None = None,
-    #     wait_time: float = 0,
-    #     xmldoc: minidom.Element | None = None,
-    # ) -> None:
-    #     """Update the value of the node from the controller."""
-    #     if not self.isy.auto_update and not xmldoc:
-    #         await asyncio.sleep(wait_time)
-    #         req_url = self.isy.conn.compile_url(
-    #             [URL_NODES, self.address, URL_GET, PROP_STATUS]
-    #         )
-    #         xml = await self.isy.conn.request(req_url)
-    #         try:
-    #             xmldoc = minidom.parseString(xml)
-    #         except XML_ERRORS as exc:
-    #             _LOGGER.error("%s: Nodes", XML_PARSE_ERROR)
-    #             raise ISYResponseParseError(XML_PARSE_ERROR) from exc
-
-    #     if xmldoc is None:
-    #         _LOGGER.warning("ISY could not update node: %s", self.address)
-    #         return
-
-    #     self._last_update = datetime.now()
-    #     state, aux_props, _ = parse_xml_properties(xmldoc)
-    #     self._aux_properties.update(aux_props)
-    #     self.update_state(state)
-    #     _LOGGER.debug("ISY updated node: %s", self.address)
-
     def update_state(self, state: NodeProperty) -> None:
         """Update the various state properties when received."""
-        changed = False
+        changed = []
         self._last_update = datetime.now()
+
+        if self._is_battery_node and state.control == PROP_STATUS:
+            self._is_battery_node = False
+
+        if state.value != self.status:
+            changed.append("state")
+
+        if state.formatted not in (self._formatted, ""):
+            self._formatted = state.formatted
+            changed.append("formatted")
 
         if state.precision != self._precision:
             self._precision = state.precision
-            changed = True
+            changed.append("precision")
 
         if state.uom not in (self._uom, ""):
             self._uom = state.uom
-            changed = True
+            changed.append("uom")
 
-        if state.formatted is not None and state.formatted != self._formatted:
-            self._formatted = state.formatted
-            changed = True
-
-        if state.value != self.status or changed:
+        if changed:
             self.update_status(state.value)
+            _LOGGER.debug(
+                "Updated node state: %s (%s), changed=%s",
+                self.name,
+                self.address,
+                ", ".join(changed),
+            )
             return
 
     def get_command_value(self, uom: str, cmd: str) -> str | None:
@@ -421,31 +397,11 @@ class Node(NodeBase, Entity):
             list(UOM_TO_STATES[uom].values()).index(cmd)
         ]
 
-    def get_groups(self, controller: bool = True, responder: bool = True) -> list[str]:
-        """
-        Return the groups (scenes) of which this node is a member.
-
-        If controller is True, then the scene it controls is added to the list
-        If responder is True, then the scenes it is a responder of are added to
-        the list.
-        """
-        groups = []
-        # TODO: Not Done
-        for child in self.platform.all_lower_nodes:
-            if child[0] == TAG_GROUP:
-                if responder:
-                    if self.address in self.platform[child[2]].members:
-                        groups.append(child[2])
-                elif controller:
-                    if self.address in self.platform[child[2]].controllers:
-                        groups.append(child[2])
-        return groups
-
-    def get_property_uom(self, prop: str) -> str | list | None:
+    def get_property_uom(self, prop: str) -> str:
         """Get the Unit of Measurement an aux property."""
-        if aux_property := self.aux_properties.get(prop):
-            return aux_property.uom
-        return None
+        if not (aux_property := self.aux_properties.get(prop)):
+            raise ValueError(f"Invalid aux property for node {self.address}")
+        return aux_property.uom
 
     async def secure_lock(self) -> bool:
         """Send a command to securely lock a lock device."""

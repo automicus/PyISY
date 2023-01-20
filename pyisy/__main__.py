@@ -11,19 +11,31 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import json
 import logging
 import time
-import json
 from typing import Any
+
 from pyisy.connection import ISYConnectionError, ISYConnectionInfo, ISYInvalidAuthError
 from pyisy.constants import NODE_CHANGED_ACTIONS, SYSTEM_STATUS
+from pyisy.helpers.events import NodeChangedEvent
 from pyisy.isy import ISY
 from pyisy.logging import LOG_VERBOSE, enable_logging
-from pyisy.nodes import NodeChangedEvent
 
 _LOGGER = logging.getLogger(__name__)
 
-args: argparse.Namespace = None  # type: ignore[assignment]
+args: argparse.Namespace
+
+
+async def write_to_file(xml_dict: dict, path: str) -> None:
+    """Write the parse results to file for debugging."""
+    json_object = json.dumps(xml_dict, indent=4, default=str)
+    with open(
+        path,
+        "w",
+        encoding="utf-8",
+    ) as outfile:
+        outfile.write(json_object)
 
 
 async def main(cl_args: argparse.Namespace) -> None:
@@ -35,10 +47,7 @@ async def main(cl_args: argparse.Namespace) -> None:
         cl_args.url, cl_args.username, cl_args.password, tls_version=cl_args.tls_version
     )
     # Connect to ISY controller.
-    isy = ISY(
-        connection_info,
-        use_websocket=True,
-    )
+    isy = ISY(connection_info, use_websocket=True, args=cl_args)
 
     try:
         await isy.initialize(
@@ -81,15 +90,26 @@ async def main(cl_args: argparse.Namespace) -> None:
     # Print a representation of all the Nodes
     if cl_args.nodes:
         _LOGGER.debug(repr(isy.nodes))
+        if cl_args.file:
+            # Write nodes to file for debugging:
+            await write_to_file(await isy.nodes.get_tree(), ".output/nodes-tree.json")
+            await write_to_file(await isy.nodes.to_dict(), ".output/nodes-loaded.json")
+        isy.nodes.status_events.subscribe(status_handler, key="nodes")
     if cl_args.programs:
         _LOGGER.debug(repr(isy.programs))
-        if cl_args.verbose:
-            await isy.programs.get_tree()
+        if cl_args.file:
+            await write_to_file(await isy.programs.get_tree(), ".output/programs.json")
         isy.programs.status_events.subscribe(status_handler, key="programs")
     if cl_args.variables:
         _LOGGER.debug(repr(isy.variables))
+        if cl_args.file:
+            await write_to_file(await isy.variables.to_dict(), ".output/variables.json")
     if cl_args.networking:
         _LOGGER.debug(repr(isy.networking))
+        if cl_args.file:
+            await write_to_file(
+                await isy.networking.to_dict(), ".output/networking.json"
+            )
     if cl_args.node_servers:
         _LOGGER.debug(repr(isy.node_servers))
     if cl_args.clock:
@@ -98,17 +118,6 @@ async def main(cl_args: argparse.Namespace) -> None:
 
     node_changed_subscriber = None
     system_status_subscriber = None
-
-    obj = {}
-    for node in isy.nodes.values():
-        obj[str(node)] = {
-            "status": node.status,
-            "detail": node.detail.__dict__,
-        }
-
-    json_object = json.dumps(obj, indent=4, default=str)
-    with open("nodes-loaded.json", "w", encoding="utf-8") as outfile:
-        outfile.write(json_object)
 
     try:
         if cl_args.events:
@@ -197,6 +206,13 @@ if __name__ == "__main__":
         dest="node_servers",
         action="store_false",
         help="Do not load Node Server Definitions",
+    )
+    parser.add_argument(
+        "-o",
+        "--file",
+        dest="file",
+        action="store_true",
+        help="Dump tree information to file",
     )
     parser.set_defaults(use_https=False, tls_version=None, verbose=False)
     args = parser.parse_args()

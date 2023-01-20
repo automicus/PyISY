@@ -19,8 +19,12 @@ As of v3.0.7, this module will document all changes within the GitHub release in
 - No longer support direct setting of `status` property, use `update_status`
 - `parse_xml_properties` moved from `pyisy.helpers` -> `pyisy.nodes.parser`
 - Prec renamed to Precision
-- type renamed to type_
+- type renamed to type\_
 - removed dimmable property (use is_dimmable)
+- GetChildren removed from `pyisy.nodes`
+- Get_groups moved `pyisy.nodes.node` -> `pyisy.nodes`
+- Event receiver functions moved to `pyisy.nodes.node_events`
+- Get folder returns a named tuple `(name, address)`
 
 #### Programs
 
@@ -43,7 +47,7 @@ As of v3.0.7, this module will document all changes within the GitHub release in
 - `NodeProperty`, `ZWaveProperties` moved to `pyisy.helpers.models`
 - `value_from_xml`,`attr_from_xml`,`attr_from_element`,`value_from_nested_xml` moved to `pyisy.helpers.xml`, but still importable from `pyisy.helpers`
 - `ntp_to_system_time` moved to `pyisy.clock`
-ZWaveProps `category` -> `cat` and return values as hex strings `0x0000`
+  ZWaveProps `category` -> `cat` and return values as hex strings `0x0000`
 
 #### Networking
 

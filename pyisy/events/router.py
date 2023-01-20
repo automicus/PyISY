@@ -7,10 +7,14 @@ import json
 import logging
 from typing import TYPE_CHECKING, Any, cast
 
-from pyisy.constants import PROP_STATUS
 from pyisy.exceptions import ISYResponseParseError
 from pyisy.helpers.xml import parse_xml
 from pyisy.logging import LOG_VERBOSE
+from pyisy.nodes.node_events import (
+    node_changed_received,
+    node_update_received,
+    progress_report_received,
+)
 
 if TYPE_CHECKING:
     from pyisy.events.tcpsocket import EventStream
@@ -65,7 +69,7 @@ class EventRouter:
         elif event := xml_dict.get("event", {}):
             try:
                 await self.route_message(EventData(**event))
-            except (KeyError, ValueError):
+            except (KeyError, ValueError, NameError):
                 _LOGGER.error("Could not validate event", exc_info=True)
 
     async def route_message(self, event: EventData) -> None:
@@ -85,10 +89,9 @@ class EventRouter:
             return
         if control == "_0" and event.action is not None:  # ISY HEARTBEAT
             self.events.heartbeat(int(cast(str, event.action)))
-        elif control == PROP_STATUS:  # NODE UPDATE
-            self.isy.nodes.update_received(event)
         elif control[0] != "_":  # NODE CONTROL EVENT
-            self.isy.nodes.control_message_received(event)
+            if self.isy.nodes.loaded and self.isy.nodes.initialized:
+                await node_update_received(self.isy.nodes, event)
         elif control == "_1":  # Trigger Update
             if event.action == "0":
                 # Event Status
@@ -132,7 +135,7 @@ class EventRouter:
             return
         elif control == "_3":
             # Node Changed/Updated
-            self.isy.nodes.node_changed_received(event)
+            await node_changed_received(self.isy.nodes, event)
             return
         elif control == "_4":
             # System Configuration Updated
@@ -163,7 +166,7 @@ class EventRouter:
 
         elif control == "_7":
             # Progress report, device programming event
-            self.isy.nodes.progress_report_received(event)
+            await progress_report_received(self.isy.nodes, event)
             return
 
 

@@ -52,7 +52,6 @@ class Group(NodeBase, Entity):
     """Interact with ISY groups (scenes)."""
 
     _all_on: bool
-    _controllers: list[str]
     _members_handlers: list[EventListener]
     detail: GroupDetail
     platform: Nodes
@@ -86,7 +85,7 @@ class Group(NodeBase, Entity):
     @property
     def controllers(self) -> list[str]:
         """Get the controller nodes of the scene/group."""
-        return self._controllers
+        return self.detail.controllers
 
     @property
     def group_all_on(self) -> bool:

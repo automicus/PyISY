@@ -155,3 +155,13 @@ class EntityPlatform(ABC):
         if not (0 <= value <= len(self.addresses)):
             return None
         return list(self.entities.values())[value]
+
+    async def to_dict(self) -> dict:
+        """Dump entity platform entities to dict."""
+        return {
+            str(entity): {
+                "status": entity.status,
+                "detail": entity.detail.__dict__,
+            }
+            for entity in self.values()
+        }

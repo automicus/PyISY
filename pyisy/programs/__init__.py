@@ -11,10 +11,10 @@ from pyisy.constants import URL_PROGRAMS, URL_SUBFOLDERS, XML_TRUE
 from pyisy.events.router import EventData
 from pyisy.helpers.entity import Entity
 from pyisy.helpers.entity_platform import EntityPlatform
+from pyisy.helpers.events import EventEmitter
 from pyisy.logging import _LOGGER, LOG_VERBOSE
 from pyisy.programs.folder import Folder, FolderDetail
 from pyisy.programs.program import Program, ProgramDetail
-from pyisy.helpers.events import EventEmitter
 
 if TYPE_CHECKING:
     from pyisy.isy import ISY
@@ -53,6 +53,12 @@ class Programs(EntityPlatform):
 
     async def parse(self, xml_dict: dict[str, Any]) -> None:
         """Parse the results from the ISY."""
+        # Write nodes to file for debugging:
+        if self.isy.args is not None and self.isy.args.file:
+            json_object = json.dumps(xml_dict, indent=4, default=str)
+            with open(".output/rest-programs.json", "w", encoding="utf-8") as outfile:
+                outfile.write(json_object)
+
         if not (features := xml_dict["programs"]["program"]):
             return
 
@@ -100,9 +106,7 @@ class Programs(EntityPlatform):
                 }
             return hierarchy
 
-        tree = await traverse({}, roots)
-        _LOGGER.debug(json.dumps(tree, indent=4, default=str))
-        return tree
+        return await traverse({}, roots)
 
     async def update_received(self, event: EventData) -> None:
         """Update programs from EventStream message.

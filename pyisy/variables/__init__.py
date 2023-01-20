@@ -31,6 +31,17 @@ EMPTY_VARIABLES_RESPONSE = [
 ]
 
 
+async def write_to_file(xml_dict: dict, path: str) -> None:
+    """Write the parse results to file for debugging."""
+    json_object = json.dumps(xml_dict, indent=4, default=str)
+    with open(
+        f".output/rest-variables-{path}.json",
+        "w",
+        encoding="utf-8",
+    ) as outfile:
+        outfile.write(json_object)
+
+
 class Variables(EntityPlatform):
     """This class handles the ISY variables."""
 
@@ -74,6 +85,9 @@ class Variables(EntityPlatform):
                     for i, v in enumerate(xml_int_def["c_list"]["e"])
                 ]
             }
+
+            if self.isy.args is not None and self.isy.args.file:
+                await write_to_file(int_dict, "integer")
             _LOGGER.log(
                 LOG_VERBOSE,
                 "%s:\n%s",
@@ -93,6 +107,9 @@ class Variables(EntityPlatform):
                     for i, v in enumerate(xml_state_def["c_list"]["e"])
                 ]
             }
+
+            if self.isy.args is not None and self.isy.args.file:
+                await write_to_file(state_dict, "state")
             _LOGGER.log(
                 LOG_VERBOSE,
                 "%s:\n%s",

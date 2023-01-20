@@ -28,11 +28,16 @@ class NodeProperty:
         """Post-process Node Property after initialization."""
         if id:
             self.control = id
-        self.value = (
-            int(self.value)
-            if cast(str, self.value).strip() != ""
-            else ISY_VALUE_UNKNOWN
-        )
+
+        if isinstance(cast(str, self.value), str):
+            self.value = (
+                int(self.value)
+                if cast(str, self.value).strip() != ""
+                else ISY_VALUE_UNKNOWN
+            )
+
+        # if not self.formatted:
+        #     self.formatted = str(self.value)
 
 
 @dataclass

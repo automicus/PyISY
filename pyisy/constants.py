@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import datetime
+from enum import IntEnum
 
 UPDATE_INTERVAL = 0.5
 
@@ -135,6 +136,7 @@ PROTO_INT_VAR = "integer_variable"
 PROTO_ISY = "isy"
 PROTO_NETWORK = "network"
 PROTO_NODE_SERVER = "node_server"
+PROTO_NODE_FOLDER = "node_folder"
 PROTO_PROGRAM = "program"
 PROTO_STATE_VAR = "state_variable"
 PROTO_ZIGBEE = "zigbee"
@@ -1158,3 +1160,12 @@ BACKLIGHT_INDEX = [
     "On 14 / Off 7",
     "On 15 / Off 7",
 ]
+
+
+class UDHierarchyNodeType(IntEnum):
+    """Enum representation of node types."""
+
+    NOTSET = 0
+    NODE = 1
+    GROUP = 2
+    FOLDER = 3

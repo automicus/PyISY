@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<nodeInfo>
+    <node flag="128" nodeDefId="UZW00A0">
+        <address>ZW045_1</address>
+        <name>ZW 045 Notify Sensor</name>
+        <family>4</family>
+        <type>4.7.1.0</type>
+        <enabled>true</enabled>
+        <deviceClass>0</deviceClass>
+        <wattage>0</wattage>
+        <dcPeriod>0</dcPeriod>
+        <startDelay>0</startDelay>
+        <endDelay>0</endDelay>
+        <pnode>ZW045_1</pnode>
+        <rpnode>ZW045_1</rpnode>
+        <sgid>1</sgid>
+        <custom flags="0" val1="0" />
+        <devtype>
+            <gen>4.7.1</gen>
+            <mfg>634.28672.57348</mfg>
+            <cat>185</cat>
+        </devtype>
+    </node>
+    <properties>
+        <property id="BATLVL" value="97" formatted="97%" uom="51" />
+        <property id="ERR" value="0" formatted="0" uom="0" />
+    </properties>
+</nodeInfo>
