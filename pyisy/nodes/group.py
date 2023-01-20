@@ -1,66 +1,78 @@
 """Representation of groups (scenes) from an ISY."""
 from __future__ import annotations
 
+from dataclasses import dataclass, field
 from datetime import datetime
+from typing import TYPE_CHECKING, cast
 
 from pyisy.constants import (
-    FAMILY_GENERIC,
     INSTEON_STATELESS_NODEDEFID,
     ISY_VALUE_UNKNOWN,
+    NODE_IS_CONTROLLER,
     PROTO_GROUP,
 )
+from pyisy.helpers.entity import Entity
 from pyisy.helpers.events import EventListener
 from pyisy.helpers.models import NodeProperty
-from pyisy.nodes.nodebase import NodeBase
+from pyisy.nodes.nodebase import NodeBase, NodeBaseDetail
+
+if TYPE_CHECKING:
+    from pyisy.nodes import Nodes
 
 
-class Group(NodeBase):
-    """
-    Interact with ISY groups (scenes).
+@dataclass
+class GroupDetail(NodeBaseDetail):
+    """Dataclass to hold group details."""
 
-    |  nodes: The node manager object.
-    |  address: The node ID.
-    |  name: The node name.
-    |  members: List of the members in this group.
-    |  controllers: List of the controllers in this group.
-    |  spoken: The string of the Notes Spoken field.
+    device_group: str = ""
+    members: dict[str, list[dict[str, str]]] = field(default_factory=dict)
+    links: list[str] = field(init=False, default_factory=list)
+    controllers: list[str] = field(init=False, default_factory=list)
 
-    :ivar has_children: Boolean value indicating that group has no children.
-    :ivar members: List of the members of this group.
-    :ivar controllers: List of the controllers of this group.
-    :ivar name: The name of this group.
-    :ivar status: Watched property indicating the status of the group.
-    :ivar group_all_on: Watched property indicating if all devices in group are on.
-    """
+    def __post_init__(self) -> None:
+        """Post-initialize the GroupDetail dataclass."""
+        if not self.members:
+            return
+
+        # Get the link list and make single links a dict
+        link_list: list[dict[str, str]] | dict[str, str] = self.members.get("link", [])
+        if not (link_list):
+            return
+        if isinstance(link_list, dict):
+            link_list = [link_list]
+
+        for link in link_list:
+            address = link["address"]
+            self.links.append(address)
+            if int(link["type_"]) == NODE_IS_CONTROLLER:
+                self.controllers.append(address)
+
+
+class Group(NodeBase, Entity):
+    """Interact with ISY groups (scenes)."""
 
     _all_on: bool
     _controllers: list[str]
-    _members: list[str]
     _members_handlers: list[EventListener]
+    detail: GroupDetail
+    platform: Nodes
 
     def __init__(
         self,
-        nodes,
-        address,
-        name,
-        members=None,
-        controllers=None,
-        family_id=FAMILY_GENERIC,
-        pnode=None,
-        flag=0,
+        platform: Nodes,
+        address: str,
+        name: str,
+        detail: GroupDetail,
     ):
         """Initialize a Group class."""
+        self._protocol = PROTO_GROUP
         self._all_on = False
-        self._controllers = controllers or []
-        self._members = members or []
-        super().__init__(
-            nodes, address, name, 0, family_id=family_id, pnode=pnode, flag=flag
-        )
+        super().__init__(platform=platform, address=address, name=name, detail=detail)
 
         # listen for changes in children
         self._members_handlers = [
-            self._nodes[m].status_events.subscribe(self.update_callback)
-            for m in self.members
+            self.platform.entities[m].status_events.subscribe(self.update_callback)
+            for m in self.detail.links
         ]
 
         # get and update the status
@@ -93,40 +105,36 @@ class Group(NodeBase):
     @property
     def members(self) -> list[str]:
         """Get the members of the scene/group."""
-        return self._members
+        return self.detail.links
 
-    @property
-    def protocol(self) -> str:
-        """Return the protocol for this entity."""
-        return PROTO_GROUP
-
-    async def update(
-        self,
-        event: NodeProperty | None = None,
-        wait_time: float | None = 0,
-        xmldoc: str | None = None,
-    ) -> None:
-        """Update the group with values from the controller."""
-        self._update(event, wait_time, xmldoc)
+    # async def update(
+    #     self,
+    #     event: NodeProperty | None = None,
+    #     wait_time: float | None = 0,
+    #     xmldoc: str | None = None,
+    # ) -> None:
+    #     """Update the group with values from the controller."""
+    #     self._update(event, wait_time, xmldoc)
 
     def _update(
         self,
-        event: NodeProperty | None = None,
-        wait_time: float | None = 0,
-        xmldoc: str | None = None,
     ) -> None:
         """Update the group with values from the controller."""
         self._last_update = datetime.now()
-        valid_nodes = [
-            node
-            for node in self.members
+
+        valid_nodes = []
+        for address in self.members:
+            node = self.platform.entities[address]
             if (
-                self._nodes[node].status is not None
-                and self._nodes[node].status != ISY_VALUE_UNKNOWN
-                and self._nodes[node].node_def_id not in INSTEON_STATELESS_NODEDEFID
-            )
+                node.status is not None
+                and node.status != ISY_VALUE_UNKNOWN
+                and cast(NodeBaseDetail, node.detail).node_def_id
+                not in INSTEON_STATELESS_NODEDEFID
+            ):
+                valid_nodes.append(address)
+        on_nodes = [
+            node for node in valid_nodes if int(self.platform.entities[node].status) > 0
         ]
-        on_nodes = [node for node in valid_nodes if int(self._nodes[node].status) > 0]
         if on_nodes:
             self.group_all_on = len(on_nodes) == len(valid_nodes)
             self.update_status(255)
@@ -136,4 +144,4 @@ class Group(NodeBase):
 
     def update_callback(self, event: NodeProperty | None = None) -> None:
         """Handle synchronous callbacks for subscriber events."""
-        self._update(event)
+        self._update()

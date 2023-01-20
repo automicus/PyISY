@@ -72,7 +72,7 @@ ATTR_VAL = "val"  # Used for Variables.
 ATTR_VALUE = "value"  # Used for everything else.
 ATTR_VAR = "var"
 
-DEFAULT_PRECISION = "0"
+DEFAULT_PRECISION = 0
 DEFAULT_UNIT_OF_MEASURE = ""
 
 NET_MODULE = "Networking Module"

@@ -18,15 +18,9 @@ __all__ = [
     "attr_from_xml",
     "attr_from_element",
     "value_from_nested_xml",
-    "now",
     "random_uuid_hex",
     "convert_isy_raw_value",
 ]
-
-
-def now() -> datetime.datetime:
-    """Get the current system time."""
-    return datetime.datetime.now()
 
 
 def random_uuid_hex() -> str:

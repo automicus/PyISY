@@ -14,6 +14,7 @@ from pyisy.helpers.entity_platform import EntityPlatform
 from pyisy.logging import _LOGGER, LOG_VERBOSE
 from pyisy.programs.folder import Folder, FolderDetail
 from pyisy.programs.program import Program, ProgramDetail
+from pyisy.helpers.events import EventEmitter
 
 if TYPE_CHECKING:
     from pyisy.isy import ISY
@@ -38,8 +39,6 @@ PROG_STATUS: dict[str, str | bool] = {
 class Programs(EntityPlatform):
     """This class handles the ISY programs."""
 
-    types: list[str] = []
-
     def __init__(
         self,
         isy: ISY,
@@ -49,7 +48,7 @@ class Programs(EntityPlatform):
         Iterate over self.values()
         """
         super().__init__(isy=isy, platform_name=PLATFORM)
-        self.isy = isy
+        self.status_events = EventEmitter()
         self.url = self.isy.conn.compile_url([URL_PROGRAMS], {URL_SUBFOLDERS: XML_TRUE})
 
     async def parse(self, xml_dict: dict[str, Any]) -> None:

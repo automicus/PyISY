@@ -20,7 +20,6 @@ from pyisy.constants import (
     ES_STOP_UPDATES,
 )
 from pyisy.events.router import EventRouter
-from pyisy.helpers import now
 from pyisy.helpers.session import get_new_client_session, get_sslcontext
 from pyisy.logging import enable_logging
 
@@ -124,7 +123,7 @@ class WebSocketClient:
     def heartbeat_time(self) -> float:
         """Return the time since the last ISY Heartbeat."""
         if self._last_heartbeat is not None:
-            return (now() - self._last_heartbeat).seconds
+            return (datetime.now() - self._last_heartbeat).seconds
         return 0.0
 
     async def _websocket_guardian(self) -> None:

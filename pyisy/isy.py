@@ -69,7 +69,7 @@ class ISY:
     conn: Connection
     connection_info: ISYConnectionInfo
     config: ConfigurationData | None = None
-    nodes: Nodes | None = None
+    nodes: Nodes
     node_servers: NodeServers | None = None
     programs: Programs
     variables: Variables
@@ -102,6 +102,7 @@ class ISY:
         self.networking = NetworkResources(self)
         self.variables = Variables(self)
         self.programs = Programs(self)
+        self.nodes = Nodes(self)
 
         # Setup event emitters and loop
         self.connection_events = EventEmitter()
@@ -126,10 +127,9 @@ class ISY:
         isy_setup_tasks: list[Awaitable[Any]] = []
         isy_setup_index: list[str] = []
         if nodes:
-            isy_setup_tasks.append(self.conn.get_status())
-            isy_setup_index.append(self.conn.get_status.__qualname__)
-            isy_setup_tasks.append(self.conn.get_nodes())
-            isy_setup_index.append(self.conn.get_nodes.__qualname__)
+            # isy_setup_tasks.append(self.conn.get_status())
+            # isy_setup_index.append(self.conn.get_status.__qualname__)
+            isy_setup_tasks.append(self.nodes.update())
 
         if clock:
             isy_setup_tasks.append(self.clock.update())
@@ -145,14 +145,10 @@ class ISY:
 
         isy_setup_results = await asyncio.gather(*isy_setup_tasks)
 
-        if nodes:
-            self.nodes = Nodes(
-                self,
-                xml=isy_setup_results[isy_setup_index.index("Connection.get_nodes")],
-            )
-            await self.nodes.update(
-                xml=isy_setup_results[isy_setup_index.index("Connection.get_status")]
-            )  # Node Status
+        # if nodes:
+        #     await self.nodes.update_status(
+        #         xml=isy_setup_results[isy_setup_index.index("Connection.get_status")]
+        #     )  # Node Status
 
         if self.node_servers and node_servers:
             await self.node_servers.load_node_servers()

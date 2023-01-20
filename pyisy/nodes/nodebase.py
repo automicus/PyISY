@@ -1,8 +1,9 @@
 """Base object for nodes and groups."""
 from __future__ import annotations
 
+from dataclasses import dataclass, field
 from datetime import datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Generic
 from xml.dom import minidom
 
 from pyisy.constants import (
@@ -20,7 +21,6 @@ from pyisy.constants import (
     CMD_ON_FAST,
     COMMAND_FRIENDLY_NAME,
     METHOD_COMMAND,
-    NODE_FAMILY_ID,
     TAG_DESCRIPTION,
     TAG_IS_LOAD,
     TAG_LOCATION,
@@ -33,7 +33,8 @@ from pyisy.constants import (
 )
 from pyisy.exceptions import XML_ERRORS, XML_PARSE_ERROR, ISYResponseParseError
 from pyisy.helpers import value_from_xml
-from pyisy.helpers.entity import Entity, EntityStatus
+from pyisy.helpers.entity import Entity, EntityDetail, EntityStatus, StatusT
+from pyisy.helpers.events import EventEmitter
 from pyisy.helpers.models import NodeNotes, NodeProperty
 from pyisy.logging import _LOGGER
 
@@ -41,100 +42,64 @@ if TYPE_CHECKING:
     from pyisy.nodes import Nodes
 
 
+@dataclass
+class NodeBaseDetail(EntityDetail, Generic[StatusT]):
+    """Dataclass to hold entity detail info."""
+
+    status: StatusT = None  # type: ignore[assignment]
+    family: str | dict[str, str] = ""
+    flag: int = 0
+    node_def_id: str = ""
+    address: str = ""
+    name: str = ""
+    parent: dict[str, str] = field(default_factory=dict)
+    pnode: str = ""
+
+
 class NodeBase(Entity):
     """Base Object for Nodes and Groups/Scenes."""
 
     has_children = False
-    _aux_properties: dict[str, NodeProperty]
-    _family: str
-    _id: str
-    _name: str
-    _nodes: Nodes
-    _notes: NodeNotes | None
+    aux_properties: dict[str, NodeProperty] = {}
+    platform: Nodes
+    notes: NodeNotes | None
     _primary_node: str
-    _flag: int
-    _status: int | float
-    _last_update: datetime
-    _last_changed: datetime
+    detail: NodeBaseDetail
 
     def __init__(
         self,
-        nodes: Nodes,
+        platform: Nodes,
         address: str,
         name: str,
-        status: int | float,
-        family_id: str = "",
+        detail: NodeBaseDetail,
         aux_properties: dict[str, NodeProperty] | None = None,
-        pnode: str = "",
-        flag: int = 0,
     ):
         """Initialize a Node Base class."""
-        self._aux_properties = aux_properties if aux_properties is not None else {}
-        self._family = NODE_FAMILY_ID.get(family_id, family_id)
+        self.platform = platform
+        self.isy = platform.isy
         self._address = address
         self._name = name
-        self._nodes = nodes
-        self._notes = None
-        self._primary_node = pnode
-        self._flag = flag
-        self._status = status
+
+        self.aux_properties = aux_properties if aux_properties else {}
+        # self._family = NODE_FAMILY_ID.get(
+        #     family_id, family_id
+        # )  # TODO: handle node server dicts
+        self.notes = None
+        self._primary_node = detail.pnode
+        self._status = detail.status
+        self.detail = detail
         self._last_update = datetime.now()
         self._last_changed = datetime.now()
-        self.isy = nodes.isy
+        self.status_events = EventEmitter()
 
     def __str__(self) -> str:
         """Return a string representation of the node."""
         return f"{type(self).__name__}({self.address})"
 
     @property
-    def aux_properties(self) -> dict[str, NodeProperty]:
-        """Return the aux properties that were in the Node Definition."""
-        return self._aux_properties
-
-    @property
-    def description(self) -> str:
-        """Return the description of the node from it's notes."""
-        if self._notes is None:
-            _LOGGER.debug(
-                "No notes retrieved for node. Call get_notes() before accessing."
-            )
-            return ""
-        return self._notes.description
-
-    @property
-    def family(self) -> str:
-        """Return the ISY Family category."""
-        return self._family
-
-    @property
-    def flag(self) -> int:
-        """Return the flag of the current node as a property."""
-        return self._flag
-
-    @property
     def folder(self) -> str:
         """Return the folder of the current node as a property."""
-        return self._nodes.get_folder(self.address)
-
-    @property
-    def is_load(self) -> bool:
-        """Return the isLoad property of the node from it's notes."""
-        if self._notes is None:
-            _LOGGER.debug(
-                "No notes retrieved for node. Call get_notes() before accessing."
-            )
-            return False
-        return self._notes.is_load
-
-    @property
-    def location(self) -> str:
-        """Return the location of the node from it's notes."""
-        if self._notes is None:
-            _LOGGER.debug(
-                "No notes retrieved for node. Call get_notes() before accessing."
-            )
-            return ""
-        return self._notes.location
+        return self.platform.get_folder(self.address)
 
     @property
     def primary_node(self) -> str:
@@ -145,16 +110,6 @@ class NodeBase(Entity):
 
         """
         return self._primary_node
-
-    @property
-    def spoken(self) -> str:
-        """Return the text of the Spoken property inside the group notes."""
-        if self._notes is None:
-            _LOGGER.debug(
-                "No notes retrieved for node. Call get_notes() before accessing."
-            )
-            return ""
-        return self._notes.spoken
 
     async def get_notes(self) -> None:
         """Retrieve and parse the notes for a given node.
@@ -176,7 +131,7 @@ class NodeBase(Entity):
             location = value_from_xml(notes_dom, TAG_LOCATION)
             description = value_from_xml(notes_dom, TAG_DESCRIPTION)
             is_load = value_from_xml(notes_dom, TAG_IS_LOAD)
-        self._notes = NodeNotes(
+        self.notes = NodeNotes(
             spoken=spoken,
             is_load=is_load == XML_TRUE,
             description=description,

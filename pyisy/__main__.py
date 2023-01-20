@@ -13,6 +13,7 @@ import argparse
 import asyncio
 import logging
 import time
+import json
 from typing import Any
 from pyisy.connection import ISYConnectionError, ISYConnectionInfo, ISYInvalidAuthError
 from pyisy.constants import NODE_CHANGED_ACTIONS, SYSTEM_STATUS
@@ -97,6 +98,17 @@ async def main(cl_args: argparse.Namespace) -> None:
 
     node_changed_subscriber = None
     system_status_subscriber = None
+
+    obj = {}
+    for node in isy.nodes.values():
+        obj[str(node)] = {
+            "status": node.status,
+            "detail": node.detail.__dict__,
+        }
+
+    json_object = json.dumps(obj, indent=4, default=str)
+    with open("nodes-loaded.json", "w", encoding="utf-8") as outfile:
+        outfile.write(json_object)
 
     try:
         if cl_args.events:

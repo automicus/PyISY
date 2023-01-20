@@ -43,8 +43,6 @@ class FolderDetail(EntityDetail):
 class Folder(Entity):
     """Object representing a program folder on the ISY device."""
 
-    dtype = TAG_FOLDER
-
     def __init__(
         self, platform: Programs, address: str, name: str, detail: FolderDetail
     ) -> None:

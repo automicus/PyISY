@@ -39,7 +39,7 @@ class VariableDetail(EntityDetail):
     val: InitVar[str] = "0"
     id: str = ""
     name: str = ""
-    type: str = "1"
+    type_: str = "1"
     ts: datetime = datetime.now()
     precision: int = 0
     value: int | float = field(init=False)
@@ -72,7 +72,7 @@ class Variable(Entity):
         self.isy = platform.isy
         self._last_update = datetime.now()
         self._address = address
-        self._var_type = detail.type
+        self._var_type = detail.type_
         if self._var_type == VAR_INTEGER:
             self._protocol = PROTO_INT_VAR
         else:
@@ -87,7 +87,7 @@ class Variable(Entity):
         self._status = detail.value
         self._initial = detail.initial
         self._var_id = detail.id
-        self._var_type = detail.type
+        self._var_type = detail.type_
         self.detail = detail
         self._last_changed = datetime.now()
         self.status_events.notify(self.status_feedback)

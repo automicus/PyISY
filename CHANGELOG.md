@@ -9,6 +9,7 @@ As of v3.0.7, this module will document all changes within the GitHub release in
 #### Minimum Python Version
 
 - Dropped support for <3.9
+- Dropped support for ISY versions <4.3
 
 - `NodeBase` `._id` attribute renamed to `_address`, continue to use `address` property.
 - `Folder` `._id` attribute renamed to `_address`, continue to use `address` property.
@@ -17,6 +18,9 @@ As of v3.0.7, this module will document all changes within the GitHub release in
 
 - No longer support direct setting of `status` property, use `update_status`
 - `parse_xml_properties` moved from `pyisy.helpers` -> `pyisy.nodes.parser`
+- Prec renamed to Precision
+- type renamed to type_
+- removed dimmable property (use is_dimmable)
 
 #### Programs
 
@@ -39,6 +43,7 @@ As of v3.0.7, this module will document all changes within the GitHub release in
 - `NodeProperty`, `ZWaveProperties` moved to `pyisy.helpers.models`
 - `value_from_xml`,`attr_from_xml`,`attr_from_element`,`value_from_nested_xml` moved to `pyisy.helpers.xml`, but still importable from `pyisy.helpers`
 - `ntp_to_system_time` moved to `pyisy.clock`
+ZWaveProps `category` -> `cat` and return values as hex strings `0x0000`
 
 #### Networking
 

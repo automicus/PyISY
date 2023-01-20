@@ -29,13 +29,22 @@ def post_processor(path: str, key: str, value: Any) -> tuple[str, Any]:
 
     # Make keys `snake_case`
     key = SNAKE.sub("_", key).lower()
+    if key == "property":
+        key = "prop"
+    elif key == "type":
+        key = "type_"
 
     # Convert common keys
     if key == "prec":
         key = "precision"
         value = int(cast(str, value))
-    if key == "_value":
+    elif key == "_value":
         key = "value"
+        try:
+            value = int(cast(str, value))
+        except ValueError:
+            pass
+    elif key == "flag":
         try:
             value = int(cast(str, value))
         except ValueError:
@@ -54,9 +63,9 @@ def post_processor(path: str, key: str, value: Any) -> tuple[str, Any]:
 # @timeit
 def parse_xml(
     xml: str | None,
-    attr_prefix: str = "",
-    cdata_key: str = "_value",
-    use_pp: bool = True,
+    attr_prefix: str | None = "",
+    cdata_key: str | None = "_value",
+    use_pp: bool | None = True,
 ) -> dict:
     """Parse an XML string and return a dict object."""
     if not xml:

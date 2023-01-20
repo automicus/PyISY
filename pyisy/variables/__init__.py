@@ -110,14 +110,14 @@ class Variables(EntityPlatform):
             await self.parse_entity(feature)
         _LOGGER.info(
             "Loaded %s %s",
-            "state" if features[0]["type"] == "2" else "integer",
+            "state" if features[0]["type_"] == "2" else "integer",
             PLATFORM,
         )
 
     async def parse_entity(self, feature: dict[str, Any]) -> None:
         """Parse a single value and add it to the platform."""
         try:
-            address = f"{feature['type']}.{feature['id']}"
+            address = f"{feature['type_']}.{feature['id']}"
             name = feature["name"]
             _LOGGER.log(LOG_VERBOSE, "Parsing %s: %s (%s)", PLATFORM, name, address)
             detail = VariableDetail(**feature)
@@ -131,7 +131,7 @@ class Variables(EntityPlatform):
         event_info: dict[str, dict] = cast(dict, event.event_info)
         var_info = event_info["var"]
 
-        if (address := f"{var_info['type']}.{var_info['id']}") not in self.addresses:
+        if (address := f"{var_info['type_']}.{var_info['id']}") not in self.addresses:
             # New/unknown variable, refresh full set.
             await self.update()
             return

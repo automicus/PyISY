@@ -1,9 +1,10 @@
 """Representation of ISY Nodes."""
 from __future__ import annotations
 
-from asyncio import sleep
+import asyncio
 import re
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, cast, Any
+import json
 from xml.dom import minidom
 
 from pyisy.constants import (
@@ -56,20 +57,31 @@ from pyisy.constants import (
     TAG_TYPE,
     UOM_SECONDS,
     XML_TRUE,
+    URL_NODES,
+    URL_STATUS,
 )
 from pyisy.exceptions import XML_ERRORS, XML_PARSE_ERROR, ISYResponseParseError
 from pyisy.helpers.events import EventEmitter, NodeChangedEvent
+from pyisy.helpers.entity_platform import EntityPlatform
 from pyisy.events.router import EventData
 from pyisy.helpers.models import NodeProperty, ZWaveProperties
-from pyisy.helpers.xml import attr_from_element, attr_from_xml, value_from_xml
-from pyisy.logging import _LOGGER
+from pyisy.helpers.xml import (
+    attr_from_element,
+    attr_from_xml,
+    value_from_xml,
+    parse_xml,
+)
+from pyisy.logging import _LOGGER, LOG_VERBOSE
 from pyisy.node_servers import NodeServers
-from pyisy.nodes.group import Group
-from pyisy.nodes.node import Node
+from pyisy.nodes.group import Group, GroupDetail
+from pyisy.nodes.node import Node, NodeDetail
 from pyisy.nodes.parser import parse_xml_properties
+from pyisy.nodes.folder import NodeFolderDetail, NodeFolder
 
 if TYPE_CHECKING:
-    from pyisy.nodes.isy import ISY  # pylint: disable=import-self
+    from pyisy.isy import ISY
+
+PLATFORM = "nodes"
 
 MEMORY_REGEX = (
     r".*dbAddr=(?P<dbAddr>[A-F0-9x]*) \[(?P<value>[A-F0-9]{2})\] "
@@ -77,158 +89,175 @@ MEMORY_REGEX = (
 )
 
 
-class Nodes:
-    """
-    This class handles the ISY nodes.
+class Nodes(EntityPlatform):
+    """This class handles the ISY nodes."""
 
-    This class can be used as a dictionary to
-    navigate through the controller's structure to objects of type
-    :class:`pyisy.nodes.Node` and :class:`pyisy.nodes.Group` that represent
-    objects on the controller.
-
-    |  isy: ISY class
-    |  root: [optional] String representing the current navigation level's ID
-    |  addresses: [optional] list of node ids
-    |  nnames: [optional] list of node names
-    |  nparents: [optional] list of node parents
-    |  nobjs: [optional] list of node objects
-    |  ntypes: [optional] list of node types
-    |  xml: [optional] String of xml data containing the configuration data
-
-    :ivar all_lower_nodes: Return all nodes beneath current level
-    :ivar children: A list of the object's children.
-    :ivar has_children: Indicates if object has children
-    :ivar name: The name of the current folder in navigation.
-    """
-
-    isy: ISY
-    root: str
-    addresses: list[str] = []
-    nnames: list[str] = []
-    nparents: list[str] = []
-    nobjs: list[Node | Group] = []
-    ntypes: list[str] = []
+    node_servers: set = set()
 
     def __init__(
         self,
         isy: ISY,
-        root: str | None = None,
-        addresses: list[str] | None = None,
-        nnames: list[str] | None = None,
-        nparents: list[str] | None = None,
-        nobjs: list[Node | Group] | None = None,
-        ntypes: list[str] | None = None,
-        xml: str | None = None,
-    ):
-        """Initialize the Nodes ISY Node Manager class."""
-        self.isy = isy
-        self.root = root
+    ) -> None:
+        """Initialize the Nodes ISY Node Manager class.
+
+        Iterate over self.values()
+        """
+        super().__init__(isy=isy, platform_name=PLATFORM)
         self.status_events = EventEmitter()
+        self.url = self.isy.conn.compile_url([URL_NODES])
+        self.status_url = self.isy.conn.compile_url([URL_STATUS])
+        self._parse_cdata_key = "address"
 
-        if xml is not None:
-            self.parse(xml)
+    async def parse(self, xml_dict: dict[str, Any]) -> None:
+        """Parse the results from the ISY."""
+        # Write nodes to file for debugging:
+        # json_object = json.dumps(xml_dict, indent=4, default=str)
+        # with open("nodes.json", "w", encoding="utf-8") as outfile:
+        #     outfile.write(json_object)
+
+        if not (features := xml_dict["nodes"]):
             return
 
-        self.addresses = addresses if addresses is not None else []
-        self.nnames = nnames if nnames is not None else []
-        self.nparents = nparents if nparents is not None else []
-        self.nobjs = nobjs if nobjs is not None else []
-        self.ntypes = ntypes if ntypes is not None else []
+        if folders := features["folder"]:
+            for folder in folders:
+                await self.parse_folder_entity(folder)
+        if nodes := features["node"]:
+            for node in nodes:
+                await self.parse_node_entity(node)
+        if groups := features["group"]:
+            for group in groups:
+                await self.parse_group_entity(group)
 
-    def __str__(self) -> str:
-        """Return string representation of the nodes/folders/groups."""
-        if self.root is None:
-            return "Folder <root>"
-        ind = self.addresses.index(self.root)
-        if self.ntypes[ind] == TAG_FOLDER:
-            return f"Folder ({self.root})"
-        if self.ntypes[ind] == TAG_GROUP:
-            return f"Group ({self.root})"
-        return f"Node ({self.root})"
+        await self.update_status()
+        _LOGGER.info("Loaded %s", PLATFORM)
+        # if self.isy.node_servers is None:
+        #     self.isy.node_servers = NodeServers(self.isy, set(node_servers))
 
-    def __repr__(self) -> str:
-        """Create a pretty representation of the nodes/folders/groups."""
-        # get and sort children
-        # TODO: This is not working
-        folders = []
-        groups = []
-        nodes = []
-        for child in self.children:
-            if child[0] == TAG_FOLDER:
-                folders.append(child)
-            elif child[0] == TAG_GROUP:
-                groups.append(child)
-            elif child[0] == TAG_NODE:
-                nodes.append(child)
+    async def parse_folder_entity(self, feature: dict[str, Any]) -> None:
+        """Parse a single folder and add to the platform."""
+        try:
+            address = feature["address"]
+            name = feature["name"]
+            _LOGGER.log(LOG_VERBOSE, "Parsing %s: %s (%s)", PLATFORM, name, address)
+            entity = NodeFolder(self, address, name, NodeFolderDetail(**feature))
+            await self.add_or_update_entity(address, name, entity)
+        except (TypeError, KeyError, ValueError) as exc:
+            _LOGGER.exception("Error loading %s: %s", PLATFORM, exc)
 
-        # initialize data
-        folders.sort(key=lambda x: x[1])
-        groups.sort(key=lambda x: x[1])
-        nodes.sort(key=lambda x: x[1])
-        out = (
-            f"{self}\n"
-            f"{self.__repr_folders__(folders)}"
-            f"{self.__repr_groups__(groups)}"
-            f"{self.__repr_nodes__(nodes)}"
-        )
-        return out
-
-    def __repr_folders__(self, folders):
-        """Return a representation of the folder structure."""
-        out = ""
-        for fold in folders:
-            fold_obj = self[fold[2]]
-            out += f"  + {fold[1]}: Folder({fold[2]})\n"
-            for line in repr(fold_obj).split("\n")[1:]:
-                out += f"  |   {line}\n"
-            out += "  -\n"
-        return out
-
-    def __repr_groups__(self, groups):
-        """Return a representation of the groups structure."""
-        out = ""
-        for group in groups:
-            out += f"  + {group[1]}: Group({group[2]})\n"
-            for member in self[group[2]].members:
-                out += f"  |  {self[member].name}: Node({member})\n"
-            out += "  |\n  -\n"
-        return out
-
-    def __repr_nodes__(self, nodes):
-        """Return a representation of the nodes structure."""
-        out = ""
-        for node in nodes:
-            has_children = node[2] in self.nparents
-            out += f"  {'+ ' if has_children else ''}{node[1]}: Node({node[2]})\n"
-            if has_children:
-                for child in self.get_children(node[2]):
-                    out += f"  |   {child[1]}: Node({child[2]})\n"
-                out += "  |\n  -\n"
-        return out
-
-    def __iter__(self):
-        """Return an iterator for each node below the current nav level."""
-        iter_data = self.all_lower_nodes
-        return NodeIterator(self, iter_data, delta=1)
-
-    def __reversed__(self):
-        """Return the iterator in reverse order."""
-        iter_data = self.all_lower_nodes
-        return NodeIterator(self, iter_data, delta=-1)
-
-    def update_received(self, xmldoc):
-        """Update nodes from event stream message."""
-        address = value_from_xml(xmldoc, TAG_NODE)
-
-        node = self.get_by_id(address)
-        if not node:
-            _LOGGER.debug(
-                "Received a node update for node %s but could not find a record of this "
-                "node. Please try restarting the module if the problem persists, this "
-                "may be due to a new node being added to the ISY since last restart.",
-                address,
+    async def parse_node_entity(self, feature: dict[str, Any]) -> None:
+        """Parse a single node and add to the platform."""
+        try:
+            address = feature["address"]
+            name = feature["name"]
+            _LOGGER.log(LOG_VERBOSE, "Parsing %s: %s (%s)", PLATFORM, name, address)
+            feature["protocol"] = await self.get_protocol_from_family(
+                feature.get("family")
             )
+            #     state, aux_props, state_set = parse_xml_properties(feature)
+            entity = Node(self, address, name, NodeDetail(**feature))
+            await self.add_or_update_entity(address, name, entity)
+        except (TypeError, KeyError, ValueError) as exc:
+            _LOGGER.exception("Error loading %s: %s", PLATFORM, exc)
+
+    async def parse_group_entity(self, feature: dict[str, Any]) -> None:
+        """Parse a single group and add to the platform."""
+        try:
+            address = feature["address"]
+            name = feature["name"]
+            _LOGGER.log(LOG_VERBOSE, "Parsing %s: %s (%s)", PLATFORM, name, address)
+            if (flag := feature["flag"]) & NODE_IS_ROOT:
+                _LOGGER.debug("Skipping root group flag=%s %s", flag, address)
+                return
+            entity = Group(self, address, name, GroupDetail(**feature))
+            await self.add_or_update_entity(address, name, entity)
+        except (TypeError, KeyError, ValueError) as exc:
+            _LOGGER.exception("Error loading %s: %s", PLATFORM, exc)
+
+    async def get_protocol_from_family(
+        self, family: str | dict[str, str] | None
+    ) -> str:
+        """Identify protocol from family type."""
+        if family is None:
+            return PROTO_INSTEON
+        if isinstance(family, dict) and family["address"] == FAMILY_NODESERVER:
+            node_server = family.get("instance", "")
+            self.node_servers.add(node_server)
+            return f"{PROTO_NODE_SERVER}_{node_server}"
+        if family in (FAMILY_ZWAVE, FAMILY_ZMATTER_ZWAVE):
+            return PROTO_ZWAVE
+        if family in (FAMILY_BRULTECH, FAMILY_RCS):
+            return PROTO_ZIGBEE
+        return PROTO_INSTEON
+
+    async def update_status(self, wait_time: float = 0) -> None:
+        """Update the contents of the class from the status endpoint."""
+        await asyncio.sleep(wait_time)
+        xml_dict = parse_xml(
+            await self.isy.conn.request(self.status_url),
+            attr_prefix=self._parse_attr_prefix,
+            cdata_key=self._parse_cdata_key,
+            use_pp=self._parse_use_pp,
+        )
+        _LOGGER.log(
+            LOG_VERBOSE,
+            "%s:\n%s",
+            self.url,
+            json.dumps(xml_dict, indent=4, sort_keys=True, default=str),
+        )
+        await self.parse_status(xml_dict)
+
+    async def parse_status(self, xml_dict: dict[str, Any]) -> None:
+        """Parse the results from the ISY."""
+        # Write nodes to file for debugging:
+        # json_object = json.dumps(xml_dict, indent=4, default=str)
+        # with open("nodes-status.json", "w", encoding="utf-8") as outfile:
+        #     outfile.write(json_object)
+
+        if not (node_statuses := xml_dict["nodes"]["node"]):
             return
+
+        for status in node_statuses:
+            await self.parse_node_status(status)
+
+    async def parse_node_status(self, status: dict[str, Any]) -> None:
+        """Parse the node status results from the ISY."""
+        if (address := status["id"]) not in self.addresses:
+            return  # FUTURE: Missing address, go get.
+        try:
+            if not (props := status["prop"]):
+                return
+            if isinstance(props, dict):
+                props = [props]
+            entity: Node = cast(Node, self.entities[address])
+            for prop in props:
+                result = NodeProperty(**prop)
+                if result.control == PROP_STATUS:
+                    entity.update_state(result)
+                elif result.control == PROP_RAMP_RATE:
+                    result.value = INSTEON_RAMP_RATES.get(
+                        str(result.value), result.value
+                    )
+                    result.uom = UOM_SECONDS
+                entity.aux_properties[result.control] = result
+
+        except (TypeError, KeyError, ValueError) as exc:
+            _LOGGER.exception("Error loading node status (%s): %s", address, exc)
+
+    async def parse_node_property(self, status: dict[str, Any]) -> None:
+        """Parse the node node property from the ISY."""
+
+    async def update_received(self, event: EventData) -> None:
+        """Update nodes from event stream message."""
+        event_info = cast(dict, event.event_info)
+        if (address := cast(str, event.node)) not in self.addresses:
+            # New/unknown program, refresh full set.
+            await self.update()
+            return
+        entity = self.entities[address]
+        detail = entity.detail
+
+        # TODO: Stopped here
+
         value_str = value_from_xml(xmldoc, ATTR_ACTION, "")
         value = int(value_str) if value_str.strip() != "" else ISY_VALUE_UNKNOWN
         prec = attr_from_xml(xmldoc, ATTR_ACTION, ATTR_PRECISION, DEFAULT_PRECISION)
@@ -243,7 +272,7 @@ class Nodes:
         )
         _LOGGER.debug("ISY Updated Node: %s", address)
 
-    def control_message_received(self, xmldoc):
+    def control_message_received(self, event: EventData) -> None:
         """
         Pass Control events from an event stream message to nodes.
 
@@ -297,7 +326,7 @@ class Nodes:
         node.control_events.notify(node_property)
         _LOGGER.debug("ISY Node Control Event: %s", node_property)
 
-    def node_changed_received(self, event: EventData):
+    def node_changed_received(self, event: EventData) -> None:
         """Handle Node Change/Update events from an event stream message."""
         if (action := event.action) not in NODE_CHANGED_ACTIONS:
             return
@@ -351,166 +380,7 @@ class Nodes:
             detail if detail else "",
         )
 
-    def parse(self, xml):
-        """
-        Parse the xml data.
-
-        |  xml: String of the xml data
-        """
-        try:
-            xmldoc = minidom.parseString(xml)
-        except XML_ERRORS as exc:
-            _LOGGER.error("%s: Nodes", XML_PARSE_ERROR)
-            raise ISYResponseParseError(XML_PARSE_ERROR) from exc
-
-        # get nodes
-        ntypes = [TAG_FOLDER, TAG_NODE, TAG_GROUP]
-        node_servers = []
-        for ntype in ntypes:
-            features = xmldoc.getElementsByTagName(ntype)
-
-            for feature in features:
-                # Get Node Information
-                address = value_from_xml(feature, TAG_ADDRESS)
-                nname = value_from_xml(feature, TAG_NAME)
-
-                _LOGGER.debug("Parsing %s: %s [%s]", ntype, nname, address)
-
-                nparent = value_from_xml(feature, TAG_PARENT)
-                pnode = value_from_xml(feature, TAG_PRIMARY_NODE)
-                family = value_from_xml(feature, TAG_FAMILY)
-                device_type = value_from_xml(feature, TAG_TYPE)
-                node_def_id = attr_from_element(feature, ATTR_NODE_DEF_ID)
-                flag = int(attr_from_element(feature, ATTR_FLAG, "0"))
-                enabled = value_from_xml(feature, TAG_ENABLED) == XML_TRUE
-
-                # Assume Insteon, update as confirmed otherwise
-                protocol = PROTO_INSTEON
-                zwave_props = None
-                node_server = None
-                if family is not None:
-                    if family in (FAMILY_ZWAVE, FAMILY_ZMATTER_ZWAVE):
-                        protocol = PROTO_ZWAVE
-                        zwave_prop_xml = feature.getElementsByTagName(TAG_DEVICE_TYPE)
-                        if zwave_prop_xml:
-                            zwave_props = ZWaveProperties.from_xml(zwave_prop_xml[0])
-                        else:
-                            ZWaveProperties()
-                    elif family in (FAMILY_BRULTECH, FAMILY_RCS):
-                        protocol = PROTO_ZIGBEE
-                    elif family == FAMILY_NODESERVER:
-                        # Node Server Slot is stored with family as text:
-                        node_server = attr_from_xml(feature, TAG_FAMILY, ATTR_INSTANCE)
-                        if node_server:
-                            protocol = f"{PROTO_NODE_SERVER}_{node_server}"
-                            node_servers.append(node_server)
-
-                # Process the different node types
-                if ntype == TAG_FOLDER and address not in self.addresses:
-                    self.insert(address, nname, nparent, None, ntype)
-                elif ntype == TAG_NODE:
-                    if address in self.addresses:
-                        self.get_by_id(address).update(xmldoc=feature)
-                        continue
-                    state, aux_props, state_set = parse_xml_properties(feature)
-                    self.insert(
-                        address,
-                        nname,
-                        nparent,
-                        Node(
-                            self,
-                            address=address,
-                            name=nname,
-                            state=state,
-                            aux_properties=aux_props,
-                            zwave_props=zwave_props,
-                            node_def_id=node_def_id,
-                            pnode=pnode,
-                            device_type=device_type,
-                            enabled=enabled,
-                            node_server=node_server,
-                            protocol=protocol,
-                            family_id=family,
-                            state_set=state_set,
-                            flag=flag,
-                        ),
-                        ntype,
-                    )
-                elif ntype == TAG_GROUP and address not in self.addresses:
-                    # Ignore groups that contain 0x08 in the flag since
-                    # that is a ISY scene that contains every device/
-                    # scene so it will contain some scenes we have not
-                    # seen yet so they are not defined and it includes
-                    # the ISY MAC address in newer versions of
-                    # ISY firmwares > 5.0.6+ ..
-                    if flag & NODE_IS_ROOT:
-                        _LOGGER.debug("Skipping root group flag=%s %s", flag, address)
-                        continue
-                    mems = feature.getElementsByTagName(TAG_LINK)
-                    # Build list of members
-                    members = [mem.firstChild.nodeValue for mem in mems]
-                    # Build list of controllers
-                    controllers = []
-                    for mem in mems:
-                        if (
-                            int(attr_from_element(mem, TAG_TYPE, "0"))
-                            == NODE_IS_CONTROLLER
-                        ):
-                            controllers.append(mem.firstChild.nodeValue)
-                    self.insert(
-                        address,
-                        nname,
-                        nparent,
-                        Group(
-                            self,
-                            address=address,
-                            name=nname,
-                            members=members,
-                            controllers=controllers,
-                            family_id=family,
-                            pnode=pnode,
-                            flag=flag,
-                        ),
-                        ntype,
-                    )
-            _LOGGER.debug("ISY Loaded %s", ntype)
-        if self.isy.node_servers is None:
-            self.isy.node_servers = NodeServers(self.isy, set(node_servers))
-
-    async def update(self, wait_time: float = 0, xml=None):
-        """
-        Update the status and properties of the nodes in the class.
-
-        This calls the "/rest/status" endpoint.
-
-        |  wait_time: [optional] Amount of seconds to wait before updating
-        """
-        if wait_time:
-            await sleep(wait_time)
-
-        if xml is None:
-            xml = await self.isy.conn.get_status()
-
-        if xml is None:
-            _LOGGER.warning("ISY Failed to update nodes.")
-            return
-
-        try:
-            xmldoc = minidom.parseString(xml)
-        except XML_ERRORS:
-            _LOGGER.error("%s: Nodes", XML_PARSE_ERROR)
-            return False
-
-        for feature in xmldoc.getElementsByTagName(TAG_NODE):
-            address = feature.attributes[ATTR_ID].value
-
-            if address in self.addresses:
-                await self.get_by_id(address).update(xmldoc=feature)
-                continue
-
-        _LOGGER.info("ISY Updated Node Statuses.")
-
-    async def update_nodes(self, wait_time: float = 0):
+    async def update_nodes(self, wait_time: float = 0) -> None:
         """
         Update the contents of the class.
 
@@ -519,190 +389,101 @@ class Nodes:
         |  wait_time: [optional] Amount of seconds to wait before updating
         """
         if wait_time:
-            await sleep(wait_time)
+            await asyncio.sleep(wait_time)
         xml = await self.isy.conn.get_nodes()
         if xml is None:
             _LOGGER.warning("ISY Failed to update nodes.")
             return
         self.parse(xml)
 
-    def insert(self, address, nname, nparent, nobj, ntype):
-        """
-        Insert a new node into the lists.
-
-        |  address: node id
-        |  nname: node name
-        |  nparent: node parent
-        |  nobj: node object
-        |  ntype: node type
-        """
-        self.addresses.append(address)
-        self.nnames.append(nname)
-        self.nparents.append(nparent)
-        self.ntypes.append(ntype)
-        self.nobjs.append(nobj)
-
-    def __getitem__(self, val):
-        """Navigate through the node tree. Can take names or IDs."""
-        try:
-            self.addresses.index(val)
-            fun = self.get_by_id
-        except ValueError:
-            try:
-                self.nnames.index(val)
-                fun = self.get_by_name
-            except ValueError:
-                try:
-                    val = int(val)
-                    fun = self.get_by_index
-                except ValueError:
-                    fun = None
-
-        if fun:
-            output = None
-            try:
-                output = fun(val)
-            except ValueError:
-                pass
-
-            if output:
-                return output
-        raise KeyError(f"Unrecognized Key: [{val}]")
-
-    def __setitem__(self, item, value):
-        """Set item value."""
-        return None
-
-    def get_by_name(self, val):
-        """
-        Get child object with the given name.
-
-        |  val: String representing name to look for.
-        """
-        for i in range(len(self.addresses)):
-            if (self.root is None or self.nparents[i] == self.root) and self.nnames[
-                i
-            ] == val:
-                return self.get_by_index(i)
-        return None
-
-    def get_by_id(self, address):
-        """
-        Get object with the given ID.
-
-        |  address: Integer representing node/group/folder id.
-        """
-        try:
-            i = self.addresses.index(address)
-        except ValueError:
-            return None
-        else:
-            return self.get_by_index(i)
-
-    def get_by_index(self, i):
-        """
-        Return the object at the given index in the list.
-
-        |  i: Integer representing index of node/group/folder.
-        """
-        if self.ntypes[i] in [TAG_GROUP, TAG_NODE]:
-            return self.nobjs[i]
-        return Nodes(
-            self.isy,
-            self.addresses[i],
-            self.addresses,
-            self.nnames,
-            self.nparents,
-            self.nobjs,
-            self.ntypes,
-        )
-
     def get_folder(self, address: str) -> str:
         """Return the folder of a given node address."""
-        parent = self.nparents[self.addresses.index(address)]
-        if parent is None:
-            # Node is in the root folder.
-            return None
-        parent_index = self.addresses.index(parent)
-        if self.ntypes[parent_index] != TAG_FOLDER:
-            return self.get_folder(parent)
-        return cast(str, self.nnames[parent_index])
-
-    @property
-    def children(self):
-        """Return the children of the class."""
-        return self.get_children()
-
-    def get_children(self, ident=None):
-        """Return the children of the class."""
-        if ident is None:
-            ident = self.root
-        out = [
-            (self.ntypes[i], self.nnames[i], self.addresses[i])
-            for i in [
-                index for index, parent in enumerate(self.nparents) if parent == ident
-            ]
-        ]
-        return out
-
-    @property
-    def has_children(self):
-        """Return if the root has children."""
-        return self.root in self.nparents
-
-    @property
-    def name(self):
-        """Return the name of the root."""
-        if self.root is None:
-            return ""
-        ind = self.addresses.index(self.root)
-        return self.nnames[ind]
-
-    @property
-    def all_lower_nodes(self):
-        """Return all nodes below the current root."""
-        output = []
-        myname = self.name + "/"
-
-        for dtype, name, ident in self.children:
-            if dtype in [TAG_GROUP, TAG_NODE]:
-                output.append((dtype, myname + name, ident))
-                if dtype == TAG_NODE and ident in self.nparents:
-                    output += [
-                        (child[0], f"{myname}{name}/{child[1]}", child[2])
-                        for child in self.get_children(ident)
-                    ]
-            if dtype == TAG_FOLDER:
-                output += [
-                    (dtype2, myname + name2, ident2)
-                    for (dtype2, name2, ident2) in self[ident].all_lower_nodes
-                ]
-        return output
 
 
-class NodeIterator:
-    """Iterate through a list of nodes, returning node objects."""
+#         parent = self.nparents[self.addresses.index(address)]
+#         if parent is None:
+#             # Node is in the root folder.
+#             return None
+#         parent_index = self.addresses.index(parent)
+#         if self.ntypes[parent_index] != TAG_FOLDER:
+#             return self.get_folder(parent)
+#         return cast(str, self.nnames[parent_index])
 
-    def __init__(self, nodes, iter_data, delta=1):
-        """Initialize a NodeIterator class."""
-        self._nodes = nodes
-        self._iterdata = iter_data
-        self._len = len(iter_data)
-        self._delta = delta
+#     @property
+#     def children(self):
+#         """Return the children of the class."""
+#         return self.get_children()
 
-        if delta > 0:
-            self._ind = 0
-        else:
-            self._ind = self._len - 1
+#     def get_children(self, ident=None):
+#         """Return the children of the class."""
+#         if ident is None:
+#             ident = self.root
+#         out = [
+#             (self.ntypes[i], self.nnames[i], self.addresses[i])
+#             for i in [
+#                 index for index, parent in enumerate(self.nparents) if parent == ident
+#             ]
+#         ]
+#         return out
 
-    def __next__(self):
-        """Get the next element in the iteration."""
-        if self._ind >= self._len or self._ind < 0:
-            raise StopIteration
-        _, path, ident = self._iterdata[self._ind]
-        self._ind += self._delta
-        return (path, self._nodes[ident])
+#     @property
+#     def has_children(self):
+#         """Return if the root has children."""
+#         return self.root in self.nparents
 
-    def __len__(self):
-        """Return the number of elements."""
-        return self._len
+#     @property
+#     def name(self):
+#         """Return the name of the root."""
+#         if self.root is None:
+#             return ""
+#         ind = self.addresses.index(self.root)
+#         return self.nnames[ind]
+
+#     @property
+#     def all_lower_nodes(self):
+#         """Return all nodes below the current root."""
+#         output = []
+#         myname = self.name + "/"
+
+#         for dtype, name, ident in self.children:
+#             if dtype in [TAG_GROUP, TAG_NODE]:
+#                 output.append((dtype, myname + name, ident))
+#                 if dtype == TAG_NODE and ident in self.nparents:
+#                     output += [
+#                         (child[0], f"{myname}{name}/{child[1]}", child[2])
+#                         for child in self.get_children(ident)
+#                     ]
+#             if dtype == TAG_FOLDER:
+#                 output += [
+#                     (dtype2, myname + name2, ident2)
+#                     for (dtype2, name2, ident2) in self[ident].all_lower_nodes
+#                 ]
+#         return output
+
+
+# class NodeIterator:
+#     """Iterate through a list of nodes, returning node objects."""
+
+#     def __init__(self, nodes, iter_data, delta=1):
+#         """Initialize a NodeIterator class."""
+#         self.platform = nodes
+#         self._iterdata = iter_data
+#         self._len = len(iter_data)
+#         self._delta = delta
+
+#         if delta > 0:
+#             self._ind = 0
+#         else:
+#             self._ind = self._len - 1
+
+#     def __next__(self):
+#         """Get the next element in the iteration."""
+#         if self._ind >= self._len or self._ind < 0:
+#             raise StopIteration
+#         _, path, ident = self._iterdata[self._ind]
+#         self._ind += self._delta
+#         return (path, self.platform[ident])
+
+#     def __len__(self):
+#         """Return the number of elements."""
+#         return self._len

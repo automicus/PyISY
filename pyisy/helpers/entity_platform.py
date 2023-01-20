@@ -50,7 +50,13 @@ class EntityPlatform(ABC):
     names: list[str] = []
     addresses: list[str] = []
     entities: dict[str, Entity] = {}
+    types: list[str] = []
     url: str
+
+    # Parser options
+    _parse_attr_prefix: str = ""
+    _parse_cdata_key: str = "_value"
+    _parse_use_pp: bool = True
 
     def __init__(
         self,
@@ -74,7 +80,12 @@ class EntityPlatform(ABC):
     async def update(self, wait_time: float = 0) -> None:
         """Update the contents of the class."""
         await asyncio.sleep(wait_time)
-        xml_dict = parse_xml(await self.isy.conn.request(self.url), attr_prefix="")
+        xml_dict = parse_xml(
+            await self.isy.conn.request(self.url),
+            attr_prefix=self._parse_attr_prefix,
+            cdata_key=self._parse_cdata_key,
+            use_pp=self._parse_use_pp,
+        )
         _LOGGER.log(
             LOG_VERBOSE,
             "%s:\n%s",
