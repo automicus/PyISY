@@ -8,7 +8,10 @@ T = TypeVar("T", bound="StrEnum")
 
 
 class StrEnum(str, Enum):
-    """Partial backport of Python 3.11's StrEnum for our basic use cases."""
+    """Partial backport of Python 3.11's StrEnum for our basic use cases.
+
+    Adapted from home-assistant/core.
+    """
 
     def __new__(cls: type[T], value: str, *args: Any, **kwargs: Any) -> T:
         """Create a new StrEnum instance."""
