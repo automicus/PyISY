@@ -66,6 +66,7 @@ class ControlEvent(StrEnum):
     Z_WAVE = "_21"
     BILLING = "_22"
     PORTAL = "_23"
+    ZMATTER_Z_WAVE = "_25"
 
 
 class ConfigAction(StrEnum):
@@ -145,7 +146,8 @@ class EventRouter:
         if (sid := xml_dict.get("s_i_d")) and self._stream_id == "":
             self._stream_id = sid
             self.events.update_stream_id(sid)
-        elif event := xml_dict.get("event", {}):
+            return
+        if event := xml_dict.get("event", {}):
             try:
                 await self.route_message(EventData(**event))
             except (KeyError, ValueError, NameError):
@@ -170,10 +172,12 @@ class EventRouter:
             control == ControlEvent.HEARTBEAT and event.action is not None
         ):  # ISY HEARTBEAT
             self.events.heartbeat(int(cast(str, event.action)))
-        elif control[0] != "_":  # NODE CONTROL EVENT
+            return
+        if control[0] != "_":  # NODE CONTROL EVENT
             if self.isy.nodes.loaded and self.isy.nodes.initialized:
                 await node_update_received(self.isy.nodes, event)
-        elif control == ControlEvent.TRIGGER:  # Trigger Update
+            return
+        if control == ControlEvent.TRIGGER:  # Trigger Update
             if event.action == Action.EVENT_STATUS:
                 # Event Status
                 if self.isy.programs.loaded:
@@ -210,18 +214,19 @@ class EventRouter:
                 self.key = cast(str, event.event_info)
                 _LOGGER.debug("Key received: %s", self.key)
                 return
-        elif control == ControlEvent.DRIVER_SPECIFIC:
+            return
+        if control == ControlEvent.DRIVER_SPECIFIC:
             # Driver specific events
             _LOGGER.debug(
                 "Driver specific event: %s",
                 json.dumps(event.__dict__, default=str),
             )
             return
-        elif control == ControlEvent.NODE_CHANGED:
+        if control == ControlEvent.NODE_CHANGED:
             # Node Changed/Updated
             await node_changed_received(self.isy.nodes, event)
             return
-        elif control == ControlEvent.SYSTEM_CONFIG_UPDATED:
+        if control == ControlEvent.SYSTEM_CONFIG_UPDATED:
             # System Configuration Updated
             if event.action in TIME_UPDATE:
                 if self.isy.clock.loaded:
@@ -231,7 +236,7 @@ class EventRouter:
                 # <eventInfo>
                 # <status>"1"|"0"</status>
                 # </eventInfo>
-                _LOGGER.info(
+                _LOGGER.debug(
                     "Batch mode changed to: %s",
                     json.dumps(event.__dict__, default=str),
                 )
@@ -239,42 +244,70 @@ class EventRouter:
                 # <eventInfo>
                 # <status>"1"|"0"</status>
                 # </eventInfo>
-                _LOGGER.info(
+                _LOGGER.debug(
                     "Battery programming mode changed to: %s",
-                    json.dumps(event.__dict__, default=str),
+                    json.dumps(event.event_info, default=str),
                 )
             return
-        elif control == ControlEvent.SYSTEM_STATUS:
+        if control == ControlEvent.SYSTEM_STATUS:
             # System Status Changed
             self.isy.system_status_changed_received(event.action)
             return
-        elif control == ControlEvent.PROGRESS_REPORT:
+        if control == ControlEvent.PROGRESS_REPORT:
             # Progress report, device programming event
             await progress_report_received(self.isy.nodes, event)
             return
-        elif control == ControlEvent.SECURITY_SYSTEM:
+        if control == ControlEvent.SECURITY_SYSTEM:
             # Security System Control Event
             _LOGGER.debug(
                 "Security System Control Event: %s",
                 json.dumps(event.__dict__, default=str),
             )
             return
-        elif control == ControlEvent.ELK:
+        if control == ControlEvent.ELK:
             # ELK Control Event
             _LOGGER.debug(
                 "ELK Control Event: %s",
                 json.dumps(event.__dict__, default=str),
             )
             return
-        elif control == ControlEvent.Z_WAVE:
+        if control == ControlEvent.Z_WAVE:
             # Z-Wave Control Event
             _LOGGER.debug(
                 "Z-Wave Control Event: %s",
                 json.dumps(event.__dict__, default=str),
             )
             return
-        _LOGGER.info(
+        if control == ControlEvent.BILLING:
+            # Billing Control Event
+            _LOGGER.debug(
+                "Billing Control Event: %s",
+                json.dumps(event.event_info, default=str),
+            )
+            return
+        if control == ControlEvent.PORTAL:
+            # Portal Control Event
+            _LOGGER.debug(
+                "Portal Control Event: %s",
+                json.dumps(event.event_info, default=str),
+            )
+            return
+        if control == ControlEvent.ZMATTER_Z_WAVE:
+            # ZMatter Z-Wave Control Event
+            _LOGGER.debug(
+                "ZMatter Z-Wave Control Event: action=%s %s",
+                event.action,
+                json.dumps(event.event_info, default=str),
+            )
+            return
+
+        # Unknown Control Event
+        try:
+            event_name = ControlEvent(control).name
+        except ValueError:
+            event_name = control
+        _LOGGER.debug(
             "Other Control Event: %s %s",
-            ControlEvent(control).name,
+            event_name,
             json.dumps(event.__dict__, default=str),
         )

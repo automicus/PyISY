@@ -48,9 +48,6 @@ async def node_update_received(nodes: Nodes, event: EventData) -> None:
 
 async def node_changed_received(nodes: Nodes, event: EventData) -> None:
     """Handle Node Change/Update events from an event stream message."""
-
-    _LOGGER.debug(json.dumps(event.__dict__, indent=4, default=str))
-
     action: str = cast(str, event.action)
     if action not in NODE_CHANGED_ACTIONS:
         return
@@ -78,7 +75,6 @@ async def node_changed_received(nodes: Nodes, event: EventData) -> None:
 
 async def progress_report_received(nodes: Nodes, event_data: EventData) -> None:
     """Handle Progress Report '_7' events from an event stream message."""
-    _LOGGER.debug(json.dumps(event_data.__dict__, indent=4, default=str))
     address, _, message = cast(str, event_data.event_info).partition("]")
     address = address.strip("[ ")
     message = message.strip()

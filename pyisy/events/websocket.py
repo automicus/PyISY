@@ -200,8 +200,8 @@ class WebSocketClient:
             _LOGGER.debug("Websocket Server Not Ready.")
         except aiohttp.client_exceptions.WSServerHandshakeError as err:
             _LOGGER.warning("Web socket server response error: %s", err.message)
-        # pylint: disable=broad-except
-        except Exception as err:
+
+        except Exception as err:  # pylint: disable=broad-except
             _LOGGER.error("Unexpected websocket error %s", err, exc_info=True)
         else:
             if isinstance(ws.exception(), asyncio.TimeoutError):

@@ -145,8 +145,8 @@ class Clock:
 
     def __str__(self) -> str:
         """Return string representation of Clock data."""
-        return f"<ClockData:\n{json.dumps(self.clock_data.__dict__, sort_keys=True, default=str)}>"
+        return f"<ClockData: {json.dumps(self.clock_data.__dict__, sort_keys=True, default=str)}>"
 
     def __repr__(self) -> str:
         """Return string representation of Clock data."""
-        return f"<ClockData:\n{json.dumps(self.clock_data.__dict__, indent=4, sort_keys=True, default=str)}>"
+        return f"<ClockData: {json.dumps(self.clock_data.__dict__, sort_keys=True, default=str)}>"

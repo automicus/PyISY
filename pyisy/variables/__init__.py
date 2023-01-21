@@ -17,6 +17,7 @@ from pyisy.helpers import convert_isy_raw_value
 from pyisy.helpers.entity_platform import EntityPlatform
 from pyisy.helpers.xml import parse_xml
 from pyisy.logging import _LOGGER, LOG_VERBOSE
+from pyisy.util.output import write_to_file
 from pyisy.variables.variable import Variable, VariableDetail
 
 if TYPE_CHECKING:
@@ -29,17 +30,6 @@ EMPTY_VARIABLES_RESPONSE = [
     "/CONF/STATE.VAR not found",
     '<CList type="VAR_INT"></CList>',
 ]
-
-
-async def write_to_file(xml_dict: dict, path: str) -> None:
-    """Write the parse results to file for debugging."""
-    json_object = json.dumps(xml_dict, indent=4, default=str)
-    with open(
-        f".output/rest-variables-{path}.json",
-        "w",
-        encoding="utf-8",
-    ) as outfile:
-        outfile.write(json_object)
 
 
 class Variables(EntityPlatform):
@@ -87,7 +77,7 @@ class Variables(EntityPlatform):
             }
 
             if self.isy.args is not None and self.isy.args.file:
-                await write_to_file(int_dict, "integer")
+                await write_to_file(int_dict, ".output/rest-variables-integer.json")
             _LOGGER.log(
                 LOG_VERBOSE,
                 "%s:\n%s",
@@ -109,7 +99,7 @@ class Variables(EntityPlatform):
             }
 
             if self.isy.args is not None and self.isy.args.file:
-                await write_to_file(state_dict, "state")
+                await write_to_file(int_dict, ".output/rest-variables-state.json")
             _LOGGER.log(
                 LOG_VERBOSE,
                 "%s:\n%s",

@@ -96,7 +96,8 @@ class Node(NodeBase, Entity):
     _uom: str = ""
     _precision: int = 0
     _formatted: str = ""
-    _is_battery_node: bool = True
+    _is_battery_node: bool = False
+    state_set: bool = False
 
     detail: NodeDetail
     platform: Nodes
@@ -115,6 +116,7 @@ class Node(NodeBase, Entity):
         self._enabled = detail.enabled
         self.control_events = EventEmitter()
         if detail.prop and PROP_STATUS in detail.prop:
+            self.state_set = True
             self._is_battery_node = False
             self.update_state(NodeProperty(**detail.prop))
 
@@ -242,6 +244,7 @@ class Node(NodeBase, Entity):
         self._last_update = datetime.now()
 
         if self._is_battery_node and state.control == PROP_STATUS:
+            self.state_set = True
             self._is_battery_node = False
 
         if state.value != self.status:
@@ -351,7 +354,9 @@ class Node(NodeBase, Entity):
         # /rest/zwave/node/<nodeAddress>/config/set/<parameterNumber>/<value>/<size>
         req_url = self.isy.conn.compile_url(
             [
-                URL_ZWAVE if self.address.startswith("ZW") else URL_ZMATTER_ZWAVE,
+                URL_ZWAVE
+                if self.address.startswith("ZW")
+                else URL_ZMATTER_ZWAVE,  # TODO use family
                 URL_NODE,
                 self.address,
                 URL_CONFIG,

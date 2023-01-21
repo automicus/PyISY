@@ -108,9 +108,6 @@ class Nodes(EntityPlatform):
 
         _LOGGER.info("Loaded %s", PLATFORM)
 
-        # if self.isy.node_servers is None:
-        #     self.isy.node_servers = NodeServers(self.isy, self.node_servers)
-
     async def parse_folder_entity(self, feature: dict[str, Any]) -> None:
         """Parse a single folder and add to the platform."""
         try:
@@ -224,8 +221,9 @@ class Nodes(EntityPlatform):
         if result.control == PROP_STATUS:
             entity.update_state(result)
             return
-        if result.control == PROP_BATTERY_LEVEL and entity.is_battery_node:
+        if result.control == PROP_BATTERY_LEVEL and not entity.state_set:
             # Use BATLVL as state if no ST given.
+            entity.is_battery_node = True
             entity.update_state(result)
         elif result.control == PROP_RAMP_RATE:
             result.value = INSTEON_RAMP_RATES.get(str(result.value), result.value)

@@ -39,24 +39,25 @@ class ISY:
     """This is the main class that handles interaction with the ISY device."""
 
     _connected: bool = False
-    auto_reconnect: bool = True
-    clock: Clock
-    conn: Connection
-    connection_info: ISYConnectionInfo
-    config: ConfigurationData | None = None
-    nodes: Nodes
-    node_servers: NodeServers | None = None
-    programs: Programs
-    variables: Variables
-    networking: NetworkResources
-    system_status: str = SYSTEM_BUSY
-    websocket: WebSocketClient = None  # type: ignore[assignment]
     _events: EventStream | None = None
     _reconnect_thread: Thread | None = None
-    connection_events: EventEmitter
-    status_events: EventEmitter
-    loop: asyncio.AbstractEventLoop
     args: argparse.Namespace | None = None
+    auto_reconnect: bool = True
+    background_tasks: set = set()
+    clock: Clock
+    config: ConfigurationData | None = None
+    conn: Connection
+    connection_events: EventEmitter
+    connection_info: ISYConnectionInfo
+    loop: asyncio.AbstractEventLoop
+    networking: NetworkResources
+    node_servers: NodeServers
+    nodes: Nodes
+    programs: Programs
+    status_events: EventEmitter
+    system_status: str = SYSTEM_BUSY
+    variables: Variables
+    websocket: WebSocketClient = None  # type: ignore[assignment]
 
     def __init__(
         self,
@@ -83,6 +84,7 @@ class ISY:
         self.variables = Variables(self)
         self.programs = Programs(self)
         self.nodes = Nodes(self)
+        self.node_servers = NodeServers(self)
 
         # Setup event emitters and loop
         self.connection_events = EventEmitter()
@@ -107,6 +109,8 @@ class ISY:
         isy_setup_tasks: list[Awaitable[Any]] = []
         if nodes:
             isy_setup_tasks.append(self.nodes.initialize())
+            if node_servers:
+                isy_setup_tasks.append(self.node_servers.update())
 
         if clock:
             isy_setup_tasks.append(self.clock.update())
@@ -121,9 +125,6 @@ class ISY:
             isy_setup_tasks.append(self.networking.update())
 
         await asyncio.gather(*isy_setup_tasks)
-
-        if self.node_servers and node_servers:
-            await self.node_servers.load_node_servers()
 
         self._connected = True
 

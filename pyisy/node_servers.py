@@ -2,22 +2,15 @@
 from __future__ import annotations
 
 import asyncio
-from dataclasses import dataclass
+from dataclasses import InitVar, dataclass, field
+import json
 import re
-from typing import TYPE_CHECKING
-from xml.dom import getDOMImplementation, minidom
+from typing import TYPE_CHECKING, Any
 
-from pyisy.constants import (
-    ATTR_ID,
-    ATTR_UNIT_OF_MEASURE,
-    TAG_ENABLED,
-    TAG_NAME,
-    TAG_ROOT,
-    URL_PROFILE_NS,
-)
-from pyisy.exceptions import XML_ERRORS, XML_PARSE_ERROR, ISYResponseParseError
-from pyisy.helpers import attr_from_element, value_from_xml
+from pyisy.constants import ATTR_ID, TAG_NAME, UOM_INDEX, URL_PROFILE_NS
+from pyisy.helpers.xml import parse_xml
 from pyisy.logging import _LOGGER
+from pyisy.util.output import write_to_file
 
 if TYPE_CHECKING:
     from pyisy.isy import ISY
@@ -37,7 +30,7 @@ TAG_FILES = "files"
 TAG_IP = "ip"
 TAG_BASE_URL = "baseurl"
 TAG_ISY_USER_NUM = "isyusernum"
-TAG_NODE_DEF = "nodeDef"
+TAG_NODE_DEF = "node_def"
 TAG_NS_USER = "nsuser"
 TAG_PORT = "port"
 TAG_RANGE = "range"
@@ -60,35 +53,39 @@ class NodeServers:
 
     """
 
-    def __init__(self, isy: ISY, slots: set[str]):
-        """
-        Initialize the NodeServers class.
+    isy: ISY
+    _connections: list = []
+    slots: set = set()
+    _profiles: dict = {}
+    _node_server_node_definitions: dict[str, dict[str, NodeServerNodeDefinition]] = {}
+    _node_server_node_editors: dict[str, dict[str, NodeServerNodeEditor]] = {}
+    _node_server_nls: dict = {}
+    loaded: bool = False
+    bg_tasks: set = set()
 
-        isy: ISY class
-        slots: List of slot numbers
-        """
+    def __init__(self, isy: ISY):
+        """Initialize the NodeServers class."""
         self.isy = isy
-        self._slots = slots
-        self._connections = []
-        self._profiles = {}
-        self._node_server_node_definitions = []
-        self._node_server_node_editors = []
-        self._node_server_nls = []
-        self.loaded = False
 
-    async def load_node_servers(self):
+    async def update(self) -> None:
         """Load information about node servers from the ISY."""
+        ns_conn_task = asyncio.create_task(self.get_connection_info())
+        self.bg_tasks.add(ns_conn_task)
+        ns_conn_task.add_done_callback(self.bg_tasks.discard)
 
-        await self.get_connection_info()
-        await self.get_node_server_profiles()
-        for slot in self._slots:
-            await self.parse_node_server_defs(slot)
+        ns_profile_task = asyncio.create_task(self.get_node_server_profiles())
+        self.bg_tasks.add(ns_profile_task)
+        ns_profile_task.add_done_callback(self.bg_tasks.discard)
+
+        while self.bg_tasks:
+            await asyncio.sleep(0.05)
+
+        for slot in self.slots:
+            await self.parse_nls_info_for_slot(slot)
         self.loaded = True
-        _LOGGER.info("ISY updated node servers")
-        # _LOGGER.debug(self._node_server_node_definitions)
-        # _LOGGER.debug(self._node_server_node_editors)
+        _LOGGER.info("Updated node servers")
 
-    async def get_connection_info(self):
+    async def get_connection_info(self) -> None:
         """Fetch the node server connections from the ISY."""
         result = await self.isy.conn.request(
             self.isy.conn.compile_url([URL_PROFILE_NS, "0", "connection"]),
@@ -97,245 +94,288 @@ class NodeServers:
         if result is None:
             return
 
-        try:
-            connections_xml = minidom.parseString(result)
-        except XML_ERRORS as exc:
-            _LOGGER.error("%s while parsing Node Server connections", XML_PARSE_ERROR)
-            raise ISYResponseParseError(XML_PARSE_ERROR) from exc
+        ns_conn_xml = parse_xml(result)
 
-        connections = connections_xml.getElementsByTagName(TAG_CONNECTION)
-        for connection in connections:
-            self._connections.append(
-                NodeServerConnection(
-                    slot=attr_from_element(connection, ATTR_PROFILE),
-                    enabled=attr_from_element(connection, TAG_ENABLED),
-                    name=value_from_xml(connection, TAG_NAME),
-                    ssl=value_from_xml(connection, TAG_SSL),
-                    sni=value_from_xml(connection, TAG_SNI),
-                    port=value_from_xml(connection, TAG_PORT),
-                    timeout=value_from_xml(connection, TAG_TIMEOUT),
-                    isy_user_num=value_from_xml(connection, TAG_ISY_USER_NUM),
-                    ip=value_from_xml(connection, TAG_IP),
-                    base_url=value_from_xml(connection, TAG_BASE_URL),
-                    ns_user=value_from_xml(connection, TAG_NS_USER),
-                )
-            )
-        _LOGGER.info("ISY updated node server connection info")
+        if self.isy.args and self.isy.args.file:
+            await write_to_file(ns_conn_xml, ".output/node-server-connections.json")
 
-    async def get_node_server_profiles(self):
-        """Retrieve the node server definition files from the ISY."""
-        node_server_file_list = await self.isy.conn.request(
-            self.isy.conn.compile_url([URL_PROFILE_NS, "0", "files"]), ok404=False
-        )
-
-        if node_server_file_list is None:
+        if not (connections := ns_conn_xml["connections"]):
             return
 
-        _LOGGER.debug("Parsing node server file list")
+        if isinstance((connection_list := connections["connection"]), dict):
+            connection_list = [connection_list]  # Handle case for 1 Node Server
 
+        for connection in connection_list:
+            await self.parse_connection(connection)
+
+        _LOGGER.debug("Updated node server connection info")
+
+    async def parse_connection(self, conn: dict) -> None:
+        """Parse the node server connection files from the ISY."""
         try:
-            file_list_xml = minidom.parseString(node_server_file_list)
-        except XML_ERRORS as exc:
-            _LOGGER.error("%s while parsing Node Server files", XML_PARSE_ERROR)
-            raise ISYResponseParseError(XML_PARSE_ERROR) from exc
+            self._connections.append(NodeServerConnection(**conn))
+        except (ValueError, KeyError, NameError) as exc:
+            _LOGGER.error("Could not parse node server connection: %s", exc)
+            return
 
-        file_list: list[str] = []
+    async def get_node_server_profiles(self) -> None:
+        """Retrieve the node server definition files from the ISY."""
+        result = await self.isy.conn.request(
+            self.isy.conn.compile_url([URL_PROFILE_NS, "0", TAG_FILES]), ok404=False
+        )
 
-        profiles = file_list_xml.getElementsByTagName(ATTR_PROFILE)
-        for profile in profiles:
-            slot = attr_from_element(profile, ATTR_ID)
-            directories = profile.getElementsByTagName(TAG_FILES)
-            for directory in directories:
-                dir_name = attr_from_element(directory, ATTR_DIR)
-                files = directory.getElementsByTagName(TAG_FILE)
-                for file in files:
-                    file_name = attr_from_element(file, TAG_NAME)
-                    file_list.append(f"{slot}/download/{dir_name}/{file_name}")
+        if result is None:
+            return
 
-        file_tasks = [
-            self.isy.conn.request(self.isy.conn.compile_url([URL_PROFILE_NS, file]))
-            for file in file_list
-        ]
-        file_contents: list[str] = await asyncio.gather(*file_tasks)
-        self._profiles: dict = dict(zip(file_list, file_contents))
+        ns_conn_xml = parse_xml(result)
 
-        _LOGGER.info("ISY downloaded node server files")
+        if self.isy.args and self.isy.args.file:
+            await write_to_file(ns_conn_xml, ".output/node-server-profiles.json")
 
-    async def parse_node_server_defs(self, slot: str):
+        if not (profiles := ns_conn_xml["profiles"]):
+            return
+
+        if isinstance((profile_list := profiles["profile"]), dict):
+            profile_list = [profile_list]  # Handle case for 1 Node Server
+
+        for profile in profile_list:
+            await self.parse_profile(profile)
+
+        _LOGGER.debug("Downloaded node server files")
+
+    async def parse_profile(self, profile: dict) -> None:
+        """Parse the node server profile file list from the ISY."""
+        try:
+            slot = profile["id"]
+            files: list[dict] = profile[TAG_FILES]
+
+            for file in files:
+                dir_name = file["dir"]
+                file_name = file[TAG_FILE][TAG_NAME]
+                file_path = f"{slot}/download/{dir_name}/{file_name}"
+
+                task = asyncio.create_task(self.fetch_node_server_file(file_path))
+                self.bg_tasks.add(task)
+                task.add_done_callback(self.bg_tasks.discard)
+
+            self.slots.add(slot)
+
+        except (ValueError, KeyError, NameError) as exc:
+            _LOGGER.error("Could not parse node server profile: %s", exc)
+            return
+
+    async def fetch_node_server_file(self, path: str) -> None:
+        """Fetch a node server file from the ISY."""
+        result = await self.isy.conn.request(
+            self.isy.conn.compile_url([URL_PROFILE_NS, path])
+        )
+        if result is None:
+            return
+        await self.parse_node_server_file(path, result)
+
+    async def parse_node_server_file(self, path: str, file_content: str) -> None:
         """Retrieve and parse the node server definitions."""
-        _LOGGER.info("Parsing node server slot %s", slot)
-        node_server_profile = {
-            key: value
-            for (key, value) in self._profiles.items()
-            if key.startswith(slot)
-        }
+        slot = path.split("/")[0]
+        path = path.lower()
 
-        node_defs_impl = getDOMImplementation()
-        editors_impl = getDOMImplementation()
-        node_defs_xml = node_defs_impl.createDocument(None, TAG_ROOT, None)
-        editors_xml = editors_impl.createDocument(None, TAG_ROOT, None)
-        nls_lookup: dict = {}
+        _LOGGER.debug(
+            "Parsing node server %s file %s", slot, "/".join(path.split("/")[-2:])
+        )
+        if path.endswith(".xml"):
+            xml_dict = parse_xml(file_content)
 
-        for file, contents in node_server_profile.items():
-            contents_xml = ""
-            file = file.lower()
-            if file.endswith(".xml"):
-                try:
-                    contents_xml = minidom.parseString(contents).firstChild
-                except XML_ERRORS:
-                    _LOGGER.error(
-                        "%s while parsing Node Server %s file %s",
-                        XML_PARSE_ERROR,
-                        slot,
-                        file,
-                    )
-                    continue
-            if "nodedef" in file:
-                node_defs_xml.firstChild.appendChild(contents_xml)
-            if "editors" in file:
-                editors_xml.firstChild.appendChild(contents_xml)
-            if "nls" in file and "en_us" in file:
-                nls_list = [
-                    line
-                    for line in contents.split("\n")
-                    if not line.startswith("#") and line != ""
-                ]
-                if nls_list:
-                    nls_lookup = dict(re.split(r"\s?=\s?", line) for line in nls_list)
-                    self._node_server_nls.append(
-                        NodeServerNLS(
-                            slot=slot,
-                            nls=nls_lookup,
-                        )
-                    )
-
-        # Process Node Def Files
-        node_defs = node_defs_xml.getElementsByTagName(TAG_NODE_DEF)
-        for node_def in node_defs:
-            node_def_id = attr_from_element(node_def, ATTR_ID)
-            nls_prefix = attr_from_element(node_def, ATTR_NLS)
-            sts = node_def.getElementsByTagName(TAG_ST)
-            statuses = {}
-            for st in sts:
-                status_id = attr_from_element(st, ATTR_ID)
-                editor = attr_from_element(st, ATTR_EDITOR)
-                statuses.update({status_id: editor})
-
-            cmds_sends = node_def.getElementsByTagName(TAG_SENDS)[0]
-            cmds_accepts = node_def.getElementsByTagName(TAG_ACCEPTS)[0]
-            cmds_sends_cmd = cmds_sends.getElementsByTagName(TAG_CMD)
-            cmds_accepts_cmd = cmds_accepts.getElementsByTagName(TAG_CMD)
-            sends_commands = []
-            accepts_commands = []
-
-            for cmd in cmds_sends_cmd:
-                sends_commands.append(attr_from_element(cmd, ATTR_ID))
-            for cmd in cmds_accepts_cmd:
-                accepts_commands.append(attr_from_element(cmd, ATTR_ID))
-
-            status_names = {}
-            name = node_def_id
-            if nls_lookup:
-                if (name_key := f"ND-{node_def_id}-NAME") in nls_lookup:
-                    name = nls_lookup[name_key]
-                for st in statuses:
-                    if (key := f"ST-{nls_prefix}-{st}-NAME") in nls_lookup:
-                        status_names.update({st: nls_lookup[key]})
-
-            self._node_server_node_definitions.append(
-                NodeServerNodeDefinition(
-                    node_def_id=node_def_id,
-                    name=name,
-                    nls_prefix=nls_prefix,
-                    slot=slot,
-                    statuses=statuses,
-                    status_names=status_names,
-                    sends_commands=sends_commands,
-                    accepts_commands=accepts_commands,
+            if self.isy.args and self.isy.args.file:
+                filename = "-".join(path.split("/")[-2:]).replace(".xml", ".json")
+                await write_to_file(
+                    xml_dict,
+                    f".output/ns-{slot}-{filename}",
                 )
-            )
-        # Process Editor Files
-        editors = editors_xml.getElementsByTagName(ATTR_EDITOR)
-        for editor in editors:
-            editor_id = attr_from_element(editor, ATTR_ID)
-            editor_range = editor.getElementsByTagName(TAG_RANGE)[0]
-            uom = attr_from_element(editor_range, ATTR_UNIT_OF_MEASURE)
-            subset = attr_from_element(editor_range, ATTR_SUBSET)
-            nls = attr_from_element(editor_range, ATTR_NLS)
 
-            values = None
-            if nls_lookup and uom == "25":
-                values = {
-                    key.partition("-")[2]: value
-                    for (key, value) in nls_lookup.items()
-                    if key.startswith(nls)
-                }
+            if "nodedef" in path:
+                if node_defs := xml_dict["node_defs"]:
+                    if isinstance((nd_list := node_defs[TAG_NODE_DEF]), dict):
+                        nd_list = [nd_list]
+                    self._node_server_node_definitions[slot] = {}
+                    for node_def in nd_list:
+                        await self.parse_node_server_defs(slot, node_def)
+                return
+            if "editor" in path:
+                if editors := xml_dict["editors"]:
+                    if isinstance((editor_list := editors["editor"]), dict):
+                        editor_list = [editor_list]
+                    self._node_server_node_editors[slot] = {}
+                    for editor in editor_list:
+                        await self.parse_node_server_editor(slot, editor)
+                return
+        elif "nls/en_us" in path:
+            nls_lookup: dict = {}
+            nls_list = [
+                line
+                for line in file_content.split("\n")
+                if not line.startswith("#") and line != ""
+            ]
+            if nls_list:
+                nls_lookup = dict(re.split(r"\s?=\s?", line) for line in nls_list)
+                self._node_server_nls[slot] = nls_lookup
 
-            self._node_server_node_editors.append(
-                NodeServerNodeEditor(
-                    editor_id=editor_id,
-                    unit_of_measurement=uom,
-                    subset=subset,
-                    nls=nls,
-                    slot=slot,
-                    values=values,
+            if self.isy.args and self.isy.args.file:
+                filename = "-".join(path.split("/")[-2:]).replace(".txt", ".json")
+                await write_to_file(
+                    nls_lookup,
+                    f".output/ns-{slot}-{filename}",
                 )
+
+            return
+        _LOGGER.warning(
+            "Unknown file for slot %s: %s", slot, "/".join(path.split("/")[-2:])
+        )
+
+    async def parse_node_server_defs(self, slot: str, node_def: dict) -> None:
+        """Retrieve and parse the node server definitions."""
+        try:
+            self._node_server_node_definitions[slot][
+                node_def["id"]
+            ] = NodeServerNodeDefinition(**node_def)
+
+        except (ValueError, KeyError, NameError) as exc:
+            _LOGGER.error("Could not parse node server connection: %s", exc)
+            return
+
+    async def parse_node_server_editor(self, slot: str, editor: dict) -> None:
+        """Retrieve and parse the node server definitions."""
+        editor_id = editor[ATTR_ID]
+        editor_range = NodeServerEditorRange(**editor[TAG_RANGE])
+
+        self._node_server_node_editors[slot][editor_id] = NodeServerNodeEditor(
+            editor_id=editor_id,
+            range=editor_range,
+            slot=slot,
+        )
+
+    async def parse_nls_info_for_slot(self, slot: str) -> None:
+        """Fetch the node server connections from the ISY."""
+        try:
+            # Update NLS information
+            if slot not in self._node_server_nls:
+                # Missing NLS file for this node server
+                return
+            nls = self._node_server_nls[slot]
+            if not (editors := self._node_server_node_editors.get(slot)):
+                return
+
+            for editor in editors.values():
+                if editor.range.uom == UOM_INDEX and editor.range.nls:
+                    editor.values = {
+                        k.replace(f"{editor.range.nls}-", ""): v
+                        for k, v in nls.items()
+                        if k.startswith(editor.range.nls)
+                    }
+
+            if not (node_defs := self._node_server_node_definitions.get(slot)):
+                return
+            for node_def in node_defs.values():
+                if (name_key := f"ND-{node_def.id}-NAME") in nls:
+                    node_def.name = nls[name_key]
+
+                for st_id, st_editor in node_def.statuses.items():
+                    if (key := f"ST-{node_def.nls}-{st_id}-NAME") in nls:
+                        node_def.status_names[st_id] = nls[key]
+                    node_def.status_editors[st_id] = editors[st_editor]
+        except (ValueError, KeyError, NameError) as exc:
+            _LOGGER.error(
+                "Error parsing language information for node server slot %s: %s",
+                slot,
+                exc,
             )
 
-        _LOGGER.debug("ISY parsed node server profiles")
+    def __repr__(self) -> str:
+        """Return a string representation of the node servers."""
+        return (
+            f"<{type(self).__name__} slots={self.slots} loaded={self.loaded}>"
+            f" detail:\n{json.dumps(self._node_server_node_definitions, sort_keys=True, default=str)}"
+        )
 
 
 @dataclass
-class NodeServerNodeDefinition:
-    """Node Server Node Definition parsed from the ISY/IoX."""
+class NodeServerEditorRange:
+    """Node Server Editor Range definition."""
 
-    node_def_id: str
-    name: str
-    nls_prefix: str
-    slot: str
-    statuses: dict[str, str]
-    status_names: dict[str, str]
-    sends_commands: list[str]
-    accepts_commands: list[str]
+    uom: str = ""
+    min: str = ""
+    max: str = ""
+    precision: int = 0
+    subset: str = ""
+    nls: str = ""
 
 
 @dataclass
 class NodeServerNodeEditor:
     """Node Server Editor definition."""
 
-    editor_id: str
-    unit_of_measurement: str
-    subset: str
-    nls: str
-    slot: str
-    values: dict[str, str]
-
-
-@dataclass
-class NodeServerNLS:
-    """Node Server Natural Language Selection definition."""
-
-    slot: str
-    nls: dict[str, str]
+    editor_id: str = ""
+    range: NodeServerEditorRange = NodeServerEditorRange()
+    nls: str = ""
+    slot: str = ""
+    values: dict[str, str] = field(default_factory=dict)
 
 
 @dataclass
 class NodeServerConnection:
     """Node Server Connection details."""
 
-    slot: str
-    enabled: str
-    name: str
-    ssl: str
-    sni: str
-    port: str
-    timeout: str
-    isy_user_num: str
-    ip: str
-    base_url: str
-    ns_user: str
+    profile: str = ""
+    type_: str = ""
+    enabled: bool = False
+    name: str = ""
+    ssl: bool = False
+    sni: bool = False
+    port: str = ""
+    timeout: str = ""
+    isyusernum: str = ""
+    ip: str = ""
+    baseurl: str = ""
+    nsuser: str = ""
 
     def configuration_url(self) -> str:
         """Compile a configuration url from the connection data."""
         protocol: str = "https://" if self.ssl else "http://"
         return f"{protocol}{self.ip}:{self.port}"
+
+
+@dataclass
+class NodeServerNodeDefinition:
+    """Node Server Node Definition parsed from the ISY/IoX."""
+
+    sts: InitVar[dict[str, list | dict]]
+    cmds: InitVar[dict[str, Any]]
+    id: str = ""
+    node_type: str = ""
+    name: str = ""
+    nls: str = ""
+    slot: str = ""
+    editors: Any = ""
+    statuses: dict[str, str] = field(init=False, default_factory=dict)
+    status_names: dict[str, str] = field(default_factory=dict)
+    status_editors: dict[str, NodeServerNodeEditor] = field(default_factory=dict)
+    sends: dict[str, Any] = field(init=False, default_factory=dict)
+    accepts: dict[str, Any] = field(init=False, default_factory=dict)
+
+    def __post_init__(self, sts: dict[str, list | dict], cmds: dict[str, Any]) -> None:
+        """Post-process node server definition."""
+        statuses = {}
+        if sts:
+            if isinstance(st_list := sts["st"], dict):
+                st_list = [st_list]
+            for st in st_list:
+                statuses.update({st["id"]: st["editor"]})
+        self.statuses = statuses
+
+        if cmds_sends := cmds["sends"]:
+            if isinstance((cmd_list := cmds_sends["cmd"]), dict):
+                cmd_list = [cmd_list]
+            self.sends = {i["id"]: i for i in cmd_list}
+
+        if cmds_accepts := cmds["accepts"]:
+            if isinstance((cmd_list := cmds_accepts["cmd"]), dict):
+                cmd_list = [cmd_list]
+            self.accepts = {i["id"]: i for i in cmd_list}

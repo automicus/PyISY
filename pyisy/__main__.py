@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import argparse
 import asyncio
-import json
 import logging
 import time
 from typing import Any
@@ -21,21 +20,11 @@ from pyisy.constants import NODE_CHANGED_ACTIONS, SYSTEM_STATUS
 from pyisy.helpers.events import NodeChangedEvent
 from pyisy.isy import ISY
 from pyisy.logging import LOG_VERBOSE, enable_logging
+from pyisy.util.output import write_to_file
 
 _LOGGER = logging.getLogger(__name__)
 
 args: argparse.Namespace
-
-
-async def write_to_file(xml_dict: dict, path: str) -> None:
-    """Write the parse results to file for debugging."""
-    json_object = json.dumps(xml_dict, indent=4, default=str)
-    with open(
-        path,
-        "w",
-        encoding="utf-8",
-    ) as outfile:
-        outfile.write(json_object)
 
 
 async def main(cl_args: argparse.Namespace) -> None:
@@ -62,14 +51,12 @@ async def main(cl_args: argparse.Namespace) -> None:
         _LOGGER.error(
             "Failed to connect to the ISY, please adjust settings and try again."
         )
-        await isy.shutdown()
-        return
-    except Exception as err:
+    except Exception as err:  # pylint: disable[broad-except]
         _LOGGER.error("Unknown error occurred: %s", err.args[0])
+    finally:
         await isy.shutdown()
-        raise
 
-    def node_changed_handler(event: NodeChangedEvent) -> None:
+    def node_changed_handler(event: NodeChangedEvent, key: str) -> None:
         """Handle a node changed event sent from Nodes class."""
         (event_desc, _) = NODE_CHANGED_ACTIONS[event.action]
         _LOGGER.info(
@@ -94,7 +81,7 @@ async def main(cl_args: argparse.Namespace) -> None:
             # Write nodes to file for debugging:
             await write_to_file(await isy.nodes.get_tree(), ".output/nodes-tree.json")
             await write_to_file(await isy.nodes.to_dict(), ".output/nodes-loaded.json")
-        isy.nodes.status_events.subscribe(status_handler, key="nodes")
+        isy.nodes.status_events.subscribe(node_changed_handler, key="nodes")
     if cl_args.programs:
         _LOGGER.debug(repr(isy.programs))
         if cl_args.file:
@@ -104,6 +91,7 @@ async def main(cl_args: argparse.Namespace) -> None:
         _LOGGER.debug(repr(isy.variables))
         if cl_args.file:
             await write_to_file(await isy.variables.to_dict(), ".output/variables.json")
+        isy.variables.status_events.subscribe(status_handler, key="variables")
     if cl_args.networking:
         _LOGGER.debug(repr(isy.networking))
         if cl_args.file:
@@ -116,26 +104,20 @@ async def main(cl_args: argparse.Namespace) -> None:
         _LOGGER.debug(repr(isy.clock))
     _LOGGER.info("Total Loading time: %.2fs", time.time() - t_0)
 
-    node_changed_subscriber = None
     system_status_subscriber = None
 
     try:
         if cl_args.events:
+            # await asyncio.sleep(1)
             isy.websocket.start()
-            if cl_args.nodes:
-                node_changed_subscriber = isy.nodes.status_events.subscribe(
-                    node_changed_handler
-                )
             system_status_subscriber = isy.status_events.subscribe(
                 system_status_handler
             )
-        while True:
-            await asyncio.sleep(1)
+            while True:
+                await asyncio.sleep(1)
     except asyncio.CancelledError:
         pass
     finally:
-        if node_changed_subscriber:
-            node_changed_subscriber.unsubscribe()
         if system_status_subscriber:
             system_status_subscriber.unsubscribe()
         await isy.shutdown()
