@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import asyncio
-from dataclasses import InitVar, dataclass, field
+from dataclasses import InitVar, asdict, dataclass, field
 import json
 import re
 from typing import TYPE_CHECKING, Any
@@ -56,7 +56,6 @@ class NodeServers:
     isy: ISY
     _connections: list = []
     slots: set = set()
-    _profiles: dict = {}
     _node_server_node_definitions: dict[str, dict[str, NodeServerNodeDefinition]] = {}
     _node_server_node_editors: dict[str, dict[str, NodeServerNodeEditor]] = {}
     _node_server_nls: dict = {}
@@ -287,6 +286,20 @@ class NodeServers:
                 slot,
                 exc,
             )
+
+    async def to_dict(self) -> dict:
+        """Dump entity platform entities to dict."""
+        return {
+            "connections": [conn.__dict__ for conn in self._connections],
+            "node_defs": {
+                slot: {k: asdict(v) for k, v in node_def.items()}
+                for slot, node_def in self._node_server_node_definitions.items()
+            },
+        }
+
+    def __str__(self) -> str:
+        """Return a string representation of the node servers."""
+        return f"<{type(self).__name__} slots={self.slots} loaded={self.loaded}>"
 
     def __repr__(self) -> str:
         """Return a string representation of the node servers."""

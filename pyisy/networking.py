@@ -72,6 +72,8 @@ class NetworkResources(EntityPlatform):
 class NetworkCommand(Entity):
     """Network Command Class handles individual networking commands."""
 
+    _status: bool = True
+
     def __init__(
         self,
         platform: NetworkResources,

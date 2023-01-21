@@ -13,16 +13,7 @@ import time
 from typing import TYPE_CHECKING, Any, cast
 
 from pyisy.connection import ISYConnectionInfo
-from pyisy.constants import (
-    ES_CONNECTED,
-    ES_DISCONNECTED,
-    ES_INITIALIZING,
-    ES_LOADED,
-    ES_LOST_STREAM_CONNECTION,
-    ES_NOT_STARTED,
-    POLL_TIME,
-    RECONNECT_DELAY,
-)
+from pyisy.constants import POLL_TIME, RECONNECT_DELAY, EventStreamStatus
 from pyisy.events import strings
 from pyisy.events.eventreader import ISYEventReader
 from pyisy.events.router import EventRouter
@@ -47,7 +38,7 @@ class EventStream:
     _thread: Thread | None
     _last_heartbeat: datetime | None = None
     _heartbeat_interval: int = SOCKET_HEARTBEAT
-    _status: str = ES_NOT_STARTED
+    _status: str = EventStreamStatus.NOT_STARTED
     _stream_id: str = ""
     _program_key: str = ""
     _connected: bool = False
@@ -104,12 +95,12 @@ class EventStream:
 
     def heartbeat(self, interval: int = SOCKET_HEARTBEAT) -> None:
         """Receive a heartbeat from the ISY event thread."""
-        if self._status is ES_NOT_STARTED:
-            self._status = ES_INITIALIZING
-            self.isy.connection_events.notify(ES_INITIALIZING)
-        elif self._status == ES_INITIALIZING:
-            self._status = ES_LOADED
-            self.isy.connection_events.notify(ES_LOADED)
+        if self._status is EventStreamStatus.NOT_STARTED:
+            self._status = EventStreamStatus.INITIALIZING
+            self.isy.connection_events.notify(EventStreamStatus.INITIALIZING)
+        elif self._status == EventStreamStatus.INITIALIZING:
+            self._status = EventStreamStatus.LOADED
+            self.isy.connection_events.notify(EventStreamStatus.LOADED)
         self._last_heartbeat = datetime.now()
         self._heartbeat_interval = interval
         _LOGGER.debug("ISY HEARTBEAT: %s", self._last_heartbeat.isoformat())
@@ -175,7 +166,7 @@ class EventStream:
             self.socket.setblocking(False)
             self._writer = self.socket.makefile("w")
             self._connected = True
-            self.isy.connection_events.notify(ES_CONNECTED)
+            self.isy.connection_events.notify(EventStreamStatus.CONNECTED)
             return True
         return True
 
@@ -187,7 +178,7 @@ class EventStream:
         self._connected = False
         self._subscribed = False
         self._running = False
-        self.isy.connection_events.notify(ES_DISCONNECTED)
+        self.isy.connection_events.notify(EventStreamStatus.DISCONNECTED)
 
     def subscribe(self) -> None:
         """Subscribe to the Event Stream."""
@@ -229,7 +220,7 @@ class EventStream:
     def _lost_connection(self, delay: int = 0) -> None:
         """React when the event stream connection is lost."""
         _LOGGER.warning("PyISY lost connection to the ISY event stream.")
-        self.isy.connection_events.notify(ES_LOST_STREAM_CONNECTION)
+        self.isy.connection_events.notify(EventStreamStatus.LOST_CONNECTION)
         self.unsubscribe()
         if self._on_lost_function is not None:
             time.sleep(delay)

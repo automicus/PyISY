@@ -25,17 +25,22 @@ RECONNECT_DELAY = 60
 SOCKET_BUFFER_SIZE = 4096
 THREAD_SLEEP_TIME = 30.0
 
-ES_LOST_STREAM_CONNECTION = "lost_stream_connection"
-ES_CONNECTED = "connected"
-ES_DISCONNECTED = "disconnected"
-ES_START_UPDATES = "start_updates"
-ES_STOP_UPDATES = "stop_updates"
-ES_INITIALIZING = "stream_initializing"
-ES_LOADED = "stream_loaded"
-ES_RECONNECT_FAILED = "reconnect_failed"
-ES_RECONNECTING = "reconnecting"
-ES_DISCONNECTING = "stream_disconnecting"
-ES_NOT_STARTED = "not_started"
+
+class EventStreamStatus(StrEnum):
+    """Event Stream Status Codes."""
+
+    LOST_CONNECTION = "lost_connection"
+    CONNECTED = "connected"
+    DISCONNECTED = "disconnected"
+    START_UPDATES = "start_updates"
+    STOP_UPDATES = "stop_updates"
+    INITIALIZING = "stream_initializing"
+    LOADED = "stream_loaded"
+    RECONNECT_FAILED = "reconnect_failed"
+    RECONNECTING = "reconnecting"
+    DISCONNECTING = "stream_disconnecting"
+    NOT_STARTED = "not_started"
+
 
 ISY_VALUE_UNKNOWN = -1 * float("inf")
 ISY_PROP_NOT_SET = "-1"
@@ -936,65 +941,67 @@ NODE_CATEGORIES = {
     "254": "unknown",
 }
 
-# Node Change Actions
-NC_CLEAR_ERROR = "CE"
-NC_FOLDER_ADDED = "FD"
-NC_FOLDER_REMOVED = "FR"
-NC_FOLDER_RENAMED = "FN"
-NC_GROUP_ADDED = "GD"
-NC_GROUP_REMOVED = "GR"
-NC_GROUP_RENAMED = "GN"
-NC_NET_RENAMED = "WR"
-NC_NODE_ADDED = "ND"
-NC_NODE_ENABLED = "EN"
-NC_NODE_ERROR = "NE"
-NC_NODE_MOVED = "MV"
-NC_NODE_REMOVE_FROM_GROUP = "RG"
-NC_NODE_REMOVED = "NR"
-NC_NODE_RENAMED = "NN"
-NC_NODE_REVISED = "RV"
-NC_PARENT_CHANGED = "PC"
-NC_PENDING_DEVICE_OP = "WH"
-NC_PROGRAMMING_DEVICE = "WD"
-DEV_WRITING = "_7A"
-DEV_MEMORY = "_7M"
+
+class NodeChangeAction(StrEnum):
+    """Node change actions enum."""
+
+    CLEAR_ERROR = "CE"
+    FOLDER_ADDED = "FD"
+    FOLDER_REMOVED = "FR"
+    FOLDER_RENAMED = "FN"
+    GROUP_ADDED = "GD"
+    GROUP_REMOVED = "GR"
+    GROUP_RENAMED = "GN"
+    NET_RENAMED = "WR"
+    NODE_ADDED = "ND"
+    NODE_ENABLED = "EN"
+    NODE_ERROR = "NE"
+    NODE_MOVED = "MV"
+    NODE_REMOVED_FROM_GROUP = "RG"
+    NODE_REMOVED = "NR"
+    NODE_RENAMED = "NN"
+    NODE_REVISED = "RV"
+    PARENT_CHANGED = "PC"
+    PENDING_DEVICE_OP = "WH"
+    PROGRAMMING_DEVICE = "WD"
+    DEVICE_WRITING = "_7A"
+    DEVICE_MEMORY = "_7M"
+
 
 # Node Change Code: (Description, EventInfo Tags)
-NODE_CHANGED_ACTIONS: dict[str, tuple[str, list[str]]] = {
-    NC_CLEAR_ERROR: ("Node Comm. Errors Cleared", []),
-    NC_FOLDER_ADDED: ("Folder Added", []),
-    NC_FOLDER_REMOVED: ("Folder Removed", []),
-    NC_FOLDER_RENAMED: ("Folder Renamed", ["newName"]),
-    NC_GROUP_ADDED: ("Group Added", ["groupName", "groupType"]),
-    NC_GROUP_REMOVED: ("Group Removed", []),
-    NC_GROUP_RENAMED: ("Group Renamed", ["newName"]),
-    NC_NET_RENAMED: ("Network Renamed", []),
-    NC_NODE_ADDED: ("Node Added", ["nodeName", "nodeType"]),
-    NC_NODE_ENABLED: ("Enabled/Disabled", ["enabled"]),
-    NC_NODE_ERROR: ("Node Comm. Errors", []),
-    NC_NODE_MOVED: ("Node moved into a Scene", ["movedNode", "linkType"]),
-    NC_NODE_REMOVE_FROM_GROUP: ("Removed from Group (Scene)", ["removedNode"]),
-    NC_NODE_REMOVED: ("Node Removed", []),
-    NC_NODE_RENAMED: ("Node Renamed", ["newName"]),
-    NC_NODE_REVISED: ("Node Revised (UPB)", []),
-    NC_PARENT_CHANGED: ("Parent Changed", ["node", "nodeType", "parent", "parentType"]),
-    NC_PENDING_DEVICE_OP: ("Pending Device Operation", []),
-    NC_PROGRAMMING_DEVICE: ("Programming Device", []),
-    DEV_WRITING: ("Progress Report", ["message"]),
-    DEV_MEMORY: ("Memory Write", ["memory", "cmd1", "cmd2", "value"]),
+NODE_CHANGED_ACTIONS: dict[NodeChangeAction, list[str]] = {
+    NodeChangeAction.CLEAR_ERROR: [],
+    NodeChangeAction.FOLDER_ADDED: [],
+    NodeChangeAction.FOLDER_REMOVED: [],
+    NodeChangeAction.FOLDER_RENAMED: ["newName"],
+    NodeChangeAction.GROUP_ADDED: ["groupName", "groupType"],
+    NodeChangeAction.GROUP_REMOVED: [],
+    NodeChangeAction.GROUP_RENAMED: ["newName"],
+    NodeChangeAction.NET_RENAMED: [],
+    NodeChangeAction.NODE_ADDED: ["nodeName", "nodeType"],
+    NodeChangeAction.NODE_ENABLED: ["enabled"],
+    NodeChangeAction.NODE_ERROR: [],
+    NodeChangeAction.NODE_MOVED: ["movedNode", "linkType"],
+    NodeChangeAction.NODE_REMOVED_FROM_GROUP: ["removedNode"],
+    NodeChangeAction.NODE_REMOVED: [],
+    NodeChangeAction.NODE_RENAMED: ["newName"],
+    NodeChangeAction.NODE_REVISED: [],
+    NodeChangeAction.PARENT_CHANGED: ["node", "nodeType", "parent", "parentType"],
+    NodeChangeAction.PENDING_DEVICE_OP: [],
+    NodeChangeAction.PROGRAMMING_DEVICE: [],
+    NodeChangeAction.DEVICE_WRITING: ["message"],
+    NodeChangeAction.DEVICE_MEMORY: ["memory", "cmd1", "cmd2", "value"],
 }
 
-SYSTEM_NOT_BUSY = "0"
-SYSTEM_BUSY = "1"
-SYSTEM_IDLE = "2"
-SYSTEM_SAFE_MODE = "3"
 
-SYSTEM_STATUS = {
-    SYSTEM_NOT_BUSY: "Not Busy",
-    SYSTEM_BUSY: "Busy",
-    SYSTEM_IDLE: "Idle",
-    SYSTEM_SAFE_MODE: "Safe Mode",
-}
+class SystemStatus(StrEnum):
+    """System Status Enum."""
+
+    NOT_BUSY = "0"
+    BUSY = "1"
+    IDLE = "2"
+    SAFE_MODE = "3"
+
 
 # Node Link Types
 NODE_IS_CONTROLLER = 0x10

@@ -238,7 +238,7 @@ class EventRouter:
                 )
                 _LOGGER.debug(
                     "Batch mode changed to: %s",
-                    json.dumps(event.__dict__, default=str),
+                    self.isy.diagnostics.batch_mode,
                 )
             if event.action == ConfigAction.BATTERY_MODE_PROGRAMMING:
                 self.isy.diagnostics.write_updates_to_battery_nodes = (
@@ -246,7 +246,7 @@ class EventRouter:
                 )
                 _LOGGER.debug(
                     "Battery programming mode changed to: %s",
-                    json.dumps(event.event_info, default=str),
+                    self.isy.diagnostics.write_updates_to_battery_nodes,
                 )
             return
         if control == ControlEvent.SYSTEM_STATUS:
@@ -292,7 +292,7 @@ class EventRouter:
             ]
             _LOGGER.debug(
                 "Portal Control Event: %s",
-                json.dumps(event.event_info, default=str),
+                json.dumps(self.isy.diagnostics.portal_status, default=str),
             )
             return
         if control == ControlEvent.ZMATTER_Z_WAVE:
@@ -302,7 +302,7 @@ class EventRouter:
             _LOGGER.debug(
                 "ZMatter Z-Wave Control Event: action=%s %s",
                 event.action,
-                json.dumps(event.event_info, default=str),
+                json.dumps(self.isy.diagnostics.zmatter, default=str),
             )
             return
 

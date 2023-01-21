@@ -1,18 +1,10 @@
 """Event handlers for ISY Nodes."""
 from __future__ import annotations
 
-import json
 import re
 from typing import TYPE_CHECKING, cast
 
-from pyisy.constants import (
-    DEV_MEMORY,
-    DEV_WRITING,
-    NC_NODE_ENABLED,
-    NC_NODE_ERROR,
-    NODE_CHANGED_ACTIONS,
-    TAG_ENABLED,
-)
+from pyisy.constants import TAG_ENABLED, NodeChangeAction
 from pyisy.helpers.events import NodeChangedEvent
 from pyisy.logging import _LOGGER
 from pyisy.nodes.node import Node
@@ -49,16 +41,17 @@ async def node_update_received(nodes: Nodes, event: EventData) -> None:
 async def node_changed_received(nodes: Nodes, event: EventData) -> None:
     """Handle Node Change/Update events from an event stream message."""
     action: str = cast(str, event.action)
-    if action not in NODE_CHANGED_ACTIONS:
-        return
+    try:
+        description = NodeChangeAction(action).name
+    except ValueError:
+        description = action
 
     address: str = cast(str, event.node)
     detail: dict = cast(dict, event.event_info)
-    description, _ = NODE_CHANGED_ACTIONS[action]
 
-    if action == NC_NODE_ERROR:
+    if action == NodeChangeAction.NODE_ERROR:
         _LOGGER.error("ISY Could not communicate with device: %s", address)
-    elif action == NC_NODE_ENABLED and address in nodes.addresses:
+    elif action == NodeChangeAction.NODE_ENABLED and address in nodes.addresses:
         if detail and TAG_ENABLED in detail:
             entity = nodes.entities[address]
             entity.update_enabled(cast(bool, detail[TAG_ENABLED]))
@@ -66,7 +59,7 @@ async def node_changed_received(nodes: Nodes, event: EventData) -> None:
     nodes.status_events.notify(event=NodeChangedEvent(address, action, detail))
     _LOGGER.debug(
         "Received a %s event for node %s %s",
-        description,
+        description.replace("_", " ").title(),
         address,
         detail if detail else "",
     )
@@ -78,11 +71,11 @@ async def progress_report_received(nodes: Nodes, event_data: EventData) -> None:
     address, _, message = cast(str, event_data.event_info).partition("]")
     address = address.strip("[ ")
     message = message.strip()
-    action = DEV_WRITING
+    action = NodeChangeAction.DEVICE_WRITING
     detail: dict[str, str | int] = {"message": message}
 
     if address != "All" and message.startswith("Memory"):
-        action = DEV_MEMORY
+        action = NodeChangeAction.DEVICE_MEMORY
         regex = re.compile(MEMORY_REGEX)
         if event := regex.search(message):
             detail = {

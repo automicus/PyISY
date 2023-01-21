@@ -13,16 +13,11 @@ from pyisy.configuration import ConfigurationData
 from pyisy.connection import Connection, ISYConnectionInfo
 from pyisy.constants import (
     CMD_X10,
-    ES_CONNECTED,
-    ES_RECONNECT_FAILED,
-    ES_RECONNECTING,
-    ES_START_UPDATES,
-    ES_STOP_UPDATES,
-    SYSTEM_BUSY,
-    SYSTEM_STATUS,
     URL_QUERY,
     X10_COMMANDS,
+    EventStreamStatus,
     Protocol,
+    SystemStatus,
 )
 from pyisy.events.tcpsocket import EventStream
 from pyisy.events.websocket import WebSocketClient
@@ -56,7 +51,7 @@ class ISY:
     nodes: Nodes
     programs: Programs
     status_events: EventEmitter
-    system_status: str = SYSTEM_BUSY
+    system_status: SystemStatus = SystemStatus.BUSY
     variables: Variables
     websocket: WebSocketClient = None  # type: ignore[assignment]
     diagnostics: ISYDiagnosticInfo
@@ -137,7 +132,7 @@ class ISY:
         if self.websocket:
             self.websocket.stop()
         if self._events and self._events.running:
-            self.connection_events.notify(ES_STOP_UPDATES)
+            self.connection_events.notify(EventStreamStatus.STOP_UPDATES)
             self._events.running = False
         await self.conn.close()
 
@@ -150,7 +145,7 @@ class ISY:
     def auto_update(self) -> bool:
         """Return the auto_update property."""
         if self.websocket:
-            return self.websocket.status == ES_CONNECTED
+            return self.websocket.status == EventStreamStatus.CONNECTED
         if self._events is not None:
             return self._events.running
         return False
@@ -168,7 +163,11 @@ class ISY:
                 self, self.conn.connection_info, self._on_lost_event_stream
             )
         if self._events:
-            self.connection_events.notify(ES_START_UPDATES if val else ES_STOP_UPDATES)
+            self.connection_events.notify(
+                EventStreamStatus.START_UPDATES
+                if val
+                else EventStreamStatus.STOP_UPDATES
+            )
             self._events.running = val
 
     @property
@@ -209,12 +208,12 @@ class ISY:
                 self, self.conn.connection_info, self._on_lost_event_stream
             )
             self._events.running = True
-            self.connection_events.notify(ES_RECONNECTING)
+            self.connection_events.notify(EventStreamStatus.RECONNECTING)
 
         if not self.auto_update:
             self._events = None
             _LOGGER.warning("PyISY could not reconnect to the event stream.")
-            self.connection_events.notify(ES_RECONNECT_FAILED)
+            self.connection_events.notify(EventStreamStatus.RECONNECT_FAILED)
         else:
             _LOGGER.warning("PyISY reconnected to the event stream.")
 
@@ -257,10 +256,10 @@ class ISY:
 
     def system_status_changed_received(self, action: Any) -> None:
         """Handle System Status events from an event stream message."""
-        if not action or action not in SYSTEM_STATUS:
+        if not action:
             return
-        self.system_status = action
-        self.status_events.notify(action)
+        self.system_status = SystemStatus(action)
+        self.status_events.notify(self.system_status)
 
 
 @dataclass

@@ -16,7 +16,7 @@ import time
 from typing import Any
 
 from pyisy.connection import ISYConnectionError, ISYConnectionInfo, ISYInvalidAuthError
-from pyisy.constants import NODE_CHANGED_ACTIONS, SYSTEM_STATUS
+from pyisy.constants import NodeChangeAction, SystemStatus
 from pyisy.helpers.events import NodeChangedEvent
 from pyisy.isy import ISY
 from pyisy.logging import LOG_VERBOSE, enable_logging
@@ -60,17 +60,16 @@ async def main(cl_args: argparse.Namespace) -> None:
 
     def node_changed_handler(event: NodeChangedEvent, key: str) -> None:
         """Handle a node changed event sent from Nodes class."""
-        (event_desc, _) = NODE_CHANGED_ACTIONS[event.action]
         _LOGGER.info(
-            "Subscriber--Node %s Changed: %s %s",
+            "Node %s Changed: %s %s",
             event.address,
-            event_desc,
+            NodeChangeAction(event.action).name.replace("_", " ").title(),
             event.event_info if event.event_info else "",
         )
 
-    def system_status_handler(event: str) -> None:
+    def system_status_handler(event: SystemStatus) -> None:
         """Handle a system status changed event sent ISY class."""
-        _LOGGER.info("System Status Changed: %s", SYSTEM_STATUS.get(event))
+        _LOGGER.info("System Status Changed: %s", event.name.replace("_", " ").title())
 
     def status_handler(event: Any, key: str) -> None:
         """Handle a generic status changed event sent."""
@@ -101,7 +100,11 @@ async def main(cl_args: argparse.Namespace) -> None:
                 await isy.networking.to_dict(), ".output/networking.json"
             )
     if cl_args.node_servers:
-        _LOGGER.debug(repr(isy.node_servers))
+        _LOGGER.debug(isy.node_servers)
+        if cl_args.file:
+            await write_to_file(
+                await isy.node_servers.to_dict(), ".output/node-servers.json"
+            )
     if cl_args.clock:
         _LOGGER.debug(repr(isy.clock))
     _LOGGER.info("Total Loading time: %.2fs", time.time() - t_0)
