@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import TYPE_CHECKING, Generic
+from typing import TYPE_CHECKING, Generic, NamedTuple
 from xml.dom import minidom
 
 from pyisy.constants import (
@@ -97,7 +97,7 @@ class NodeBase(Entity):
         return f"{type(self).__name__}({self.address})"
 
     @property
-    def folder(self) -> str:
+    def folder(self) -> NamedTuple | None:
         """Return the folder of the current node as a property."""
         return self.platform.get_folder(self.address)
 

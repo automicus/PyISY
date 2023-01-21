@@ -15,6 +15,7 @@ from pyisy.nodes.node_events import (
     node_update_received,
     progress_report_received,
 )
+from pyisy.util.backports import StrEnum
 
 if TYPE_CHECKING:
     from pyisy.events.tcpsocket import EventStream
@@ -22,6 +23,84 @@ if TYPE_CHECKING:
     from pyisy.isy import ISY
 
 _LOGGER = logging.getLogger(__name__)
+
+
+class Action(StrEnum):
+    """Action String Enum."""
+
+    EVENT_STATUS = "0"
+    GET_STATUS = "1"
+    KEY_CHANGED = "2"
+    INFO_STRING = "3"
+    IR_LEARN = "4"
+    SCHEDULE = "5"
+    VAR_STATUS = "6"
+    VAR_INIT = "7"
+    KEY = "8"
+
+
+class ControlEvent(StrEnum):
+    """Trigger Event String Enum."""
+
+    HEARTBEAT = "_0"
+    TRIGGER = "_1"
+    DRIVER_SPECIFIC = "_2"
+    NODE_CHANGED = "_3"
+    SYSTEM_CONFIG_UPDATED = "_4"
+    SYSTEM_STATUS = "_5"
+    INTERNET_ACCESS = "_6"
+    PROGRESS_REPORT = "_7"
+    SECURITY_SYSTEM = "_8"
+    SYSTEM_ALERT = "_9"  # Not Implemented
+    OPENADR = "_10"
+    CLIMATE_EVENTS = "_11"
+    AMI_SEP = "_12"
+    EXTERNAL_ENERGY_MONITORING = "_13"
+    UPB_LINKER = "_14"
+    UPB_DEVICE_ADDER = "_15"
+    UPB_DEVICE_STATUS = "_16"
+    GAS_METER = "_17"
+    ZIGBEE = "_18"
+    ELK = "_19"
+    DEVICE_LINKER = "_20"
+    Z_WAVE = "_21"
+    BILLING = "_22"
+    PORTAL = "_23"
+
+
+class ConfigAction(StrEnum):
+    """Trigger Event String Enum."""
+
+    TIME_CHANGED = "0"
+    TIME_CONFIGURATION = "1"
+    NTP_SETTINGS = "2"
+    NOTIFICATIONS_SETTINGS = "3"
+    NTP_COMMUNICATIONS_ERROR = "4"
+    BATCH_MODE = "5"
+    BATTERY_MODE_PROGRAMMING = "6"
+
+
+TIME_UPDATE = [
+    ConfigAction.TIME_CHANGED,
+    ConfigAction.TIME_CONFIGURATION,
+    ConfigAction.NTP_SETTINGS,
+    ConfigAction.NOTIFICATIONS_SETTINGS,
+    ConfigAction.NTP_COMMUNICATIONS_ERROR,
+]
+
+
+class SecuritySystemAction(StrEnum):
+    """Actions for security system."""
+
+    DISCONNECTED = "0"
+    CONNECTED = "1"
+    DISARMED = "DA"
+    ARMED_AWAY = "AW"
+    ARMED_STAY = "AS"
+    ARMED_STAY_INSTANT = "ASI"
+    ARMED_NIGHT = "AN"
+    ARMED_NIGHT_INSTANT = "ANI"
+    ARMED_VACATION = "AV"
 
 
 @dataclass
@@ -87,108 +166,115 @@ class EventRouter:
         # direct the event message
         if not (control := event.control):
             return
-        if control == "_0" and event.action is not None:  # ISY HEARTBEAT
+        if (
+            control == ControlEvent.HEARTBEAT and event.action is not None
+        ):  # ISY HEARTBEAT
             self.events.heartbeat(int(cast(str, event.action)))
         elif control[0] != "_":  # NODE CONTROL EVENT
             if self.isy.nodes.loaded and self.isy.nodes.initialized:
                 await node_update_received(self.isy.nodes, event)
-        elif control == "_1":  # Trigger Update
-            if event.action == "0":
+        elif control == ControlEvent.TRIGGER:  # Trigger Update
+            if event.action == Action.EVENT_STATUS:
                 # Event Status
                 if self.isy.programs.loaded:
                     await self.isy.programs.update_received(event)
-            if event.action == "1":
+            if event.action == Action.GET_STATUS:
                 # Get Status (subscribers should refresh)
-
-                return  # FUTURE: Call Node Status refresh
-            if event.action == "2":
+                if self.isy.nodes.initialized:
+                    await self.isy.nodes.update_status()
+            if event.action == Action.KEY_CHANGED:
                 # Key Changed (node = key)
                 self.key = cast(str, event.node)
                 _LOGGER.debug("Key changed: %s", self.key)
                 return
-            if event.action in {"3", "4"}:  # Info string, IR Learn mode
+            if event.action in {
+                Action.INFO_STRING,
+                Action.IR_LEARN,
+            }:  # Info string, IR Learn mode
                 return
-            if event.action == "5":
+            if event.action == Action.SCHEDULE:
                 # Schedule status changed (node=key)
                 return
-            if event.action == "6":
+            if event.action == Action.VAR_STATUS:
                 # Variable status changed
                 if self.isy.variables.loaded:
                     await self.isy.variables.update_received(event)
                 return
-            if event.action == "7":
+            if event.action == Action.VAR_INIT:
                 # Variable init value set
                 if self.isy.variables.loaded:
                     await self.isy.variables.update_received(event, init=True)
                 return
-            if event.action == "8":
+            if event.action == Action.KEY:
                 # Key (event_info = key)
                 self.key = cast(str, event.event_info)
                 _LOGGER.debug("Key received: %s", self.key)
                 return
-        elif control == "_2":
+        elif control == ControlEvent.DRIVER_SPECIFIC:
             # Driver specific events
             _LOGGER.debug(
                 "Driver specific event: %s",
                 json.dumps(event.__dict__, default=str),
             )
             return
-        elif control == "_3":
+        elif control == ControlEvent.NODE_CHANGED:
             # Node Changed/Updated
             await node_changed_received(self.isy.nodes, event)
             return
-        elif control == "_4":
+        elif control == ControlEvent.SYSTEM_CONFIG_UPDATED:
             # System Configuration Updated
-            if event.action in {"0", "1", "2", "3", "4"}:
-                # "0" -> Time Changed
-                # "1" -> Time Configuration Changed
-                # "2" -> NTP Settings Updated
-                # "3" -> Notifications Settings Updated
-                # "4" -> NTP Communications Error
+            if event.action in TIME_UPDATE:
                 if self.isy.clock.loaded:
                     await self.isy.clock.update()
                 return
-            # action = "5" -> Batch Mode Updated
-            # node = null
-            # <eventInfo>
-            # <status>"1"|"0"</status>
-            # </eventInfo>
-            # action = "6" -> Battery Mode Programming Updated
-            # node = null
-            # <eventInfo>
-            # <status>"1"|"0"</status>
-            # </eventInfo>
+            if event.action == ConfigAction.BATCH_MODE:
+                # <eventInfo>
+                # <status>"1"|"0"</status>
+                # </eventInfo>
+                _LOGGER.info(
+                    "Batch mode changed to: %s",
+                    json.dumps(event.__dict__, default=str),
+                )
+            if event.action == ConfigAction.BATTERY_MODE_PROGRAMMING:
+                # <eventInfo>
+                # <status>"1"|"0"</status>
+                # </eventInfo>
+                _LOGGER.info(
+                    "Battery programming mode changed to: %s",
+                    json.dumps(event.__dict__, default=str),
+                )
             return
-        elif control == "_5":
+        elif control == ControlEvent.SYSTEM_STATUS:
             # System Status Changed
             self.isy.system_status_changed_received(event.action)
             return
-
-        elif control == "_7":
+        elif control == ControlEvent.PROGRESS_REPORT:
             # Progress report, device programming event
             await progress_report_received(self.isy.nodes, event)
             return
-
-
-# 8.5.10 Security System Event (control = “_8”)
-# node = null
-# eventInfo = null
-# action = “0” -> Disconnected
-# action = “1” -> Connected
-# action = “DA” -> Disarmed
-# action = “AW” -> Armed Away
-# action = “AS” -> Armed Stay
-# action = “ASI” -> Armed Stay Instant
-# action = “AN” -> Armed Night
-# action = “ANI” -> Armed Night Instant
-# Page | 251
-# action = “AV” -> Armed Vacation
-# 8.5.11 System Alert Event (control = “_9”)
-# Not implemented and should be ignore
-# OpenADR and Flex Your Power Events (control = “_10”)
-# Climate Events (control = “_11”)
-#         # _LOGGER.info(
-#         #     "Event: %s",
-#         #     json.dumps(event.__dict__, indent=4, default=str),
-#         # )
-# Z-Wave Events (control = “_21”) zwobjs.xsd
+        elif control == ControlEvent.SECURITY_SYSTEM:
+            # Security System Control Event
+            _LOGGER.debug(
+                "Security System Control Event: %s",
+                json.dumps(event.__dict__, default=str),
+            )
+            return
+        elif control == ControlEvent.ELK:
+            # ELK Control Event
+            _LOGGER.debug(
+                "ELK Control Event: %s",
+                json.dumps(event.__dict__, default=str),
+            )
+            return
+        elif control == ControlEvent.Z_WAVE:
+            # Z-Wave Control Event
+            _LOGGER.debug(
+                "Z-Wave Control Event: %s",
+                json.dumps(event.__dict__, default=str),
+            )
+            return
+        _LOGGER.info(
+            "Other Control Event: %s %s",
+            ControlEvent(control).name,
+            json.dumps(event.__dict__, default=str),
+        )

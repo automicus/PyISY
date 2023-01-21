@@ -2,7 +2,6 @@
 # FUTURE: change to xmltodict.expat.ExpatError
 from xml.parsers.expat import ExpatError
 
-
 XML_ERRORS = (AttributeError, KeyError, ValueError, TypeError, IndexError, ExpatError)
 XML_PARSE_ERROR = "ISY Could not parse response, poorly formatted XML."
 

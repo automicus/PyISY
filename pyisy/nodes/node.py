@@ -4,8 +4,7 @@ from __future__ import annotations
 import asyncio
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import TYPE_CHECKING
-from xml.dom import minidom
+from typing import TYPE_CHECKING, cast
 
 from pyisy.constants import (
     BACKLIGHT_SUPPORT,
@@ -30,25 +29,22 @@ from pyisy.constants import (
     PROTO_NODE_SERVER,
     PROTO_ZWAVE,
     TAG_CONFIG,
-    TAG_PARAMETER,
-    TAG_SIZE,
-    TAG_VALUE,
     UOM_CLIMATE_MODES,
     UOM_FAN_MODES,
     UOM_TO_STATES,
     URL_CONFIG,
     URL_NODE,
     URL_QUERY,
+    URL_ZMATTER_ZWAVE,
     URL_ZWAVE,
     ZWAVE_CAT_DIMMABLE,
     ZWAVE_CAT_LOCK,
     ZWAVE_CAT_THERMOSTAT,
 )
-from pyisy.exceptions import XML_ERRORS, XML_PARSE_ERROR, ISYResponseParseError
 from pyisy.helpers.entity import Entity, EntityStatus
 from pyisy.helpers.events import EventEmitter
-from pyisy.helpers.models import NodeProperty, ZWaveProperties
-from pyisy.helpers.xml import attr_from_xml
+from pyisy.helpers.models import NodeProperty, ZWaveParameter, ZWaveProperties
+from pyisy.helpers.xml import parse_xml
 from pyisy.logging import _LOGGER
 from pyisy.nodes.nodebase import NodeBase, NodeBaseDetail
 
@@ -240,7 +236,40 @@ class Node(NodeBase, Entity):
         """Return the Z-Wave Properties (used for Z-Wave devices)."""
         return self.detail.zwave_props
 
-    async def get_zwave_parameter(self, parameter: int) -> dict | None:
+    def update_state(self, state: NodeProperty) -> None:
+        """Update the various state properties when received."""
+        changed = []
+        self._last_update = datetime.now()
+
+        if self._is_battery_node and state.control == PROP_STATUS:
+            self._is_battery_node = False
+
+        if state.value != self.status:
+            changed.append("state")
+
+        if state.formatted not in (self._formatted, ""):
+            self._formatted = state.formatted
+            changed.append("formatted")
+
+        if state.precision != self._precision:
+            self._precision = state.precision
+            changed.append("precision")
+
+        if state.uom not in (self._uom, ""):
+            self._uom = state.uom
+            changed.append("uom")
+
+        if changed:
+            self.update_status(state.value)
+            _LOGGER.debug(
+                "Updated node state: %s (%s), changed=%s",
+                self.name,
+                self.address,
+                ", ".join(changed),
+            )
+            return
+
+    async def get_zwave_parameter(self, parameter: int) -> ZWaveParameter | None:
         """Retrieve a Z-Wave Parameter from the ISY."""
 
         if self.protocol != PROTO_ZWAVE:
@@ -250,6 +279,8 @@ class Node(NodeBase, Entity):
         # /rest/zwave/node/<nodeAddress>/config/query/<parameterNumber>
         # returns something like:
         # <config paramNum="2" size="1" value="80"/>
+        # parsed into:
+        # {'config': {'param_num': '2', 'size': '1', 'value': '80'}}
         parameter_xml = await self.isy.conn.request(
             self.isy.conn.compile_url(
                 [
@@ -267,26 +298,23 @@ class Node(NodeBase, Entity):
             _LOGGER.warning("Error fetching parameter from ISY")
             return None
 
-        try:
-            parameter_dom = minidom.parseString(parameter_xml)
-            # TODO: Using old parser
-        except XML_ERRORS as exc:
-            _LOGGER.error("%s: Node Parameter %s", XML_PARSE_ERROR, parameter_xml)
-            raise ISYResponseParseError() from exc
+        parameter_dict = parse_xml(parameter_xml)
+        if not (config := parameter_dict[TAG_CONFIG]):
+            _LOGGER.warning("Error fetching parameter from ISY")
+            return None
 
-        size = int(attr_from_xml(parameter_dom, TAG_CONFIG, TAG_SIZE))
-        value = int(attr_from_xml(parameter_dom, TAG_CONFIG, TAG_VALUE))
+        result = ZWaveParameter(**config)
 
         # Add/update the aux_properties to include the parameter.
         node_prop = NodeProperty(
             control=f"{PROP_ZWAVE_PREFIX}{parameter}",
-            value=value,
-            uom=f"{PROP_ZWAVE_PREFIX}{size}",
+            value=cast(int, result.value),
+            uom=f"{PROP_ZWAVE_PREFIX}{result.size}",
             address=self.address,
         )
         self.update_property(node_prop)
 
-        return {TAG_PARAMETER: parameter, TAG_SIZE: size, TAG_VALUE: value}
+        return result
 
     async def set_zwave_parameter(
         self, parameter: int, value: int | str, size: int
@@ -323,7 +351,7 @@ class Node(NodeBase, Entity):
         # /rest/zwave/node/<nodeAddress>/config/set/<parameterNumber>/<value>/<size>
         req_url = self.isy.conn.compile_url(
             [
-                URL_ZWAVE,
+                URL_ZWAVE if self.address.startswith("ZW") else URL_ZMATTER_ZWAVE,
                 URL_NODE,
                 self.address,
                 URL_CONFIG,
@@ -352,39 +380,6 @@ class Node(NodeBase, Entity):
         self.update_property(node_prop)
 
         return True
-
-    def update_state(self, state: NodeProperty) -> None:
-        """Update the various state properties when received."""
-        changed = []
-        self._last_update = datetime.now()
-
-        if self._is_battery_node and state.control == PROP_STATUS:
-            self._is_battery_node = False
-
-        if state.value != self.status:
-            changed.append("state")
-
-        if state.formatted not in (self._formatted, ""):
-            self._formatted = state.formatted
-            changed.append("formatted")
-
-        if state.precision != self._precision:
-            self._precision = state.precision
-            changed.append("precision")
-
-        if state.uom not in (self._uom, ""):
-            self._uom = state.uom
-            changed.append("uom")
-
-        if changed:
-            self.update_status(state.value)
-            _LOGGER.debug(
-                "Updated node state: %s (%s), changed=%s",
-                self.name,
-                self.address,
-                ", ".join(changed),
-            )
-            return
 
     def get_command_value(self, uom: str, cmd: str) -> str | None:
         """Check against the list of UOM States if this is a valid command."""
@@ -465,7 +460,7 @@ class Node(NodeBase, Entity):
             )
             return False
         # ISY wants 2 times the temperature for Insteon in order to not lose precision
-        if self._uom in ["101", "degrees"]:
+        if self._uom in ("101", "degrees"):
             val = 2 * val
         return await self.send_cmd(
             setpoint_prop, str(val), self.get_property_uom(setpoint_prop)
@@ -502,13 +497,13 @@ class Node(NodeBase, Entity):
     async def start_manual_dimming(self) -> bool:
         """Begin manually dimming a device."""
         _LOGGER.warning(
-            "'%s' is depreciated, use FADE__ commands instead", CMD_MANUAL_DIM_BEGIN
+            "'%s' is depreciated, use FADE<xx> commands instead", CMD_MANUAL_DIM_BEGIN
         )
         return await self.send_cmd(CMD_MANUAL_DIM_BEGIN)
 
     async def stop_manual_dimming(self) -> bool:
         """Stop manually dimming  a device."""
         _LOGGER.warning(
-            "'%s' is depreciated, use FADE__ commands instead", CMD_MANUAL_DIM_STOP
+            "'%s' is depreciated, use FADE<xx> commands instead", CMD_MANUAL_DIM_STOP
         )
         return await self.send_cmd(CMD_MANUAL_DIM_STOP)

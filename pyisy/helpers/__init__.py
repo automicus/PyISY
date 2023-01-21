@@ -1,7 +1,6 @@
 """Helper functions for the PyISY Module."""
 from __future__ import annotations
 
-import datetime
 from random import getrandbits
 from typing import cast
 

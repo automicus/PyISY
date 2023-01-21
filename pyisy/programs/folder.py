@@ -13,7 +13,6 @@ from pyisy.constants import (
     CMD_RUN_THEN,
     CMD_STOP,
     PROTO_FOLDER,
-    TAG_FOLDER,
     URL_PROGRAMS,
 )
 from pyisy.helpers.entity import Entity, EntityDetail

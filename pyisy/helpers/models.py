@@ -77,3 +77,21 @@ class ZWaveProperties:
             (self.mfr_id, self.prod_type_id, self.product_id) = (
                 f"{int(x):#0{6}x}" for x in self.mfg.split(".")
             )
+
+
+@dataclass
+class ZWaveParameter:
+    """Class to hold Z-Wave Parameter from a Z-Wave Node."""
+
+    param_num: int
+    size: int
+    value: int | str
+
+    def __post_init__(self) -> None:
+        """Post-process a Z-Wave Parameter."""
+        self.param_num = int(cast(str, self.param_num))
+        self.size = int(cast(str, self.size))
+        try:
+            self.value = int(cast(str, self.value))
+        except ValueError:
+            pass
