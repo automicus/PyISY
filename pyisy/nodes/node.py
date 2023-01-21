@@ -25,9 +25,6 @@ from pyisy.constants import (
     PROP_SETPOINT_HEAT,
     PROP_STATUS,
     PROP_ZWAVE_PREFIX,
-    PROTO_INSTEON,
-    PROTO_NODE_SERVER,
-    PROTO_ZWAVE,
     TAG_CONFIG,
     UOM_CLIMATE_MODES,
     UOM_FAN_MODES,
@@ -40,6 +37,8 @@ from pyisy.constants import (
     ZWAVE_CAT_DIMMABLE,
     ZWAVE_CAT_LOCK,
     ZWAVE_CAT_THERMOSTAT,
+    NodeFamily,
+    Protocol,
 )
 from pyisy.helpers.entity import Entity, EntityStatus
 from pyisy.helpers.events import EventEmitter
@@ -77,15 +76,13 @@ class NodeDetail(NodeBaseDetail):
     custom: dict = field(default_factory=dict)
     devtype: dict = field(default_factory=dict)
     zwave_props: ZWaveProperties | None = field(init=False, default=None)
-    protocol: str = PROTO_INSTEON
+    protocol: str = Protocol.INSTEON
     node_server: str = ""
 
     def __post_init__(self) -> None:
         """Post-initialization of Node detail dataclass."""
         if self.devtype:
             self.zwave_props = ZWaveProperties(**self.devtype)
-        if self.protocol.startswith(f"{PROTO_NODE_SERVER}_"):
-            _, _, self.node_server = self.protocol.rpartition("_")
 
 
 class Node(NodeBase, Entity):
@@ -143,7 +140,7 @@ class Node(NodeBase, Entity):
     def is_backlight_supported(self) -> bool:
         """Confirm if this node supports setting backlight."""
         return (
-            (self.protocol == PROTO_INSTEON)
+            (self.protocol == Protocol.INSTEON)
             and self.node_def_id is not None
             and (self.node_def_id in BACKLIGHT_SUPPORT)
         )
@@ -158,13 +155,13 @@ class Node(NodeBase, Entity):
         dimmable = (
             "%" in str(self._uom)
             or (
-                self._protocol == PROTO_INSTEON
+                self._protocol == Protocol.INSTEON
                 and self.type_
                 and any({self.type_.startswith(t) for t in INSTEON_TYPE_DIMMABLE})
                 and self.address.endswith(INSTEON_SUBNODE_DIMMABLE)
             )
             or (
-                self._protocol == PROTO_ZWAVE
+                self._protocol == Protocol.ZWAVE
                 and self.zwave_props is not None
                 and self.zwave_props.cat in ZWAVE_CAT_DIMMABLE
             )
@@ -177,7 +174,7 @@ class Node(NodeBase, Entity):
         return (
             self.type_ and any({self.type_.startswith(t) for t in INSTEON_TYPE_LOCK})
         ) or (
-            self.protocol == PROTO_ZWAVE
+            self.protocol == Protocol.ZWAVE
             and self.zwave_props is not None
             and self.zwave_props.cat in ZWAVE_CAT_LOCK
         )
@@ -189,7 +186,7 @@ class Node(NodeBase, Entity):
             self.type_
             and any({self.type_.startswith(t) for t in INSTEON_TYPE_THERMOSTAT})
         ) or (
-            self._protocol == PROTO_ZWAVE
+            self._protocol == Protocol.ZWAVE
             and self.zwave_props is not None
             and self.zwave_props.cat in ZWAVE_CAT_THERMOSTAT
         )
@@ -275,7 +272,7 @@ class Node(NodeBase, Entity):
     async def get_zwave_parameter(self, parameter: int) -> ZWaveParameter | None:
         """Retrieve a Z-Wave Parameter from the ISY."""
 
-        if self.protocol != PROTO_ZWAVE:
+        if self.protocol != Protocol.ZWAVE:
             _LOGGER.warning("Cannot retrieve parameters of non-Z-Wave device")
             return None
 
@@ -287,7 +284,9 @@ class Node(NodeBase, Entity):
         parameter_xml = await self.isy.conn.request(
             self.isy.conn.compile_url(
                 [
-                    URL_ZWAVE,
+                    URL_ZMATTER_ZWAVE
+                    if self.detail.family == NodeFamily.ZMATTER_ZWAVE
+                    else URL_ZWAVE,
                     URL_NODE,
                     self.address,
                     URL_CONFIG,
@@ -324,7 +323,7 @@ class Node(NodeBase, Entity):
     ) -> bool:
         """Set a Z-Wave Parameter on an end device via the ISY."""
 
-        if self.protocol != PROTO_ZWAVE:
+        if self.protocol != Protocol.ZWAVE:
             _LOGGER.warning("Cannot set parameters of non-Z-Wave device")
             return False
 
@@ -354,9 +353,9 @@ class Node(NodeBase, Entity):
         # /rest/zwave/node/<nodeAddress>/config/set/<parameterNumber>/<value>/<size>
         req_url = self.isy.conn.compile_url(
             [
-                URL_ZWAVE
-                if self.address.startswith("ZW")
-                else URL_ZMATTER_ZWAVE,  # TODO use family
+                URL_ZMATTER_ZWAVE
+                if self.detail.family == NodeFamily.ZMATTER_ZWAVE
+                else URL_ZWAVE,
                 URL_NODE,
                 self.address,
                 URL_CONFIG,

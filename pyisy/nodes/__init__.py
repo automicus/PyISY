@@ -9,23 +9,16 @@ from typing import TYPE_CHECKING, Any, NamedTuple, cast
 
 from pyisy.constants import (
     EVENT_PROPS_IGNORED,
-    FAMILY_BRULTECH,
-    FAMILY_NODESERVER,
-    FAMILY_RCS,
-    FAMILY_ZMATTER_ZWAVE,
-    FAMILY_ZWAVE,
     INSTEON_RAMP_RATES,
     NODE_IS_ROOT,
     PROP_BATTERY_LEVEL,
     PROP_RAMP_RATE,
     PROP_STATUS,
-    PROTO_INSTEON,
-    PROTO_NODE_SERVER,
-    PROTO_ZIGBEE,
-    PROTO_ZWAVE,
     UOM_SECONDS,
     URL_NODES,
     URL_STATUS,
+    NodeFamily,
+    Protocol,
     UDHierarchyNodeType,
 )
 from pyisy.helpers.entity import Entity
@@ -125,9 +118,17 @@ class Nodes(EntityPlatform):
             address = feature["address"]
             name = feature["name"]
             _LOGGER.log(LOG_VERBOSE, "Parsing %s: %s (%s)", PLATFORM, name, address)
-            feature["protocol"] = await self.get_protocol_from_family(
-                feature.get("family")
-            )
+
+            if family := feature.get("family"):
+                if (
+                    isinstance(family, dict)
+                    and family["address"] == NodeFamily.NODESERVER
+                ):
+                    feature["node_server"] = family.get("instance", "")
+                    feature["protocol"] = await self.get_protocol_from_family(
+                        feature.get("family")
+                    )
+
             entity = Node(self, address, name, NodeDetail(**feature))
             await self.add_or_update_entity(address, name, entity)
         except (TypeError, KeyError, ValueError) as exc:
@@ -152,16 +153,16 @@ class Nodes(EntityPlatform):
     ) -> str:
         """Identify protocol from family type."""
         if family is None:
-            return PROTO_INSTEON
-        if isinstance(family, dict) and family["address"] == FAMILY_NODESERVER:
+            return Protocol.INSTEON
+        if isinstance(family, dict) and family["address"] == NodeFamily.NODESERVER:
             node_server = family.get("instance", "")
             self.node_servers.add(node_server)
-            return f"{PROTO_NODE_SERVER}_{node_server}"
-        if family in (FAMILY_ZWAVE, FAMILY_ZMATTER_ZWAVE):
-            return PROTO_ZWAVE
-        if family in (FAMILY_BRULTECH, FAMILY_RCS):
-            return PROTO_ZIGBEE
-        return PROTO_INSTEON
+            return Protocol.NODE_SERVER
+        if family in (NodeFamily.ZWAVE, NodeFamily.ZMATTER_ZWAVE):
+            return Protocol.ZWAVE
+        if family in (NodeFamily.BRULTECH, NodeFamily.RCS):
+            return Protocol.ZIGBEE
+        return Protocol.INSTEON
 
     async def update_status(self, wait_time: float = 0) -> None:
         """Update the contents of the class from the status endpoint."""

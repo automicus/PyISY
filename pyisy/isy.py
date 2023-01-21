@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 from collections.abc import Awaitable
+from dataclasses import dataclass, field
 from threading import Thread
 from typing import Any
 
@@ -17,11 +18,11 @@ from pyisy.constants import (
     ES_RECONNECTING,
     ES_START_UPDATES,
     ES_STOP_UPDATES,
-    PROTO_ISY,
     SYSTEM_BUSY,
     SYSTEM_STATUS,
     URL_QUERY,
     X10_COMMANDS,
+    Protocol,
 )
 from pyisy.events.tcpsocket import EventStream
 from pyisy.events.websocket import WebSocketClient
@@ -58,6 +59,7 @@ class ISY:
     system_status: str = SYSTEM_BUSY
     variables: Variables
     websocket: WebSocketClient = None  # type: ignore[assignment]
+    diagnostics: ISYDiagnosticInfo
 
     def __init__(
         self,
@@ -69,6 +71,8 @@ class ISY:
         self.args = args  # Store command-line args
         if len(_LOGGER.handlers) == 0:
             enable_logging(add_null_handler=True)
+
+        self.diagnostics = ISYDiagnosticInfo()
 
         # Initialize connection info and connection
         self.connection_info = connection_info
@@ -175,7 +179,7 @@ class ISY:
     @property
     def protocol(self) -> str:
         """Return the protocol for this entity."""
-        return PROTO_ISY
+        return Protocol.ISY
 
     @property
     def uuid(self) -> str | None:
@@ -257,3 +261,13 @@ class ISY:
             return
         self.system_status = action
         self.status_events.notify(action)
+
+
+@dataclass
+class ISYDiagnosticInfo:
+    """Diagnostic properties for the ISY."""
+
+    batch_mode: bool = False
+    write_updates_to_battery_nodes: bool = True
+    portal_status: dict[str, bool] = field(default_factory=dict)
+    zmatter: dict[str, Any] = field(default_factory=dict)

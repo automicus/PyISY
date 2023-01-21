@@ -4,6 +4,8 @@ from __future__ import annotations
 import datetime
 from enum import IntEnum
 
+from pyisy.util.backports import StrEnum
+
 UPDATE_INTERVAL = 0.5
 
 # Time Constants / Strings
@@ -119,6 +121,25 @@ TAG_VALUE = "value"
 TAG_VARIABLE = "e"
 TAG_VARIABLES = "variables"
 
+
+class Protocol(StrEnum):
+    """Entity protocol string enum."""
+
+    FOLDER = "program_folder"
+    GROUP = "group"
+    INSTEON = "insteon"
+    INT_VAR = "integer_variable"
+    ISY = "isy"
+    NETWORK = "network"
+    NODE_SERVER = "node_server"
+    NODE_FOLDER = "node_folder"
+    PROGRAM = "program"
+    STATE_VAR = "state_variable"
+    ZIGBEE = "zigbee"
+    ZWAVE = "zwave"
+
+
+# Deprecated. To be removed after Home Assistant update
 PROTO_FOLDER = "program_folder"
 PROTO_GROUP = "group"
 PROTO_INSTEON = "insteon"
@@ -132,18 +153,26 @@ PROTO_STATE_VAR = "state_variable"
 PROTO_ZIGBEE = "zigbee"
 PROTO_ZWAVE = "zwave"
 
-FAMILY_CORE = "0"
-FAMILY_INSTEON = "1"
-FAMILY_UPB = "2"
-FAMILY_RCS = "3"
-FAMILY_ZWAVE = "4"
-FAMILY_AUTO = "5"
-FAMILY_GENERIC = "6"
-FAMILY_UDI = "7"
-FAMILY_BRULTECH = "8"
-FAMILY_NCD = "9"
-FAMILY_NODESERVER = "10"
-FAMILY_ZMATTER_ZWAVE = "12"
+
+class NodeFamily(StrEnum):
+    """Node family string enum.
+
+    Referenced from ISY-WSDK-5.0.4/WSDL/family.xsd
+    """
+
+    CORE = "0"
+    INSTEON = "1"
+    UPB = "2"
+    RCS = "3"
+    ZWAVE = "4"
+    AUTO = "5"
+    GENERIC = "6"
+    UDI = "7"
+    BRULTECH = "8"
+    NCD = "9"
+    NODESERVER = "10"
+    ZMATTER_ZWAVE = "12"
+
 
 PROP_BATTERY_LEVEL = "BATLVL"
 PROP_BUSY = "BUSY"
@@ -391,21 +420,6 @@ EVENT_PROPS_IGNORED = [
 
 COMMAND_NAME = {val: key for key, val in COMMAND_FRIENDLY_NAME.items()}
 
-# Referenced from ISY-WSDK-5.0.4\WSDL\family.xsd
-NODE_FAMILY_ID = {
-    FAMILY_CORE: "Default",
-    FAMILY_INSTEON: "Insteon",
-    FAMILY_UPB: "UPB",
-    FAMILY_RCS: "RCS",
-    FAMILY_ZWAVE: "Z-Wave",
-    FAMILY_AUTO: "Auto_DR",
-    FAMILY_GENERIC: "Group",
-    FAMILY_UDI: "UDI",
-    FAMILY_BRULTECH: "Brultech",
-    FAMILY_NCD: "NCD",
-    FAMILY_NODESERVER: "Node_Server",
-    FAMILY_ZMATTER_ZWAVE: "ZMatter_Z-Wave",
-}
 
 # Special Units of Measure
 UOM_ISYV4_DEGREES = "degrees"

@@ -113,7 +113,7 @@ class EventData:
     control: str = ""
     action: dict[str, Any] | str | None = None
     node: str | None = None
-    event_info: str | None = None
+    event_info: dict[str, Any] | str | None = None
     fmt_act: str | None = None
 
 
@@ -233,17 +233,17 @@ class EventRouter:
                     await self.isy.clock.update()
                 return
             if event.action == ConfigAction.BATCH_MODE:
-                # <eventInfo>
-                # <status>"1"|"0"</status>
-                # </eventInfo>
+                self.isy.diagnostics.batch_mode = (
+                    cast(dict, event.event_info)["status"] == "1"
+                )
                 _LOGGER.debug(
                     "Batch mode changed to: %s",
                     json.dumps(event.__dict__, default=str),
                 )
             if event.action == ConfigAction.BATTERY_MODE_PROGRAMMING:
-                # <eventInfo>
-                # <status>"1"|"0"</status>
-                # </eventInfo>
+                self.isy.diagnostics.write_updates_to_battery_nodes = (
+                    cast(dict, event.event_info)["status"] == "1"
+                )
                 _LOGGER.debug(
                     "Battery programming mode changed to: %s",
                     json.dumps(event.event_info, default=str),
@@ -287,6 +287,9 @@ class EventRouter:
             return
         if control == ControlEvent.PORTAL:
             # Portal Control Event
+            self.isy.diagnostics.portal_status = cast(dict, event.event_info)[
+                "portal_status"
+            ]
             _LOGGER.debug(
                 "Portal Control Event: %s",
                 json.dumps(event.event_info, default=str),
@@ -294,6 +297,8 @@ class EventRouter:
             return
         if control == ControlEvent.ZMATTER_Z_WAVE:
             # ZMatter Z-Wave Control Event
+            if event.action == "7.1":
+                self.isy.diagnostics.zmatter = cast(dict, event.event_info)
             _LOGGER.debug(
                 "ZMatter Z-Wave Control Event: action=%s %s",
                 event.action,

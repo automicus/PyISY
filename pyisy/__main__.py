@@ -51,10 +51,12 @@ async def main(cl_args: argparse.Namespace) -> None:
         _LOGGER.error(
             "Failed to connect to the ISY, please adjust settings and try again."
         )
-    except Exception as err:  # pylint: disable[broad-except]
-        _LOGGER.error("Unknown error occurred: %s", err.args[0])
-    finally:
         await isy.shutdown()
+        return
+    except Exception as err:  # pylint: disable=broad-except
+        _LOGGER.error("Unknown error occurred: %s", err.args[0])
+        await isy.shutdown()
+        return
 
     def node_changed_handler(event: NodeChangedEvent, key: str) -> None:
         """Handle a node changed event sent from Nodes class."""
@@ -108,13 +110,13 @@ async def main(cl_args: argparse.Namespace) -> None:
 
     try:
         if cl_args.events:
-            # await asyncio.sleep(1)
+            await asyncio.sleep(1)
             isy.websocket.start()
             system_status_subscriber = isy.status_events.subscribe(
                 system_status_handler
             )
-            while True:
-                await asyncio.sleep(1)
+        while True:
+            await asyncio.sleep(1)
     except asyncio.CancelledError:
         pass
     finally:

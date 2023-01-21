@@ -25,6 +25,8 @@ As of v3.0.7, this module will document all changes within the GitHub release in
 - Get_groups moved `pyisy.nodes.node` -> `pyisy.nodes`
 - Event receiver functions moved to `pyisy.nodes.node_events`
 - Get folder returns a named tuple `(name, address)`
+- FAMILY\_\* moved to strenum
+- PROTO\_\* moved to strenum
 
 #### Programs
 

@@ -30,6 +30,7 @@ from pyisy.constants import (
     URL_NODES,
     URL_NOTES,
     XML_TRUE,
+    NodeFamily,
 )
 from pyisy.exceptions import XML_ERRORS, XML_PARSE_ERROR, ISYResponseParseError
 from pyisy.helpers import value_from_xml
@@ -47,7 +48,7 @@ class NodeBaseDetail(EntityDetail, Generic[StatusT]):
     """Dataclass to hold entity detail info."""
 
     status: StatusT = None  # type: ignore[assignment]
-    family: str | dict[str, str] = ""
+    family: NodeFamily | dict[str, str] | str = ""
     flag: int = 0
     node_def_id: str = ""
     address: str = ""
@@ -81,9 +82,7 @@ class NodeBase(Entity):
         self._name = name
 
         self.aux_properties = aux_properties if aux_properties else {}
-        # self._family = NODE_FAMILY_ID.get(
-        #     family_id, family_id
-        # )  # TODO: handle node server dicts
+        # self._family = family_id
         self.notes = None
         self._primary_node = detail.pnode
         self._status = detail.status
