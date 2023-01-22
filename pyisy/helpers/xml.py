@@ -37,6 +37,8 @@ def post_processor(path: str, key: str, value: Any) -> tuple[str, Any]:
         key = "type_"
     elif key == "parent_id":  # Make programs consistent with nodes
         key = "parent"
+    elif key == "cat":  # Use full word
+        key = "category"
 
     # Convert common keys
     if key == "prec":  # Use full word, make integer

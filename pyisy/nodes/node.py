@@ -76,7 +76,7 @@ class NodeDetail(NodeBaseDetail):
     custom: dict = field(default_factory=dict)
     devtype: dict = field(default_factory=dict)
     zwave_props: ZWaveProperties | None = field(init=False, default=None)
-    protocol: str = Protocol.INSTEON
+    protocol: Protocol = Protocol.INSTEON
     node_server: str = ""
 
     def __post_init__(self) -> None:
@@ -163,7 +163,7 @@ class Node(NodeBase, Entity):
             or (
                 self._protocol == Protocol.ZWAVE
                 and self.zwave_props is not None
-                and self.zwave_props.cat in ZWAVE_CAT_DIMMABLE
+                and self.zwave_props.category in ZWAVE_CAT_DIMMABLE
             )
         )
         return dimmable
@@ -176,7 +176,7 @@ class Node(NodeBase, Entity):
         ) or (
             self.protocol == Protocol.ZWAVE
             and self.zwave_props is not None
-            and self.zwave_props.cat in ZWAVE_CAT_LOCK
+            and self.zwave_props.category in ZWAVE_CAT_LOCK
         )
 
     @property
@@ -188,7 +188,7 @@ class Node(NodeBase, Entity):
         ) or (
             self._protocol == Protocol.ZWAVE
             and self.zwave_props is not None
-            and self.zwave_props.cat in ZWAVE_CAT_THERMOSTAT
+            and self.zwave_props.category in ZWAVE_CAT_THERMOSTAT
         )
 
     @property

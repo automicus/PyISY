@@ -51,6 +51,9 @@ class Entity(ABC, Generic[EntityDetailT, StatusT]):
     # this class. These may be used to customize the behavior of the entity.
     _address: str = None  # type: ignore[assignment]
 
+    # Protocol must be set in inheriting class
+    _protocol: Protocol = None  # type: ignore[assignment]
+
     # Owning isy instance. Will be set by platform
     # While not purely typed, it makes typehinting more useful for us
     # and removes the need for constant None checks or asserts.
@@ -64,7 +67,7 @@ class Entity(ABC, Generic[EntityDetailT, StatusT]):
     _last_update: datetime
     _status: StatusT
     _name: str = ""
-    _protocol: Protocol | None = None
+
     detail: EntityDetail
     status_events: EventEmitter
 
@@ -94,7 +97,7 @@ class Entity(ABC, Generic[EntityDetailT, StatusT]):
         return self._name
 
     @property
-    def protocol(self) -> Protocol | None:
+    def protocol(self) -> Protocol:
         """Return the protocol for this entity."""
         return self._protocol
 

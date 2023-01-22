@@ -2,9 +2,8 @@
 from __future__ import annotations
 
 import asyncio
-from collections import namedtuple
 import json
-from typing import TYPE_CHECKING, Any, NamedTuple, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from pyisy.constants import (
     EVENT_PROPS_IGNORED,
@@ -270,7 +269,7 @@ class Nodes(EntityPlatform):
             for prop in props:
                 await self.parse_node_properties(prop, entity)
 
-    def get_folder(self, address: str) -> NamedTuple | None:
+    def get_folder(self, address: str) -> str | None:
         """Return the folder of a given node address."""
         if not (entity := self.entities.get(address)):
             raise KeyError(f"Unknown entity address {address}")
@@ -279,10 +278,9 @@ class Nodes(EntityPlatform):
             # Node is in the root folder.
             return None
         parent = detail.parent["address"]
-        Folder = namedtuple("Folder", "name address")
         if int(detail.parent["type_"]) != UDHierarchyNodeType.FOLDER:
             return self.get_folder(parent)
-        return Folder(name=self.entities[parent].name, address=parent)
+        return self.entities[parent].name
 
     def get_groups(self, address: str, is_controller: bool = True) -> list[str]:
         """

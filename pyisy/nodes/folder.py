@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import TYPE_CHECKING, NamedTuple
+from typing import TYPE_CHECKING
 
 from pyisy.constants import TAG_NAME, URL_CHANGE, URL_NODES, Protocol
 from pyisy.helpers.entity import Entity, EntityDetail
@@ -51,7 +51,7 @@ class NodeFolder(Entity):
         return self.detail.flag
 
     @property
-    def folder(self) -> NamedTuple | None:
+    def folder(self) -> str | None:
         """Return the folder of the current node as a property.
 
         Returns a named tuple with (name, address)

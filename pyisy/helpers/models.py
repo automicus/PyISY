@@ -54,7 +54,7 @@ class NodeNotes:
 class ZWaveProperties:
     """Class to hold Z-Wave Product Details from a Z-Wave Node."""
 
-    cat: str = "0"
+    category: str = "0"
     mfg: str = "0.0.0"
     gen: str = "0.0.0"
     basic_type: str = field(init=False, default="0x0000")
