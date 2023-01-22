@@ -2,12 +2,13 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
+from dataclasses import asdict, dataclass, field
 import json
 from typing import TYPE_CHECKING, Any, cast
 
 from dateutil import parser
 
-from pyisy.constants import URL_PROGRAMS, URL_SUBFOLDERS, XML_TRUE
+from pyisy.constants import URL_PROGRAMS, URL_SUBFOLDERS, XML_TRUE, Protocol
 from pyisy.events.router import EventData
 from pyisy.helpers.entity import Entity
 from pyisy.helpers.entity_platform import EntityPlatform
@@ -99,11 +100,13 @@ class Programs(EntityPlatform):
         ) -> dict[str, dict]:
             for i in entities:
                 children = await self.get_children(i.address)
-                hierarchy[i.name] = {
-                    "type": type(i).__name__,
-                    "address": i.address,
-                    "children": await traverse({}, children),
-                }
+                hierarchy[i.name] = asdict(
+                    TreeLeaf(
+                        protocol=i.protocol,
+                        address=i.address,
+                        children=await traverse({}, children),
+                    )
+                )
             return hierarchy
 
         return await traverse({}, roots)
@@ -164,3 +167,12 @@ class Programs(EntityPlatform):
             address,
             json.dumps(detail.__dict__, default=str),
         )
+
+
+@dataclass
+class TreeLeaf:
+    """Dataclass to hold tree information."""
+
+    protocol: Protocol | None = Protocol.FOLDER
+    address: str = ""
+    children: dict[str, dict] = field(default_factory=dict)

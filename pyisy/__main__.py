@@ -118,8 +118,8 @@ async def main(cl_args: argparse.Namespace) -> None:
             system_status_subscriber = isy.status_events.subscribe(
                 system_status_handler
             )
-        while True:
-            await asyncio.sleep(1)
+            while True:
+                await asyncio.sleep(1)
     except asyncio.CancelledError:
         pass
     finally:

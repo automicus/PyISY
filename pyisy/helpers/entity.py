@@ -7,6 +7,7 @@ from datetime import datetime
 import json
 from typing import TYPE_CHECKING, Generic, TypeVar
 
+from pyisy.constants import Protocol
 from pyisy.helpers.events import EventEmitter
 
 # Typing imports that create a circular dependency
@@ -63,7 +64,7 @@ class Entity(ABC, Generic[EntityDetailT, StatusT]):
     _last_update: datetime
     _status: StatusT
     _name: str = ""
-    _protocol: str | None = None
+    _protocol: Protocol | None = None
     detail: EntityDetail
     status_events: EventEmitter
 
@@ -93,7 +94,7 @@ class Entity(ABC, Generic[EntityDetailT, StatusT]):
         return self._name
 
     @property
-    def protocol(self) -> str | None:
+    def protocol(self) -> Protocol | None:
         """Return the protocol for this entity."""
         return self._protocol
 
