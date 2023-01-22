@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import asyncio
 from collections import namedtuple
-from collections.abc import Iterable
 import json
 from typing import TYPE_CHECKING, Any, NamedTuple, cast
 
@@ -311,28 +310,3 @@ class Nodes(EntityPlatform):
             for entity in self.values()
             if entity.detail.parent and entity.detail.parent["address"] == address
         }
-
-    async def get_tree(self, address: str | None = None) -> dict:
-        """Return a tree representation of the entity platform.
-
-        If address is supplied, get the tree from that entity.
-        """
-        if address is None:
-            roots = {e for e in self.values() if not e.detail.parent}
-        else:
-            roots = {self.entities[address]}
-
-        # traversal of the tree from top down
-        async def traverse(
-            hierarchy: dict[str, dict], entities: Iterable[Entity]
-        ) -> dict[str, dict]:
-            for i in entities:
-                children = await self.get_children(i.address)
-                hierarchy[i.name] = {
-                    "type": type(i).__name__,
-                    "address": i.address,
-                    "children": await traverse({}, children),
-                }
-            return hierarchy
-
-        return await traverse({}, roots)

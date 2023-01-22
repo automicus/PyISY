@@ -41,7 +41,6 @@ class ISY:
     auto_reconnect: bool = True
     background_tasks: set = set()
     clock: Clock
-    config: ConfigurationData | None = None
     conn: Connection
     connection_events: EventEmitter
     connection_info: ISYConnectionInfo
@@ -53,8 +52,11 @@ class ISY:
     status_events: EventEmitter
     system_status: SystemStatus = SystemStatus.BUSY
     variables: Variables
-    websocket: WebSocketClient = None  # type: ignore[assignment]
     diagnostics: ISYDiagnosticInfo
+
+    # These must be set as part of initialization or an error will be thrown
+    config: ConfigurationData = None  # type: ignore[assignment]
+    websocket: WebSocketClient = None  # type: ignore[assignment]
 
     def __init__(
         self,
@@ -181,7 +183,7 @@ class ISY:
         return Protocol.ISY
 
     @property
-    def uuid(self) -> str | None:
+    def uuid(self) -> str:
         """Return the ISY's uuid."""
         if self.config is None:
             raise ISYNotInitializedError(

@@ -146,10 +146,14 @@ class Variables(EntityPlatform):
         detail = cast(VariableDetail, entity.detail)
 
         detail.precision = var_info["precision"]
-        key = "init" if init else "val"
-        detail.value = convert_isy_raw_value(
-            int(var_info[key]), "", var_info["precision"]
-        )
+        if init:
+            detail.initial = convert_isy_raw_value(
+                int(var_info["init"]), "", var_info["precision"]
+            )
+        else:
+            detail.value = convert_isy_raw_value(
+                int(var_info["val"]), "", var_info["precision"]
+            )
         entity.update_entity(name=entity.name, detail=detail)
         _LOGGER.debug(
             "Updated variable: %s detail=%s",

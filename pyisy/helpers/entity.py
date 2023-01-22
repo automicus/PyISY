@@ -157,29 +157,3 @@ class Entity(ABC, Generic[EntityDetailT, StatusT]):
             f"{type(self).__name__}(name='{self.name}' address='{self.address}')"
             f" detail:\n{json.dumps(self.detail.__dict__, indent=4, sort_keys=True, default=str)}"
         )
-
-        # for attr_name, value in (
-        #     ("aliases", aliases),
-        #     ("area_id", area_id),
-        #     ("capabilities", capabilities),
-        #     ("config_entry_id", config_entry_id),
-        #     ("device_class", device_class),
-        #     ("device_id", device_id),
-        #     ("disabled_by", disabled_by),
-        #     ("entity_category", entity_category),
-        #     ("hidden_by", hidden_by),
-        #     ("icon", icon),
-        #     ("has_entity_name", has_entity_name),
-        #     ("name", name),
-        #     ("options", options),
-        #     ("original_device_class", original_device_class),
-        #     ("original_icon", original_icon),
-        #     ("original_name", original_name),
-        #     ("platform", platform),
-        #     ("supported_features", supported_features),
-        #     ("translation_key", translation_key),
-        #     ("unit_of_measurement", unit_of_measurement),
-        # ):
-        #     if value is not UNDEFINED and value != getattr(old, attr_name):
-        #         new_values[attr_name] = value
-        #         old_values[attr_name] = getattr(old, attr_name)

@@ -8,9 +8,11 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 import asyncio
 from collections.abc import Iterable, ValuesView
+from dataclasses import asdict, dataclass, field
 import json
 from typing import TYPE_CHECKING, Any, Protocol, TypeVar
 
+from pyisy.constants import Protocol as EntityProtocol
 from pyisy.helpers.entity import Entity
 from pyisy.helpers.events import EventEmitter
 from pyisy.helpers.xml import parse_xml
@@ -165,3 +167,67 @@ class EntityPlatform(ABC):
             }
             for entity in self.values()
         }
+
+    async def get_children(self, address: str) -> set[Entity]:
+        """Return the children of the a given address."""
+        return {e for e in self.values() if e.detail.parent == address}
+
+    async def get_tree(self, address: str | None = None) -> dict:
+        """Return a tree representation of the entity platform."""
+        if address is None:
+            roots = {e for e in self.values() if not e.detail.parent}
+        else:
+            roots = {self.entities[address]}
+
+        # traversal of the tree from top down
+        async def traverse(
+            hierarchy: dict[str, dict], entities: Iterable[Entity], path: str = ""
+        ) -> dict[str, dict]:
+            for i in entities:
+                children = await self.get_children(i.address)
+                hierarchy[i.name] = asdict(
+                    TreeLeaf(
+                        protocol=i.protocol,
+                        type_=type(i).__name__,
+                        address=i.address,
+                        children=await traverse({}, children, f"{path}/{i.name}"),
+                        path=f"{path}/{i.name}",
+                    )
+                )
+            return hierarchy
+
+        return await traverse({}, roots)
+
+    async def get_directory(self, address: str | None = None) -> dict:
+        """Return a flat directory representation of the entity platform."""
+        if address is None:
+            roots = {e for e in self.values() if not e.detail.parent}
+        else:
+            roots = {self.entities[address]}
+
+        directory: dict[str, Entity] = {}
+
+        # traversal of the tree from top down
+        async def traverse(
+            hierarchy: dict[str, dict], entities: Iterable[Entity], path: str = ""
+        ) -> dict[str, dict]:
+            for i in entities:
+                directory[f"{path}/{i.name}"] = i
+                await traverse(
+                    {}, await self.get_children(i.address), f"{path}/{i.name}"
+                )
+            return hierarchy
+
+        await traverse({}, roots)
+        return directory
+
+
+@dataclass
+class TreeLeaf:
+    """Dataclass to hold tree information."""
+
+    type_: str = ""
+    protocol: EntityProtocol | None = None
+    address: str = ""
+    children: dict[str, dict] = field(default_factory=dict)
+    path: str = ""

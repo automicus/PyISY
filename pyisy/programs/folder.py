@@ -33,7 +33,7 @@ class FolderDetail(EntityDetail):
     name: str = ""
     status: bool | str = "not_loaded"
     folder: bool = False
-    parent_id: str | None = None
+    parent: str | None = None
     last_finish_time: datetime | None = None
     last_run_time: datetime | None = None
     next_scheduled_run_time: datetime | None = None

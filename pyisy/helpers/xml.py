@@ -29,16 +29,20 @@ def post_processor(path: str, key: str, value: Any) -> tuple[str, Any]:
 
     # Make keys `snake_case`
     key = SNAKE.sub("_", key).lower()
-    if key == "property":
+
+    # Rename some keys
+    if key == "property":  # Use full word
         key = "prop"
-    elif key == "type":
+    elif key == "type":  # Avoid overwriting default methods
         key = "type_"
+    elif key == "parent_id":  # Make programs consistent with nodes
+        key = "parent"
 
     # Convert common keys
-    if key == "prec":
+    if key == "prec":  # Use full word, make integer
         key = "precision"
         value = int(cast(str, value))
-    elif key == "_value":
+    elif key == "_value":  # Make CData text an integer
         key = "value"
         try:
             value = int(cast(str, value))

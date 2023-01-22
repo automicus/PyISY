@@ -85,6 +85,7 @@ async def main(cl_args: argparse.Namespace) -> None:
         isy.nodes.status_events.subscribe(node_changed_handler, key="nodes")
     if cl_args.programs:
         _LOGGER.debug(repr(isy.programs))
+        _LOGGER.debug(await isy.programs.get_directory())
         if cl_args.file:
             await write_to_file(await isy.programs.get_tree(), ".output/programs.json")
         isy.programs.status_events.subscribe(status_handler, key="programs")

@@ -46,7 +46,14 @@ ISY_VALUE_UNKNOWN = -1 * float("inf")
 ISY_PROP_NOT_SET = "-1"
 
 """ Dictionary of X10 commands. """
-X10_COMMANDS = {"all_off": 1, "all_on": 4, "on": 3, "off": 11, "bright": 7, "dim": 15}
+X10_COMMANDS: dict[str, int] = {
+    "all_off": 1,
+    "all_on": 4,
+    "on": 3,
+    "off": 11,
+    "bright": 7,
+    "dim": 15,
+}
 
 ATTR_ACTION = "action"
 ATTR_CONTROL = "control"
@@ -237,7 +244,7 @@ CMD_SECURE = "SECMD"
 CMD_STOP = "stop"
 CMD_X10 = "X10"
 
-COMMAND_FRIENDLY_NAME = {
+COMMAND_FRIENDLY_NAME: dict[str, str] = {
     "ADRPST": "auto_dr_processing_state",
     "AIRFLOW": "air_flow",
     "ALARM": "alarm",
@@ -389,7 +396,7 @@ COMMAND_FRIENDLY_NAME = {
     PROP_UOM: "unit_of_measure",
 }
 
-EVENT_PROPS_IGNORED = [
+EVENT_PROPS_IGNORED: list[str] = [
     CMD_BEEP,
     CMD_BRIGHTEN,
     CMD_DIM,
@@ -423,7 +430,7 @@ UOM_INDEX = "25"
 UOM_PERCENTAGE = "51"
 UOM_SECONDS = "57"
 
-UOM_FRIENDLY_NAME = {
+UOM_FRIENDLY_NAME: dict[str, str] = {
     "1": "A",
     "2": "",  # Binary / On-Off
     "3": "btu/h",
@@ -526,7 +533,7 @@ UOM_FRIENDLY_NAME = {
     "120": "in/day",
 }
 
-UOM_TO_STATES = {
+UOM_TO_STATES: dict[str, dict[str, str]] = {
     "11": {  # Deadbolt Status
         "0": "unlocked",
         "100": "locked",
@@ -730,7 +737,7 @@ UOM_TO_STATES = {
 }
 
 # Translate the "RR" Property to Seconds
-INSTEON_RAMP_RATES = {
+INSTEON_RAMP_RATES: dict[str, float] = {
     "0": 540,
     "1": 480,
     "2": 420,
@@ -767,20 +774,28 @@ INSTEON_RAMP_RATES = {
 
 # Thermostat Types/Categories. 4.8 Trane, 5.3 venstar, 5.10 Insteon Wireless,
 #  5.11 Insteon, 5.17 Insteon (EU), 5.18 Insteon (Aus/NZ)
-INSTEON_TYPE_THERMOSTAT = ["4.8", "5.3", "5.10", "5.11", "5.14", "5.17", "5.18"]
-ZWAVE_CAT_THERMOSTAT = ["140"]
+INSTEON_TYPE_THERMOSTAT: list[str] = [
+    "4.8",
+    "5.3",
+    "5.10",
+    "5.11",
+    "5.14",
+    "5.17",
+    "5.18",
+]
+ZWAVE_CAT_THERMOSTAT: list[str] = ["140"]
 
 # Other special categories or types
-INSTEON_TYPE_LOCK = ["4.64"]
-ZWAVE_CAT_LOCK = ["111"]
+INSTEON_TYPE_LOCK: list[str] = ["4.64"]
+ZWAVE_CAT_LOCK: list[str] = ["111"]
 
-INSTEON_TYPE_DIMMABLE = ["1."]
-INSTEON_SUBNODE_DIMMABLE = " 1"
-ZWAVE_CAT_DIMMABLE = ["109", "119", "186"]
+INSTEON_TYPE_DIMMABLE: list[str] = ["1."]
+INSTEON_SUBNODE_DIMMABLE: str = " 1"
+ZWAVE_CAT_DIMMABLE: list[str] = ["109", "119", "186"]
 
 # Insteon Battery Devices - States are ignored when checking the status of a group.
-INSTEON_STATELESS_TYPE = ["0.16.", "0.17.", "0.18.", "16."]  # Not Used
-INSTEON_STATELESS_NODEDEFID = [
+INSTEON_STATELESS_TYPE: list[str] = ["0.16.", "0.17.", "0.18.", "16."]  # Not Used
+INSTEON_STATELESS_NODEDEFID: list[str] = [
     "BinaryAlarm",
     "BinaryAlarm_ADV",
     "BinaryControl",
@@ -793,7 +808,7 @@ INSTEON_STATELESS_NODEDEFID = [
 # Referenced from ISY-WSDK 4_fam.xml
 # Included for user translations in external modules.
 # This is the Node.zwave_props.category property.
-DEVTYPE_CATEGORIES = {
+DEVTYPE_CATEGORIES: dict[str, str] = {
     "0": "uninitialized",
     "101": "unknown",
     "102": "alarm",
@@ -897,7 +912,7 @@ DEVTYPE_CATEGORIES = {
 # Referenced from ISY-WSDK cat.xml
 # Included for user translations in external modules.
 # This is the first part of the Node.type property (before the first ".")
-NODE_CATEGORIES = {
+NODE_CATEGORIES: dict[str, str] = {
     "0": "generic controller",
     "1": "dimming control",
     "2": "switch/relay control",
@@ -1006,7 +1021,7 @@ DEV_BL_ADDR = "0x0264"
 DEV_OL_ADDR = "0x0032"
 DEV_RR_ADDR = "0x0021"
 
-BACKLIGHT_SUPPORT = {
+BACKLIGHT_SUPPORT: dict[str, str] = {
     "DimmerMotorSwitch": UOM_PERCENTAGE,
     "DimmerMotorSwitch_ADV": UOM_PERCENTAGE,
     "DimmerLampSwitch": UOM_PERCENTAGE,
@@ -1027,7 +1042,7 @@ BACKLIGHT_SUPPORT = {
     "KeypadButton_ADV": UOM_INDEX,
 }
 
-BACKLIGHT_INDEX = [
+BACKLIGHT_INDEX: list[str] = [
     "On  0 / Off 0",
     "On  1 / Off 0",
     "On  2 / Off 0",

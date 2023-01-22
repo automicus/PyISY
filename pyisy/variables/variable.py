@@ -52,6 +52,7 @@ class Variable(Entity):
     """Object representing a variable on the controller."""
 
     _last_edited: datetime
+    _initial: int | float
     _var_id: str
     _var_type: str
     _precision: int
@@ -138,16 +139,16 @@ class Variable(Entity):
         )
         if not await self.isy.conn.request(req_url):
             _LOGGER.warning(
-                "ISY could not set variable%s: %s.%s",
-                " init value" if init else "",
-                self._var_type,
-                self._var_id,
+                "Could not set variable %s %svalue to %s",
+                self.address,
+                "init " if init else "",
+                value,
             )
             return False
         _LOGGER.debug(
-            "ISY set variable%s: %s.%s",
-            " init value" if init else "",
-            self._var_type,
-            self._var_id,
+            "Set variable %s %svalue to %s",
+            self.address,
+            "init " if init else "",
+            value,
         )
         return True

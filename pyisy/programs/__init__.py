@@ -1,16 +1,13 @@
 """Init for management of ISY Programs."""
 from __future__ import annotations
 
-from collections.abc import Iterable
-from dataclasses import asdict, dataclass, field
 import json
 from typing import TYPE_CHECKING, Any, cast
 
 from dateutil import parser
 
-from pyisy.constants import URL_PROGRAMS, URL_SUBFOLDERS, XML_TRUE, Protocol
+from pyisy.constants import URL_PROGRAMS, URL_SUBFOLDERS, XML_TRUE
 from pyisy.events.router import EventData
-from pyisy.helpers.entity import Entity
 from pyisy.helpers.entity_platform import EntityPlatform
 from pyisy.helpers.events import EventEmitter
 from pyisy.logging import _LOGGER, LOG_VERBOSE
@@ -83,34 +80,6 @@ class Programs(EntityPlatform):
         except (TypeError, KeyError, ValueError) as exc:
             _LOGGER.exception("Error loading %s: %s", PLATFORM, exc)
 
-    async def get_children(self, address: str) -> set[Entity]:
-        """Return the children of the a given address."""
-        return {e for e in self.values() if e.detail.parent_id == address}
-
-    async def get_tree(self, address: str | None = None) -> dict:
-        """Return a tree representation of the entity platform."""
-        if address is None:
-            roots = {e for e in self.values() if e.detail.parent_id is None}
-        else:
-            roots = {self.entities[address]}
-
-        # traversal of the tree from top down
-        async def traverse(
-            hierarchy: dict[str, dict], entities: Iterable[Entity]
-        ) -> dict[str, dict]:
-            for i in entities:
-                children = await self.get_children(i.address)
-                hierarchy[i.name] = asdict(
-                    TreeLeaf(
-                        protocol=i.protocol,
-                        address=i.address,
-                        children=await traverse({}, children),
-                    )
-                )
-            return hierarchy
-
-        return await traverse({}, roots)
-
     async def update_received(self, event: EventData) -> None:
         """Update programs from EventStream message.
 
@@ -167,12 +136,3 @@ class Programs(EntityPlatform):
             address,
             json.dumps(detail.__dict__, default=str),
         )
-
-
-@dataclass
-class TreeLeaf:
-    """Dataclass to hold tree information."""
-
-    protocol: Protocol | None = Protocol.FOLDER
-    address: str = ""
-    children: dict[str, dict] = field(default_factory=dict)

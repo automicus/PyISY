@@ -104,3 +104,7 @@ isy.status_events
 isy.nodes.update_received
 isy.nodes.control_message_received
 isy.nodes.node_changed_received
+
+## Home Assistant User Breaking Changes
+
+- Programs: `last_finished`->`last_finished_time`, `last_run`->`last_run_time`
