@@ -21,22 +21,16 @@ from pyisy.constants import (
     CMD_ON_FAST,
     COMMAND_FRIENDLY_NAME,
     METHOD_COMMAND,
-    TAG_DESCRIPTION,
-    TAG_IS_LOAD,
-    TAG_LOCATION,
     TAG_NAME,
-    TAG_SPOKEN,
     URL_CHANGE,
     URL_NODES,
     URL_NOTES,
-    XML_TRUE,
     NodeFamily,
 )
-from pyisy.exceptions import XML_ERRORS, XML_PARSE_ERROR, ISYResponseParseError
-from pyisy.helpers import value_from_xml
 from pyisy.helpers.entity import Entity, EntityDetail, EntityStatus, StatusT
 from pyisy.helpers.events import EventEmitter
 from pyisy.helpers.models import NodeNotes, NodeProperty
+from pyisy.helpers.xml import parse_xml
 from pyisy.logging import _LOGGER
 
 if TYPE_CHECKING:
@@ -117,25 +111,17 @@ class NodeBase(Entity):
         a call to this function.
         """
         notes_xml = await self.isy.conn.request(
-            self.isy.conn.compile_url([URL_NODES, self.address, URL_NOTES]), ok404=True
+            self.isy.conn.compile_url([URL_NODES, self.address, URL_NOTES]), ok404=False
         )
-        if notes_xml is not None and notes_xml != "":
-            try:
-                notes_dom = minidom.parseString(notes_xml)
-            except XML_ERRORS as exc:
-                _LOGGER.error("%s: Node Notes %s", XML_PARSE_ERROR, notes_xml)
-                raise ISYResponseParseError() from exc
+        if notes_xml is None or notes_xml != "" or notes_xml.endswith(" not found"):
+            return
 
-            spoken = value_from_xml(notes_dom, TAG_SPOKEN)
-            location = value_from_xml(notes_dom, TAG_LOCATION)
-            description = value_from_xml(notes_dom, TAG_DESCRIPTION)
-            is_load = value_from_xml(notes_dom, TAG_IS_LOAD)
-        self.notes = NodeNotes(
-            spoken=spoken,
-            is_load=is_load == XML_TRUE,
-            description=description,
-            location=location,
-        )
+        notes_dict = parse_xml(notes_xml)
+
+        if not (notes := notes_dict.get("node_properties")):
+            return
+
+        self.notes = NodeNotes(**notes)
 
     async def update(
         self,

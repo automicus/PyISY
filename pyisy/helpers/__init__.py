@@ -1,30 +1,9 @@
 """Helper functions for the PyISY Module."""
 from __future__ import annotations
 
-from random import getrandbits
 from typing import cast
 
 from pyisy.constants import ISY_VALUE_UNKNOWN, UOM_DOUBLE_TEMP, UOM_ISYV4_DEGREES
-from pyisy.helpers.xml import (
-    attr_from_element,
-    attr_from_xml,
-    value_from_nested_xml,
-    value_from_xml,
-)
-
-__all__ = [
-    "value_from_xml",
-    "attr_from_xml",
-    "attr_from_element",
-    "value_from_nested_xml",
-    "random_uuid_hex",
-    "convert_isy_raw_value",
-]
-
-
-def random_uuid_hex() -> str:
-    """Generate a random UUID hex."""
-    return "%032x" % getrandbits(32 * 4)
 
 
 def convert_isy_raw_value(
