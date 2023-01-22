@@ -4,7 +4,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
-from pyisy.constants import PROTO_NETWORK, TAG_ID, TAG_NAME, URL_NETWORK, URL_RESOURCES
+from pyisy.constants import TAG_ID, TAG_NAME, URL_NETWORK, URL_RESOURCES, Protocol
 from pyisy.helpers.entity import Entity, EntityDetail
 from pyisy.helpers.entity_platform import EntityPlatform
 from pyisy.helpers.events import EventEmitter
@@ -87,7 +87,7 @@ class NetworkCommand(Entity):
         self.isy = platform.isy
         self._address = address
         self._name = name
-        self._protocol = PROTO_NETWORK
+        self._protocol = Protocol.NETWORK
         self.detail = detail
 
     async def run(self) -> None:

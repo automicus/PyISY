@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 from pyisy.constants import (
     CMD_DISABLE_RUN_AT_STARTUP,
     CMD_ENABLE_RUN_AT_STARTUP,
-    PROTO_PROGRAM,
+    Protocol,
 )
 from pyisy.programs.folder import Folder, FolderDetail
 
@@ -34,7 +34,7 @@ class Program(Folder):
     ) -> None:
         """Initialize a Program class."""
         super().__init__(platform, address, name, detail)
-        self._protocol = PROTO_PROGRAM
+        self._protocol = Protocol.PROGRAM
         self._enabled = detail.enabled
 
     async def enable_run_at_startup(self) -> bool:

@@ -65,6 +65,7 @@ As of v3.0.7, this module will document all changes within the GitHub release in
 
 - Use new `ISYConnectionInfo` class to build connection info
 - TLS Version set to None will auto-negotiate (newer models)
+- use_websocket is default True
 
 ### ISY Root
 

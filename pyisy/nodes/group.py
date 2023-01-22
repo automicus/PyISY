@@ -9,7 +9,7 @@ from pyisy.constants import (
     INSTEON_STATELESS_NODEDEFID,
     ISY_VALUE_UNKNOWN,
     NODE_IS_CONTROLLER,
-    PROTO_GROUP,
+    Protocol,
 )
 from pyisy.helpers.entity import Entity
 from pyisy.helpers.events import EventListener
@@ -64,7 +64,7 @@ class Group(NodeBase, Entity):
         detail: GroupDetail,
     ):
         """Initialize a Group class."""
-        self._protocol = PROTO_GROUP
+        self._protocol = Protocol.GROUP
         self._all_on = False
         super().__init__(platform=platform, address=address, name=name, detail=detail)
 

@@ -5,14 +5,7 @@ from dataclasses import InitVar, dataclass, field
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from pyisy.constants import (
-    ATTR_INIT,
-    ATTR_SET,
-    PROTO_INT_VAR,
-    PROTO_STATE_VAR,
-    URL_VARIABLES,
-    VAR_INTEGER,
-)
+from pyisy.constants import ATTR_INIT, ATTR_SET, URL_VARIABLES, VAR_INTEGER, Protocol
 from pyisy.helpers import convert_isy_raw_value
 from pyisy.helpers.entity import Entity, EntityDetail, EntityStatus
 from pyisy.helpers.events import EventEmitter
@@ -74,9 +67,9 @@ class Variable(Entity):
         self._address = address
         self._var_type = detail.type_
         if self._var_type == VAR_INTEGER:
-            self._protocol = PROTO_INT_VAR
+            self._protocol = Protocol.INT_VAR
         else:
-            self._protocol = PROTO_STATE_VAR
+            self._protocol = Protocol.STATE_VAR
         self.update_entity(name, detail)
 
     def update_entity(self, name: str, detail: VariableDetail) -> None:

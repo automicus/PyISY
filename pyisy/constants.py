@@ -144,21 +144,6 @@ class Protocol(StrEnum):
     ZWAVE = "zwave"
 
 
-# Deprecated. To be removed after Home Assistant update
-PROTO_FOLDER = "program_folder"
-PROTO_GROUP = "group"
-PROTO_INSTEON = "insteon"
-PROTO_INT_VAR = "integer_variable"
-PROTO_ISY = "isy"
-PROTO_NETWORK = "network"
-PROTO_NODE_SERVER = "node_server"
-PROTO_NODE_FOLDER = "node_folder"
-PROTO_PROGRAM = "program"
-PROTO_STATE_VAR = "state_variable"
-PROTO_ZIGBEE = "zigbee"
-PROTO_ZWAVE = "zwave"
-
-
 class NodeFamily(StrEnum):
     """Node family string enum.
 

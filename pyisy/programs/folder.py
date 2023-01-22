@@ -12,8 +12,8 @@ from pyisy.constants import (
     CMD_RUN_ELSE,
     CMD_RUN_THEN,
     CMD_STOP,
-    PROTO_FOLDER,
     URL_PROGRAMS,
+    Protocol,
 )
 from pyisy.helpers.entity import Entity, EntityDetail
 from pyisy.helpers.events import EventEmitter
@@ -49,7 +49,7 @@ class Folder(Entity):
         self.status_events = EventEmitter()
         self.platform = platform
         self.isy = platform.isy
-        self._protocol = PROTO_FOLDER
+        self._protocol = Protocol.FOLDER
         self._address = address
         self._name = name
         self._last_update = datetime.now()

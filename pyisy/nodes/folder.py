@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import TYPE_CHECKING, NamedTuple
 
-from pyisy.constants import PROTO_NODE_FOLDER, TAG_NAME, URL_CHANGE, URL_NODES
+from pyisy.constants import TAG_NAME, URL_CHANGE, URL_NODES, Protocol
 from pyisy.helpers.entity import Entity, EntityDetail
 from pyisy.logging import _LOGGER
 
@@ -39,7 +39,7 @@ class NodeFolder(Entity):
         self.platform = platform
         self.isy = platform.isy
         self._address = address
-        self._protocol = PROTO_NODE_FOLDER
+        self._protocol = Protocol.NODE_FOLDER
         self._name = name
         self.detail = detail
         self._last_update = datetime.now()
