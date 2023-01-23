@@ -171,7 +171,7 @@ class Connection:
             _LOGGER.debug("ISY not ready or closed connection.")
         except aiohttp.ClientResponseError as err:
             _LOGGER.error(
-                "Client Response Error from ISY: %s %s.", err.status, err.message
+                "Client Response %s Error %s %s", err.status, err.message, endpoint
             )
         except aiohttp.ClientError as err:
             _LOGGER.error(

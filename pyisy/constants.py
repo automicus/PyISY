@@ -25,6 +25,8 @@ RECONNECT_DELAY = 60
 SOCKET_BUFFER_SIZE = 4096
 THREAD_SLEEP_TIME = 30.0
 
+DEFAULT_DIR: str = ".output/"
+
 
 class EventStreamStatus(StrEnum):
     """Event Stream Status Codes."""
@@ -72,6 +74,7 @@ ATTR_SET = "set"
 ATTR_STATUS = "status"
 ATTR_STREAM_ID = "sid"
 ATTR_TS = "ts"
+ATTR_TYPE = "type_"
 ATTR_UNIT_OF_MEASURE = "uom"
 ATTR_VAL = "val"  # Used for Variables.
 ATTR_VALUE = "value"  # Used for everything else.

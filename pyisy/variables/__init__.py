@@ -6,6 +6,10 @@ import json
 from typing import TYPE_CHECKING, Any, cast
 
 from pyisy.constants import (
+    ATTR_ID,
+    ATTR_TYPE,
+    ATTR_VAR,
+    DEFAULT_DIR,
     URL_DEFINITIONS,
     URL_GET,
     URL_VARIABLES,
@@ -66,48 +70,47 @@ class Variables(EntityPlatform):
         )
 
         # Check if Integer Variables defined
-        if not (results[0] is None or results[0] in EMPTY_VARIABLES_RESPONSE):
-            xml_int_def = parse_xml(results[0], attr_prefix="")
-            xml_int = parse_xml(results[2], attr_prefix="")
-            int_dict = {
-                PLATFORM: [
-                    v | xml_int["vars"]["var"][i]
-                    for i, v in enumerate(xml_int_def["c_list"]["e"])
-                ]
-            }
-
-            if self.isy.args is not None and self.isy.args.file:
-                await write_to_file(int_dict, ".output/rest-variables-integer.json")
-            _LOGGER.log(
-                LOG_VERBOSE,
-                "%s:\n%s",
-                urls[2],
-                json.dumps(int_dict, indent=4, sort_keys=True, default=str),
-            )
-            self.parse(int_dict)
-            self.loaded = True
-
+        await self.check_if_variables_defined("integer", results[0], results[2])
         # Check if State Variables defined
-        if not (results[1] is None or results[1] in EMPTY_VARIABLES_RESPONSE):
-            xml_state_def = parse_xml(results[1], attr_prefix="")
-            xml_state = parse_xml(results[3], attr_prefix="")
-            state_dict = {
-                PLATFORM: [
-                    v | xml_state["vars"]["var"][i]
-                    for i, v in enumerate(xml_state_def["c_list"]["e"])
-                ]
-            }
+        await self.check_if_variables_defined("state", results[1], results[3])
 
-            if self.isy.args is not None and self.isy.args.file:
-                await write_to_file(int_dict, ".output/rest-variables-state.json")
-            _LOGGER.log(
-                LOG_VERBOSE,
-                "%s:\n%s",
-                urls[3],
-                json.dumps(state_dict, indent=4, sort_keys=True, default=str),
+    async def check_if_variables_defined(
+        self, var_type: str, def_result: str, var_result: str
+    ) -> None:
+        """Check if variables are correctly defined and collect dict."""
+        if def_result is None or def_result in EMPTY_VARIABLES_RESPONSE:
+            return None
+
+        def_dict = parse_xml(def_result, attr_prefix="")
+        if not (def_list := def_dict["c_list"]["e"]):
+            return None
+
+        # Handle single variable edge case
+        if isinstance(def_list, dict):
+            def_list = [def_list]
+
+        var_dict = parse_xml(var_result, attr_prefix="")
+        if not (var_list := var_dict["vars"][ATTR_VAR]):
+            return None
+
+        if isinstance(var_list, dict):
+            var_list = [var_list]
+
+        var_dict = {PLATFORM: [v | var_list[i] for i, v in enumerate(def_list)]}
+
+        if self.isy.args is not None and self.isy.args.file:
+            await write_to_file(
+                var_dict, f"{DEFAULT_DIR}rest-{PLATFORM}-{var_type}.json"
             )
-            self.parse(state_dict)
-            self.loaded = True
+
+        _LOGGER.log(
+            LOG_VERBOSE,
+            "%s:\n%s",
+            var_type,
+            json.dumps(var_dict, indent=4, sort_keys=True, default=str),
+        )
+        self.parse(var_dict)
+        self.loaded = True
 
     def parse(self, xml_dict: dict[str, Any]) -> None:
         """Parse XML from the controller with details about the variables."""
@@ -117,14 +120,14 @@ class Variables(EntityPlatform):
             self.parse_entity(feature)
         _LOGGER.info(
             "Loaded %s %s",
-            "state" if features[0]["type_"] == "2" else "integer",
+            "state" if features[0][ATTR_TYPE] == "2" else "integer",
             PLATFORM,
         )
 
     def parse_entity(self, feature: dict[str, Any]) -> None:
         """Parse a single value and add it to the platform."""
         try:
-            address = f"{feature['type_']}.{feature['id']}"
+            address = f"{feature[ATTR_TYPE]}.{feature[ATTR_ID]}"
             name = feature["name"]
             _LOGGER.log(LOG_VERBOSE, "Parsing %s: %s (%s)", PLATFORM, name, address)
             detail = VariableDetail(**feature)
@@ -136,9 +139,11 @@ class Variables(EntityPlatform):
     def update_received(self, event: EventData, init: bool = False) -> None:
         """Process an update received from the event stream."""
         event_info: dict[str, dict] = cast(dict, event.event_info)
-        var_info = event_info["var"]
+        var_info = event_info[ATTR_VAR]
 
-        if (address := f"{var_info['type_']}.{var_info['id']}") not in self.addresses:
+        if (
+            address := f"{var_info[ATTR_TYPE]}.{var_info[ATTR_ID]}"
+        ) not in self.addresses:
             # New/unknown variable, refresh full set.
             update_task = asyncio.create_task(self.update())
             self.isy.background_tasks.add(update_task)

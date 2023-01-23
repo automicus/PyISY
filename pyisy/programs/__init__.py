@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any, cast
 
 from dateutil import parser
 
-from pyisy.constants import URL_PROGRAMS, URL_SUBFOLDERS, XML_TRUE
+from pyisy.constants import DEFAULT_DIR, URL_PROGRAMS, URL_SUBFOLDERS, XML_TRUE
 from pyisy.events.router import EventData
 from pyisy.helpers.entity_platform import EntityPlatform
 from pyisy.helpers.events import EventEmitter
@@ -55,7 +55,9 @@ class Programs(EntityPlatform):
         # Write nodes to file for debugging:
         if self.isy.args is not None and self.isy.args.file:
             json_object = json.dumps(xml_dict, indent=4, default=str)
-            with open(".output/rest-programs.json", "w", encoding="utf-8") as outfile:
+            with open(
+                f"{DEFAULT_DIR}rest-programs.json", "w", encoding="utf-8"
+            ) as outfile:
                 outfile.write(json_object)
 
         if not (features := xml_dict["programs"]["program"]):

@@ -61,6 +61,7 @@ class EntityPlatform(ABC):
     _parse_attr_prefix: str = ""
     _parse_cdata_key: str = "_value"
     _parse_use_pp: bool = True
+    _parse_raise_on_error: bool = False
 
     def __init__(
         self,
@@ -86,6 +87,7 @@ class EntityPlatform(ABC):
         await asyncio.sleep(wait_time)
         xml_dict = parse_xml(
             await self.isy.conn.request(self.url),
+            raise_on_error=self._parse_raise_on_error,
             attr_prefix=self._parse_attr_prefix,
             cdata_key=self._parse_cdata_key,
             use_pp=self._parse_use_pp,

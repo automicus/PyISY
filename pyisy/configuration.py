@@ -97,7 +97,9 @@ class Configuration:
         """Update the contents of the networking class."""
         await asyncio.sleep(wait_time)
         xml_dict = parse_xml(
-            await conn.request(conn.compile_url([URL_CONFIG])), use_pp=False
+            await conn.request(conn.compile_url([URL_CONFIG])),
+            raise_on_error=True,
+            use_pp=False,
         )
         config = xml_dict[TAG_CONFIG]
         features = config[TAG_FEATURES][TAG_FEATURE]

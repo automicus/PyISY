@@ -6,6 +6,7 @@ import json
 from typing import TYPE_CHECKING, Any, cast
 
 from pyisy.constants import (
+    DEFAULT_DIR,
     EVENT_PROPS_IGNORED,
     INSTEON_RAMP_RATES,
     NODE_IS_ROOT,
@@ -41,6 +42,7 @@ class Nodes(EntityPlatform):
     node_servers: set = set()
     initialized: bool = False
     status_info: dict = {}
+    _parse_raise_on_error: bool = True
 
     def __init__(
         self,
@@ -81,7 +83,9 @@ class Nodes(EntityPlatform):
         # Write nodes to file for debugging:
         if self.isy.args is not None and self.isy.args.file:
             json_object = json.dumps(xml_dict, indent=4, default=str)
-            with open(".output/rest-nodes.json", "w", encoding="utf-8") as outfile:
+            with open(
+                f"{DEFAULT_DIR}rest-nodes.json", "w", encoding="utf-8"
+            ) as outfile:
                 outfile.write(json_object)
 
         if not (features := xml_dict["nodes"]):
@@ -188,7 +192,9 @@ class Nodes(EntityPlatform):
         # Write nodes to file for debugging:
         if self.isy.args is not None and self.isy.args.file:
             json_object = json.dumps(xml_dict, indent=4, default=str)
-            with open(".output/rest-status.json", "w", encoding="utf-8") as outfile:
+            with open(
+                f"{DEFAULT_DIR}rest-status.json", "w", encoding="utf-8"
+            ) as outfile:
                 outfile.write(json_object)
 
         if not (node_statuses := xml_dict["nodes"]["node"]):

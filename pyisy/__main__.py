@@ -16,7 +16,7 @@ import time
 from typing import Any
 
 from pyisy.connection import ISYConnectionError, ISYConnectionInfo, ISYInvalidAuthError
-from pyisy.constants import NodeChangeAction, SystemStatus
+from pyisy.constants import DEFAULT_DIR, NodeChangeAction, SystemStatus
 from pyisy.helpers.events import NodeChangedEvent
 from pyisy.isy import ISY
 from pyisy.logging import LOG_VERBOSE, enable_logging
@@ -80,27 +80,31 @@ async def main(cl_args: argparse.Namespace) -> None:
         _LOGGER.debug(repr(isy.nodes))
         if cl_args.file:
             # Write nodes to file for debugging:
-            await write_to_file(isy.nodes.get_tree(), ".output/nodes-tree.json")
-            await write_to_file(isy.nodes.to_dict(), ".output/nodes-loaded.json")
+            await write_to_file(isy.nodes.get_tree(), f"{DEFAULT_DIR}nodes-tree.json")
+            await write_to_file(isy.nodes.to_dict(), f"{DEFAULT_DIR}nodes-loaded.json")
         isy.nodes.status_events.subscribe(node_changed_handler, key="nodes")
     if cl_args.programs:
         _LOGGER.debug(repr(isy.programs))
         if cl_args.file:
-            await write_to_file(isy.programs.get_tree(), ".output/programs.json")
+            await write_to_file(isy.programs.get_tree(), f"{DEFAULT_DIR}programs.json")
         isy.programs.status_events.subscribe(status_handler, key="programs")
     if cl_args.variables:
         _LOGGER.debug(repr(isy.variables))
         if cl_args.file:
-            await write_to_file(isy.variables.to_dict(), ".output/variables.json")
+            await write_to_file(isy.variables.to_dict(), f"{DEFAULT_DIR}variables.json")
         isy.variables.status_events.subscribe(status_handler, key="variables")
     if cl_args.networking:
         _LOGGER.debug(repr(isy.networking))
         if cl_args.file:
-            await write_to_file(isy.networking.to_dict(), ".output/networking.json")
+            await write_to_file(
+                isy.networking.to_dict(), f"{DEFAULT_DIR}networking.json"
+            )
     if cl_args.node_servers:
         _LOGGER.debug(isy.node_servers)
         if cl_args.file:
-            await write_to_file(isy.node_servers.to_dict(), ".output/node-servers.json")
+            await write_to_file(
+                isy.node_servers.to_dict(), f"{DEFAULT_DIR}node-servers.json"
+            )
     if cl_args.clock:
         _LOGGER.debug(repr(isy.clock))
     _LOGGER.info("Total Loading time: %.2fs", time.time() - t_0)

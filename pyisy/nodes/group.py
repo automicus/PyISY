@@ -6,6 +6,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, cast
 
 from pyisy.constants import (
+    ATTR_TYPE,
     INSTEON_STATELESS_NODEDEFID,
     ISY_VALUE_UNKNOWN,
     NODE_IS_CONTROLLER,
@@ -44,7 +45,7 @@ class GroupDetail(NodeBaseDetail):
         for link in link_list:
             address = link["address"]
             self.links.append(address)
-            if int(link["type_"]) == NODE_IS_CONTROLLER:
+            if int(link[ATTR_TYPE]) == NODE_IS_CONTROLLER:
                 self.controllers.append(address)
 
 
@@ -105,15 +106,6 @@ class Group(NodeBase, Entity):
     def members(self) -> list[str]:
         """Get the members of the scene/group."""
         return self.detail.links
-
-    # async def update(
-    #     self,
-    #     event: NodeProperty | None = None,
-    #     wait_time: float | None = 0,
-    #     xmldoc: str | None = None,
-    # ) -> None:
-    #     """Update the group with values from the controller."""
-    #     self._update(event, wait_time, xmldoc)
 
     def _update(
         self,
