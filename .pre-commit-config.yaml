@@ -20,7 +20,7 @@ repos:
   - hooks:
       - args:
           [
-            "--ignore-words-list=pyisy,hass,isy,nid,dof,dfof,don,dfon,tim,automic,automicus,BATLVL,homeassistant,colorlog,nd,NumT",
+            "--ignore-words-list=pyisy,hass,isy,nid,dof,dfof,don,dfon,tim,automic,automicus,BATLVL,homeassistant,colorlog,nd",
             '--skip="./.*,*.json"',
             --quiet-level=2,
           ]

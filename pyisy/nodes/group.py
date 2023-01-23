@@ -8,8 +8,8 @@ from typing import TYPE_CHECKING, cast
 from pyisy.constants import (
     ATTR_TYPE,
     INSTEON_STATELESS_NODEDEFID,
-    ISY_VALUE_UNKNOWN,
     NODE_IS_CONTROLLER,
+    TAG_ADDRESS,
     Protocol,
 )
 from pyisy.helpers.entity import Entity, StatusT
@@ -43,7 +43,7 @@ class GroupDetail(NodeBaseDetail):
             link_list = [link_list]
 
         for link in link_list:
-            address = link["address"]
+            address = link[TAG_ADDRESS]
             self.links.append(address)
             if int(link[ATTR_TYPE]) == NODE_IS_CONTROLLER:
                 self.controllers.append(address)
@@ -100,7 +100,7 @@ class Group(NodeBase, Entity[GroupDetail, StatusT]):
             self._all_on = value
             self._last_changed = datetime.now()
             # Re-publish the current status. Let users pick up the all on change.
-            self.status_events.notify(self._status)
+            self.status_events.notify(str(self.status))
 
     @property
     def members(self) -> list[str]:
@@ -114,18 +114,18 @@ class Group(NodeBase, Entity[GroupDetail, StatusT]):
         self._last_update = datetime.now()
 
         valid_nodes = []
+        on_nodes = []
         for address in self.members:
             node = self.platform.entities[address]
             if (
                 node.status is not None
-                and node.status != ISY_VALUE_UNKNOWN
                 and cast(NodeBaseDetail, node.detail).node_def_id
                 not in INSTEON_STATELESS_NODEDEFID
             ):
-                valid_nodes.append(address)
-        on_nodes = [
-            node for node in valid_nodes if int(self.platform.entities[node].status) > 0
-        ]
+                valid_nodes.append(node)
+                if node.status > 0:
+                    on_nodes.append(node)
+
         if on_nodes:
             self.group_all_on = len(on_nodes) == len(valid_nodes)
             self.update_status(255)

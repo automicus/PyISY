@@ -260,7 +260,7 @@ class Node(NodeBase, Entity[NodeDetail, StatusT]):
             changed.append("uom")
 
         if changed:
-            self.update_status(state.value)
+            self.update_status(int(state.value) if state.value is not None else None)
             _LOGGER.debug(
                 "Updated node state: %s (%s), changed=%s",
                 self.name,

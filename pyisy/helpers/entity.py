@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Generic, TypeVar, Union
 
 from pyisy.constants import Protocol
 from pyisy.helpers.events import EventEmitter
+from pyisy.helpers.models import OptionalIntT
 
 # Typing imports that create a circular dependency
 if TYPE_CHECKING:
@@ -17,7 +18,7 @@ if TYPE_CHECKING:
 
 BoolStrT = Union[str, bool]
 NumT = Union[int, float]
-StatusT = TypeVar("StatusT", str, bool, BoolStrT, NumT, None)
+StatusT = TypeVar("StatusT", str, bool, BoolStrT, NumT, OptionalIntT, None)
 
 
 @dataclass

@@ -7,7 +7,13 @@ from typing import TYPE_CHECKING, Any, Union, cast
 
 from dateutil import parser
 
-from pyisy.constants import DEFAULT_DIR, URL_PROGRAMS, URL_SUBFOLDERS, XML_TRUE
+from pyisy.constants import (
+    DEFAULT_DIR,
+    TAG_FOLDER,
+    URL_PROGRAMS,
+    URL_SUBFOLDERS,
+    XML_TRUE,
+)
 from pyisy.events.router import EventData
 from pyisy.helpers.entity_platform import EntityPlatform
 from pyisy.helpers.events import EventEmitter
@@ -76,7 +82,7 @@ class Programs(EntityPlatform[ProgramsT]):
             name = feature["name"]
             _LOGGER.log(LOG_VERBOSE, "Parsing %s: %s (%s)", PLATFORM, name, address)
 
-            if feature["folder"]:
+            if feature[TAG_FOLDER]:
                 entity = Folder(self, address, name, FolderDetail(**feature))
             else:
                 entity = Program(self, address, name, ProgramDetail(**feature))

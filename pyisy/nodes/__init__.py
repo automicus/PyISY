@@ -13,6 +13,10 @@ from pyisy.constants import (
     PROP_BATTERY_LEVEL,
     PROP_RAMP_RATE,
     PROP_STATUS,
+    TAG_ADDRESS,
+    TAG_FOLDER,
+    TAG_GROUP,
+    TAG_NODE,
     UOM_SECONDS,
     URL_NODES,
     URL_STATUS,
@@ -57,7 +61,7 @@ class Nodes(EntityPlatform[NodesT]):
         self.status_events = EventEmitter()
         self.url = self.isy.conn.compile_url([URL_NODES])
         self.status_url = self.isy.conn.compile_url([URL_STATUS])
-        self._parse_cdata_key = "address"
+        self._parse_cdata_key = TAG_ADDRESS
 
     async def initialize(self) -> None:
         """Initialize the node entities.
@@ -92,13 +96,13 @@ class Nodes(EntityPlatform[NodesT]):
         if not (features := xml_dict["nodes"]):
             return
 
-        if folders := features["folder"]:
+        if folders := features[TAG_FOLDER]:
             for folder in folders:
                 self.parse_folder_entity(folder)
-        if nodes := features["node"]:
+        if nodes := features[TAG_NODE]:
             for node in nodes:
                 self.parse_node_entity(node)
-        if groups := features["group"]:
+        if groups := features[TAG_GROUP]:
             for group in groups:
                 self.parse_group_entity(group)
 
@@ -107,7 +111,7 @@ class Nodes(EntityPlatform[NodesT]):
     def parse_folder_entity(self, feature: dict[str, Any]) -> None:
         """Parse a single folder and add to the platform."""
         try:
-            address = feature["address"]
+            address = feature[TAG_ADDRESS]
             name = feature["name"]
             _LOGGER.log(LOG_VERBOSE, "Parsing %s: %s (%s)", PLATFORM, name, address)
             entity = NodeFolder(self, address, name, NodeFolderDetail(**feature))
@@ -118,14 +122,14 @@ class Nodes(EntityPlatform[NodesT]):
     def parse_node_entity(self, feature: dict[str, Any]) -> None:
         """Parse a single node and add to the platform."""
         try:
-            address = feature["address"]
+            address = feature[TAG_ADDRESS]
             name = feature["name"]
             _LOGGER.log(LOG_VERBOSE, "Parsing %s: %s (%s)", PLATFORM, name, address)
 
             if family := feature.get("family"):
                 if (
                     isinstance(family, dict)
-                    and family["address"] == NodeFamily.NODESERVER
+                    and family[TAG_ADDRESS] == NodeFamily.NODESERVER
                 ):
                     feature["node_server"] = family.get("instance", "")
                     feature["protocol"] = self.get_protocol_from_family(
@@ -140,7 +144,7 @@ class Nodes(EntityPlatform[NodesT]):
     def parse_group_entity(self, feature: dict[str, Any]) -> None:
         """Parse a single group and add to the platform."""
         try:
-            address = feature["address"]
+            address = feature[TAG_ADDRESS]
             name = feature["name"]
             _LOGGER.log(LOG_VERBOSE, "Parsing %s: %s (%s)", PLATFORM, name, address)
             if (flag := feature["flag"]) & NODE_IS_ROOT:
@@ -155,7 +159,7 @@ class Nodes(EntityPlatform[NodesT]):
         """Identify protocol from family type."""
         if family is None:
             return Protocol.INSTEON
-        if isinstance(family, dict) and family["address"] == NodeFamily.NODESERVER:
+        if isinstance(family, dict) and family[TAG_ADDRESS] == NodeFamily.NODESERVER:
             node_server = family.get("instance", "")
             self.node_servers.add(node_server)
             return Protocol.NODE_SERVER
@@ -198,7 +202,7 @@ class Nodes(EntityPlatform[NodesT]):
             ) as outfile:
                 outfile.write(json_object)
 
-        if not (node_statuses := xml_dict["nodes"]["node"]):
+        if not (node_statuses := xml_dict["nodes"][TAG_NODE]):
             return
 
         for status in node_statuses:
@@ -232,7 +236,7 @@ class Nodes(EntityPlatform[NodesT]):
             # Use BATLVL as state if no ST given.
             entity.is_battery_node = True
             entity.update_state(result)
-        elif result.control == PROP_RAMP_RATE:
+        elif result.control == PROP_RAMP_RATE and result.value:
             result.value = INSTEON_RAMP_RATES.get(str(result.value), result.value)
             result.uom = UOM_SECONDS
 
@@ -264,12 +268,12 @@ class Nodes(EntityPlatform[NodesT]):
         if not (feature := xml_dict["node_info"]):
             return
 
-        if "folder" in feature:
-            self.parse_folder_entity(feature["folder"])
-        if "node" in feature:
-            self.parse_node_entity(feature["node"])
-        if "group" in feature:
-            self.parse_group_entity(feature["group"])
+        if TAG_FOLDER in feature:
+            self.parse_folder_entity(feature[TAG_FOLDER])
+        if TAG_NODE in feature:
+            self.parse_node_entity(feature[TAG_NODE])
+        if TAG_GROUP in feature:
+            self.parse_group_entity(feature[TAG_GROUP])
         if "properties" in feature:
             if not (props := feature["properties"].get("prop", {})):
                 return
@@ -285,7 +289,7 @@ class Nodes(EntityPlatform[NodesT]):
         if not detail.parent:
             # Node is in the root folder.
             return None
-        parent = detail.parent["address"]
+        parent = detail.parent[TAG_ADDRESS]
         if int(detail.parent["type_"]) != UDHierarchyNodeType.FOLDER:
             return self.get_folder(parent)
         return self.entities[parent].name
@@ -314,5 +318,5 @@ class Nodes(EntityPlatform[NodesT]):
         return {
             entity
             for entity in self.values()
-            if entity.detail.parent and entity.detail.parent["address"] == address
+            if entity.detail.parent and entity.detail.parent[TAG_ADDRESS] == address
         }

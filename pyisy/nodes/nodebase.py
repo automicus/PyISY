@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Generic, cast
+from typing import TYPE_CHECKING, Any, cast
 from xml.dom import minidom
 
 from pyisy.constants import (
@@ -27,9 +27,9 @@ from pyisy.constants import (
     URL_NOTES,
     NodeFamily,
 )
-from pyisy.helpers.entity import Entity, EntityDetail, EntityStatus, StatusT
+from pyisy.helpers.entity import Entity, EntityDetail, EntityStatus
 from pyisy.helpers.events import EventEmitter
-from pyisy.helpers.models import NodeNotes, NodeProperty
+from pyisy.helpers.models import NodeNotes, NodeProperty, OptionalIntT
 from pyisy.helpers.xml import parse_xml
 from pyisy.logging import _LOGGER
 
@@ -38,10 +38,10 @@ if TYPE_CHECKING:
 
 
 @dataclass
-class NodeBaseDetail(EntityDetail, Generic[StatusT]):
+class NodeBaseDetail(EntityDetail):
     """Dataclass to hold entity detail info."""
 
-    status: StatusT = None  # type: ignore[assignment]
+    status: OptionalIntT = None
     family: NodeFamily | dict[str, str] | str = ""
     flag: int = 0
     node_def_id: str = ""
@@ -51,7 +51,7 @@ class NodeBaseDetail(EntityDetail, Generic[StatusT]):
     pnode: str = ""
 
 
-class NodeBase(Entity[NodeBaseDetail, StatusT]):
+class NodeBase(Entity[NodeBaseDetail, OptionalIntT]):
     """Base Object for Nodes and Groups/Scenes."""
 
     has_children = False

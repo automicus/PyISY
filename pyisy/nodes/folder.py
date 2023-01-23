@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 
 from pyisy.constants import TAG_NAME, URL_CHANGE, URL_NODES, Protocol
 from pyisy.helpers.entity import Entity, EntityDetail
+from pyisy.helpers.models import OptionalIntT
 from pyisy.logging import _LOGGER
 
 if TYPE_CHECKING:
@@ -23,10 +24,10 @@ class NodeFolderDetail(EntityDetail):
     flag: int = 0
 
 
-class NodeFolder(Entity[NodeFolderDetail, str]):
+class NodeFolder(Entity[NodeFolderDetail, OptionalIntT]):
     """Folder Object for Nodes and Groups/Scenes."""
 
-    _status: str = ""
+    _status: OptionalIntT = 0
     _last_update: datetime
     _last_changed: datetime
     detail: NodeFolderDetail

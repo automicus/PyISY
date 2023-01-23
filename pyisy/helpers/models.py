@@ -2,13 +2,11 @@
 from __future__ import annotations
 
 from dataclasses import InitVar, dataclass, field
-from typing import cast
+from typing import Union, cast
 
-from pyisy.constants import (
-    DEFAULT_PRECISION,
-    DEFAULT_UNIT_OF_MEASURE,
-    ISY_VALUE_UNKNOWN,
-)
+from pyisy.constants import DEFAULT_PRECISION, DEFAULT_UNIT_OF_MEASURE
+
+OptionalIntT = Union[int, None]
 
 
 @dataclass
@@ -17,7 +15,7 @@ class NodeProperty:
 
     id: InitVar[str | None] = ""
     control: str = ""
-    value: int | float = ISY_VALUE_UNKNOWN
+    value: OptionalIntT | float = None
     precision: int = DEFAULT_PRECISION
     uom: str = DEFAULT_UNIT_OF_MEASURE
     formatted: str = ""
@@ -29,15 +27,13 @@ class NodeProperty:
         if id:
             self.control = id
 
-        if isinstance(cast(str, self.value), str):
-            self.value = (
-                int(self.value)
-                if cast(str, self.value).strip() != ""
-                else ISY_VALUE_UNKNOWN
-            )
-
-        # if not self.formatted:
-        #     self.formatted = str(self.value)
+        if self.value is not None and isinstance(cast(str, self.value), str):
+            try:
+                self.value = (
+                    int(self.value) if cast(str, self.value).strip() != "" else None
+                )
+            except ValueError:
+                pass
 
 
 @dataclass
