@@ -12,7 +12,7 @@ from pyisy.constants import (
     NODE_IS_CONTROLLER,
     Protocol,
 )
-from pyisy.helpers.entity import Entity
+from pyisy.helpers.entity import Entity, StatusT
 from pyisy.helpers.events import EventListener
 from pyisy.helpers.models import NodeProperty
 from pyisy.nodes.nodebase import NodeBase, NodeBaseDetail
@@ -49,7 +49,7 @@ class GroupDetail(NodeBaseDetail):
                 self.controllers.append(address)
 
 
-class Group(NodeBase, Entity):
+class Group(NodeBase, Entity[GroupDetail, StatusT]):
     """Interact with ISY groups (scenes)."""
 
     _all_on: bool

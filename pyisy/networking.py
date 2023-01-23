@@ -1,7 +1,7 @@
 """ISY Network Resources Module."""
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
 from pyisy.constants import TAG_ID, TAG_NAME, URL_NETWORK, URL_RESOURCES, Protocol
@@ -20,10 +20,10 @@ PLATFORM = "networking"
 class NetworkCommandDetail(EntityDetail):
     """Dataclass to hold entity detail info."""
 
-    control_info: dict[str, str | bool]
-    id: str
-    is_modified: bool
-    name: str
+    control_info: dict[str, str | bool] = field(default_factory=dict)
+    id: str = ""
+    is_modified: bool = False
+    name: str = ""
 
 
 class NetworkResources(EntityPlatform):
@@ -71,7 +71,7 @@ class NetworkResources(EntityPlatform):
             await self.update(interval)
 
 
-class NetworkCommand(Entity):
+class NetworkCommand(Entity[NetworkCommandDetail, bool]):
     """Network Command Class handles individual networking commands."""
 
     _status: bool = True

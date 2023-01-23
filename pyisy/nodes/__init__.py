@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import json
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, Union, cast
 
 from pyisy.constants import (
     DEFAULT_DIR,
@@ -20,7 +20,6 @@ from pyisy.constants import (
     Protocol,
     UDHierarchyNodeType,
 )
-from pyisy.helpers.entity import Entity
 from pyisy.helpers.entity_platform import EntityPlatform
 from pyisy.helpers.events import EventEmitter
 from pyisy.helpers.models import NodeProperty
@@ -35,8 +34,10 @@ if TYPE_CHECKING:
 
 PLATFORM = "nodes"
 
+NodesT = Union[NodeFolder, Node, Group]
 
-class Nodes(EntityPlatform):
+
+class Nodes(EntityPlatform[NodesT]):
     """This class handles the ISY nodes."""
 
     node_servers: set = set()
@@ -308,7 +309,7 @@ class Nodes(EntityPlatform):
             if isinstance(entity, Group) and address in entity.members
         ]
 
-    def get_children(self, address: str) -> set[Entity]:
+    def get_children(self, address: str) -> set[NodesT]:
         """Return the children of the a given address."""
         return {
             entity

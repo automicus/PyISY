@@ -36,7 +36,7 @@ EMPTY_VARIABLES_RESPONSE = [
 ]
 
 
-class Variables(EntityPlatform):
+class Variables(EntityPlatform[Variable]):
     """This class handles the ISY variables."""
 
     def __init__(self, isy: ISY) -> None:
