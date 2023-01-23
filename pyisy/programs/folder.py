@@ -15,7 +15,7 @@ from pyisy.constants import (
     URL_PROGRAMS,
     Protocol,
 )
-from pyisy.helpers.entity import Entity, EntityDetail
+from pyisy.helpers.entity import BoolStrT, Entity, EntityDetail
 from pyisy.helpers.events import EventEmitter
 from pyisy.logging import _LOGGER
 
@@ -31,15 +31,14 @@ class FolderDetail(EntityDetail):
 
     id: str = ""
     name: str = ""
-    status: bool | str = "not_loaded"
+    status: BoolStrT = "not_loaded"
     folder: bool = False
-    parent: str | None = None
     last_finish_time: datetime | None = None
     last_run_time: datetime | None = None
     next_scheduled_run_time: datetime | None = None
 
 
-class Folder(Entity):
+class Folder(Entity[FolderDetail, BoolStrT]):
     """Object representing a program folder on the ISY device."""
 
     def __init__(

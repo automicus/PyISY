@@ -10,10 +10,10 @@ import asyncio
 from collections.abc import Iterable, ValuesView
 from dataclasses import asdict, dataclass, field
 import json
-from typing import TYPE_CHECKING, Any, Protocol, TypeVar
+from typing import TYPE_CHECKING, Any, Generic, Protocol, TypeVar
 
 from pyisy.constants import Protocol as EntityProtocol
-from pyisy.helpers.entity import Entity
+from pyisy.helpers.entity import Entity, EntityT
 from pyisy.helpers.events import EventEmitter
 from pyisy.helpers.xml import parse_xml
 from pyisy.logging import _LOGGER, LOG_VERBOSE
@@ -45,15 +45,15 @@ class EntityPlatformModule(Protocol):
         """Set up an integration platform async."""
 
 
-class EntityPlatform(ABC):
+class EntityPlatform(ABC, Generic[EntityT]):
     """Manage the entities for a single platform."""
 
     loaded: bool = False
     status_events: EventEmitter
-    names: list[str] = []
-    addresses: list[str] = []
-    entities: dict[str, Entity] = {}
-    types: list[str] = []
+    names: list[str]
+    addresses: list[str]
+    entities: dict[str, EntityT]
+    types: list[str]
     url: str
     platform_name: str
 
@@ -72,7 +72,13 @@ class EntityPlatform(ABC):
         """Initialize the entity platform."""
         self.isy = isy
         self.platform_name = platform_name
-        self.entities: dict[str, Entity] = {}
+
+        self.loaded = False
+
+        self.names = []
+        self.addresses = []
+        self.entities = {}
+        self.types = []
         self._tasks: list[asyncio.Task[None]] = []
         # Stop tracking tasks after setup is completed
         self._setup_complete = False
@@ -109,7 +115,7 @@ class EntityPlatform(ABC):
         """
         raise NotImplementedError()
 
-    def add_or_update_entity(self, address: str, name: str, entity: Entity) -> None:
+    def add_or_update_entity(self, address: str, name: str, entity: EntityT) -> None:
         """Add or update an entity on the platform."""
         # FUTURE: May need to support a compare function callback
         if address in self.addresses:
@@ -128,7 +134,7 @@ class EntityPlatform(ABC):
             f"{self.platform_name}.{EntityPlatformEvent.ENTITY_ADDED}"
         )
 
-    def __getitem__(self, key: str) -> Entity | None:
+    def __getitem__(self, key: str) -> EntityT | None:
         """Return the item from the collection."""
         if key in self.addresses:
             return self.entities[key]
@@ -145,20 +151,20 @@ class EntityPlatform(ABC):
         """Return the underlying values to avoid __iter__ overhead."""
         return self.entities.values()
 
-    def get_by_id(self, key: str) -> Entity | None:
+    def get_by_id(self, key: str) -> EntityT | None:
         """Return entity given an address."""
         if key in self.addresses:
             return self.entities[key]
         return None
 
-    def get_by_name(self, key: str) -> Entity | None:
+    def get_by_name(self, key: str) -> EntityT | None:
         """Return entity given a name."""
         if key in self.names:
             i = self.names.index(key)
             return self.entities[self.addresses[i]]
         return None
 
-    def get_by_index(self, value: int) -> Entity | None:
+    def get_by_index(self, value: int) -> EntityT | None:
         """Return entity given an index."""
         if not (0 <= value <= len(self.addresses)):
             return None
@@ -174,7 +180,7 @@ class EntityPlatform(ABC):
             for entity in self.values()
         }
 
-    def get_children(self, address: str) -> set[Entity]:
+    def get_children(self, address: str) -> set[EntityT]:
         """Return the children of the a given address."""
         return {e for e in self.values() if e.detail.parent == address}
 
@@ -187,7 +193,7 @@ class EntityPlatform(ABC):
 
         # traversal of the tree from top down
         def traverse(
-            hierarchy: dict[str, dict], entities: Iterable[Entity], path: str = ""
+            hierarchy: dict[str, dict], entities: Iterable[EntityT], path: str = ""
         ) -> dict[str, dict]:
             for i in entities:
                 children = self.get_children(i.address)
@@ -211,11 +217,11 @@ class EntityPlatform(ABC):
         else:
             roots = {self.entities[address]}
 
-        directory: dict[str, Entity] = {}
+        directory: dict[str, EntityT] = {}
 
         # traversal of the tree from top down
         def traverse(
-            hierarchy: dict[str, dict], entities: Iterable[Entity], path: str = ""
+            hierarchy: dict[str, dict], entities: Iterable[EntityT], path: str = ""
         ) -> dict[str, dict]:
             for i in entities:
                 directory[f"{path}/{i.name}"] = i

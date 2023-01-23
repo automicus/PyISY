@@ -4,7 +4,7 @@ from __future__ import annotations
 import asyncio
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from pyisy.constants import (
     BACKLIGHT_SUPPORT,
@@ -40,7 +40,7 @@ from pyisy.constants import (
     NodeFamily,
     Protocol,
 )
-from pyisy.helpers.entity import Entity, EntityStatus
+from pyisy.helpers.entity import Entity, EntityStatus, StatusT
 from pyisy.helpers.events import EventEmitter
 from pyisy.helpers.models import NodeProperty, ZWaveParameter, ZWaveProperties
 from pyisy.helpers.xml import parse_xml
@@ -85,7 +85,7 @@ class NodeDetail(NodeBaseDetail):
             self.zwave_props = ZWaveProperties(**self.devtype)
 
 
-class Node(NodeBase, Entity):
+class Node(NodeBase, Entity[NodeDetail, StatusT]):
     """This class handles ISY nodes."""
 
     _parent_node: str | None
@@ -300,7 +300,7 @@ class Node(NodeBase, Entity):
             _LOGGER.warning("Error fetching parameter from ISY")
             return None
 
-        parameter_dict = parse_xml(parameter_xml)
+        parameter_dict: dict[str, Any] = parse_xml(parameter_xml)
         if not (config := parameter_dict[TAG_CONFIG]):
             _LOGGER.warning("Error fetching parameter from ISY")
             return None
@@ -400,7 +400,7 @@ class Node(NodeBase, Entity):
         """Get the Unit of Measurement an aux property."""
         if not (aux_property := self.aux_properties.get(prop)):
             raise ValueError(f"Invalid aux property for node {self.address}")
-        return aux_property.uom
+        return str(aux_property.uom)
 
     async def secure_lock(self) -> bool:
         """Send a command to securely lock a lock device."""

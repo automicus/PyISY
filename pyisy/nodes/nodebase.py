@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import TYPE_CHECKING, Generic
+from typing import TYPE_CHECKING, Any, Generic, cast
 from xml.dom import minidom
 
 from pyisy.constants import (
@@ -51,7 +51,7 @@ class NodeBaseDetail(EntityDetail, Generic[StatusT]):
     pnode: str = ""
 
 
-class NodeBase(Entity):
+class NodeBase(Entity[NodeBaseDetail, StatusT]):
     """Base Object for Nodes and Groups/Scenes."""
 
     has_children = False
@@ -116,12 +116,12 @@ class NodeBase(Entity):
         if notes_xml is None or notes_xml != "" or notes_xml.endswith(" not found"):
             return
 
-        notes_dict = parse_xml(notes_xml)
+        notes_dict: dict[str, Any] = parse_xml(notes_xml)
 
         if not (notes := notes_dict.get("node_properties")):
             return
 
-        self.notes = NodeNotes(**notes)
+        self.notes = NodeNotes(**cast(dict, notes))
 
     async def update(
         self,

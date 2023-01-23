@@ -9,6 +9,7 @@ from pyisy.constants import (
     CMD_ENABLE_RUN_AT_STARTUP,
     Protocol,
 )
+from pyisy.helpers.entity import BoolStrT, Entity
 from pyisy.programs.folder import Folder, FolderDetail
 
 if TYPE_CHECKING:
@@ -26,7 +27,7 @@ class ProgramDetail(FolderDetail):
     running: str = ""
 
 
-class Program(Folder):
+class Program(Folder, Entity[ProgramDetail, BoolStrT]):
     """Class representing a program on the ISY controller."""
 
     def __init__(

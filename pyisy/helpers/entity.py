@@ -5,7 +5,7 @@ from abc import ABC
 from dataclasses import dataclass
 from datetime import datetime
 import json
-from typing import TYPE_CHECKING, Generic, TypeVar
+from typing import TYPE_CHECKING, Generic, TypeVar, Union
 
 from pyisy.constants import Protocol
 from pyisy.helpers.events import EventEmitter
@@ -15,7 +15,9 @@ if TYPE_CHECKING:
     from pyisy.helpers.entity_platform import EntityPlatform
     from pyisy.isy import ISY
 
-StatusT = TypeVar("StatusT", str, bool, int, float, None)
+BoolStrT = Union[str, bool]
+NumT = Union[int, float]
+StatusT = TypeVar("StatusT", str, bool, BoolStrT, NumT, None)
 
 
 @dataclass
@@ -34,6 +36,11 @@ EntityDetailT = TypeVar("EntityDetailT", bound="EntityDetail")
 @dataclass
 class EntityDetail:
     """Dataclass to hold entity detail info."""
+
+    parent: str | dict[str, str] | None = None
+
+
+EntityT = TypeVar("EntityT", bound="Entity")
 
 
 class Entity(ABC, Generic[EntityDetailT, StatusT]):

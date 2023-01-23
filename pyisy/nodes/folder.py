@@ -23,7 +23,7 @@ class NodeFolderDetail(EntityDetail):
     flag: int = 0
 
 
-class NodeFolder(Entity):
+class NodeFolder(Entity[NodeFolderDetail, str]):
     """Folder Object for Nodes and Groups/Scenes."""
 
     _status: str = ""

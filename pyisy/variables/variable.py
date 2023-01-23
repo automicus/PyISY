@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 
 from pyisy.constants import ATTR_INIT, ATTR_SET, URL_VARIABLES, VAR_INTEGER, Protocol
 from pyisy.helpers import convert_isy_raw_value
-from pyisy.helpers.entity import Entity, EntityDetail, EntityStatus
+from pyisy.helpers.entity import Entity, EntityDetail, EntityStatus, NumT
 from pyisy.helpers.events import EventEmitter
 from pyisy.logging import _LOGGER
 
@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 class VariableStatus(EntityStatus):
     """Dataclass to hold variable status."""
 
-    initial: int | float
+    initial: NumT
     timestamp: datetime
     precision: int = 0
 
@@ -35,8 +35,8 @@ class VariableDetail(EntityDetail):
     type_: str = "1"
     ts: datetime = datetime.now()
     precision: int = 0
-    value: int | float = field(init=False)
-    initial: int | float = field(init=False)
+    value: NumT = field(init=False)
+    initial: NumT = field(init=False)
 
     def __post_init__(
         self,
@@ -48,11 +48,11 @@ class VariableDetail(EntityDetail):
         self.initial = convert_isy_raw_value(int(init), "", self.precision)
 
 
-class Variable(Entity):
+class Variable(Entity[VariableDetail, NumT]):
     """Object representing a variable on the controller."""
 
     _last_edited: datetime
-    _initial: int | float
+    _initial: NumT
     _var_id: str
     _var_type: str
     _precision: int
@@ -87,7 +87,7 @@ class Variable(Entity):
         self.status_events.notify(self.status_feedback)
 
     @property
-    def initial(self) -> int | float:
+    def initial(self) -> NumT:
         """Return the initial state."""
         return self._initial
 
@@ -119,11 +119,11 @@ class Variable(Entity):
         """Return the Variable ID."""
         return self._var_id
 
-    async def set_initial(self, value: int | float) -> bool:
+    async def set_initial(self, value: NumT) -> bool:
         """Set the initial value for the variable."""
         return await self.set_value(value, True)
 
-    async def set_value(self, value: int | float, init: bool = False) -> bool:
+    async def set_value(self, value: NumT, init: bool = False) -> bool:
         """Set the value of the variable.
 
         ISY Version 5 firmware will automatically convert float back to int.
