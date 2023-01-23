@@ -8,12 +8,8 @@ from dateutil import parser
 import xmltodict
 
 # from .timeit import timeit
-from pyisy.exceptions import (
-    XML_ERRORS,
-    XML_PARSE_ERROR,
-    ISYResponseError,
-    ISYResponseParseError,
-)
+from pyisy.exceptions import XML_ERRORS, XML_PARSE_ERROR, ISYResponseError
+from pyisy.logging import _LOGGER
 
 SNAKE = re.compile(r"(?<!^)(?=[A-Z])")
 
@@ -84,6 +80,7 @@ def parse_xml(
             postprocessor=post,
             dict_constructor=dict,
         )
-    except XML_ERRORS as exc:
-        raise ISYResponseParseError(XML_PARSE_ERROR) from exc
+    except XML_ERRORS:
+        _LOGGER.error(XML_PARSE_ERROR)
+        return {}
     return cast(dict, xml_dict)

@@ -40,7 +40,9 @@ class NetworkResources(EntityPlatform):
 
     def parse(self, xml_dict: dict[str, Any]) -> None:
         """Parse the results from the ISY."""
-        if not (features := xml_dict["net_config"]["net_rule"]):
+        if not (net_config := xml_dict["net_config"]) or not (
+            features := net_config["net_rule"]
+        ):
             return
         for feature in features:
             self.parse_entity(feature)

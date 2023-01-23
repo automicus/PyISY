@@ -54,7 +54,7 @@ async def main(cl_args: argparse.Namespace) -> None:
         await isy.shutdown()
         return
     except Exception as err:  # pylint: disable=broad-except
-        _LOGGER.error("Unknown error occurred: %s", err.args[0])
+        _LOGGER.error("Unknown error occurred: %s", err.args[0], exc_info=True)
         await isy.shutdown()
         return
 

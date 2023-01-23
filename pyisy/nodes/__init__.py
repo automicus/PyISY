@@ -176,6 +176,9 @@ class Nodes(EntityPlatform):
             json.dumps(xml_dict, indent=4, sort_keys=True, default=str),
         )
 
+        if not xml_dict:
+            return
+
         while not self.loaded:  # Loaded is set by self.update finishing
             await asyncio.sleep(0.05)
         self.parse_status(xml_dict)

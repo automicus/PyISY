@@ -165,7 +165,7 @@ class NodeServers:
             await asyncio.sleep(0.05)
 
         for slot in self.slots:
-            await self.parse_nls_info_for_slot(slot)
+            self.parse_nls_info_for_slot(slot)
         self.loaded = True
         _LOGGER.info("Updated node servers")
 
@@ -190,11 +190,11 @@ class NodeServers:
             connection_list = [connection_list]  # Handle case for 1 Node Server
 
         for connection in connection_list:
-            await self.parse_connection(connection)
+            self.parse_connection(connection)
 
         _LOGGER.debug("Updated node server connection info")
 
-    async def parse_connection(self, conn: dict) -> None:
+    def parse_connection(self, conn: dict) -> None:
         """Parse the node server connection files from the ISY."""
         try:
             self._connections.append(NodeServerConnection(**conn))
@@ -223,11 +223,11 @@ class NodeServers:
             profile_list = [profile_list]  # Handle case for 1 Node Server
 
         for profile in profile_list:
-            await self.parse_profile(profile)
+            self.parse_profile(profile)
 
         _LOGGER.debug("Downloaded node server files")
 
-    async def parse_profile(self, profile: dict) -> None:
+    def parse_profile(self, profile: dict) -> None:
         """Parse the node server profile file list from the ISY."""
         try:
             slot = profile["id"]
@@ -276,20 +276,22 @@ class NodeServers:
                 )
 
             if "nodedef" in path:
-                if node_defs := xml_dict["node_defs"]:
-                    if isinstance((nd_list := node_defs[TAG_NODE_DEF]), dict):
-                        nd_list = [nd_list]
-                    self._node_server_node_definitions[slot] = {}
-                    for node_def in nd_list:
-                        await self.parse_node_server_defs(slot, node_def)
+                if not (node_defs := xml_dict["node_defs"]):
+                    return
+                if isinstance((nd_list := node_defs[TAG_NODE_DEF]), dict):
+                    nd_list = [nd_list]
+                self._node_server_node_definitions[slot] = {}
+                for node_def in nd_list:
+                    self.parse_node_server_defs(slot, node_def)
                 return
             if "editor" in path:
-                if editors := xml_dict["editors"]:
-                    if isinstance((editor_list := editors["editor"]), dict):
-                        editor_list = [editor_list]
-                    self._node_server_node_editors[slot] = {}
-                    for editor in editor_list:
-                        await self.parse_node_server_editor(slot, editor)
+                if not (editors := xml_dict["editors"]):
+                    return
+                if isinstance((editor_list := editors["editor"]), dict):
+                    editor_list = [editor_list]
+                self._node_server_node_editors[slot] = {}
+                for editor in editor_list:
+                    self.parse_node_server_editor(slot, editor)
                 return
         elif "nls/en_us" in path:
             nls_lookup: dict = {}
@@ -314,7 +316,7 @@ class NodeServers:
             "Unknown file for slot %s: %s", slot, "/".join(path.split("/")[-2:])
         )
 
-    async def parse_node_server_defs(self, slot: str, node_def: dict) -> None:
+    def parse_node_server_defs(self, slot: str, node_def: dict) -> None:
         """Retrieve and parse the node server definitions."""
         try:
             self._node_server_node_definitions[slot][
@@ -325,7 +327,7 @@ class NodeServers:
             _LOGGER.error("Could not parse node server connection: %s", exc)
             return
 
-    async def parse_node_server_editor(self, slot: str, editor: dict) -> None:
+    def parse_node_server_editor(self, slot: str, editor: dict) -> None:
         """Retrieve and parse the node server definitions."""
         editor_id = editor[ATTR_ID]
         editor_range = NodeServerEditorRange(**editor[TAG_RANGE])
@@ -336,7 +338,7 @@ class NodeServers:
             slot=slot,
         )
 
-    async def parse_nls_info_for_slot(self, slot: str) -> None:
+    def parse_nls_info_for_slot(self, slot: str) -> None:
         """Fetch the node server connections from the ISY."""
         try:
             # Update NLS information

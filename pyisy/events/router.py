@@ -8,7 +8,6 @@ import json
 import logging
 from typing import TYPE_CHECKING, Any, cast
 
-from pyisy.exceptions import ISYResponseParseError
 from pyisy.helpers.xml import parse_xml
 from pyisy.logging import LOG_VERBOSE
 from pyisy.nodes.node_events import (
@@ -137,11 +136,7 @@ class EventRouter:
         """Parse a message from the event stream and pass to router."""
         # VERBOSE logging will print the raw XML
         _LOGGER.log(LOG_VERBOSE, msg)
-        try:
-            xml_dict = parse_xml(msg)
-        except ISYResponseParseError:
-            _LOGGER.warning("Received malformed XML:\n%s", msg)
-            return
+        xml_dict = parse_xml(msg)
 
         # A wild stream id appears!
         if (sid := xml_dict.get("s_i_d")) and self._stream_id == "":

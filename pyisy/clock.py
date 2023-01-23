@@ -130,7 +130,9 @@ class Clock:
         """
         await sleep(wait_time)
         xml_dict = parse_xml(await self.isy.conn.request(self.url), use_pp=False)
-        self.clock_data = ClockData.from_xml(xml_dict["DT"])
+        if not (dt_dict := xml_dict["DT"]):
+            return
+        self.clock_data = ClockData.from_xml(dt_dict)
         _LOGGER.debug("ISY loaded clock information: %s", str(self))
         self.loaded = True
 
