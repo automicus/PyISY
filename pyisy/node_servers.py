@@ -41,6 +41,91 @@ TAG_ST = "st"
 TAG_TIMEOUT = "timeout"
 
 
+@dataclass
+class NodeServerEditorRange:
+    """Node Server Editor Range definition."""
+
+    uom: str = ""
+    min: str = ""
+    max: str = ""
+    precision: int = 0
+    subset: str = ""
+    nls: str = ""
+
+
+@dataclass
+class NodeServerNodeEditor:
+    """Node Server Editor definition."""
+
+    editor_id: str = ""
+    range: NodeServerEditorRange = NodeServerEditorRange()
+    nls: str = ""
+    slot: str = ""
+    values: dict[str, str] = field(default_factory=dict)
+
+
+@dataclass
+class NodeServerConnection:
+    """Node Server Connection details."""
+
+    profile: str = ""
+    type_: str = ""
+    enabled: bool = False
+    name: str = ""
+    ssl: bool = False
+    sni: bool = False
+    port: str = ""
+    timeout: str = ""
+    isyusernum: str = ""
+    ip: str = ""
+    baseurl: str = ""
+    nsuser: str = ""
+
+    def configuration_url(self) -> str:
+        """Compile a configuration url from the connection data."""
+        protocol: str = "https://" if self.ssl else "http://"
+        return f"{protocol}{self.ip}:{self.port}"
+
+
+@dataclass
+class NodeServerNodeDefinition:
+    """Node Server Node Definition parsed from the ISY/IoX."""
+
+    sts: InitVar[dict[str, list | dict]]
+    cmds: InitVar[dict[str, Any]]
+    id: str = ""
+    node_type: str = ""
+    name: str = ""
+    nls: str = ""
+    slot: str = ""
+    editors: Any = ""
+    statuses: dict[str, str] = field(init=False, default_factory=dict)
+    status_names: dict[str, str] = field(default_factory=dict)
+    status_editors: dict[str, NodeServerNodeEditor] = field(default_factory=dict)
+    sends: dict[str, Any] = field(init=False, default_factory=dict)
+    accepts: dict[str, Any] = field(init=False, default_factory=dict)
+
+    def __post_init__(self, sts: dict[str, list | dict], cmds: dict[str, Any]) -> None:
+        """Post-process node server definition."""
+        statuses = {}
+        if sts:
+            if isinstance(st_list := sts["st"], dict):
+                st_list = [st_list]
+            for st in st_list:
+                statuses.update({st["id"]: st["editor"]})
+        self.statuses = statuses
+
+        if cmds_sends := cmds["sends"]:
+            if isinstance((cmd_list := cmds_sends["cmd"]), dict):
+                cmd_list = [cmd_list]
+            self.sends = {i["id"]: i for i in cmd_list}
+
+        if cmds_accepts := cmds["accepts"]:
+            if isinstance((cmd_list := cmds_accepts["cmd"]), dict):
+                cmd_list = [cmd_list]
+            self.accepts = {i["id"]: i for i in cmd_list}
+
+
 class NodeServers:
     """
     ISY NodeServers class object.
@@ -54,8 +139,8 @@ class NodeServers:
     """
 
     isy: ISY
-    _connections: list = []
-    slots: set = set()
+    _connections: list = [NodeServerConnection]
+    slots: set[str] = set()
     _node_server_node_definitions: dict[str, dict[str, NodeServerNodeDefinition]] = {}
     _node_server_node_editors: dict[str, dict[str, NodeServerNodeEditor]] = {}
     _node_server_nls: dict = {}
@@ -287,7 +372,7 @@ class NodeServers:
                 exc,
             )
 
-    async def to_dict(self) -> dict:
+    def to_dict(self) -> dict:
         """Dump entity platform entities to dict."""
         return {
             "connections": [conn.__dict__ for conn in self._connections],
@@ -307,88 +392,3 @@ class NodeServers:
             f"<{type(self).__name__} slots={self.slots} loaded={self.loaded}>"
             f" detail:\n{json.dumps(self._node_server_node_definitions, sort_keys=True, default=str)}"
         )
-
-
-@dataclass
-class NodeServerEditorRange:
-    """Node Server Editor Range definition."""
-
-    uom: str = ""
-    min: str = ""
-    max: str = ""
-    precision: int = 0
-    subset: str = ""
-    nls: str = ""
-
-
-@dataclass
-class NodeServerNodeEditor:
-    """Node Server Editor definition."""
-
-    editor_id: str = ""
-    range: NodeServerEditorRange = NodeServerEditorRange()
-    nls: str = ""
-    slot: str = ""
-    values: dict[str, str] = field(default_factory=dict)
-
-
-@dataclass
-class NodeServerConnection:
-    """Node Server Connection details."""
-
-    profile: str = ""
-    type_: str = ""
-    enabled: bool = False
-    name: str = ""
-    ssl: bool = False
-    sni: bool = False
-    port: str = ""
-    timeout: str = ""
-    isyusernum: str = ""
-    ip: str = ""
-    baseurl: str = ""
-    nsuser: str = ""
-
-    def configuration_url(self) -> str:
-        """Compile a configuration url from the connection data."""
-        protocol: str = "https://" if self.ssl else "http://"
-        return f"{protocol}{self.ip}:{self.port}"
-
-
-@dataclass
-class NodeServerNodeDefinition:
-    """Node Server Node Definition parsed from the ISY/IoX."""
-
-    sts: InitVar[dict[str, list | dict]]
-    cmds: InitVar[dict[str, Any]]
-    id: str = ""
-    node_type: str = ""
-    name: str = ""
-    nls: str = ""
-    slot: str = ""
-    editors: Any = ""
-    statuses: dict[str, str] = field(init=False, default_factory=dict)
-    status_names: dict[str, str] = field(default_factory=dict)
-    status_editors: dict[str, NodeServerNodeEditor] = field(default_factory=dict)
-    sends: dict[str, Any] = field(init=False, default_factory=dict)
-    accepts: dict[str, Any] = field(init=False, default_factory=dict)
-
-    def __post_init__(self, sts: dict[str, list | dict], cmds: dict[str, Any]) -> None:
-        """Post-process node server definition."""
-        statuses = {}
-        if sts:
-            if isinstance(st_list := sts["st"], dict):
-                st_list = [st_list]
-            for st in st_list:
-                statuses.update({st["id"]: st["editor"]})
-        self.statuses = statuses
-
-        if cmds_sends := cmds["sends"]:
-            if isinstance((cmd_list := cmds_sends["cmd"]), dict):
-                cmd_list = [cmd_list]
-            self.sends = {i["id"]: i for i in cmd_list}
-
-        if cmds_accepts := cmds["accepts"]:
-            if isinstance((cmd_list := cmds_accepts["cmd"]), dict):
-                cmd_list = [cmd_list]
-            self.accepts = {i["id"]: i for i in cmd_list}

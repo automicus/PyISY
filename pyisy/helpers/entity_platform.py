@@ -17,6 +17,7 @@ from pyisy.helpers.entity import Entity
 from pyisy.helpers.events import EventEmitter
 from pyisy.helpers.xml import parse_xml
 from pyisy.logging import _LOGGER, LOG_VERBOSE
+from pyisy.util.backports import StrEnum
 
 if TYPE_CHECKING:
     from pyisy.isy import ISY
@@ -54,6 +55,7 @@ class EntityPlatform(ABC):
     entities: dict[str, Entity] = {}
     types: list[str] = []
     url: str
+    platform_name: str
 
     # Parser options
     _parse_attr_prefix: str = ""
@@ -94,33 +96,35 @@ class EntityPlatform(ABC):
             self.url,
             json.dumps(xml_dict, indent=4, sort_keys=True, default=str),
         )
-        await self.parse(xml_dict)
+        self.parse(xml_dict)
         self.loaded = True
 
     @abstractmethod
-    async def parse(self, xml_dict: dict[str, Any]) -> None:
+    def parse(self, xml_dict: dict[str, Any]) -> None:
         """Parse the results from the ISY.
 
         This method should be overloaded in the child class.
         """
         raise NotImplementedError()
 
-    async def add_or_update_entity(
-        self, address: str, name: str, entity: Entity
-    ) -> None:
+    def add_or_update_entity(self, address: str, name: str, entity: Entity) -> None:
         """Add or update an entity on the platform."""
         # FUTURE: May need to support a compare function callback
         if address in self.addresses:
             if entity.detail != self.entities[address].detail:
                 self.names[self.addresses.index(address)] = name
                 self.entities[address].update_entity(name, entity.detail)
-                self.status_events.notify("NEED CHANGE EVENT")
+                self.status_events.notify(
+                    f"{self.platform_name}.{EntityPlatformEvent.ENTITY_CHANGED}"
+                )
             return
 
         self.addresses.append(address)
         self.names.append(name)
         self.entities[address] = entity
-        self.status_events.notify("NEED NEW ENTITY EVENT")
+        self.status_events.notify(
+            f"{self.platform_name}.{EntityPlatformEvent.ENTITY_ADDED}"
+        )
 
     def __getitem__(self, key: str) -> Entity | None:
         """Return the item from the collection."""
@@ -158,7 +162,7 @@ class EntityPlatform(ABC):
             return None
         return list(self.entities.values())[value]
 
-    async def to_dict(self) -> dict:
+    def to_dict(self) -> dict:
         """Dump entity platform entities to dict."""
         return {
             str(entity): {
@@ -168,11 +172,11 @@ class EntityPlatform(ABC):
             for entity in self.values()
         }
 
-    async def get_children(self, address: str) -> set[Entity]:
+    def get_children(self, address: str) -> set[Entity]:
         """Return the children of the a given address."""
         return {e for e in self.values() if e.detail.parent == address}
 
-    async def get_tree(self, address: str | None = None) -> dict:
+    def get_tree(self, address: str | None = None) -> dict:
         """Return a tree representation of the entity platform."""
         if address is None:
             roots = {e for e in self.values() if not e.detail.parent}
@@ -180,25 +184,25 @@ class EntityPlatform(ABC):
             roots = {self.entities[address]}
 
         # traversal of the tree from top down
-        async def traverse(
+        def traverse(
             hierarchy: dict[str, dict], entities: Iterable[Entity], path: str = ""
         ) -> dict[str, dict]:
             for i in entities:
-                children = await self.get_children(i.address)
+                children = self.get_children(i.address)
                 hierarchy[i.name] = asdict(
                     TreeLeaf(
                         protocol=i.protocol,
                         type_=type(i).__name__,
                         address=i.address,
-                        children=await traverse({}, children, f"{path}/{i.name}"),
+                        children=traverse({}, children, f"{path}/{i.name}"),
                         path=f"{path}/{i.name}",
                     )
                 )
             return hierarchy
 
-        return await traverse({}, roots)
+        return traverse({}, roots)
 
-    async def get_directory(self, address: str | None = None) -> dict:
+    def get_directory(self, address: str | None = None) -> dict:
         """Return a flat directory representation of the entity platform."""
         if address is None:
             roots = {e for e in self.values() if not e.detail.parent}
@@ -208,17 +212,15 @@ class EntityPlatform(ABC):
         directory: dict[str, Entity] = {}
 
         # traversal of the tree from top down
-        async def traverse(
+        def traverse(
             hierarchy: dict[str, dict], entities: Iterable[Entity], path: str = ""
         ) -> dict[str, dict]:
             for i in entities:
                 directory[f"{path}/{i.name}"] = i
-                await traverse(
-                    {}, await self.get_children(i.address), f"{path}/{i.name}"
-                )
+                traverse({}, self.get_children(i.address), f"{path}/{i.name}")
             return hierarchy
 
-        await traverse({}, roots)
+        traverse({}, roots)
         return directory
 
 
@@ -231,3 +233,11 @@ class TreeLeaf:
     address: str = ""
     children: dict[str, dict] = field(default_factory=dict)
     path: str = ""
+
+
+class EntityPlatformEvent(StrEnum):
+    """Events for entity platform status updates."""
+
+    ENTITY_ADDED = "entity_added"
+    ENTITY_CHANGED = "entity_changed"
+    ENTITY_REMOVED = "entity_removed"

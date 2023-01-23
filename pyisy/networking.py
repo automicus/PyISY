@@ -38,16 +38,16 @@ class NetworkResources(EntityPlatform):
         super().__init__(isy=isy, platform_name=PLATFORM)
         self.url = self.isy.conn.compile_url([URL_NETWORK, URL_RESOURCES])
 
-    async def parse(self, xml_dict: dict[str, Any]) -> None:
+    def parse(self, xml_dict: dict[str, Any]) -> None:
         """Parse the results from the ISY."""
         if not (features := xml_dict["net_config"]["net_rule"]):
             return
         for feature in features:
-            await self.parse_entity(feature)
+            self.parse_entity(feature)
 
         _LOGGER.info("ISY Loaded Network Resources Commands")
 
-    async def parse_entity(self, feature: dict[str, Any]) -> None:
+    def parse_entity(self, feature: dict[str, Any]) -> None:
         """Parse a single value and add it to the platform."""
         try:
             address = feature[TAG_ID]
@@ -55,7 +55,7 @@ class NetworkResources(EntityPlatform):
             _LOGGER.debug("Parsing %s: %s (%s)", PLATFORM, name, address)
             detail = NetworkCommandDetail(**feature)
             entity = NetworkCommand(self, address, name, detail)
-            await self.add_or_update_entity(address, name, entity)
+            self.add_or_update_entity(address, name, entity)
         except (TypeError, KeyError, ValueError) as exc:
             _LOGGER.exception("Error loading %s: %s", PLATFORM, exc)
 

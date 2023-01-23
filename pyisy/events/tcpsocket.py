@@ -270,7 +270,7 @@ class EventStream:
 
             for message in events:
                 try:
-                    await self.router.parse_message(message)
+                    self.router.parse_message(message)
                 except Exception as ex:  # pylint: disable=broad-except
                     _LOGGER.warning(
                         "PyISY encountered while routing message '%s': %s", message, ex

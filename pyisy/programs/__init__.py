@@ -1,6 +1,7 @@
 """Init for management of ISY Programs."""
 from __future__ import annotations
 
+import asyncio
 import json
 from typing import TYPE_CHECKING, Any, cast
 
@@ -49,7 +50,7 @@ class Programs(EntityPlatform):
         self.status_events = EventEmitter()
         self.url = self.isy.conn.compile_url([URL_PROGRAMS], {URL_SUBFOLDERS: XML_TRUE})
 
-    async def parse(self, xml_dict: dict[str, Any]) -> None:
+    def parse(self, xml_dict: dict[str, Any]) -> None:
         """Parse the results from the ISY."""
         # Write nodes to file for debugging:
         if self.isy.args is not None and self.isy.args.file:
@@ -61,10 +62,10 @@ class Programs(EntityPlatform):
             return
 
         for feature in features:
-            await self.parse_entity(feature)
+            self.parse_entity(feature)
         _LOGGER.info("Loaded %s", PLATFORM)
 
-    async def parse_entity(self, feature: dict[str, Any]) -> None:
+    def parse_entity(self, feature: dict[str, Any]) -> None:
         """Parse a single value and add it to the platform."""
         try:
             address = feature["id"]
@@ -76,11 +77,11 @@ class Programs(EntityPlatform):
             else:
                 entity = Program(self, address, name, ProgramDetail(**feature))
 
-            await self.add_or_update_entity(address, name, entity)
+            self.add_or_update_entity(address, name, entity)
         except (TypeError, KeyError, ValueError) as exc:
             _LOGGER.exception("Error loading %s: %s", PLATFORM, exc)
 
-    async def update_received(self, event: EventData) -> None:
+    def update_received(self, event: EventData) -> None:
         """Update programs from EventStream message.
 
         <eventInfo>
@@ -96,7 +97,9 @@ class Programs(EntityPlatform):
         event_info = cast(dict, event.event_info)
         if (address := cast(str, event_info["id"]).zfill(4)) not in self.addresses:
             # New/unknown program, refresh full set.
-            await self.update()
+            update_task = asyncio.create_task(self.update())
+            self.isy.background_tasks.add(update_task)
+            update_task.add_done_callback(self.isy.background_tasks.discard)
             return
         entity = self.entities[address]
         detail = cast(ProgramDetail, entity.detail)

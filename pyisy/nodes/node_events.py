@@ -1,6 +1,7 @@
 """Event handlers for ISY Nodes."""
 from __future__ import annotations
 
+import asyncio
 import re
 from typing import TYPE_CHECKING, cast
 
@@ -23,22 +24,24 @@ MEMORY_REGEX = (
 )
 
 
-async def node_update_received(nodes: Nodes, event: EventData) -> None:
+def node_update_received(nodes: Nodes, event: EventData) -> None:
     """Update nodes from event stream message."""
     if (address := cast(str, event.node)) not in nodes.addresses:
         # New/unknown node, get the details and add
         _LOGGER.debug("Fetching information for new node %s", address)
-        await nodes.update_node(address)
+        update_task = asyncio.create_task(nodes.update_node(address))
+        nodes.isy.background_tasks.add(update_task)
+        update_task.add_done_callback(nodes.isy.background_tasks.discard)
         return
     entity = cast(Node, nodes.entities[address])
     if not isinstance((action := event.action), dict) or not action:
         return
     # Merge control into action to match status call
     action["control"] = event.control
-    await nodes.parse_node_properties(action, entity)
+    nodes.parse_node_properties(action, entity)
 
 
-async def node_changed_received(nodes: Nodes, event: EventData) -> None:
+def node_changed_received(nodes: Nodes, event: EventData) -> None:
     """Handle Node Change/Update events from an event stream message."""
     action: str = cast(str, event.action)
     try:
@@ -66,7 +69,7 @@ async def node_changed_received(nodes: Nodes, event: EventData) -> None:
     # FUTURE: Handle additional node change actions to force updates.
 
 
-async def progress_report_received(nodes: Nodes, event_data: EventData) -> None:
+def progress_report_received(nodes: Nodes, event_data: EventData) -> None:
     """Handle Progress Report '_7' events from an event stream message."""
     address, _, message = cast(str, event_data.event_info).partition("]")
     address = address.strip("[ ")

@@ -76,7 +76,7 @@ class Nodes(EntityPlatform):
         await status_task
         _LOGGER.info("Initialized nodes with status")
 
-    async def parse(self, xml_dict: dict[str, Any]) -> None:
+    def parse(self, xml_dict: dict[str, Any]) -> None:
         """Parse the results from the ISY."""
         # Write nodes to file for debugging:
         if self.isy.args is not None and self.isy.args.file:
@@ -89,28 +89,28 @@ class Nodes(EntityPlatform):
 
         if folders := features["folder"]:
             for folder in folders:
-                await self.parse_folder_entity(folder)
+                self.parse_folder_entity(folder)
         if nodes := features["node"]:
             for node in nodes:
-                await self.parse_node_entity(node)
+                self.parse_node_entity(node)
         if groups := features["group"]:
             for group in groups:
-                await self.parse_group_entity(group)
+                self.parse_group_entity(group)
 
         _LOGGER.info("Loaded %s", PLATFORM)
 
-    async def parse_folder_entity(self, feature: dict[str, Any]) -> None:
+    def parse_folder_entity(self, feature: dict[str, Any]) -> None:
         """Parse a single folder and add to the platform."""
         try:
             address = feature["address"]
             name = feature["name"]
             _LOGGER.log(LOG_VERBOSE, "Parsing %s: %s (%s)", PLATFORM, name, address)
             entity = NodeFolder(self, address, name, NodeFolderDetail(**feature))
-            await self.add_or_update_entity(address, name, entity)
+            self.add_or_update_entity(address, name, entity)
         except (TypeError, KeyError, ValueError) as exc:
             _LOGGER.exception("Error loading %s: %s", PLATFORM, exc)
 
-    async def parse_node_entity(self, feature: dict[str, Any]) -> None:
+    def parse_node_entity(self, feature: dict[str, Any]) -> None:
         """Parse a single node and add to the platform."""
         try:
             address = feature["address"]
@@ -123,16 +123,16 @@ class Nodes(EntityPlatform):
                     and family["address"] == NodeFamily.NODESERVER
                 ):
                     feature["node_server"] = family.get("instance", "")
-                    feature["protocol"] = await self.get_protocol_from_family(
+                    feature["protocol"] = self.get_protocol_from_family(
                         feature.get("family")
                     )
 
             entity = Node(self, address, name, NodeDetail(**feature))
-            await self.add_or_update_entity(address, name, entity)
+            self.add_or_update_entity(address, name, entity)
         except (TypeError, KeyError, ValueError) as exc:
             _LOGGER.exception("Error loading %s: %s", PLATFORM, exc)
 
-    async def parse_group_entity(self, feature: dict[str, Any]) -> None:
+    def parse_group_entity(self, feature: dict[str, Any]) -> None:
         """Parse a single group and add to the platform."""
         try:
             address = feature["address"]
@@ -142,13 +142,11 @@ class Nodes(EntityPlatform):
                 _LOGGER.debug("Skipping root group flag=%s %s", flag, address)
                 return
             entity = Group(self, address, name, GroupDetail(**feature))
-            await self.add_or_update_entity(address, name, entity)
+            self.add_or_update_entity(address, name, entity)
         except (TypeError, KeyError, ValueError) as exc:
             _LOGGER.exception("Error loading %s: %s", PLATFORM, exc)
 
-    async def get_protocol_from_family(
-        self, family: str | dict[str, str] | None
-    ) -> str:
+    def get_protocol_from_family(self, family: str | dict[str, str] | None) -> str:
         """Identify protocol from family type."""
         if family is None:
             return Protocol.INSTEON
@@ -180,9 +178,9 @@ class Nodes(EntityPlatform):
 
         while not self.loaded:  # Loaded is set by self.update finishing
             await asyncio.sleep(0.05)
-        await self.parse_status(xml_dict)
+        self.parse_status(xml_dict)
 
-    async def parse_status(self, xml_dict: dict[str, Any]) -> None:
+    def parse_status(self, xml_dict: dict[str, Any]) -> None:
         """Parse the results from the ISY."""
         # Write nodes to file for debugging:
         if self.isy.args is not None and self.isy.args.file:
@@ -194,11 +192,11 @@ class Nodes(EntityPlatform):
             return
 
         for status in node_statuses:
-            await self.parse_node_status(status)
+            self.parse_node_status(status)
 
         self.initialized = True
 
-    async def parse_node_status(self, status: dict[str, Any]) -> None:
+    def parse_node_status(self, status: dict[str, Any]) -> None:
         """Parse the node status results from the ISY."""
         if (address := status["id"]) not in self.addresses:
             return  # FUTURE: Missing address, go get.
@@ -209,12 +207,12 @@ class Nodes(EntityPlatform):
                 props = [props]
             entity: Node = cast(Node, self.entities[address])
             for prop in props:
-                await self.parse_node_properties(prop, entity)
+                self.parse_node_properties(prop, entity)
 
         except (TypeError, KeyError, ValueError) as exc:
             _LOGGER.exception("Error loading node status (%s): %s", address, exc)
 
-    async def parse_node_properties(self, prop: dict[str, Any], entity: Node) -> None:
+    def parse_node_properties(self, prop: dict[str, Any], entity: Node) -> None:
         """Parse the node node property from the ISY."""
         result = NodeProperty(**prop)
         if result.control == PROP_STATUS:
@@ -257,17 +255,17 @@ class Nodes(EntityPlatform):
             return
 
         if "folder" in feature:
-            await self.parse_folder_entity(feature["folder"])
+            self.parse_folder_entity(feature["folder"])
         if "node" in feature:
-            await self.parse_node_entity(feature["node"])
+            self.parse_node_entity(feature["node"])
         if "group" in feature:
-            await self.parse_group_entity(feature["group"])
+            self.parse_group_entity(feature["group"])
         if "properties" in feature:
             if not (props := feature["properties"].get("prop", {})):
                 return
             entity = cast(Node, self.entities[address])
             for prop in props:
-                await self.parse_node_properties(prop, entity)
+                self.parse_node_properties(prop, entity)
 
     def get_folder(self, address: str) -> str | None:
         """Return the folder of a given node address."""
@@ -301,7 +299,7 @@ class Nodes(EntityPlatform):
             if isinstance(entity, Group) and address in entity.members
         ]
 
-    async def get_children(self, address: str) -> set[Entity]:
+    def get_children(self, address: str) -> set[Entity]:
         """Return the children of the a given address."""
         return {
             entity

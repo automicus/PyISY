@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from dataclasses import dataclass
 import json
 import logging
@@ -132,7 +133,7 @@ class EventRouter:
         self.events = events
         self.t_0: float = 0
 
-    async def parse_message(self, msg: str) -> None:
+    def parse_message(self, msg: str) -> None:
         """Parse a message from the event stream and pass to router."""
         # VERBOSE logging will print the raw XML
         _LOGGER.log(LOG_VERBOSE, msg)
@@ -149,11 +150,11 @@ class EventRouter:
             return
         if event := xml_dict.get("event", {}):
             try:
-                await self.route_message(EventData(**event))
+                self.route_message(EventData(**event))
             except (KeyError, ValueError, NameError):
                 _LOGGER.error("Could not validate event", exc_info=True)
 
-    async def route_message(self, event: EventData) -> None:
+    def route_message(self, event: EventData) -> None:
         """Route a received message from the event stream.
 
         https://www.universal-devices.com/docs/production/The+ISY994+Developer+Cookbook.pdf
@@ -175,17 +176,23 @@ class EventRouter:
             return
         if control[0] != "_":  # NODE CONTROL EVENT
             if self.isy.nodes.loaded and self.isy.nodes.initialized:
-                await node_update_received(self.isy.nodes, event)
+                node_update_received(self.isy.nodes, event)
             return
         if control == ControlEvent.TRIGGER:  # Trigger Update
             if event.action == Action.EVENT_STATUS:
                 # Event Status
                 if self.isy.programs.loaded:
-                    await self.isy.programs.update_received(event)
+                    self.isy.programs.update_received(event)
             if event.action == Action.GET_STATUS:
                 # Get Status (subscribers should refresh)
                 if self.isy.nodes.initialized:
-                    await self.isy.nodes.update_status()
+                    update_status_task = asyncio.create_task(
+                        self.isy.nodes.update_status()
+                    )
+                    self.isy.background_tasks.add(update_status_task)
+                    update_status_task.add_done_callback(
+                        self.isy.background_tasks.discard
+                    )
             if event.action == Action.KEY_CHANGED:
                 # Key Changed (node = key)
                 self.key = cast(str, event.node)
@@ -202,12 +209,12 @@ class EventRouter:
             if event.action == Action.VAR_STATUS:
                 # Variable status changed
                 if self.isy.variables.loaded:
-                    await self.isy.variables.update_received(event)
+                    self.isy.variables.update_received(event)
                 return
             if event.action == Action.VAR_INIT:
                 # Variable init value set
                 if self.isy.variables.loaded:
-                    await self.isy.variables.update_received(event, init=True)
+                    self.isy.variables.update_received(event, init=True)
                 return
             if event.action == Action.KEY:
                 # Key (event_info = key)
@@ -224,13 +231,17 @@ class EventRouter:
             return
         if control == ControlEvent.NODE_CHANGED:
             # Node Changed/Updated
-            await node_changed_received(self.isy.nodes, event)
+            node_changed_received(self.isy.nodes, event)
             return
         if control == ControlEvent.SYSTEM_CONFIG_UPDATED:
             # System Configuration Updated
             if event.action in TIME_UPDATE:
                 if self.isy.clock.loaded:
-                    await self.isy.clock.update()
+                    update_status_task = asyncio.create_task(self.isy.clock.update())
+                    self.isy.background_tasks.add(update_status_task)
+                    update_status_task.add_done_callback(
+                        self.isy.background_tasks.discard
+                    )
                 return
             if event.action == ConfigAction.BATCH_MODE:
                 self.isy.diagnostics.batch_mode = (
@@ -255,7 +266,7 @@ class EventRouter:
             return
         if control == ControlEvent.PROGRESS_REPORT:
             # Progress report, device programming event
-            await progress_report_received(self.isy.nodes, event)
+            progress_report_received(self.isy.nodes, event)
             return
         if control == ControlEvent.SECURITY_SYSTEM:
             # Security System Control Event

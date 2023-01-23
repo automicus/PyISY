@@ -168,7 +168,7 @@ class WebSocketClient:
 
                 async for msg in ws:
                     if msg.type == aiohttp.WSMsgType.TEXT:
-                        await self.router.parse_message(msg.data)
+                        self.router.parse_message(msg.data)
                     elif msg.type == aiohttp.WSMsgType.BINARY:
                         _LOGGER.warning("Unexpected binary message received.")
                     elif msg.type == aiohttp.WSMsgType.ERROR:

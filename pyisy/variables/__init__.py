@@ -84,7 +84,7 @@ class Variables(EntityPlatform):
                 urls[2],
                 json.dumps(int_dict, indent=4, sort_keys=True, default=str),
             )
-            await self.parse(int_dict)
+            self.parse(int_dict)
             self.loaded = True
 
         # Check if State Variables defined
@@ -106,22 +106,22 @@ class Variables(EntityPlatform):
                 urls[3],
                 json.dumps(state_dict, indent=4, sort_keys=True, default=str),
             )
-            await self.parse(state_dict)
+            self.parse(state_dict)
             self.loaded = True
 
-    async def parse(self, xml_dict: dict[str, Any]) -> None:
+    def parse(self, xml_dict: dict[str, Any]) -> None:
         """Parse XML from the controller with details about the variables."""
         if not (features := xml_dict[PLATFORM]):
             return
         for feature in features:
-            await self.parse_entity(feature)
+            self.parse_entity(feature)
         _LOGGER.info(
             "Loaded %s %s",
             "state" if features[0]["type_"] == "2" else "integer",
             PLATFORM,
         )
 
-    async def parse_entity(self, feature: dict[str, Any]) -> None:
+    def parse_entity(self, feature: dict[str, Any]) -> None:
         """Parse a single value and add it to the platform."""
         try:
             address = f"{feature['type_']}.{feature['id']}"
@@ -129,18 +129,20 @@ class Variables(EntityPlatform):
             _LOGGER.log(LOG_VERBOSE, "Parsing %s: %s (%s)", PLATFORM, name, address)
             detail = VariableDetail(**feature)
             entity = Variable(self, address, name, detail)
-            await self.add_or_update_entity(address, name, entity)
+            self.add_or_update_entity(address, name, entity)
         except (TypeError, KeyError, ValueError) as exc:
             _LOGGER.exception("Error loading %s: %s", PLATFORM, exc)
 
-    async def update_received(self, event: EventData, init: bool = False) -> None:
+    def update_received(self, event: EventData, init: bool = False) -> None:
         """Process an update received from the event stream."""
         event_info: dict[str, dict] = cast(dict, event.event_info)
         var_info = event_info["var"]
 
         if (address := f"{var_info['type_']}.{var_info['id']}") not in self.addresses:
             # New/unknown variable, refresh full set.
-            await self.update()
+            update_task = asyncio.create_task(self.update())
+            self.isy.background_tasks.add(update_task)
+            update_task.add_done_callback(self.isy.background_tasks.discard)
             return
         entity = self.entities[address]
         detail = cast(VariableDetail, entity.detail)

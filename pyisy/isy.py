@@ -39,7 +39,7 @@ class ISY:
     _reconnect_thread: Thread | None = None
     args: argparse.Namespace | None = None
     auto_reconnect: bool = True
-    background_tasks: set = set()
+    background_tasks: set[asyncio.Task] = set()
     clock: Clock
     conn: Connection
     connection_events: EventEmitter
