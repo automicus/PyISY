@@ -124,7 +124,7 @@ class EventStream:
     @running.setter
     def running(self, val: bool) -> None:
         if val and not self.running:
-            _LOGGER.info("ISY Starting Updates")
+            _LOGGER.info("Starting updates")
             if self.connect():
                 self.subscribe()
                 self._running = True
@@ -132,7 +132,7 @@ class EventStream:
                 self._thread.daemon = True
                 self._thread.start()
         else:
-            _LOGGER.info("ISY Stopping Updates")
+            _LOGGER.info("Stopping updates")
             self._running = False
             self.unsubscribe()
             self.disconnect()

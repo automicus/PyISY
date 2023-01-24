@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import asyncio
+from dataclasses import asdict
 import json
 from typing import TYPE_CHECKING, Any, Union, cast
 
@@ -241,6 +242,11 @@ class Nodes(EntityPlatform[NodesT]):
             entity.aux_properties[result.control] = result
 
         entity.control_events.notify(result)
+        _LOGGER.debug(
+            "Received node control for %s: %s",
+            entity.name,
+            asdict(result),
+        )
 
     async def update_node(self, address: str, wait_time: float = 0) -> None:
         """Update a single node."""

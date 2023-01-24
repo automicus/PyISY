@@ -123,7 +123,7 @@ class Connection:
         self, url: str, retries: int = 0, ok404: bool = False, delay: float = 0
     ) -> str | None:
         """Execute request to ISY REST interface."""
-        _LOGGER.debug("ISY Request: %s", url)
+        _LOGGER.debug("Request: %s", url)
         if delay:
             await asyncio.sleep(delay)
         try:
@@ -136,7 +136,7 @@ class Connection:
             ) as res:
                 endpoint = url.split("rest", 1)[1]
                 if res.status == HTTP_OK:
-                    _LOGGER.debug("ISY Response Received: %s", endpoint)
+                    _LOGGER.debug("Response received: %s", endpoint)
                     results = await res.text(encoding="utf-8", errors="ignore")
                     if results != EMPTY_XML_RESPONSE:
                         return results
@@ -144,12 +144,10 @@ class Connection:
                     res.release()
                 if res.status == HTTP_NOT_FOUND:
                     if ok404:
-                        _LOGGER.debug("ISY Response Received %s", endpoint)
+                        _LOGGER.debug("Response received %s", endpoint)
                         res.release()
                         return ""
-                    _LOGGER.error(
-                        "ISY Reported an Invalid Command Received %s", endpoint
-                    )
+                    _LOGGER.error("Reported an Invalid Command received %s", endpoint)
                     res.release()
                     return None
                 if res.status == HTTP_UNAUTHORIZED:
@@ -175,7 +173,7 @@ class Connection:
             )
         except aiohttp.ClientError as err:
             _LOGGER.error(
-                "ISY Could not receive response from device because of a network issue: %s",
+                "Could not receive response from device because of a network issue: %s",
                 type(err),
             )
 

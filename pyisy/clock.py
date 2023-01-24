@@ -133,7 +133,7 @@ class Clock:
         if not (dt_dict := xml_dict["DT"]):
             return
         self.clock_data = ClockData.from_xml(dt_dict)
-        _LOGGER.debug("ISY loaded clock information: %s", str(self))
+        _LOGGER.debug("Loaded clock information: %s", str(self))
         self.loaded = True
 
     async def update_thread(self, interval: float) -> None:

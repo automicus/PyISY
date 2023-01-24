@@ -169,13 +169,13 @@ class NodeBase(Entity[NodeBaseDetail, OptionalIntT]):
         req_url = self.isy.conn.compile_url(req, query)
         if not await self.isy.conn.request(req_url):
             _LOGGER.warning(
-                "ISY could not send %s command to %s.",
+                "Could not send %s command to %s.",
                 COMMAND_FRIENDLY_NAME.get(cmd),
                 self.address,
             )
             return False
         _LOGGER.debug(
-            "ISY command %s sent to %s.", COMMAND_FRIENDLY_NAME.get(cmd), self.address
+            "Command %s sent to %s.", COMMAND_FRIENDLY_NAME.get(cmd), self.address
         )
         return True
 
@@ -196,7 +196,7 @@ class NodeBase(Entity[NodeBaseDetail, OptionalIntT]):
         if not await self.isy.conn.request(
             self.isy.conn.compile_url([URL_NODES, str(self.address), CMD_DISABLE])
         ):
-            _LOGGER.warning("ISY could not %s %s.", CMD_DISABLE, self.address)
+            _LOGGER.warning("Could not %s %s.", CMD_DISABLE, self.address)
             return False
         return True
 
@@ -205,7 +205,7 @@ class NodeBase(Entity[NodeBaseDetail, OptionalIntT]):
         if not await self.isy.conn.request(
             self.isy.conn.compile_url([URL_NODES, str(self.address), CMD_ENABLE])
         ):
-            _LOGGER.warning("ISY could not %s %s.", CMD_ENABLE, self.address)
+            _LOGGER.warning("Could not %s %s.", CMD_ENABLE, self.address)
             return False
         return True
 
@@ -266,11 +266,11 @@ class NodeBase(Entity[NodeBaseDetail, OptionalIntT]):
         )
         if not await self.isy.conn.request(req_url):
             _LOGGER.warning(
-                "ISY could not update name for %s.",
+                "Could not update name for %s.",
                 self.address,
             )
             return False
-        _LOGGER.debug("ISY renamed %s to %s.", self.address, new_name)
+        _LOGGER.debug("Renamed %s to %s.", self.address, new_name)
 
         self._name = new_name
         return True

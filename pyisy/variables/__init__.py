@@ -82,12 +82,14 @@ class Variables(EntityPlatform[Variable]):
             return None
 
         def_dict = parse_xml(def_result, attr_prefix="")
-        if not (def_list := def_dict["c_list"]["e"]):
+        if not (def_list := def_dict.get("c_list")) or not (
+            e_list := def_list.get("e")
+        ):
             return None
 
         # Handle single variable edge case
-        if isinstance(def_list, dict):
-            def_list = [def_list]
+        if isinstance(e_list, dict):
+            e_list = [e_list]
 
         var_dict = parse_xml(var_result, attr_prefix="")
         if not (var_list := var_dict["vars"][ATTR_VAR]):
@@ -96,7 +98,7 @@ class Variables(EntityPlatform[Variable]):
         if isinstance(var_list, dict):
             var_list = [var_list]
 
-        var_dict = {PLATFORM: [v | var_list[i] for i, v in enumerate(def_list)]}
+        var_dict = {PLATFORM: [v | var_list[i] for i, v in enumerate(e_list)]}
 
         if self.isy.args is not None and self.isy.args.file:
             await self.isy.loop.run_in_executor(

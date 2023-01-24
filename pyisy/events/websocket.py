@@ -148,7 +148,7 @@ class WebSocketClient:
     def update_stream_id(self, stream_id: str) -> None:
         """Set the socket ID."""
         self._stream_id = stream_id
-        _LOGGER.debug("ISY Updated Events Stream ID: %s", self._stream_id)
+        _LOGGER.debug("Updated Events Stream ID: %s", self._stream_id)
 
     async def websocket(self, retries: int = 0) -> None:
         """Start websocket connection."""

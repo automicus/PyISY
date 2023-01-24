@@ -122,7 +122,7 @@ class Configuration:
             features=features,
         )
 
-        _LOGGER.info("ISY Loaded Configuration")
+        _LOGGER.info("Loaded configuration")
         return self.config_data
 
     def __str__(self) -> str:

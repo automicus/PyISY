@@ -237,7 +237,7 @@ class ISY:
         if not await self.conn.request(req_url):
             _LOGGER.warning("Error performing query.")
             return False
-        _LOGGER.debug("ISY Query requested successfully.")
+        _LOGGER.debug("Query requested successfully.")
         return True
 
     async def send_x10_cmd(self, address: str, cmd: str) -> None:
@@ -252,9 +252,9 @@ class ISY:
 
         req_url = self.conn.compile_url([CMD_X10, address, str(command)])
         if not await self.conn.request(req_url):
-            _LOGGER.error("ISY Failed to send X10 Command: %s To: %s", cmd, address)
+            _LOGGER.error("Failed to send X10 Command: %s To: %s", cmd, address)
             return
-        _LOGGER.info("ISY Sent X10 Command: %s To: %s", cmd, address)
+        _LOGGER.info("Sent X10 Command: %s To: %s", cmd, address)
 
     def system_status_changed_received(self, action: Any) -> None:
         """Handle System Status events from an event stream message."""

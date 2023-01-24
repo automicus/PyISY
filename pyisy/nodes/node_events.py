@@ -5,7 +5,7 @@ import asyncio
 import re
 from typing import TYPE_CHECKING, cast
 
-from pyisy.constants import TAG_ENABLED, NodeChangeAction
+from pyisy.constants import ATTR_CONTROL, TAG_ADDRESS, TAG_ENABLED, NodeChangeAction
 from pyisy.helpers.events import NodeChangedEvent
 from pyisy.logging import _LOGGER
 from pyisy.nodes.node import Node
@@ -37,7 +37,9 @@ def node_update_received(nodes: Nodes, event: EventData) -> None:
     if not isinstance((action := event.action), dict) or not action:
         return
     # Merge control into action to match status call
-    action["control"] = event.control
+    action[ATTR_CONTROL] = event.control
+    # Store address for NodeProperty
+    action[TAG_ADDRESS] = address
     nodes.parse_node_properties(action, entity)
 
 
@@ -53,7 +55,7 @@ def node_changed_received(nodes: Nodes, event: EventData) -> None:
     detail: dict = cast(dict, event.event_info)
 
     if action == NodeChangeAction.NODE_ERROR:
-        _LOGGER.error("ISY Could not communicate with device: %s", address)
+        _LOGGER.error("Could not communicate with device: %s", address)
     elif action == NodeChangeAction.NODE_ENABLED and address in nodes.addresses:
         if detail and TAG_ENABLED in detail:
             entity = nodes.entities[address]

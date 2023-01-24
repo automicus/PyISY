@@ -115,6 +115,7 @@ class EventData:
     node: str | None = None
     event_info: dict[str, Any] | str | None = None
     fmt_act: str | None = None
+    fmt_name: str | None = None
 
 
 class EventRouter:

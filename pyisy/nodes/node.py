@@ -367,12 +367,12 @@ class Node(NodeBase, Entity[NodeDetail, StatusT]):
         )
         if not await self.isy.conn.request(req_url):
             _LOGGER.warning(
-                "ISY could not set parameter %s on %s.",
+                "Could not set parameter %s on %s.",
                 parameter,
                 self.address,
             )
             return False
-        _LOGGER.debug("ISY set parameter %s sent to %s.", parameter, self.address)
+        _LOGGER.debug("Set parameter %s sent to %s.", parameter, self.address)
 
         # Add/update the aux_properties to include the parameter.
         node_prop = NodeProperty(

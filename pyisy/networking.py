@@ -47,7 +47,7 @@ class NetworkResources(EntityPlatform):
         for feature in features:
             self.parse_entity(feature)
 
-        _LOGGER.info("ISY Loaded Network Resources Commands")
+        _LOGGER.info("Loaded network resources commands")
 
     def parse_entity(self, feature: dict[str, Any]) -> None:
         """Parse a single value and add it to the platform."""
@@ -99,9 +99,9 @@ class NetworkCommand(Entity[NetworkCommandDetail, bool]):
         if not await self.isy.conn.request(req_url, ok404=True):
             # We log this as a warning because the ISY is finicky about response codes.
             #   it may report that it failed, but have worked fine.
-            _LOGGER.warning("ISY could not run networking command: %s", self.address)
+            _LOGGER.warning("Could not run networking command: %s", self.address)
             return
-        _LOGGER.debug("ISY ran networking command: %s", self.address)
+        _LOGGER.debug("Ran networking command: %s", self.address)
 
     def update_entity(self, name: str, detail: NetworkCommandDetail) -> None:
         """Update an entity information."""

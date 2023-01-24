@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from pyisy.constants import TAG_NAME, URL_CHANGE, URL_NODES, Protocol
+from pyisy.constants import TAG_ADDRESS, TAG_NAME, URL_CHANGE, URL_NODES, Protocol
 from pyisy.helpers.entity import Entity, EntityDetail
 from pyisy.helpers.models import OptionalIntT
 from pyisy.logging import _LOGGER
@@ -67,7 +67,7 @@ class NodeFolder(Entity[NodeFolderDetail, OptionalIntT]):
         class, and will return itself if it is the primary node/group.
 
         """
-        return self.detail.parent.get("address", None)
+        return self.detail.parent.get(TAG_ADDRESS, None)
 
     async def rename(self, new_name: str) -> bool:
         """
@@ -81,12 +81,12 @@ class NodeFolder(Entity[NodeFolderDetail, OptionalIntT]):
             query={TAG_NAME: new_name},
         )
         if not await self.isy.conn.request(req_url):
-            _LOGGER.warning(
-                "ISY could not update name for %s.",
+            _LOGGER.error(
+                "Could not update name for %s.",
                 self.address,
             )
             return False
-        _LOGGER.debug("ISY renamed %s to %s.", self.address, new_name)
+        _LOGGER.debug("Renamed %s to %s.", self.address, new_name)
 
         self._name = new_name
         return True
