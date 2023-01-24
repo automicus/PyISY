@@ -139,17 +139,19 @@ class NodeServers:
     """
 
     isy: ISY
-    _connections: list = [NodeServerConnection]
+    _connections: list[NodeServerConnection]
     slots: set[str] = set()
     _node_server_node_definitions: dict[str, dict[str, NodeServerNodeDefinition]] = {}
     _node_server_node_editors: dict[str, dict[str, NodeServerNodeEditor]] = {}
     _node_server_nls: dict = {}
-    loaded: bool = False
+    loaded: bool
     bg_tasks: set = set()
 
     def __init__(self, isy: ISY):
         """Initialize the NodeServers class."""
         self.isy = isy
+        self.loaded = False
+        self._connections = []
 
     async def update(self) -> None:
         """Load information about node servers from the ISY."""
@@ -392,12 +394,17 @@ class NodeServers:
     def to_dict(self) -> dict:
         """Dump entity platform entities to dict."""
         return {
-            ATTR_CONNECTIONS: [conn.__dict__ for conn in self._connections],
+            ATTR_CONNECTIONS: [asdict(conn) for conn in self._connections],
             ATTR_NODE_DEFS: {
                 slot: {k: asdict(v) for k, v in node_def.items()}
                 for slot, node_def in self._node_server_node_definitions.items()
             },
         }
+
+    @property
+    def profiles(self) -> dict[str, dict[str, NodeServerNodeDefinition]]:
+        """Return the compiled node server profiles."""
+        return self._node_server_node_definitions
 
     def __str__(self) -> str:
         """Return a string representation of the node servers."""

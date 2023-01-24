@@ -208,13 +208,14 @@ class EntityPlatform(ABC, Generic[EntityT]):
         ) -> dict[str, dict]:
             for i in entities:
                 children = self.get_children(i.address)
+                new_path = f"{path}/{i.name} ({i.address})"
                 hierarchy[i.name] = asdict(
                     TreeLeaf(
                         protocol=i.protocol,
                         type_=type(i).__name__,
                         address=i.address,
-                        children=traverse({}, children, f"{path}/{i.name}"),
-                        path=f"{path}/{i.name}",
+                        children=traverse({}, children, new_path),
+                        path=new_path,
                     )
                 )
             return hierarchy
@@ -235,8 +236,9 @@ class EntityPlatform(ABC, Generic[EntityT]):
             hierarchy: dict[str, dict], entities: Iterable[EntityT], path: str = ""
         ) -> dict[str, dict]:
             for i in entities:
-                directory[f"{path}/{i.name}"] = i
-                traverse({}, self.get_children(i.address), f"{path}/{i.name}")
+                new_path = f"{path}/{i.name} ({i.address})"
+                directory[new_path] = i
+                traverse({}, self.get_children(i.address), new_path)
             return hierarchy
 
         traverse({}, roots)
