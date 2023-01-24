@@ -226,7 +226,7 @@ class EventStream:
             time.sleep(delay)
             self._on_lost_function()
 
-    async def watch(self) -> None:
+    def watch(self) -> None:
         """Watch the subscription connection and report if dead."""
         if not self._subscribed:
             _LOGGER.debug("PyISY watch called without a subscription.")

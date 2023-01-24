@@ -7,13 +7,7 @@ from typing import TYPE_CHECKING, Any, Union, cast
 
 from dateutil import parser
 
-from pyisy.constants import (
-    DEFAULT_DIR,
-    TAG_FOLDER,
-    URL_PROGRAMS,
-    URL_SUBFOLDERS,
-    XML_TRUE,
-)
+from pyisy.constants import TAG_FOLDER, URL_PROGRAMS, URL_SUBFOLDERS, XML_TRUE
 from pyisy.events.router import EventData
 from pyisy.helpers.entity_platform import EntityPlatform
 from pyisy.helpers.events import EventEmitter
@@ -60,14 +54,6 @@ class Programs(EntityPlatform[ProgramsT]):
 
     def parse(self, xml_dict: dict[str, Any]) -> None:
         """Parse the results from the ISY."""
-        # Write nodes to file for debugging:
-        if self.isy.args is not None and self.isy.args.file:
-            json_object = json.dumps(xml_dict, indent=4, default=str)
-            with open(
-                f"{DEFAULT_DIR}rest-programs.json", "w", encoding="utf-8"
-            ) as outfile:
-                outfile.write(json_object)
-
         if not (features := xml_dict["programs"]["program"]):
             return
 

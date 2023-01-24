@@ -32,6 +32,7 @@ from pyisy.logging import _LOGGER, LOG_VERBOSE
 from pyisy.nodes.folder import NodeFolder, NodeFolderDetail
 from pyisy.nodes.group import Group, GroupDetail
 from pyisy.nodes.node import Node, NodeDetail
+from pyisy.util.output import write_to_file
 
 if TYPE_CHECKING:
     from pyisy.isy import ISY
@@ -85,14 +86,6 @@ class Nodes(EntityPlatform[NodesT]):
 
     def parse(self, xml_dict: dict[str, Any]) -> None:
         """Parse the results from the ISY."""
-        # Write nodes to file for debugging:
-        if self.isy.args is not None and self.isy.args.file:
-            json_object = json.dumps(xml_dict, indent=4, default=str)
-            with open(
-                f"{DEFAULT_DIR}rest-nodes.json", "w", encoding="utf-8"
-            ) as outfile:
-                outfile.write(json_object)
-
         if not (features := xml_dict["nodes"]):
             return
 
@@ -188,20 +181,21 @@ class Nodes(EntityPlatform[NodesT]):
         if not xml_dict:
             return
 
+        # Write nodes to file for debugging:
+        if self.isy.args is not None and self.isy.args.file:
+            await self.isy.loop.run_in_executor(
+                None,
+                write_to_file,
+                xml_dict,
+                f"{DEFAULT_DIR}rest-status.json",
+            )
+
         while not self.loaded:  # Loaded is set by self.update finishing
             await asyncio.sleep(0.05)
         self.parse_status(xml_dict)
 
     def parse_status(self, xml_dict: dict[str, Any]) -> None:
         """Parse the results from the ISY."""
-        # Write nodes to file for debugging:
-        if self.isy.args is not None and self.isy.args.file:
-            json_object = json.dumps(xml_dict, indent=4, default=str)
-            with open(
-                f"{DEFAULT_DIR}rest-status.json", "w", encoding="utf-8"
-            ) as outfile:
-                outfile.write(json_object)
-
         if not (node_statuses := xml_dict["nodes"][TAG_NODE]):
             return
 

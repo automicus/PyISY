@@ -12,12 +12,13 @@ from dataclasses import asdict, dataclass, field
 import json
 from typing import TYPE_CHECKING, Any, Generic, Protocol, TypeVar
 
-from pyisy.constants import Protocol as EntityProtocol
+from pyisy.constants import DEFAULT_DIR, Protocol as EntityProtocol
 from pyisy.helpers.entity import Entity, EntityT
 from pyisy.helpers.events import EventEmitter
 from pyisy.helpers.xml import parse_xml
 from pyisy.logging import _LOGGER, LOG_VERBOSE
 from pyisy.util.backports import StrEnum
+from pyisy.util.output import write_to_file
 
 if TYPE_CHECKING:
     from pyisy.isy import ISY
@@ -104,6 +105,16 @@ class EntityPlatform(ABC, Generic[EntityT]):
             self.url,
             json.dumps(xml_dict, indent=4, sort_keys=True, default=str),
         )
+
+        # Write nodes to file for debugging:
+        if self.isy.args is not None and self.isy.args.file:
+            await self.isy.loop.run_in_executor(
+                None,
+                write_to_file,
+                xml_dict,
+                f"{DEFAULT_DIR}rest-{self.platform_name}.json",
+            )
+
         self.parse(xml_dict)
         self.loaded = True
 

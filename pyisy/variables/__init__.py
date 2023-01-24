@@ -99,8 +99,11 @@ class Variables(EntityPlatform[Variable]):
         var_dict = {PLATFORM: [v | var_list[i] for i, v in enumerate(def_list)]}
 
         if self.isy.args is not None and self.isy.args.file:
-            await write_to_file(
-                var_dict, f"{DEFAULT_DIR}rest-{PLATFORM}-{var_type}.json"
+            await self.isy.loop.run_in_executor(
+                None,
+                write_to_file,
+                var_dict,
+                f"{DEFAULT_DIR}rest-{PLATFORM}-{var_type}.json",
             )
 
         _LOGGER.log(
