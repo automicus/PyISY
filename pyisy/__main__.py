@@ -24,28 +24,26 @@ from pyisy.util.output import write_to_file
 
 _LOGGER = logging.getLogger(__name__)
 
-args: argparse.Namespace
 
-
-async def main(cl_args: argparse.Namespace) -> None:
+async def main(args: argparse.Namespace) -> None:
     """Execute connection to ISY and load all system info."""
     _LOGGER.info("Starting PyISY...")
     t_0 = time.time()
 
     connection_info = ISYConnectionInfo(
-        cl_args.url, cl_args.username, cl_args.password, tls_version=cl_args.tls_version
+        args.url, args.username, args.password, tls_version=args.tls_version
     )
     # Connect to ISY controller.
-    isy = ISY(connection_info, use_websocket=True, args=cl_args)
+    isy = ISY(connection_info, use_websocket=True, args=args)
 
     try:
         await isy.initialize(
-            nodes=cl_args.nodes,
-            clock=cl_args.clock,
-            programs=cl_args.programs,
-            variables=cl_args.variables,
-            networking=cl_args.networking,
-            node_servers=cl_args.node_servers,
+            nodes=args.nodes,
+            clock=args.clock,
+            programs=args.programs,
+            variables=args.variables,
+            networking=args.networking,
+            node_servers=args.node_servers,
         )
     except (ISYInvalidAuthError, ISYConnectionError):
         _LOGGER.error(
@@ -76,9 +74,9 @@ async def main(cl_args: argparse.Namespace) -> None:
         _LOGGER.info("%s status changed: %s", key.title(), event)
 
     # Print a representation of all the Nodes
-    if cl_args.nodes:
+    if args.nodes:
         _LOGGER.debug(repr(isy.nodes))
-        if cl_args.file:
+        if args.file:
             # Write nodes to file for debugging:
             await isy.loop.run_in_executor(
                 None,
@@ -93,9 +91,9 @@ async def main(cl_args: argparse.Namespace) -> None:
                 f"{DEFAULT_DIR}nodes-loaded.json",
             )
         isy.nodes.status_events.subscribe(node_changed_handler, key="nodes")
-    if cl_args.programs:
+    if args.programs:
         _LOGGER.debug(repr(isy.programs))
-        if cl_args.file:
+        if args.file:
             await isy.loop.run_in_executor(
                 None,
                 write_to_file,
@@ -103,9 +101,9 @@ async def main(cl_args: argparse.Namespace) -> None:
                 f"{DEFAULT_DIR}programs.json",
             )
         isy.programs.status_events.subscribe(status_handler, key="programs")
-    if cl_args.variables:
+    if args.variables:
         _LOGGER.debug(repr(isy.variables))
-        if cl_args.file:
+        if args.file:
             await isy.loop.run_in_executor(
                 None,
                 write_to_file,
@@ -113,32 +111,32 @@ async def main(cl_args: argparse.Namespace) -> None:
                 f"{DEFAULT_DIR}variables.json",
             )
         isy.variables.status_events.subscribe(status_handler, key="variables")
-    if cl_args.networking:
+    if args.networking:
         _LOGGER.debug(repr(isy.networking))
-        if cl_args.file:
+        if args.file:
             await isy.loop.run_in_executor(
                 None,
                 write_to_file,
                 isy.networking.to_dict(),
                 f"{DEFAULT_DIR}networking.json",
             )
-    if cl_args.node_servers:
+    if args.node_servers:
         _LOGGER.debug(isy.node_servers)
-        if cl_args.file:
+        if args.file:
             await isy.loop.run_in_executor(
                 None,
                 write_to_file,
                 isy.node_servers.to_dict(),
                 f"{DEFAULT_DIR}node-servers.json",
             )
-    if cl_args.clock:
+    if args.clock:
         _LOGGER.debug(repr(isy.clock))
     _LOGGER.info("Total Loading time: %.2fs", time.time() - t_0)
 
     system_status_subscriber = None
 
     try:
-        if cl_args.events:
+        if args.events:
             await asyncio.sleep(1)
             isy.websocket.start()
             system_status_subscriber = isy.status_events.subscribe(
@@ -228,17 +226,17 @@ if __name__ == "__main__":
         help="Dump tree information to file",
     )
     parser.set_defaults(use_https=False, tls_version=None, verbose=False)
-    args = parser.parse_args()
+    command_line_args: argparse.Namespace = parser.parse_args()
 
-    enable_logging(LOG_VERBOSE if args.verbose else logging.DEBUG)
+    enable_logging(LOG_VERBOSE if command_line_args.verbose else logging.DEBUG)
 
     _LOGGER.info(
         "ISY URL: %s, username: %s",
-        args.url,
-        args.username,
+        command_line_args.url,
+        command_line_args.username,
     )
 
     try:
-        asyncio.run(main(args))
+        asyncio.run(main(command_line_args))
     except KeyboardInterrupt:
         _LOGGER.warning("KeyboardInterrupt received. Disconnecting!")
