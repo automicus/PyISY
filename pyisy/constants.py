@@ -777,15 +777,20 @@ INSTEON_RAMP_RATES: dict[str, float] = {
 }
 
 # Thermostat Types/Categories. 4.8 Trane, 5.3 venstar, 5.10 Insteon Wireless,
-#  5.11 Insteon, 5.17 Insteon (EU), 5.18 Insteon (Aus/NZ)
+#  5.0x0B, 0x0F, 0x10, 0x13, 0x14, 0x15 - Insteon (alt. frequencies)
 INSTEON_TYPE_THERMOSTAT: list[str] = [
     "4.8",
     "5.3",
     "5.10",
     "5.11",
     "5.14",
+    "5.15",
+    "5.16",
     "5.17",
     "5.18",
+    "5.19",
+    "5.20",
+    "5.21",
 ]
 ZWAVE_CAT_THERMOSTAT: list[str] = ["140"]
 
