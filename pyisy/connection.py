@@ -209,7 +209,7 @@ class Connection:
             # sleep to allow the ISY to catch up
             await asyncio.sleep(RETRY_BACKOFF[retries])
             # recurse to try again
-            retry_result = await self.request(url, retries + 1, ok404=False)
+            retry_result = await self.request(url, retries + 1, ok404=ok404)
             return retry_result
         # fail for good
         _LOGGER.error(
