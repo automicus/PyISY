@@ -45,10 +45,10 @@ repos:
   - hooks:
       - id: isort
     repo: https://github.com/PyCQA/isort
-    rev: 5.11.4
+    rev: 5.12.0
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v3.2.0
+    rev: v4.4.0
     hooks:
       - id: check-executables-have-shebangs
         stages: [manual]
@@ -60,7 +60,7 @@ repos:
           - --branch=v3.x.x
           - --branch=v2.x.x
   - repo: https://github.com/adrienverge/yamllint.git
-    rev: v1.28.0
+    rev: v1.29.0
     hooks:
       - id: yamllint
   - repo: https://github.com/pre-commit/mirrors-prettier
