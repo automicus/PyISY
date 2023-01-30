@@ -1,4 +1,6 @@
 """Manage variables from the ISY."""
+from __future__ import annotations
+
 from ..constants import (
     ATTR_INIT,
     ATTR_LAST_CHANGED,
@@ -173,31 +175,29 @@ class Variable:
         self._last_update = now()
         await self._variables.update(wait_time)
 
-    async def set_init(self, val):
+    async def set_init(self, value: int | float) -> bool:
         """
         Set the initial value for the variable after the controller boots.
 
         |  val: The value to have the variable initialize to.
         """
-        if val is None:
-            raise ValueError("Variable init must be an integer. Got None.")
-        self.set_value(val, True)
+        return await self.set_value(value, True)
 
-    async def set_value(self, val, init=False):
+    async def set_value(self, value: int | float, init: bool = False) -> bool:
         """
         Set the value of the variable.
 
         |  val: The value to set the variable to.
+
+        ISY Version 5 firmware will automatically convert float back to int.
         """
-        if val is None:
-            raise ValueError("Variable value must be an integer. Got None.")
         req_url = self.isy.conn.compile_url(
             [
                 URL_VARIABLES,
                 ATTR_INIT if init else ATTR_SET,
                 str(self._type),
                 str(self._id),
-                str(val),
+                str(value),
             ]
         )
         if not await self.isy.conn.request(req_url):
@@ -207,12 +207,11 @@ class Variable:
                 str(self._type),
                 str(self._id),
             )
-            return
+            return False
         _LOGGER.debug(
             "ISY set variable%s: %s.%s",
             " init value" if init else "",
             str(self._type),
             str(self._id),
         )
-        if not self.isy.auto_update:
-            await self.update()
+        return True
