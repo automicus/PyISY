@@ -88,7 +88,7 @@ class NodeServerConnection:
 
 
 @dataclass
-class NodeServerNodeDefinition:
+class NodeServerNodeDef:
     """Node Server Node Definition parsed from the ISY/IoX."""
 
     sts: InitVar[dict[str, list | dict]]
@@ -141,7 +141,7 @@ class NodeServers:
     isy: ISY
     _connections: list[NodeServerConnection]
     slots: set[str] = set()
-    _node_server_node_definitions: dict[str, dict[str, NodeServerNodeDefinition]] = {}
+    _node_server_node_definitions: dict[str, dict[str, NodeServerNodeDef]] = {}
     _node_server_node_editors: dict[str, dict[str, NodeServerNodeEditor]] = {}
     _node_server_nls: dict = {}
     loaded: bool
@@ -338,7 +338,7 @@ class NodeServers:
         try:
             self._node_server_node_definitions[slot][
                 node_def[ATTR_ID]
-            ] = NodeServerNodeDefinition(**node_def)
+            ] = NodeServerNodeDef(**node_def)
 
         except (ValueError, KeyError, NameError) as exc:
             _LOGGER.error("Could not parse node server connection: %s", exc)
@@ -402,7 +402,7 @@ class NodeServers:
         }
 
     @property
-    def profiles(self) -> dict[str, dict[str, NodeServerNodeDefinition]]:
+    def profiles(self) -> dict[str, dict[str, NodeServerNodeDef]]:
         """Return the compiled node server profiles."""
         return self._node_server_node_definitions
 
