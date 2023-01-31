@@ -80,6 +80,13 @@ class NodeDetail(NodeBaseDetail):
     protocol: Protocol = Protocol.INSTEON
     node_server: str = ""
 
+    # UPB-only or normally-unused fields, left to avoid errors if used
+    qry: str | None = None
+    ctl: str | None = None
+    rsp: dict | None = None
+    tx: str = ""
+    rx: str = ""
+
     def __post_init__(self) -> None:
         """Post-initialization of Node detail dataclass."""
         if self.devtype:

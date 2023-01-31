@@ -40,6 +40,8 @@ if TYPE_CHECKING:
 
 PLATFORM = "nodes"
 
+TAG_PROPERTIES = "properties"
+
 NodesT = Union[NodeFolder, Node, Group]
 
 
@@ -274,10 +276,11 @@ class Nodes(EntityPlatform[NodesT]):
             self.parse_node_entity(feature[TAG_NODE])
         if TAG_GROUP in feature:
             self.parse_group_entity(feature[TAG_GROUP])
-        if "properties" in feature:
-            if not (props := feature["properties"].get("prop", {})):
+        if TAG_PROPERTIES in feature:
+            if not (props := feature[TAG_PROPERTIES].get("prop", {})):
                 return
-            entity = cast(Node, self.entities[address])
+            if not (entity := cast(Node, self.entities.get(address))):
+                return
             for prop in props:
                 self.parse_node_properties(prop, entity)
 

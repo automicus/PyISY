@@ -138,9 +138,9 @@ class EntityPlatform(ABC, Generic[EntityT]):
                 )
             return
 
+        self.entities[address] = entity
         self.addresses.append(address)
         self.names.append(name)
-        self.entities[address] = entity
         self.status_events.notify(
             f"{self.platform_name}.{EntityPlatformEvent.ENTITY_ADDED}"
         )

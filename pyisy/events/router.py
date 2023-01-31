@@ -140,7 +140,7 @@ class EventRouter:
         xml_dict = parse_xml(msg)
 
         # A wild stream id appears!
-        if (sid := xml_dict.get("s_i_d")) and self._stream_id == "":
+        if (sid := xml_dict.get("sid")) and self._stream_id == "":
             self._stream_id = sid
             self.events.update_stream_id(sid)
             return

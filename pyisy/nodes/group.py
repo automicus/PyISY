@@ -29,6 +29,7 @@ class GroupDetail(NodeBaseDetail):
     members: dict[str, list[dict[str, str]]] = field(default_factory=dict)
     links: list[str] = field(init=False, default_factory=list)
     controllers: list[str] = field(init=False, default_factory=list)
+    fmt_dev_id: str = ""
 
     def __post_init__(self) -> None:
         """Post-initialize the GroupDetail dataclass."""
@@ -70,10 +71,15 @@ class Group(NodeBase, Entity[GroupDetail, StatusT]):
         super().__init__(platform=platform, address=address, name=name, detail=detail)
 
         # listen for changes in children
-        self._members_handlers = [
-            self.platform.entities[m].status_events.subscribe(self.update_callback)
-            for m in self.detail.links
-        ]
+        self._members_handlers = []
+        link: str
+        for link in self.detail.links:
+            if not (entity := self.platform.entities.get(link)):
+                # Node missing or not loaded
+                continue
+            self._members_handlers.append(
+                entity.status_events.subscribe(self.update_callback)
+            )
 
         # get and update the status
         self._update()

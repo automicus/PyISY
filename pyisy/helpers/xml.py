@@ -16,7 +16,7 @@ from pyisy.exceptions import (
 )
 from pyisy.logging import _LOGGER
 
-SNAKE = re.compile(r"(?<!^)(?=[A-Z])")
+SNAKE = re.compile(r"((?<=[a-z0-9])[A-Z]|(?!^)[A-Z](?=[a-z]))")
 
 
 def post_processor(path: str, key: str, value: Any) -> tuple[str, Any]:
@@ -28,7 +28,7 @@ def post_processor(path: str, key: str, value: Any) -> tuple[str, Any]:
         value = False
 
     # Make keys `snake_case`
-    key = SNAKE.sub("_", key).lower()
+    key = SNAKE.sub(r"_\1", key).lower()
 
     # Rename some keys
     if key == "property":  # Use full word
@@ -39,6 +39,8 @@ def post_processor(path: str, key: str, value: Any) -> tuple[str, Any]:
         key = "parent"
     elif key == "cat":  # Use full word
         key = "category"
+    elif key == "encode_ur_ls":  # Fix bad CamelCase
+        key = "encode_urls"
 
     # Convert common keys
     if key == "prec":  # Use full word, make integer

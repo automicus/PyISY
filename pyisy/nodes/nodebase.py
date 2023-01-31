@@ -49,6 +49,7 @@ class NodeBaseDetail(EntityDetail):
     name: str = ""
     parent: dict[str, str] = field(default_factory=dict)
     pnode: str = ""
+    elk_id: str = ""
 
 
 class NodeBase(Entity[NodeBaseDetail, OptionalIntT]):
