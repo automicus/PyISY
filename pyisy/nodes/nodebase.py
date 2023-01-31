@@ -86,10 +86,6 @@ class NodeBase(Entity[NodeBaseDetail, OptionalIntT]):
         self._last_changed = datetime.now()
         self.status_events = EventEmitter()
 
-    def __str__(self) -> str:
-        """Return a string representation of the node."""
-        return f"{type(self).__name__}({self.address})"
-
     @property
     def folder(self) -> str | None:
         """Return the folder of the current node as a property."""

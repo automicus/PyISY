@@ -11,6 +11,8 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+from dataclasses import asdict, is_dataclass
+import json
 import logging
 import time
 from typing import Any
@@ -71,7 +73,12 @@ async def main(args: argparse.Namespace) -> None:
 
     def status_handler(event: Any, key: str) -> None:
         """Handle a generic status changed event sent."""
-        _LOGGER.info("%s status changed: %s", key.title(), event)
+        output: str
+        if is_dataclass(event):
+            output = json.dumps(asdict(event), default=str)
+        else:
+            output = event
+        _LOGGER.info("%s status changed: %s", key.title(), output)
 
     # Print a representation of all the Nodes
     if args.nodes:
