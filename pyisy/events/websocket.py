@@ -203,7 +203,7 @@ class WebSocketClient:
         elif cntrl == "_3":  # Node Changed/Updated
             self.isy.nodes.node_changed_received(xmldoc)
         elif cntrl == "_5":  # System Status Changed
-            self.isy.system_status_changed_received(xmldoc)
+            self.isy.conn.system_status.change_received(xmldoc)
         elif cntrl == "_7":  # Progress report, device programming event
             self.isy.nodes.progress_report_received(xmldoc)
 

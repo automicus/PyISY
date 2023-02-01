@@ -7,7 +7,12 @@ from urllib.parse import quote, urlencode
 import aiohttp
 
 from .constants import (
+    ATTR_ACTION,
     METHOD_GET,
+    SYSTEM_BUSY,
+    SYSTEM_IDLE,
+    SYSTEM_NOT_BUSY,
+    SYSTEM_STATUS,
     URL_CLOCK,
     URL_CONFIG,
     URL_DEFINITIONS,
@@ -26,6 +31,7 @@ from .constants import (
     XML_TRUE,
 )
 from .exceptions import ISYConnectionError, ISYInvalidAuthError
+from .helpers import EventEmitter, value_from_xml
 from .logging import _LOGGER, enable_logging
 
 MAX_HTTPS_CONNECTIONS_ISY = 2
@@ -50,6 +56,46 @@ HTTP_HEADERS = {
 }
 
 EMPTY_XML_RESPONSE = '<?xml version="1.0" encoding="UTF-8"?>'
+
+
+class ISYSystemStatus:
+    """Event manager class for ISY System Status."""
+
+    _event = asyncio.Event()
+    _status = SYSTEM_IDLE
+
+    def __init__(self):
+        """Initialize a system status class."""
+        self.status_events = EventEmitter()
+        self._event.set()
+
+    @property
+    def status(self):
+        """Return the system status property."""
+        return self._status
+
+    @status.setter
+    def status(self, val):
+        """Update the system status property."""
+        self._status = val
+        if val == SYSTEM_BUSY:
+            self._event.clear()
+        elif val in (SYSTEM_IDLE, SYSTEM_NOT_BUSY):
+            self._event.set()
+        else:
+            raise ISYConnectionError("ISY status unknown")
+
+    async def is_ready(self):
+        """Wait for the ISY to be ready."""
+        return await self._event.wait()
+
+    def change_received(self, xmldoc):
+        """Handle System Status events from an event stream message."""
+        action = value_from_xml(xmldoc, ATTR_ACTION)
+        if not action or action not in SYSTEM_STATUS:
+            return
+        self.status = action
+        self.status_events.notify(action)
 
 
 class Connection:
@@ -80,6 +126,7 @@ class Connection:
         self._tls_ver = tls_ver
         self.use_https = use_https
         self._url = f"http{'s' if self.use_https else ''}://{self._address}:{self._port}{self._webroot}"
+        self.system_status = ISYSystemStatus()
 
         self.semaphore = asyncio.Semaphore(
             MAX_HTTPS_CONNECTIONS_ISY if use_https else MAX_HTTP_CONNECTIONS_ISY
@@ -170,7 +217,9 @@ class Connection:
                         "ISY Reported an Invalid Command Received %s", endpoint
                     )
                     res.release()
-                    return None
+                    # ISY may report 404 error for valid command if busy
+                    if self.system_status.status != SYSTEM_BUSY:
+                        return None
                 if res.status == HTTP_UNAUTHORIZED:
                     _LOGGER.error("Invalid credentials provided for ISY connection.")
                     res.release()
@@ -201,13 +250,20 @@ class Connection:
         if retries is None:
             raise ISYConnectionError()
         if retries < MAX_RETRIES:
-            _LOGGER.debug(
-                "Retrying ISY Request in %ss, retry %s.",
-                RETRY_BACKOFF[retries],
-                retries + 1,
-            )
-            # sleep to allow the ISY to catch up
-            await asyncio.sleep(RETRY_BACKOFF[retries])
+            if self.system_status.status == SYSTEM_BUSY:
+                _LOGGER.debug("ISY is busy, waiting for system to be ready")
+                try:
+                    await asyncio.wait_for(self.system_status.is_ready(), timeout=5.0)
+                except asyncio.TimeoutError as exc:
+                    raise ISYConnectionError() from exc
+            else:
+                _LOGGER.debug(
+                    "Retrying ISY Request in %ss, retry %s.",
+                    RETRY_BACKOFF[retries],
+                    retries + 1,
+                )
+                # sleep to allow the ISY to catch up
+                await asyncio.sleep(RETRY_BACKOFF[retries])
             # recurse to try again
             retry_result = await self.request(url, retries + 1, ok404=ok404)
             return retry_result
