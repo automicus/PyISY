@@ -10,18 +10,22 @@ from pyisy.constants import (
     DEFAULT_DIR,
     EVENT_PROPS_IGNORED,
     INSTEON_RAMP_RATES,
-    NODE_IS_ROOT,
     PROP_BATTERY_LEVEL,
     PROP_RAMP_RATE,
     PROP_STATUS,
     TAG_ADDRESS,
+    TAG_FAMILY,
     TAG_FOLDER,
     TAG_GROUP,
+    TAG_NAME,
     TAG_NODE,
+    TAG_PROPERTIES,
+    TAG_PROPERTY,
     UOM_SECONDS,
     URL_NODES,
     URL_STATUS,
     NodeFamily,
+    NodeFlag,
     Protocol,
     UDHierarchyNodeType,
 )
@@ -40,7 +44,6 @@ if TYPE_CHECKING:
 
 PLATFORM = "nodes"
 
-TAG_PROPERTIES = "properties"
 
 NodesT = Union[NodeFolder, Node, Group]
 
@@ -108,7 +111,7 @@ class Nodes(EntityPlatform[NodesT]):
         """Parse a single folder and add to the platform."""
         try:
             address = feature[TAG_ADDRESS]
-            name = feature["name"]
+            name = feature[TAG_NAME]
             _LOGGER.log(LOG_VERBOSE, "Parsing %s: %s (%s)", PLATFORM, name, address)
             entity = NodeFolder(self, address, name, NodeFolderDetail(**feature))
             self.add_or_update_entity(address, name, entity)
@@ -119,17 +122,17 @@ class Nodes(EntityPlatform[NodesT]):
         """Parse a single node and add to the platform."""
         try:
             address = feature[TAG_ADDRESS]
-            name = feature["name"]
+            name = feature[TAG_NAME]
             _LOGGER.log(LOG_VERBOSE, "Parsing %s: %s (%s)", PLATFORM, name, address)
 
-            if family := feature.get("family"):
+            if family := feature.get(TAG_FAMILY):
                 if (
                     isinstance(family, dict)
                     and family[TAG_ADDRESS] == NodeFamily.NODESERVER
                 ):
                     feature["node_server"] = family.get("instance", "")
                     feature["protocol"] = self.get_protocol_from_family(
-                        feature.get("family")
+                        feature.get(TAG_FAMILY)
                     )
 
             entity = Node(self, address, name, NodeDetail(**feature))
@@ -141,9 +144,9 @@ class Nodes(EntityPlatform[NodesT]):
         """Parse a single group and add to the platform."""
         try:
             address = feature[TAG_ADDRESS]
-            name = feature["name"]
+            name = feature[TAG_NAME]
             _LOGGER.log(LOG_VERBOSE, "Parsing %s: %s (%s)", PLATFORM, name, address)
-            if (flag := feature["flag"]) & NODE_IS_ROOT:
+            if (flag := feature["flag"]) & NodeFlag.ROOT:
                 _LOGGER.debug("Skipping root group flag=%s %s", flag, address)
                 return
             entity = Group(self, address, name, GroupDetail(**feature))
@@ -212,7 +215,7 @@ class Nodes(EntityPlatform[NodesT]):
         if (address := status["id"]) not in self.addresses:
             return  # FUTURE: Missing address, go get.
         try:
-            if not (props := status.get("prop", {})):
+            if not (props := status.get(TAG_PROPERTY, {})):
                 return
             if isinstance(props, dict):
                 props = [props]
@@ -228,7 +231,6 @@ class Nodes(EntityPlatform[NodesT]):
         result = NodeProperty(**prop)
         if result.control == PROP_STATUS:
             entity.update_state(result)
-            return
         if result.control == PROP_BATTERY_LEVEL and not entity.state_set:
             # Use BATLVL as state if no ST given.
             entity.is_battery_node = True
@@ -277,7 +279,7 @@ class Nodes(EntityPlatform[NodesT]):
         if TAG_GROUP in feature:
             self.parse_group_entity(feature[TAG_GROUP])
         if TAG_PROPERTIES in feature:
-            if not (props := feature[TAG_PROPERTIES].get("prop", {})):
+            if not (props := feature[TAG_PROPERTIES].get(TAG_PROPERTY, {})):
                 return
             if not (entity := cast(Node, self.entities.get(address))):
                 return

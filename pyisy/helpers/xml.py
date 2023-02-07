@@ -7,7 +7,15 @@ from typing import Any, cast
 from dateutil import parser
 import xmltodict
 
-from pyisy.constants import ATTR_TYPE
+from pyisy.constants import (
+    ATTR_FLAG,
+    ATTR_TYPE,
+    TAG_PARENT,
+    TAG_PROPERTY,
+    TAG_VALUE,
+    XML_FALSE,
+    XML_TRUE,
+)
 from pyisy.exceptions import (
     XML_ERRORS,
     XML_PARSE_ERROR,
@@ -22,21 +30,21 @@ SNAKE = re.compile(r"((?<=[a-z0-9])[A-Z]|(?!^)[A-Z](?=[a-z]))")
 def post_processor(path: str, key: str, value: Any) -> tuple[str, Any]:
     """Post-process XML Dict to snake case keys and interpret strings."""
     # Convert boolean
-    if value == "true":
+    if value == XML_TRUE:
         value = True
-    if value == "false":
+    if value == XML_FALSE:
         value = False
 
     # Make keys `snake_case`
     key = SNAKE.sub(r"_\1", key).lower()
 
     # Rename some keys
-    if key == "property":  # Use full word
-        key = "prop"
+    if key == "prop":  # Use full word
+        key = TAG_PROPERTY
     elif key == "type":  # Avoid overwriting default methods
         key = ATTR_TYPE
     elif key == "parent_id":  # Make programs consistent with nodes
-        key = "parent"
+        key = TAG_PARENT
     elif key == "cat":  # Use full word
         key = "category"
     elif key == "encode_ur_ls":  # Fix bad CamelCase
@@ -47,12 +55,12 @@ def post_processor(path: str, key: str, value: Any) -> tuple[str, Any]:
         key = "precision"
         value = int(cast(str, value))
     elif key == "_value":  # Make CData text an integer
-        key = "value"
+        key = TAG_VALUE
         try:
             value = int(cast(str, value))
         except ValueError:
             pass
-    elif key == "flag":
+    elif key == ATTR_FLAG:
         try:
             value = int(cast(str, value))
         except ValueError:

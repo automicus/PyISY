@@ -26,6 +26,7 @@ from pyisy.constants import (
     URL_NODES,
     URL_NOTES,
     NodeFamily,
+    NodeFlag,
 )
 from pyisy.helpers.entity import Entity, EntityDetail, EntityStatus
 from pyisy.helpers.events import EventEmitter
@@ -60,6 +61,7 @@ class NodeBase(Entity[NodeBaseDetail, OptionalIntT]):
     platform: Nodes
     notes: NodeNotes | None
     _primary_node: str
+    _is_device_root: bool = False
     detail: NodeBaseDetail
 
     def __init__(
@@ -80,11 +82,17 @@ class NodeBase(Entity[NodeBaseDetail, OptionalIntT]):
         # self._family = family_id
         self.notes = None
         self._primary_node = detail.pnode
+        self._is_device_root = bool(detail.flag & NodeFlag.DEVICE_ROOT)
         self._status = detail.status
         self.detail = detail
         self._last_update = datetime.now()
         self._last_changed = datetime.now()
         self.status_events = EventEmitter()
+
+    @property
+    def is_device_root(self) -> bool:
+        """Return whether or not the node is a device root."""
+        return self._is_device_root
 
     @property
     def folder(self) -> str | None:

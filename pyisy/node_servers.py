@@ -61,7 +61,7 @@ class NodeServerNodeEditor:
     range: NodeServerEditorRange = NodeServerEditorRange()
     nls: str = ""
     slot: str = ""
-    values: dict[str, str] = field(default_factory=dict)
+    values: dict[int, str] = field(default_factory=dict)
 
 
 @dataclass
@@ -369,7 +369,7 @@ class NodeServers:
             for editor in editors.values():
                 if editor.range.uom == UOM_INDEX and editor.range.nls:
                     editor.values = {
-                        k.replace(f"{editor.range.nls}-", ""): v
+                        int(k.replace(f"{editor.range.nls}-", "")): v
                         for k, v in nls.items()
                         if k.startswith(editor.range.nls)
                     }

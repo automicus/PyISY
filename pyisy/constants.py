@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import datetime
-from enum import IntEnum
+from enum import IntEnum, IntFlag
 
 from pyisy.util.backports import StrEnum
 
@@ -125,6 +125,7 @@ TAG_PRIMARY_NODE = "pnode"
 TAG_PRODUCT = "product"
 TAG_PROGRAM = "program"
 TAG_PROPERTY = "property"
+TAG_PROPERTIES = "properties"
 TAG_ROOT = "root"
 TAG_SIZE = "size"
 TAG_SPOKEN = "spoken"
@@ -415,7 +416,6 @@ EVENT_PROPS_IGNORED: list[str] = [
     CMD_RESET,
     CMD_X10,
     PROP_BUSY,
-    PROP_STATUS,
 ]
 
 COMMAND_NAME = {val: key for key, val in COMMAND_FRIENDLY_NAME.items()}
@@ -1015,15 +1015,19 @@ class SystemStatus(StrEnum):
 # Node Link Types
 NODE_IS_CONTROLLER = 0x10
 
-# Node operations flags
-NODE_IS_INIT = 0x01  # needs to be initialized
-NODE_TO_SCAN = 0x02  # needs to be scanned
-NODE_IS_A_GROUP = 0x04  # it’s a group!
-NODE_IS_ROOT = 0x08  # it’s the root group
-NODE_IS_IN_ERR = 0x10  # it’s in error!
-NODE_IS_NEW = 0x20  # brand new node
-NODE_TO_DELETE = 0x40  # has to be deleted later
-NODE_IS_DEVICE_ROOT = 0x80  # root device such as KPL load
+
+class NodeFlag(IntFlag):
+    """Node operations flag enum."""
+
+    INIT = 0x01  # needs to be initialized
+    TO_SCAN = 0x02  # needs to be scanned
+    GROUP = 0x04  # it’s a group!
+    ROOT = 0x08  # it’s the root group
+    IN_ERR = 0x10  # it’s in error!
+    NEW = 0x20  # brand new node
+    TO_DELETE = 0x40  # has to be deleted later
+    DEVICE_ROOT = 0x80  # root device such as KPL load
+
 
 DEV_CMD_MEMORY_WRITE = "0x2E"
 DEV_BL_ADDR = "0x0264"

@@ -71,7 +71,7 @@ class NodeDetail(NodeBaseDetail):
     dc_period: str = "0"
     start_delay: str = "0"
     end_delay: str = "0"
-    prop: dict = field(default_factory=dict)
+    property: dict = field(default_factory=dict)
     rpnode: str = ""
     sgid: str = ""
     custom: dict = field(default_factory=dict)
@@ -120,10 +120,10 @@ class Node(NodeBase, Entity[NodeDetail, StatusT]):
         self._protocol = detail.protocol
         self._enabled = detail.enabled
         self.control_events = EventEmitter()
-        if detail.prop and PROP_STATUS in detail.prop:
+        if detail.property and PROP_STATUS in detail.property:
             self.state_set = True
             self._is_battery_node = False
-            self.update_state(NodeProperty(**detail.prop))
+            self.update_state(NodeProperty(**detail.property))
 
     @property
     def formatted(self) -> str:
@@ -522,7 +522,7 @@ class Node(NodeBase, Entity[NodeDetail, StatusT]):
     def get_node_server_def(self) -> NodeServerNodeDef | None:
         """Retrieve the node server information for a node and control."""
         if not (self.protocol == Protocol.NODE_SERVER and self.node_def_id):
-            raise ValueError("Not a node server node")
+            return None
 
         servers: NodeServers = self.isy.node_servers
         if not servers.loaded or self.node_server not in servers.slots:
