@@ -40,9 +40,14 @@ from pyisy.constants import (
     NodeFamily,
     Protocol,
 )
-from pyisy.helpers.entity import Entity, EntityStatus, StatusT
+from pyisy.helpers.entity import Entity, StatusT
 from pyisy.helpers.events import EventEmitter
-from pyisy.helpers.models import NodeProperty, ZWaveParameter, ZWaveProperties
+from pyisy.helpers.models import (
+    EntityStatus,
+    NodeProperty,
+    ZWaveParameter,
+    ZWaveProperties,
+)
 from pyisy.helpers.xml import parse_xml
 from pyisy.logging import _LOGGER
 from pyisy.node_servers import NodeServerNodeDef, NodeServers
@@ -132,8 +137,7 @@ class Node(NodeBase, Entity[NodeDetail, StatusT]):
 
     @property
     def is_battery_node(self) -> bool:
-        """
-        Confirm if this is a battery node or a normal node.
+        """Confirm if this is a battery node or a normal node.
 
         Battery nodes do not provide a 'ST' property, only 'BATLVL'.
         """
@@ -155,8 +159,7 @@ class Node(NodeBase, Entity[NodeDetail, StatusT]):
 
     @property
     def is_dimmable(self) -> bool:
-        """
-        Return the best guess if this is a dimmable node.
+        """Return the best guess if this is a dimmable node.
 
         Check ISYv4 UOM, then Insteon and Z-Wave Types for dimmable types.
         """
@@ -211,8 +214,7 @@ class Node(NodeBase, Entity[NodeDetail, StatusT]):
 
     @property
     def parent_node(self) -> Entity | None:
-        """
-        Return the parent node object of this node.
+        """Return the parent node object of this node.
 
         Typically this is for devices that are represented as multiple nodes in
         the ISY, such as door and leak sensors.

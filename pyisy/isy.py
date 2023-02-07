@@ -241,8 +241,7 @@ class ISY:
         return True
 
     async def send_x10_cmd(self, address: str, cmd: str) -> None:
-        """
-        Send an X10 command.
+        """Send an X10 command.
 
         address: String of X10 device address (Ex: A10)
         cmd: String of command to execute. Any key of x10_commands can be used

@@ -37,8 +37,7 @@ TAG_PLATFORM = "platform"
 
 @dataclass
 class ConfigurationData:
-    """
-    ISY Configuration Dataclass.
+    """ISY Configuration Dataclass.
 
     DESCRIPTION:
         This class handles the ISY configuration.

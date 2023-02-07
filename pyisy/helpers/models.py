@@ -1,12 +1,60 @@
 """Dataclass and TypedDict models for PyISY."""
 from __future__ import annotations
 
+from contextlib import suppress
 from dataclasses import InitVar, dataclass, field
-from typing import Union, cast
+from datetime import datetime
+from typing import Any, Generic, TypeVar, cast
 
 from pyisy.constants import DEFAULT_PRECISION, DEFAULT_UNIT_OF_MEASURE
 
-OptionalIntT = Union[int, None]
+BoolStrT = str | bool
+NumT = int | float
+OptionalIntT = int | None
+StatusT = TypeVar("StatusT", str, bool, BoolStrT, NumT, OptionalIntT, None)
+
+
+@dataclass
+class EntityStatus(Generic[StatusT]):
+    """Dataclass representation of a status update."""
+
+    address: str
+    status: StatusT
+    last_changed: datetime
+    last_update: datetime
+
+
+@dataclass
+class EventData:
+    """Dataclass to represent the event data returned from the stream."""
+
+    seqnum: str = ""
+    sid: str = ""
+    control: str = ""
+    action: dict[str, Any] | str | None = None
+    node: str | None = None
+    event_info: dict[str, Any] | str | None = None
+    fmt_act: str | None = None
+    fmt_name: str | None = None
+
+
+@dataclass
+class NodeChangedEvent:
+    """Class representation of a node change event."""
+
+    address: str
+    action: str
+    event_info: dict
+
+
+@dataclass
+class NodeNotes:
+    """Dataclass for holding node notes information."""
+
+    spoken: str = ""
+    is_load: bool = False
+    description: str = ""
+    location: str = ""
 
 
 @dataclass
@@ -28,22 +76,26 @@ class NodeProperty:
             self.control = id
 
         if self.value is not None and isinstance(cast(str, self.value), str):
-            try:
+            with suppress(ValueError):
                 self.value = (
                     int(self.value) if cast(str, self.value).strip() != "" else None
                 )
-            except ValueError:
-                pass
 
 
 @dataclass
-class NodeNotes:
-    """Dataclass for holding node notes information."""
+class ZWaveParameter:
+    """Class to hold Z-Wave Parameter from a Z-Wave Node."""
 
-    spoken: str = ""
-    is_load: bool = False
-    description: str = ""
-    location: str = ""
+    param_num: int
+    size: int
+    value: int | str
+
+    def __post_init__(self) -> None:
+        """Post-process a Z-Wave Parameter."""
+        self.param_num = int(cast(str, self.param_num))
+        self.size = int(cast(str, self.size))
+        with suppress(ValueError):
+            self.value = int(cast(str, self.value))
 
 
 @dataclass
@@ -73,21 +125,3 @@ class ZWaveProperties:
             (self.mfr_id, self.prod_type_id, self.product_id) = (
                 f"{int(x):#0{6}x}" for x in self.mfg.split(".")
             )
-
-
-@dataclass
-class ZWaveParameter:
-    """Class to hold Z-Wave Parameter from a Z-Wave Node."""
-
-    param_num: int
-    size: int
-    value: int | str
-
-    def __post_init__(self) -> None:
-        """Post-process a Z-Wave Parameter."""
-        self.param_num = int(cast(str, self.param_num))
-        self.size = int(cast(str, self.size))
-        try:
-            self.value = int(cast(str, self.value))
-        except ValueError:
-            pass

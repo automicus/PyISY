@@ -5,30 +5,16 @@ from abc import ABC
 from dataclasses import dataclass
 from datetime import datetime
 import json
-from typing import TYPE_CHECKING, Generic, TypeVar, Union
+from typing import TYPE_CHECKING, Generic, TypeVar
 
 from pyisy.constants import Protocol
 from pyisy.helpers.events import EventEmitter
-from pyisy.helpers.models import OptionalIntT
+from pyisy.helpers.models import EntityStatus, StatusT
 
 # Typing imports that create a circular dependency
 if TYPE_CHECKING:
     from pyisy.helpers.entity_platform import EntityPlatform
     from pyisy.isy import ISY
-
-BoolStrT = Union[str, bool]
-NumT = Union[int, float]
-StatusT = TypeVar("StatusT", str, bool, BoolStrT, NumT, OptionalIntT, None)
-
-
-@dataclass
-class EntityStatus(Generic[StatusT]):
-    """Dataclass representation of a status update."""
-
-    address: str
-    status: StatusT
-    last_changed: datetime
-    last_update: datetime
 
 
 EntityDetailT = TypeVar("EntityDetailT", bound="EntityDetail")

@@ -70,8 +70,7 @@ class NodeFolder(Entity[NodeFolderDetail, OptionalIntT]):
         return self.detail.parent.get(TAG_ADDRESS, None)
 
     async def rename(self, new_name: str) -> bool:
-        """
-        Rename the node or group in the ISY.
+        """Rename the node or group in the ISY.
 
         Note: Feature was added in ISY v5.2.0, this will fail on earlier versions.
         """

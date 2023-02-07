@@ -23,7 +23,7 @@ classifiers=[
     "Topic :: Home Automation",
 ]
 dynamic = ["version"]
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 
 dependencies = [
     "aiohttp>=3.8.1",
@@ -40,7 +40,7 @@ dependencies = [
 [tool.setuptools_scm]
 
 [tool.black]
-target-version = ["py39", "py310", "py311"]
+target-version = ["py310", "py311"]
 
 [tool.isort]
 # https://github.com/timothycrosley/isort
@@ -61,7 +61,7 @@ combine_as_imports = true
 
 
 [tool.pylint.MAIN]
-py-version = "3.9"
+py-version = "3.10"
 ignore = [
     "tests",
 ]
@@ -162,8 +162,8 @@ expected-line-ending-format = "LF"
 
 [tool.pylint.EXCEPTIONS]
 overgeneral-exceptions = [
-    "BaseException",
-    "Exception",
+    "builtins.BaseException",
+    "builtins.Exception",
 ]
 
 [tool.pylint.TYPING]
@@ -182,3 +182,51 @@ norecursedirs = [
 log_format = "%(asctime)s.%(msecs)03d %(levelname)-8s %(name)s:%(filename)s:%(lineno)s %(message)s"
 log_date_format = "%Y-%m-%d %H:%M:%S"
 asyncio_mode = "auto"
+
+[tool.ruff]
+target-version = "py310"
+
+select = [
+    "C",  # complexity
+    "D",  # docstrings
+    "E",  # pycodestyle
+    "F",  # pyflakes/autoflake
+    "PGH004",  # Use specific rule codes when using noqa
+    "PLC0414", # Useless import alias. Import alias does not rename original package.
+    "SIM105", # Use contextlib.suppress({exception}) instead of try-except-pass
+    "SIM117", # Merge with-statements that use the same scope
+    "SIM300", # Yoda conditions. Use 'age == 42' instead of '42 == age'.
+    "SIM401", # Use get from dict with default instead of an if block
+    "T20",  # flake8-print
+    "TRY004", # Prefer TypeError exception for invalid type
+    "UP",  # pyupgrade
+    "W",  # pycodestyle
+]
+
+ignore = [
+    "D202",  # No blank lines allowed after function docstring
+    "D203",  # 1 blank line required before class docstring
+    "D213",  # Multi-line docstring summary should start at the second line
+    "D404",  # First word of the docstring should not be This
+    "D406",  # Section name should end with a newline
+    "D407",  # Section name underlining
+    "D411",  # Missing blank line before section
+    "E501",  # line too long
+    "E731",  # do not assign a lambda expression, use a def
+]
+
+[tool.ruff.flake8-pytest-style]
+fixture-parentheses = false
+
+[tool.ruff.pyupgrade]
+keep-runtime-typing = true
+
+[tool.ruff.per-file-ignores]
+# Match Case syntax not yet supported by ruff
+"pyisy/events/router.py" = ["E999"]
+
+# Allow for main entry & scripts to write to stdout
+"pyisy/__main__.py" = ["T201"]
+
+[tool.ruff.mccabe]
+max-complexity = 25

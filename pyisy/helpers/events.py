@@ -3,18 +3,15 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import asdict, dataclass, is_dataclass
-from typing import TYPE_CHECKING, Any, TypeVar
+from typing import Any, TypeVar
 
+from pyisy.helpers.models import EntityStatus, EventData, NodeChangedEvent, NodeProperty
 from pyisy.logging import _LOGGER
-
-if TYPE_CHECKING:
-    from pyisy.helpers.entity import EntityStatus
-    from pyisy.helpers.models import NodeProperty
 
 ATTR_EVENT_INFO = "event_info"
 
 _T = TypeVar("_T")
-
+_EventT = NodeProperty | NodeChangedEvent | EntityStatus | EventData
 _CallableT = TypeVar("_CallableT", bound=Callable[..., Any])
 
 
@@ -44,9 +41,7 @@ class EventEmitter:
         """Unsubscribe from the events."""
         self._subscribers.remove(listener)
 
-    def notify(
-        self, event: EntityStatus | NodeProperty | NodeChangedEvent | str | None
-    ) -> None:
+    def notify(self, event: _EventT | str | None) -> None:
         """Notify all subscribed listeners."""
         for subscriber in self._subscribers:
             # Guard against downstream errors interrupting the socket connection (#249)
@@ -77,7 +72,7 @@ class EventEmitter:
         self,
         subscriber: EventListener,
         evt_filter: dict[str, str | dict[str, str]],
-        event: EntityStatus | NodeProperty | NodeChangedEvent,
+        event: _EventT,
     ) -> bool:
         """Evaluate a listener filter."""
         if isinstance(event, NodeChangedEvent) and ATTR_EVENT_INFO in evt_filter:
@@ -106,12 +101,3 @@ class EventListener:
     def unsubscribe(self) -> None:
         """Unsubscribe from the events."""
         self.emitter.unsubscribe(self)
-
-
-@dataclass
-class NodeChangedEvent:
-    """Class representation of a node change event."""
-
-    address: str
-    action: str
-    event_info: dict

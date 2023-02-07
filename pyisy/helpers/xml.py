@@ -1,6 +1,7 @@
 """XML Helper Functions."""
 from __future__ import annotations
 
+from contextlib import suppress
 import re
 from typing import Any, cast
 
@@ -56,22 +57,15 @@ def post_processor(path: str, key: str, value: Any) -> tuple[str, Any]:
         value = int(cast(str, value))
     elif key == "_value":  # Make CData text an integer
         key = TAG_VALUE
-        try:
+        with suppress(ValueError):
             value = int(cast(str, value))
-        except ValueError:
-            pass
     elif key == ATTR_FLAG:
-        try:
+        with suppress(ValueError):
             value = int(cast(str, value))
-        except ValueError:
-            pass
-
     # Convert known dates
     if (key.endswith("_time") or key == "ts") and value is not None:
-        try:
+        with suppress(ValueError):
             value = parser.parse(cast(str, value))
-        except ValueError:
-            pass
 
     return key, value
 

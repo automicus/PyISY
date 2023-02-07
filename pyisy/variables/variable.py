@@ -7,8 +7,9 @@ from typing import TYPE_CHECKING
 
 from pyisy.constants import ATTR_INIT, ATTR_SET, URL_VARIABLES, VAR_INTEGER, Protocol
 from pyisy.helpers import convert_isy_raw_value
-from pyisy.helpers.entity import Entity, EntityDetail, EntityStatus, NumT
+from pyisy.helpers.entity import Entity, EntityDetail
 from pyisy.helpers.events import EventEmitter
+from pyisy.helpers.models import EntityStatus, NumT
 from pyisy.logging import _LOGGER
 
 if TYPE_CHECKING:

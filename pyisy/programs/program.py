@@ -9,7 +9,8 @@ from pyisy.constants import (
     CMD_ENABLE_RUN_AT_STARTUP,
     Protocol,
 )
-from pyisy.helpers.entity import BoolStrT, Entity
+from pyisy.helpers.entity import Entity
+from pyisy.helpers.models import BoolStrT
 from pyisy.programs.folder import Folder, FolderDetail
 
 if TYPE_CHECKING:

@@ -28,9 +28,9 @@ from pyisy.constants import (
     NodeFamily,
     NodeFlag,
 )
-from pyisy.helpers.entity import Entity, EntityDetail, EntityStatus
+from pyisy.helpers.entity import Entity, EntityDetail
 from pyisy.helpers.events import EventEmitter
-from pyisy.helpers.models import NodeNotes, NodeProperty, OptionalIntT
+from pyisy.helpers.models import EntityStatus, NodeNotes, NodeProperty, OptionalIntT
 from pyisy.helpers.xml import parse_xml
 from pyisy.logging import _LOGGER
 
@@ -243,8 +243,7 @@ class NodeBase(Entity[NodeBaseDetail, OptionalIntT]):
         return await self.send_cmd(CMD_OFF)
 
     async def turn_on(self, val: int | str | None = None) -> bool:
-        """
-        Turn the node on.
+        """Turn the node on.
 
         |  [optional] val: The value brightness value (0-255) for the node.
         """
@@ -259,8 +258,7 @@ class NodeBase(Entity[NodeBaseDetail, OptionalIntT]):
         return await self.send_cmd(cmd, val)
 
     async def rename(self, new_name: str) -> bool:
-        """
-        Rename the node or group in the ISY.
+        """Rename the node or group in the ISY.
 
         Note: Feature was added in ISY v5.2.0, this will fail on earlier versions.
         """

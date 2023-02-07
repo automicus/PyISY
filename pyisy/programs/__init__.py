@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import json
-from typing import TYPE_CHECKING, Any, Union, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from dateutil import parser
 
@@ -34,7 +34,7 @@ PROG_STATUS: dict[str, str | bool] = {
     "F": "not_loaded",
 }
 
-ProgramsT = Union[Folder, Program]
+ProgramsT = Folder | Program
 
 
 class Programs(EntityPlatform[ProgramsT]):

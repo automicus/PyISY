@@ -30,8 +30,7 @@ class NetworkResources(EntityPlatform):
     """Network Resources class."""
 
     def __init__(self, isy: ISY) -> None:
-        """
-        Initialize the network resources class.
+        """Initialize the network resources class.
 
         Iterate over self.values()
         """
@@ -62,8 +61,7 @@ class NetworkResources(EntityPlatform):
             _LOGGER.exception("Error loading %s: %s", PLATFORM, exc)
 
     async def update_threaded(self, interval: float) -> None:
-        """
-        Continually update the class until it is told to stop.
+        """Continually update the class until it is told to stop.
 
         Should be run in a thread.
         """

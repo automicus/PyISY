@@ -4,7 +4,7 @@ from __future__ import annotations
 import asyncio
 from dataclasses import asdict
 import json
-from typing import TYPE_CHECKING, Any, Union, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from pyisy.constants import (
     DEFAULT_DIR,
@@ -45,7 +45,7 @@ if TYPE_CHECKING:
 PLATFORM = "nodes"
 
 
-NodesT = Union[NodeFolder, Node, Group]
+NodesT = NodeFolder | Node | Group
 
 
 class Nodes(EntityPlatform[NodesT]):
@@ -300,8 +300,7 @@ class Nodes(EntityPlatform[NodesT]):
         return self.entities[parent].name
 
     def get_groups(self, address: str, is_controller: bool = True) -> list[str]:
-        """
-        Return the groups (scenes) of which this node is a member.
+        """Return the groups (scenes) of which this node is a member.
 
         If is_controller is True, only return groups for which this is
         a controller.

@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import ssl
-import sys
 from typing import TYPE_CHECKING
 
 import aiohttp
@@ -47,17 +46,13 @@ def get_sslcontext(conn_info: ISYConnectionInfo) -> ssl.SSLContext | None:
 
 
 def can_https(tls_ver: float | None) -> bool:
-    """
-    Verify minimum requirements to use an HTTPS connection.
+    """Verify minimum requirements to use an HTTPS connection.
 
     Returns boolean indicating whether HTTPS is available.
     """
     output = True
 
     # check python version
-    if sys.version_info < (3, 7):
-        _LOGGER.error("PyISY cannot use HTTPS: Invalid Python version. See docs.")
-        output = False
 
     # check that Python was compiled against correct OpenSSL lib
     if "PROTOCOL_TLSv1_1" not in dir(ssl):

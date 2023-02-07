@@ -37,11 +37,15 @@ def ntp_to_system_time(timestamp: int) -> datetime:
     Adapted from Python ntplib module.
     https://pypi.org/project/ntplib/
 
-    Parameters:
-    timestamp -- timestamp in NTP time
+    Parameters
+    ----------
+    timestamp: int
+        A timestamp in NTP time
 
-    Returns:
-    corresponding system time
+    Returns
+    -------
+    datetime:
+        Returns the timestamp in system time
 
     Note: The ISY uses a EPOCH_OFFSET in addition to standard NTP.
 
@@ -55,8 +59,7 @@ def ntp_to_system_time(timestamp: int) -> datetime:
 
 @dataclass
 class ClockData:
-    """
-    Dataclass representing the ISY Clock Data.
+    """Dataclass representing the ISY Clock Data.
 
     DESCRIPTION:
         This class handles the ISY clock/location info.
@@ -66,7 +69,7 @@ class ClockData:
         and does not present enough information to accurately
         manage DST without significant guessing and effort.
 
-    ATTRIBUTES:
+    Attributes:
         isy: The ISY device class
         last_called: the time of the last call to /rest/time
         tz_offset: The Time Zone Offset of the ISY
@@ -123,8 +126,7 @@ class Clock:
         self.url = isy.conn.compile_url([URL_CLOCK])
 
     async def update(self, wait_time: float = 0) -> None:
-        """
-        Update the contents of the clock class.
+        """Update the contents of the clock class.
 
         wait_time: [optional] Amount of seconds to wait before updating
         """
@@ -137,8 +139,7 @@ class Clock:
         self.loaded = True
 
     async def update_thread(self, interval: float) -> None:
-        """
-        Continually update the class until it is told to stop.
+        """Continually update the class until it is told to stop.
 
         Should be run as a task in the event loop.
         """

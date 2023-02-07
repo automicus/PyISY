@@ -127,13 +127,12 @@ class NodeServerNodeDef:
 
 
 class NodeServers:
-    """
-    ISY NodeServers class object.
+    """ISY NodeServers class object.
 
     DESCRIPTION:
         This class handles the ISY Node Servers info.
 
-    ATTRIBUTES:
+    Attributes:
         isy: The ISY device class
 
     """
