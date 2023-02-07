@@ -1,6 +1,7 @@
 """Connection to the ISY."""
 from __future__ import annotations
 
+from argparse import Namespace
 import asyncio
 from dataclasses import InitVar, dataclass, field
 from urllib.parse import ParseResult, quote, urlencode, urlparse
@@ -65,13 +66,17 @@ class Connection:
     """Connection object to manage connection to and interaction with ISY."""
 
     connection_info: ISYConnectionInfo
+    args: Namespace | None
 
-    def __init__(self, connection_info: ISYConnectionInfo) -> None:
+    def __init__(
+        self, connection_info: ISYConnectionInfo, args: Namespace | None = None
+    ) -> None:
         """Initialize the Connection object."""
         if len(_LOGGER.handlers) == 0:
             enable_logging(add_null_handler=True)
 
         self.connection_info = connection_info
+        self.args = args
 
         self.semaphore = asyncio.Semaphore(
             MAX_HTTPS_CONNECTIONS_ISY

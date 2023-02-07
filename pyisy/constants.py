@@ -83,7 +83,8 @@ ATTR_VAR = "var"
 DEFAULT_PRECISION = 0
 DEFAULT_UNIT_OF_MEASURE = ""
 
-NET_MODULE = "Networking Module"
+CONFIG_NETWORKING = "Networking Module"
+CONFIG_PORTAL = "Portal Integration - UDI"
 
 TAG_ID = "id"
 TAG_ADDRESS = "address"

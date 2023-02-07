@@ -73,7 +73,7 @@ class ISY:
 
         # Initialize connection info and connection
         self.connection_info = connection_info
-        self.conn = Connection(connection_info)
+        self.conn = Connection(connection_info, args)
 
         # Setup websocket or fall back to TCP socket
         if use_websocket:
@@ -122,7 +122,7 @@ class ISY:
         if variables:
             isy_setup_tasks.append(self.variables.update())
 
-        if networking and self.config.networking:
+        if networking and (self.config.networking or self.config.portal):
             isy_setup_tasks.append(self.networking.update())
 
         await asyncio.gather(*isy_setup_tasks)

@@ -2,12 +2,14 @@
 from __future__ import annotations
 
 import asyncio
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from typing import TYPE_CHECKING, Any
 
 from pyisy.constants import (
     ATTR_ID,
-    NET_MODULE,
+    CONFIG_NETWORKING,
+    CONFIG_PORTAL,
+    DEFAULT_DIR,
     TAG_DESC,
     TAG_FEATURE,
     TAG_FIRMWARE,
@@ -21,10 +23,12 @@ from pyisy.constants import (
 )
 from pyisy.helpers.xml import parse_xml
 from pyisy.logging import _LOGGER
+from pyisy.util.output import write_to_file
 
 if TYPE_CHECKING:
     from pyisy.connection import Connection
 
+PLATFORM = "config"
 TRUE = "true"
 TAG_FEATURES = "features"
 TAG_CONFIG = "configuration"
@@ -80,6 +84,7 @@ class ConfigurationData:
     variables: bool
     nodedefs: bool
     networking: bool
+    portal: bool
     features: list[dict[str, str]]
     node_servers: bool = False
 
@@ -106,7 +111,12 @@ class Configuration:
         networking = any(
             i
             for i in features
-            if i[TAG_DESC] == NET_MODULE and i[TAG_INSTALLED] == TRUE
+            if i[TAG_DESC] == CONFIG_NETWORKING and i[TAG_INSTALLED] == TRUE
+        )
+        portal = any(
+            i
+            for i in features
+            if i[TAG_DESC] == CONFIG_PORTAL and i[TAG_INSTALLED] == TRUE
         )
 
         self.config_data = ConfigurationData(
@@ -119,15 +129,25 @@ class Configuration:
             variables=bool(config[TAG_VARIABLES] == TRUE),
             nodedefs=bool(config[TAG_NODE_DEFS] == TRUE),
             networking=networking,
+            portal=portal,
             features=features,
         )
+
+        if conn.args is not None and conn.args.file:
+            loop = asyncio.get_running_loop()
+            await loop.run_in_executor(
+                None,
+                write_to_file,
+                asdict(self.config_data),
+                f"{DEFAULT_DIR}rest-{PLATFORM}.json",
+            )
 
         _LOGGER.info("Loaded configuration")
         return self.config_data
 
     def __str__(self) -> str:
         """Return string representation of Configuration data."""
-        return str(self.config_data)
+        return str(asdict(self.config_data))
 
     def __repr__(self) -> str:
         """Return string representation of Configuration data."""
