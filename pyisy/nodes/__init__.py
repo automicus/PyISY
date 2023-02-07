@@ -593,8 +593,7 @@ class Nodes:
             i = self.addresses.index(address)
         except ValueError:
             return None
-        else:
-            return self.get_by_index(i)
+        return self.get_by_index(i)
 
     def get_by_index(self, i):
         """
