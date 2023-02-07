@@ -8,6 +8,8 @@ from .connection import Connection
 from .constants import (
     ATTR_ACTION,
     CMD_X10,
+    CONFIG_NETWORKING,
+    CONFIG_PORTAL,
     ES_CONNECTED,
     ES_RECONNECT_FAILED,
     ES_RECONNECTING,
@@ -133,7 +135,7 @@ class ISY:
             self.conn.get_variable_defs(),
             self.conn.get_variables(),
         ]
-        if self.configuration["Networking Module"]:
+        if self.configuration[CONFIG_NETWORKING] or self.configuration[CONFIG_PORTAL]:
             isy_setup_tasks.append(asyncio.create_task(self.conn.get_network()))
         isy_setup_results = await asyncio.gather(*isy_setup_tasks)
 
@@ -145,7 +147,7 @@ class ISY:
             def_xml=isy_setup_results[4],
             var_xml=isy_setup_results[5],
         )
-        if self.configuration["Networking Module"]:
+        if self.configuration[CONFIG_NETWORKING] or self.configuration[CONFIG_PORTAL]:
             self.networking = NetworkResources(self, xml=isy_setup_results[6])
         await self.nodes.update(xml=isy_setup_results[0])
         if self.node_servers and with_node_servers:
