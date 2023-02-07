@@ -6,12 +6,11 @@ import re
 from typing import TYPE_CHECKING, cast
 
 from pyisy.constants import ATTR_CONTROL, TAG_ADDRESS, TAG_ENABLED, NodeChangeAction
-from pyisy.helpers.events import NodeChangedEvent
+from pyisy.helpers.models import EventData, NodeChangedEvent
 from pyisy.logging import _LOGGER
 from pyisy.nodes.node import Node
 
 if TYPE_CHECKING:
-    from pyisy.events.router import EventData
     from pyisy.nodes import Nodes
 
 

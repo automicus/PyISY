@@ -8,9 +8,9 @@ from typing import TYPE_CHECKING, Any, cast
 from dateutil import parser
 
 from pyisy.constants import TAG_FOLDER, URL_PROGRAMS, URL_SUBFOLDERS, XML_TRUE
-from pyisy.events.router import EventData
 from pyisy.helpers.entity_platform import EntityPlatform
 from pyisy.helpers.events import EventEmitter
+from pyisy.helpers.models import EventData
 from pyisy.logging import _LOGGER, LOG_VERBOSE
 from pyisy.programs.folder import Folder, FolderDetail
 from pyisy.programs.program import Program, ProgramDetail

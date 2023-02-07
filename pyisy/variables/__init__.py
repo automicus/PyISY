@@ -16,9 +16,9 @@ from pyisy.constants import (
     VAR_INTEGER,
     VAR_STATE,
 )
-from pyisy.events.router import EventData
 from pyisy.helpers import convert_isy_raw_value
 from pyisy.helpers.entity_platform import EntityPlatform
+from pyisy.helpers.models import EventData
 from pyisy.helpers.xml import parse_xml
 from pyisy.logging import _LOGGER, LOG_VERBOSE
 from pyisy.util.output import write_to_file
