@@ -17,7 +17,7 @@ from pyisy.constants import (
 )
 from pyisy.helpers.entity import Entity
 from pyisy.helpers.events import EventEmitter
-from pyisy.helpers.models import BoolStrT, EntityDetail
+from pyisy.helpers.models import EntityDetail
 from pyisy.logging import _LOGGER
 
 if TYPE_CHECKING:
@@ -32,14 +32,14 @@ class FolderDetail(EntityDetail):
 
     id: str = ""
     name: str = ""
-    status: BoolStrT = "not_loaded"
+    status: str = "not_loaded"
     folder: bool = False
     last_finish_time: datetime | None = None
     last_run_time: datetime | None = None
     next_scheduled_run_time: datetime | None = None
 
 
-class Folder(Entity[FolderDetail, BoolStrT]):
+class Folder(Entity[FolderDetail, bool]):
     """Object representing a program folder on the ISY device."""
 
     def __init__(
@@ -53,7 +53,7 @@ class Folder(Entity[FolderDetail, BoolStrT]):
         self._address = address
         self._name = name
         self._last_update = datetime.now()
-        self._status = detail.status
+        self._status = bool(detail.status == "true")
         self.detail = detail
 
     async def send_cmd(self, command: str) -> bool:

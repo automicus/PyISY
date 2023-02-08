@@ -10,7 +10,6 @@ from pyisy.constants import (
     Protocol,
 )
 from pyisy.helpers.entity import Entity
-from pyisy.helpers.models import BoolStrT
 from pyisy.programs.folder import Folder, FolderDetail
 
 if TYPE_CHECKING:
@@ -28,7 +27,7 @@ class ProgramDetail(FolderDetail):
     running: str = ""
 
 
-class Program(Folder, Entity[ProgramDetail, BoolStrT]):
+class Program(Folder, Entity[ProgramDetail, bool]):
     """Class representing a program on the ISY controller."""
 
     def __init__(

@@ -8,10 +8,9 @@ from typing import Any, Generic, TypeVar, cast
 
 from pyisy.constants import DEFAULT_PRECISION, DEFAULT_UNIT_OF_MEASURE
 
-BoolStrT = str | bool
 NumT = int | float
 OptionalIntT = int | None
-StatusT = TypeVar("StatusT", str, bool, BoolStrT, NumT, OptionalIntT, None)
+StatusT = TypeVar("StatusT", str, bool, NumT, OptionalIntT, None)
 
 
 EntityDetailT = TypeVar("EntityDetailT", bound="EntityDetail")
