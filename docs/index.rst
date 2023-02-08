@@ -1,10 +1,10 @@
 PyISY
 =====
 
-A Python Library for the ISY994 Controller
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+A Python Library for the ISY/IoX Controllers
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-This module was developed to communicate with the `UDI ISY994 <https://www.universal-devices.com/>`_
+This module was developed to communicate with the `UDI ISY <https://www.universal-devices.com/>`_
 home automation hub via the hub's REST interface and Websocket/SOAP event streams. It provides
 near real-time updates from the device and allows control of all devices that
 are supported within the ISY.
@@ -24,7 +24,7 @@ Project Information
 
 .. note::
 
-    This documentation is specific to PyISY Version 3.x.x, which uses asynchronous
+    This documentation is specific to PyISY Version 4, which uses asynchronous
     communications and the asyncio module. If you need threaded (synchronous) support
     please use Version 2.x.x.
 
@@ -54,15 +54,19 @@ installed automatically when PyISY is installed using pip.
 * `aiohttp <https://docs.aiohttp.org/en/stable/>`_
 
 Contents
-~~~~~~~~
+========
+
 .. toctree::
-   :maxdepth: 1
+    :maxdepth: 1
+    :name: mastertoc
+    :glob:
 
-   quickstart
-   library
-   constants
+    *
+    api/index.rst
 
-Indices and Tables
-~~~~~~~~~~~~~~~~~~
+Indices and tables
+==================
+
 * :ref:`genindex`
+* :ref:`modindex`
 * :ref:`search`

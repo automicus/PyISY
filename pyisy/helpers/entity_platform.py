@@ -51,6 +51,7 @@ class EntityPlatform(ABC, Generic[EntityT]):
 
     loaded: bool = False
     status_events: EventEmitter
+    platform_events: EventEmitter
     names: list[str]
     addresses: list[str]
     entities: dict[str, EntityT]
@@ -84,6 +85,7 @@ class EntityPlatform(ABC, Generic[EntityT]):
         # Stop tracking tasks after setup is completed
         self._setup_complete = False
         self.status_events = EventEmitter()
+        self.platform_events = EventEmitter()
 
     def __repr__(self) -> str:
         """Represent an EntityPlatform."""
@@ -133,7 +135,7 @@ class EntityPlatform(ABC, Generic[EntityT]):
             if entity.detail != self.entities[address].detail:
                 self.names[self.addresses.index(address)] = name
                 self.entities[address].update_entity(name, entity.detail)
-                self.status_events.notify(
+                self.platform_events.notify(
                     f"{self.platform_name}.{EntityPlatformEvent.ENTITY_CHANGED}"
                 )
             return
@@ -141,7 +143,7 @@ class EntityPlatform(ABC, Generic[EntityT]):
         self.entities[address] = entity
         self.addresses.append(address)
         self.names.append(name)
-        self.status_events.notify(
+        self.platform_events.notify(
             f"{self.platform_name}.{EntityPlatformEvent.ENTITY_ADDED}"
         )
 

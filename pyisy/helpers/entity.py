@@ -126,11 +126,14 @@ class Entity(ABC, Generic[EntityDetailT, StatusT]):
 
         if force:
             self._last_changed = datetime.now()
-            self.status_events.notify(
-                EntityStatus(
-                    self.address, self.status, self._last_changed, self._last_update
-                )
+            status = EntityStatus(
+                self.address, self.status, self._last_changed, self._last_update
             )
+            self.status_events.notify(status)
+
+            # Also notify platform-level subscribers
+            if self.platform is not None:
+                self.platform.status_events.notify(status)
 
     def update_last_changed(self, timestamp: datetime | None = None) -> None:
         """Set the UTC Time of the last status change for this entity."""

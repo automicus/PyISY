@@ -19,7 +19,7 @@ from typing import Any
 
 from pyisy.connection import ISYConnectionError, ISYConnectionInfo, ISYInvalidAuthError
 from pyisy.constants import DEFAULT_DIR, NodeChangeAction, SystemStatus
-from pyisy.helpers.events import NodeChangedEvent
+from pyisy.helpers.models import EntityStatus, NodeChangedEvent
 from pyisy.isy import ISY
 from pyisy.logging import LOG_VERBOSE, enable_logging
 from pyisy.util.output import write_to_file
@@ -28,7 +28,11 @@ _LOGGER = logging.getLogger(__name__)
 
 
 async def main(args: argparse.Namespace) -> None:
-    """Execute connection to ISY and load all system info."""
+    """Execute connection to ISY and load all system info.
+
+    Args:
+        args (argparse.Namespace): Command-line parameters
+    """
     _LOGGER.info("Starting PyISY...")
     t_0 = time.time()
 
@@ -59,7 +63,12 @@ async def main(args: argparse.Namespace) -> None:
         return
 
     def node_changed_handler(event: NodeChangedEvent, key: str) -> None:
-        """Handle a node changed event sent from Nodes class."""
+        """Handle a node changed event sent from Nodes class .
+
+        Args:
+            event (NodeChangedEvent): The event details
+            key (str): The key provided for this listener
+        """
         _LOGGER.info(
             "Node %s Changed: %s %s",
             event.address,
@@ -67,12 +76,30 @@ async def main(args: argparse.Namespace) -> None:
             event.event_info if event.event_info else "",
         )
 
+    def node_status_handler(event: EntityStatus, key: str) -> None:
+        """Handle a node status event sent from Nodes class .
+
+        Args:
+            event (EntityStatus): The event details
+            key (str): The key provided for this listener
+        """
+        _LOGGER.info("Node status updated: %s", json.dumps(asdict(event), default=str))
+
     def system_status_handler(event: SystemStatus) -> None:
-        """Handle a system status changed event sent ISY class."""
+        """Handle a system status changed event sent ISY class.
+
+        Args:
+            event (SystemStatus): The system status event.
+        """
         _LOGGER.info("System Status Changed: %s", event.name.replace("_", " ").title())
 
     def status_handler(event: Any, key: str) -> None:
-        """Handle a generic status changed event sent."""
+        """Handle a generic status changed event sent .
+
+        Args:
+            event (Any): The event details
+            key (str): The key provided for this listener
+        """
         output: str
         if is_dataclass(event):
             output = json.dumps(asdict(event), default=str)
@@ -97,7 +124,8 @@ async def main(args: argparse.Namespace) -> None:
                 isy.nodes.to_dict(),
                 f"{DEFAULT_DIR}nodes-loaded.json",
             )
-        isy.nodes.status_events.subscribe(node_changed_handler, key="nodes")
+        isy.nodes.status_events.subscribe(node_status_handler, key="nodes")
+        isy.nodes.platform_events.subscribe(node_changed_handler, key="nodes")
     if args.programs:
         _LOGGER.debug(repr(isy.programs))
         if args.file:
@@ -107,7 +135,7 @@ async def main(args: argparse.Namespace) -> None:
                 isy.programs.get_tree(),
                 f"{DEFAULT_DIR}programs.json",
             )
-        isy.programs.status_events.subscribe(status_handler, key="programs")
+        isy.programs.platform_events.subscribe(status_handler, key="programs")
     if args.variables:
         _LOGGER.debug(repr(isy.variables))
         if args.file:
@@ -117,7 +145,7 @@ async def main(args: argparse.Namespace) -> None:
                 isy.variables.to_dict(),
                 f"{DEFAULT_DIR}variables.json",
             )
-        isy.variables.status_events.subscribe(status_handler, key="variables")
+        isy.variables.platform_events.subscribe(status_handler, key="variables")
     if args.networking:
         _LOGGER.debug(repr(isy.networking))
         if args.file:

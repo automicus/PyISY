@@ -20,6 +20,20 @@ def convert_isy_raw_value(
 
     Insteon Thermostats report temperature in 0.5-deg precision as an int
     by sending a value of 2 times the Temp. Correct by dividing by 2 here.
+
+    Args:
+        value (int | float):
+            The value to convert.
+        uom (str, optional):
+            The ISY Unit of Measure code. Default is None.
+        precision (int | str):
+            The precision (decimal places) to convert the value to.
+        fallback_precision (int, optional):
+            The fallback precision to use with normal rounding. Default is None.
+
+    Returns:
+        float | int:
+            The converted value
     """
     if value is None or value == ISY_VALUE_UNKNOWN:
         return ISY_VALUE_UNKNOWN

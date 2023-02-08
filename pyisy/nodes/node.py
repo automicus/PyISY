@@ -58,14 +58,6 @@ if TYPE_CHECKING:
 
 
 @dataclass
-class VariableStatus(EntityStatus):
-    """Dataclass to hold variable status."""
-
-    timestamp: datetime
-    precision: int = 0
-
-
-@dataclass
 class NodeDetail(NodeBaseDetail):
     """Dataclass to hold entity detail info."""
 
@@ -279,9 +271,30 @@ class Node(NodeBase, Entity[NodeDetail, StatusT]):
             )
             return
 
+    def update_property(self, prop: NodeProperty) -> None:
+        """Update an aux property for the node when received."""
+        self.update_last_update()
+
+        if aux_prop := self.aux_properties.get(prop.control):
+            if prop.uom == "" and not aux_prop.uom == "":
+                # Guard against overwriting known UOM with blank UOM (ISYv4).
+                prop.uom = aux_prop.uom
+            if aux_prop == prop:
+                # Only update on change
+                return
+        self.aux_properties[prop.control] = prop
+        self.update_last_changed()
+        self.control_events.notify(prop)
+        status = EntityStatus(
+            self.address, self.status, self._last_changed, self._last_update
+        )
+        self.status_events.notify(status)
+
+        if prop.control != PROP_STATUS:
+            self.platform.status_events.notify(status)
+
     async def get_zwave_parameter(self, parameter: int) -> ZWaveParameter | None:
         """Retrieve a Z-Wave Parameter from the ISY."""
-
         if self.protocol != Protocol.ZWAVE:
             _LOGGER.warning("Cannot retrieve parameters of non-Z-Wave device")
             return None

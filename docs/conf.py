@@ -1,7 +1,6 @@
 """Configuration file for the Sphinx documentation builder."""
 #
-# This file only contains a selection of the most common options. For a full
-# list see the documentation:
+# For the full list of built-in configuration values, see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 
 # -- Path setup --------------------------------------------------------------
@@ -25,18 +24,18 @@ MOCK_MODULES = [
 for mod_name in MOCK_MODULES:
     sys.modules[mod_name] = mock.Mock()
 
+
 # -- Project information -----------------------------------------------------
+# https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = "PyISY"
-copyright = "2021, rmkraus, overloadut, shbatm"
-author = "rmkraus, overloadut, shbatm"
-
+copyright = "2023, shbatm, rmkraus"
+author = "shbatm, rmkraus"
+release = "4.0.0"
 
 # -- General configuration ---------------------------------------------------
+# https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
-# Add any Sphinx extension module names here, as strings. They can be
-# extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
-# ones.
 extensions = [
     # "recommonmark",
     "sphinx.ext.todo",

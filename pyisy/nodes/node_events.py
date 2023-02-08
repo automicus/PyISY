@@ -13,7 +13,6 @@ from pyisy.nodes.node import Node
 if TYPE_CHECKING:
     from pyisy.nodes import Nodes
 
-
 PLATFORM = "nodes"
 
 
@@ -33,8 +32,13 @@ def node_update_received(nodes: Nodes, event: EventData) -> None:
         update_task.add_done_callback(nodes.isy.background_tasks.discard)
         return
     entity = cast(Node, nodes.entities[address])
-    if not isinstance((action := event.action), dict) or not action:
-        return
+    if (action := event.action) is None:
+        action = "0"
+    if not isinstance(action, dict):
+        try:
+            action = {"value": int(action)}
+        except ValueError:
+            action = {"value": 0}
     # Merge control into action to match status call
     action[ATTR_CONTROL] = event.control
     # Store address for NodeProperty
@@ -60,7 +64,7 @@ def node_changed_received(nodes: Nodes, event: EventData) -> None:
             entity = nodes.entities[address]
             entity.update_enabled(cast(bool, detail[TAG_ENABLED]))
 
-    nodes.status_events.notify(event=NodeChangedEvent(address, action, detail))
+    nodes.platform_events.notify(event=NodeChangedEvent(address, action, detail))
     _LOGGER.debug(
         "Received a %s event for node %s %s",
         description.replace("_", " ").title(),
@@ -88,7 +92,7 @@ def progress_report_received(nodes: Nodes, event_data: EventData) -> None:
                 "cmd2": event.group("cmd2"),
                 "value": int(event.group("value"), 16),
             }
-    nodes.status_events.notify(event=NodeChangedEvent(address, action, detail))
+    nodes.platform_events.notify(event=NodeChangedEvent(address, action, detail))
     _LOGGER.debug(
         "Received a progress report %s event for node %s %s",
         action,

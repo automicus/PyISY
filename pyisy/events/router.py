@@ -8,7 +8,7 @@ import json
 import logging
 from typing import TYPE_CHECKING, cast
 
-from pyisy.constants import PROP_STATUS
+from pyisy.constants import ATTR_STATUS
 from pyisy.helpers.events import EventEmitter
 from pyisy.helpers.models import EventData
 from pyisy.helpers.xml import parse_xml
@@ -241,7 +241,7 @@ class EventRouter:
                 update_status_task.add_done_callback(self.isy.background_tasks.discard)
             case ConfigAction.BATCH_MODE:
                 self.isy.diagnostics.batch_mode = (
-                    cast(dict, event.event_info)[PROP_STATUS] == "1"
+                    cast(dict, event.event_info)[ATTR_STATUS] == "1"
                 )
                 _LOGGER.debug(
                     "Batch mode changed to: %s",
@@ -249,7 +249,7 @@ class EventRouter:
                 )
             case ConfigAction.BATTERY_MODE_PROGRAMMING:
                 self.isy.diagnostics.write_updates_to_battery_nodes = (
-                    cast(dict, event.event_info)[PROP_STATUS] == "1"
+                    cast(dict, event.event_info)[ATTR_STATUS] == "1"
                 )
                 _LOGGER.debug(
                     "Battery programming mode changed to: %s",

@@ -7,26 +7,26 @@ ISY Class
     :members:
 
 
-Node Manager Class
-------------------
+Nodes Entity Platform Class
+---------------------------
 .. autoclass:: pyisy.nodes.Nodes
     :members:
     :special-members:
 
-Node Base Class
----------------
+Node Base Entity Class
+----------------------
 .. autoclass:: pyisy.nodes.nodebase.NodeBase
     :members:
     :special-members:
 
-Node Class
-----------
+Node Entity Class
+-----------------
 .. autoclass:: pyisy.nodes.Node
     :members:
     :special-members:
 
-Group Class
------------
+Group Entity Class
+------------------
 .. autoclass:: pyisy.nodes.Group
     :members:
     :special-members:

@@ -4,7 +4,6 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, cast
-from xml.dom import minidom
 
 from pyisy.constants import (
     CMD_BEEP,
@@ -30,7 +29,7 @@ from pyisy.constants import (
 )
 from pyisy.helpers.entity import Entity, EntityDetail
 from pyisy.helpers.events import EventEmitter
-from pyisy.helpers.models import EntityStatus, NodeNotes, NodeProperty, OptionalIntT
+from pyisy.helpers.models import NodeNotes, NodeProperty, OptionalIntT
 from pyisy.helpers.xml import parse_xml
 from pyisy.logging import _LOGGER
 
@@ -127,34 +126,6 @@ class NodeBase(Entity[NodeBaseDetail, OptionalIntT]):
             return
 
         self.notes = NodeNotes(**cast(dict, notes))
-
-    async def update(
-        self,
-        event: NodeProperty | None = None,
-        wait_time: float = 0,
-        xmldoc: minidom.Element | None = None,
-    ) -> None:
-        """Update the group with values from the controller."""
-        self.update_last_update()
-
-    def update_property(self, prop: NodeProperty) -> None:
-        """Update an aux property for the node when received."""
-        self.update_last_update()
-
-        aux_prop = self.aux_properties.get(prop.control)
-        if aux_prop:
-            if prop.uom == "" and not aux_prop.uom == "":
-                # Guard against overwriting known UOM with blank UOM (ISYv4).
-                prop.uom = aux_prop.uom
-            if aux_prop == prop:
-                return
-        self.aux_properties[prop.control] = prop
-        self.update_last_changed()
-        self.status_events.notify(
-            EntityStatus(
-                self.address, self.status, self._last_changed, self._last_update
-            )
-        )
 
     async def send_cmd(
         self,

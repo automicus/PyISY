@@ -27,5 +27,8 @@
     "strings": true
   },
   "python.analysis.autoImportCompletions": true,
-  "python.autoComplete.extraPaths": ["/workspaces"]
+  "python.autoComplete.extraPaths": ["/workspaces"],
+  "esbonio.sphinx.buildDir": "${workspaceFolder}/docs/build",
+  "esbonio.sphinx.confDir": "${workspaceFolder}/docs",
+  "esbonio.sphinx.srcDir": "${workspaceFolder}/docs"
 }

@@ -239,18 +239,19 @@ class Nodes(EntityPlatform[NodesT]):
             result.value = INSTEON_RAMP_RATES.get(str(result.value), result.value)
             result.uom = UOM_SECONDS
 
-        elif result.control not in EVENT_PROPS_IGNORED:
-            prop = {result.control: result}
-            if prop.items() <= entity.aux_properties.items():
-                return  # Property hasn't changed
-            entity.aux_properties[result.control] = result
+        if result.control not in EVENT_PROPS_IGNORED:
+            entity.update_property(result)
+            return
 
-        entity.control_events.notify(result)
         _LOGGER.debug(
             "Received node control for %s: %s",
             entity.name,
             asdict(result),
         )
+        entity.control_events.notify(result)
+        if result.control != PROP_STATUS:
+            # Internal status update will notify platform-level subscribers
+            self.status_events.notify(result)
 
     async def update_node(self, address: str, wait_time: float = 0) -> None:
         """Update a single node."""

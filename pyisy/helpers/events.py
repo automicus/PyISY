@@ -1,9 +1,9 @@
 """Event Handlers and Helpers."""
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Hashable
 from dataclasses import asdict, dataclass, is_dataclass
-from typing import Any, TypeVar
+from typing import Any, Generic, TypeVar
 
 from pyisy.helpers.models import EntityStatus, EventData, NodeChangedEvent, NodeProperty
 from pyisy.logging import _LOGGER
@@ -11,6 +11,7 @@ from pyisy.logging import _LOGGER
 ATTR_EVENT_INFO = "event_info"
 
 _T = TypeVar("_T")
+_KeyT = TypeVar("_KeyT", bound=Hashable)
 _EventT = NodeProperty | NodeChangedEvent | EntityStatus | EventData
 _CallableT = TypeVar("_CallableT", bound=Callable[..., Any])
 
@@ -28,9 +29,24 @@ class EventEmitter:
         self,
         callback: _CallableT,
         event_filter: dict | str | None = None,
-        key: str | None = None,
+        key: _KeyT | None = None,
     ) -> EventListener:
-        """Subscribe to the events."""
+        """Subscribe to the EventEmitter's events.
+
+        Args:
+            callback (_CallableT):
+                A callback function to call when an event is fired.
+            event_filter (dict or str, optional):
+                A filter string or dict to filter what events raise the callback.
+                Defaults to None.
+            key (_KeyT, optional):
+                A key which, if provided, will be passed back to the callback.
+                Defaults to None.
+
+        Returns:
+            EventListener:
+                The EventListener object reference.
+        """
         listener = EventListener(
             emitter=self, callback=callback, event_filter=event_filter, key=key
         )
@@ -38,11 +54,21 @@ class EventEmitter:
         return listener
 
     def unsubscribe(self, listener: EventListener) -> None:
-        """Unsubscribe from the events."""
+        """Unsubscribe from the events.
+
+        Args:
+            listener (EventListener):
+                The listener object reference returned when subscribed.
+        """
         self._subscribers.remove(listener)
 
     def notify(self, event: _EventT | str | None) -> None:
-        """Notify all subscribed listeners."""
+        """Notify all subscribed listeners.
+
+        Args:
+            event (_EventT):
+                The event to pass on to the subscribed listeners.
+        """
         for subscriber in self._subscribers:
             # Guard against downstream errors interrupting the socket connection (#249)
             try:
@@ -74,7 +100,20 @@ class EventEmitter:
         evt_filter: dict[str, str | dict[str, str]],
         event: _EventT,
     ) -> bool:
-        """Evaluate a listener filter."""
+        """Evaluate a listener filter.
+
+        Args:
+            subscriber (EventListener):
+                The subscriber for which to evaluate the filter.
+            evt_filter (dict[str, str | dict[str, str]]):
+                The event filter to test against the fired event.
+            event (_EventT):
+                The event against which the filter is evaluated.
+
+        Returns:
+            bool:
+                If the event matches against the filter.
+        """
         if isinstance(event, NodeChangedEvent) and ATTR_EVENT_INFO in evt_filter:
             # NodeChangedEvents can have a nested dict in the filter
             if not (
@@ -90,14 +129,14 @@ class EventEmitter:
 
 
 @dataclass
-class EventListener:
+class EventListener(Generic[_KeyT]):
     """Event Listener class."""
 
     emitter: EventEmitter
     callback: Callable
     event_filter: dict | str | None
-    key: str | None
+    key: _KeyT | None
 
     def unsubscribe(self) -> None:
-        """Unsubscribe from the events."""
+        """Unsubscribe from the event listener."""
         self.emitter.unsubscribe(self)
