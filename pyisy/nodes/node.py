@@ -286,7 +286,11 @@ class Node(NodeBase, Entity[NodeDetail, StatusT]):
         self.update_last_changed()
         self.control_events.notify(prop)
         status = EntityStatus(
-            self.address, self.status, self._last_changed, self._last_update
+            self.address,
+            self.status,
+            self.detail,
+            self._last_changed,
+            self._last_update,
         )
         self.status_events.notify(status)
 

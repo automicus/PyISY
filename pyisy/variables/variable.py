@@ -7,22 +7,13 @@ from typing import TYPE_CHECKING
 
 from pyisy.constants import ATTR_INIT, ATTR_SET, URL_VARIABLES, VAR_INTEGER, Protocol
 from pyisy.helpers import convert_isy_raw_value
-from pyisy.helpers.entity import Entity, EntityDetail
+from pyisy.helpers.entity import Entity
 from pyisy.helpers.events import EventEmitter
-from pyisy.helpers.models import EntityStatus, NumT
+from pyisy.helpers.models import EntityDetail, NumT
 from pyisy.logging import _LOGGER
 
 if TYPE_CHECKING:
     from pyisy.variables import Variables
-
-
-@dataclass
-class VariableStatus(EntityStatus):
-    """Dataclass to hold variable status."""
-
-    initial: NumT
-    timestamp: datetime
-    precision: int = 0
 
 
 @dataclass
@@ -85,7 +76,7 @@ class Variable(Entity[VariableDetail, NumT]):
         self._var_type = detail.type_
         self.detail = detail
         self._last_changed = datetime.now()
-        self.status_events.notify(self.status_feedback)
+        self.update_status(self.status, force=True)
 
     @property
     def initial(self) -> NumT:
@@ -101,19 +92,6 @@ class Variable(Entity[VariableDetail, NumT]):
     def precision(self) -> int:
         """Return the Variable Precision."""
         return self._precision
-
-    @property
-    def status_feedback(self) -> VariableStatus:
-        """Return information for a status change event."""
-        return VariableStatus(
-            address=self.address,
-            status=self.status,
-            last_changed=self.last_changed,
-            last_update=self.last_update,
-            initial=self._initial,
-            timestamp=self._last_edited,
-            precision=self._precision,
-        )
 
     @property
     def variable_id(self) -> str:

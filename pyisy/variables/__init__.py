@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import asyncio
+from dataclasses import asdict
 import json
 from typing import TYPE_CHECKING, Any, cast
 
@@ -155,7 +156,7 @@ class Variables(EntityPlatform[Variable]):
             update_task.add_done_callback(self.isy.background_tasks.discard)
             return
         entity = self.entities[address]
-        detail = cast(VariableDetail, entity.detail)
+        detail = entity.detail
 
         detail.precision = var_info["precision"]
         if init:
@@ -170,5 +171,5 @@ class Variables(EntityPlatform[Variable]):
         _LOGGER.debug(
             "Updated variable: %s detail=%s",
             address,
-            json.dumps(detail.__dict__, default=str),
+            json.dumps(asdict(detail), default=str),
         )

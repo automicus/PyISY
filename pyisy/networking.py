@@ -5,9 +5,10 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
 from pyisy.constants import TAG_ID, TAG_NAME, URL_NETWORK, URL_RESOURCES, Protocol
-from pyisy.helpers.entity import Entity, EntityDetail
+from pyisy.helpers.entity import Entity
 from pyisy.helpers.entity_platform import EntityPlatform
 from pyisy.helpers.events import EventEmitter
+from pyisy.helpers.models import EntityDetail
 from pyisy.logging import _LOGGER
 
 if TYPE_CHECKING:

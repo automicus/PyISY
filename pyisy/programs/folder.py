@@ -15,9 +15,9 @@ from pyisy.constants import (
     URL_PROGRAMS,
     Protocol,
 )
-from pyisy.helpers.entity import Entity, EntityDetail
+from pyisy.helpers.entity import Entity
 from pyisy.helpers.events import EventEmitter
-from pyisy.helpers.models import BoolStrT
+from pyisy.helpers.models import BoolStrT, EntityDetail
 from pyisy.logging import _LOGGER
 
 if TYPE_CHECKING:

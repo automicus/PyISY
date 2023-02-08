@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import asyncio
+from dataclasses import asdict
+from enum import IntEnum
 import json
 from typing import TYPE_CHECKING, Any, cast
 
@@ -21,18 +23,23 @@ if TYPE_CHECKING:
 PLATFORM = "programs"
 TRUE = "true"
 
-RUN_STATUS: dict[str, str] = {
-    "1": "idle",
-    "2": "running_then",
-    "3": "running_else",
-}
 
-PROG_STATUS: dict[str, str | bool] = {
-    "1": "unknown",
-    "2": True,
-    "3": False,
-    "F": "not_loaded",
-}
+class RunningStatus(IntEnum):
+    """Program running status enum."""
+
+    IDLE = 0x01
+    RUNNING_THEN = 0x02
+    RUNNING_ELSE = 0x03
+
+
+class ProgramStatus(IntEnum):
+    """Program condition status enum."""
+
+    UNKNOWN = 0x1
+    TRUE = 0x2
+    FALSE = 0x3
+    NOT_LOADED = 0xF
+
 
 ProgramsT = Folder | Program
 
@@ -112,15 +119,8 @@ class Programs(EntityPlatform[ProgramsT]):
 
         if status := event_info.get("s"):
             # Status is a bitwise OR of RUN_X and ST_X:
-            # RUN_IDLE = 0x01
-            # RUN_THEN = 0x02
-            # RUN_ELSE = 0x03
-            # ST_UNKNOWN = 0x10
-            # ST_TRUE = 0x20
-            # ST_FALSE = 0x30
-            # ST_NOT_LOADED = 0xF0
-            detail.status = PROG_STATUS[status[0]]
-            detail.running = RUN_STATUS[status[1]]
+            detail.status = ProgramStatus(int(status[0], 16)).name.lower()
+            detail.running = RunningStatus(int(status[1])).name.lower()
 
         if last_run := event_info.get("r"):
             detail.last_run_time = parser.parse(last_run)
@@ -133,5 +133,5 @@ class Programs(EntityPlatform[ProgramsT]):
         _LOGGER.debug(
             "Updated program: address=%s, detail=%s",
             address,
-            json.dumps(detail.__dict__, default=str),
+            json.dumps(asdict(detail), default=str),
         )

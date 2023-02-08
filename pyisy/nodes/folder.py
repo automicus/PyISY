@@ -6,8 +6,8 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 
 from pyisy.constants import TAG_ADDRESS, TAG_NAME, URL_CHANGE, URL_NODES, Protocol
-from pyisy.helpers.entity import Entity, EntityDetail
-from pyisy.helpers.models import OptionalIntT
+from pyisy.helpers.entity import Entity
+from pyisy.helpers.models import EntityDetail, OptionalIntT
 from pyisy.logging import _LOGGER
 
 if TYPE_CHECKING:

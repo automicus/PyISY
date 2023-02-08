@@ -14,12 +14,23 @@ OptionalIntT = int | None
 StatusT = TypeVar("StatusT", str, bool, BoolStrT, NumT, OptionalIntT, None)
 
 
+EntityDetailT = TypeVar("EntityDetailT", bound="EntityDetail")
+
+
 @dataclass
-class EntityStatus(Generic[StatusT]):
+class EntityDetail:
+    """Dataclass to hold entity detail info."""
+
+    parent: str | dict[str, str] | None = None
+
+
+@dataclass
+class EntityStatus(Generic[StatusT, EntityDetailT]):
     """Dataclass representation of a status update."""
 
     address: str
     status: StatusT
+    detail: EntityDetailT
     last_changed: datetime
     last_update: datetime
 

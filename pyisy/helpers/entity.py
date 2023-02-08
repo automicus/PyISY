@@ -2,29 +2,19 @@
 from __future__ import annotations
 
 from abc import ABC
-from dataclasses import dataclass
+from dataclasses import asdict
 from datetime import datetime
 import json
 from typing import TYPE_CHECKING, Generic, TypeVar
 
 from pyisy.constants import Protocol
 from pyisy.helpers.events import EventEmitter
-from pyisy.helpers.models import EntityStatus, StatusT
+from pyisy.helpers.models import EntityDetailT, EntityStatus, StatusT
 
 # Typing imports that create a circular dependency
 if TYPE_CHECKING:
     from pyisy.helpers.entity_platform import EntityPlatform
     from pyisy.isy import ISY
-
-
-EntityDetailT = TypeVar("EntityDetailT", bound="EntityDetail")
-
-
-@dataclass
-class EntityDetail:
-    """Dataclass to hold entity detail info."""
-
-    parent: str | dict[str, str] | None = None
 
 
 EntityT = TypeVar("EntityT", bound="Entity")
@@ -62,7 +52,7 @@ class Entity(ABC, Generic[EntityDetailT, StatusT]):
     _status: StatusT
     _name: str = ""
 
-    detail: EntityDetail
+    detail: EntityDetailT
     status_events: EventEmitter
 
     @property
@@ -120,20 +110,27 @@ class Entity(ABC, Generic[EntityDetailT, StatusT]):
 
     def update_status(self, value: StatusT, force: bool = False) -> None:
         """Set the current entity state and notify listeners."""
+        self._last_update = datetime.now()
         if self._status != value:
             self._status = value
             force = True
 
-        if force:
-            self._last_changed = datetime.now()
-            status = EntityStatus(
-                self.address, self.status, self._last_changed, self._last_update
-            )
-            self.status_events.notify(status)
+        if not force:
+            return
 
-            # Also notify platform-level subscribers
-            if self.platform is not None:
-                self.platform.status_events.notify(status)
+        self._last_changed = datetime.now()
+        status = EntityStatus(
+            self.address,
+            self.status,
+            self.detail,
+            self._last_changed,
+            self._last_update,
+        )
+        self.status_events.notify(status)
+
+        # Also notify platform-level subscribers
+        if self.platform is not None:
+            self.platform.status_events.notify(status)
 
     def update_last_changed(self, timestamp: datetime | None = None) -> None:
         """Set the UTC Time of the last status change for this entity."""
@@ -155,5 +152,5 @@ class Entity(ABC, Generic[EntityDetailT, StatusT]):
         """Return a string representation of the entity."""
         return (
             f"{type(self).__name__}(name='{self.name}' address='{self.address}')"
-            f" detail:\n{json.dumps(self.detail.__dict__, indent=4, sort_keys=True, default=str)}"
+            f" detail:\n{json.dumps(asdict(self.detail), indent=4, sort_keys=True, default=str)}"
         )

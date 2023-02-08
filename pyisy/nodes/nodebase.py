@@ -27,9 +27,9 @@ from pyisy.constants import (
     NodeFamily,
     NodeFlag,
 )
-from pyisy.helpers.entity import Entity, EntityDetail
+from pyisy.helpers.entity import Entity
 from pyisy.helpers.events import EventEmitter
-from pyisy.helpers.models import NodeNotes, NodeProperty, OptionalIntT
+from pyisy.helpers.models import EntityDetail, NodeNotes, NodeProperty, OptionalIntT
 from pyisy.helpers.xml import parse_xml
 from pyisy.logging import _LOGGER
 

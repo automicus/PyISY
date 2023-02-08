@@ -135,6 +135,7 @@ async def main(args: argparse.Namespace) -> None:
                 isy.programs.get_tree(),
                 f"{DEFAULT_DIR}programs.json",
             )
+        isy.programs.status_events.subscribe(status_handler, key="programs")
         isy.programs.platform_events.subscribe(status_handler, key="programs")
     if args.variables:
         _LOGGER.debug(repr(isy.variables))
@@ -145,6 +146,7 @@ async def main(args: argparse.Namespace) -> None:
                 isy.variables.to_dict(),
                 f"{DEFAULT_DIR}variables.json",
             )
+        isy.variables.status_events.subscribe(status_handler, key="variables")
         isy.variables.platform_events.subscribe(status_handler, key="variables")
     if args.networking:
         _LOGGER.debug(repr(isy.networking))
