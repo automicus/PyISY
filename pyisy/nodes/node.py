@@ -11,6 +11,7 @@ from ..constants import (
     CMD_MANUAL_DIM_BEGIN,
     CMD_MANUAL_DIM_STOP,
     CMD_SECURE,
+    FAMILY_ZMATTER_ZWAVE,
     INSTEON_SUBNODE_DIMMABLE,
     INSTEON_TYPE_DIMMABLE,
     INSTEON_TYPE_LOCK,
@@ -37,6 +38,7 @@ from ..constants import (
     URL_NODE,
     URL_NODES,
     URL_QUERY,
+    URL_ZMATTER_ZWAVE,
     URL_ZWAVE,
     ZWAVE_CAT_DIMMABLE,
     ZWAVE_CAT_LOCK,
@@ -276,7 +278,16 @@ class Node(NodeBase):
         # <config paramNum="2" size="1" value="80"/>
         parameter_xml = await self.isy.conn.request(
             self.isy.conn.compile_url(
-                [URL_ZWAVE, URL_NODE, self._id, URL_CONFIG, URL_QUERY, str(parameter)]
+                [
+                    URL_ZMATTER_ZWAVE
+                    if self.family == FAMILY_ZMATTER_ZWAVE
+                    else URL_ZWAVE,
+                    URL_NODE,
+                    self._id,
+                    URL_CONFIG,
+                    URL_QUERY,
+                    str(parameter),
+                ]
             )
         )
 
@@ -337,7 +348,7 @@ class Node(NodeBase):
         # /rest/zwave/node/<nodeAddress>/config/set/<parameterNumber>/<value>/<size>
         req_url = self.isy.conn.compile_url(
             [
-                URL_ZWAVE,
+                URL_ZMATTER_ZWAVE if self.family == FAMILY_ZMATTER_ZWAVE else URL_ZWAVE,
                 URL_NODE,
                 self._id,
                 URL_CONFIG,
@@ -364,6 +375,63 @@ class Node(NodeBase):
             address=self._id,
         )
         self.update_property(node_prop)
+
+        return True
+
+    async def set_zwave_lock_code(self, user_num: int, code: int) -> bool:
+        """Set a Z-Wave Lock User Code via the ISY."""
+        if self.protocol != PROTO_ZWAVE:
+            raise TypeError("Cannot set parameters of non-Z-Wave device")
+
+        # /rest/zwave/node/<nodeAddress>/security/user/<user_num>/set/code/<code>
+        req_url = self.isy.conn.compile_url(
+            [
+                URL_ZMATTER_ZWAVE if self.family == FAMILY_ZMATTER_ZWAVE else URL_ZWAVE,
+                URL_NODE,
+                self.address,
+                "security",
+                "user",
+                str(user_num),
+                "set/code",
+                str(code),
+            ]
+        )
+        if not await self.isy.conn.request(req_url):
+            _LOGGER.warning(
+                "Could not set user code %s on %s.",
+                user_num,
+                self.address,
+            )
+            return False
+        _LOGGER.debug("Set user code %s sent to %s.", user_num, self.address)
+
+        return True
+
+    async def delete_zwave_lock_code(self, user_num: int) -> bool:
+        """Delete a Z-Wave Lock User Code via the ISY."""
+        if self.protocol != PROTO_ZWAVE:
+            raise TypeError("Cannot set parameters of non-Z-Wave device")
+
+        # /rest/zwave/node/<nodeAddress>/security/user/<user_num>/delete
+        req_url = self.isy.conn.compile_url(
+            [
+                URL_ZMATTER_ZWAVE if self.family == FAMILY_ZMATTER_ZWAVE else URL_ZWAVE,
+                URL_NODE,
+                self.address,
+                "security",
+                "user",
+                str(user_num),
+                "delete",
+            ]
+        )
+        if not await self.isy.conn.request(req_url):
+            _LOGGER.warning(
+                "Could not delete user code %s on %s.",
+                user_num,
+                self.address,
+            )
+            return False
+        _LOGGER.debug("Deleted user code %s sent to %s.", user_num, self.address)
 
         return True
 
