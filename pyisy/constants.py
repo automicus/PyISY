@@ -189,6 +189,7 @@ URL_SUBFOLDERS = "subfolders"
 URL_VARIABLES = "vars"
 URL_ZWAVE = "zwave"
 URL_PROFILE_NS = "profiles/ns"
+URL_ZMATTER_ZWAVE = "zmatter/zwave"
 
 VAR_INTEGER = "1"
 VAR_STATE = "2"
