@@ -8,6 +8,12 @@ monitored automatically as changes are reported from the device.
 
 **NOTE:** Significant changes have been made in V2, please refer to the [CHANGELOG](CHANGELOG.md) for details. It is recommended you do not update to the latest version without testing for any unknown breaking changes or impacts to your dependent code.
 
+## Version 2 End of Life Notice (EOL)
+
+:warning: Version 2 of this library will be marked as EOL and will not be maintained after 2023-12-31. If you are still using this version, please consider migrating to  [pyisyox]. Version 3 of this module will also be marked EOL on 2024-07-01 in favor of migration to the newest version at [pyisyox].
+
+If there is a specific feature that is not available in the current versions, please open an issue at https://github.com/shbatm/pyisyox/issues
+
 ### Examples
 
 See the [examples](examples/) folder for connection examples.
@@ -46,3 +52,4 @@ Assuming you have the pre-requisites installed from the link above (VSCode, Dock
 [@overloadut]: https://github.com/overloadut
 [@rmkraus]: https://github.com/rmkraus
 [@shbatm]: https://github.com/shbatm
+[pyisyox]: https://github.com/shbatm/pyisyox
