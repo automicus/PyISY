@@ -6,7 +6,6 @@ from .clock import Clock
 from .configuration import Configuration
 from .connection import Connection
 from .constants import (
-    ATTR_ACTION,
     CMD_X10,
     CONFIG_NETWORKING,
     CONFIG_PORTAL,
@@ -16,14 +15,12 @@ from .constants import (
     ES_START_UPDATES,
     ES_STOP_UPDATES,
     PROTO_ISY,
-    SYSTEM_BUSY,
-    SYSTEM_STATUS,
     URL_QUERY,
     X10_COMMANDS,
 )
 from .events.tcpsocket import EventStream
 from .events.websocket import WebSocketClient
-from .helpers import EventEmitter, value_from_xml
+from .helpers import EventEmitter
 from .logging import _LOGGER, enable_logging
 from .networking import NetworkResources
 from .nodes import Nodes
@@ -114,8 +111,7 @@ class ISY:
         self.networking = None
         self._hostname = address
         self.connection_events = EventEmitter()
-        self.status_events = EventEmitter()
-        self.system_status = SYSTEM_BUSY
+        self.system_status = self.conn.system_status
         self.loop = asyncio.get_running_loop()
         self._uuid = None
 
@@ -281,11 +277,3 @@ class ISY:
                 _LOGGER.info("ISY Sent X10 Command: %s To: %s", cmd, address)
             else:
                 _LOGGER.error("ISY Failed to send X10 Command: %s To: %s", cmd, address)
-
-    def system_status_changed_received(self, xmldoc):
-        """Handle System Status events from an event stream message."""
-        action = value_from_xml(xmldoc, ATTR_ACTION)
-        if not action or action not in SYSTEM_STATUS:
-            return
-        self.system_status = action
-        self.status_events.notify(action)

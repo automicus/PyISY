@@ -3,7 +3,7 @@ requires = ["setuptools~=62.3", "wheel","setuptools_scm[toml]>=6.2",]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "pyisy"
+name = "pyisy-beta"
 description = "Python module to talk to ISY devices from UDI."
 license     = {text = "Apache-2.0"}
 keywords = ["home", "automation", "isy", "isy994", "isy-994", "UDI", "polisy", "eisy"]
