@@ -211,10 +211,10 @@ class EventStream:
     def unsubscribe(self):
         """Unsubscribe from the Event Stream."""
         if self._subscribed and self._connected:
-            msg = self._create_message(strings.UNSUB_MSG)
             try:
+                msg = self._create_message(strings.UNSUB_MSG)
                 self.write(msg)
-            except OSError as ex:
+            except (OSError, KeyError) as ex:
                 _LOGGER.error(
                     "PyISY encountered a socket error while writing unsubscribe message to the socket: %s.",
                     ex,
