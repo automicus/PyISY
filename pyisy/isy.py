@@ -136,7 +136,7 @@ class ISY:
             self.conn.get_variable_defs(),
             self.conn.get_variables(),
         ]
-        if self.configuration[CONFIG_NETWORKING] or self.configuration[CONFIG_PORTAL]:
+        if self.configuration[CONFIG_NETWORKING] or self.configuration.get(CONFIG_PORTAL):
             isy_setup_tasks.append(asyncio.create_task(self.conn.get_network()))
         isy_setup_results = await asyncio.gather(*isy_setup_tasks)
 
@@ -148,7 +148,7 @@ class ISY:
             def_xml=isy_setup_results[4],
             var_xml=isy_setup_results[5],
         )
-        if self.configuration[CONFIG_NETWORKING] or self.configuration[CONFIG_PORTAL]:
+        if self.configuration[CONFIG_NETWORKING] or self.configuration.get(CONFIG_PORTAL):
             self.networking = NetworkResources(self, xml=isy_setup_results[6])
         await self.nodes.update(xml=isy_setup_results[0])
         if self.node_servers and with_node_servers:
