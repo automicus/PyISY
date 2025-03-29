@@ -130,6 +130,7 @@ disable = [
     "too-many-lines",
     "too-many-locals",
     "too-many-public-methods",
+    "too-many-positional-arguments",
     "too-many-return-statements",
     "too-many-statements",
     "too-many-boolean-expressions",
