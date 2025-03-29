@@ -2,7 +2,6 @@
 import asyncio
 from dataclasses import dataclass
 import re
-from typing import Dict, List
 from xml.dom import getDOMImplementation, minidom
 
 from .constants import (
@@ -133,7 +132,7 @@ class NodeServers:
             _LOGGER.error("%s while parsing Node Server files", XML_PARSE_ERROR)
             raise ISYResponseParseError(XML_PARSE_ERROR) from exc
 
-        file_list: List[str] = []
+        file_list: list[str] = []
 
         profiles = file_list_xml.getElementsByTagName(ATTR_PROFILE)
         for profile in profiles:
@@ -150,7 +149,7 @@ class NodeServers:
             self.isy.conn.request(self.isy.conn.compile_url([URL_PROFILE_NS, file]))
             for file in file_list
         ]
-        file_contents: List[str] = await asyncio.gather(*file_tasks)
+        file_contents: list[str] = await asyncio.gather(*file_tasks)
         self._profiles: dict = dict(zip(file_list, file_contents))
 
         _LOGGER.info("ISY downloaded node server files")
@@ -287,10 +286,10 @@ class NodeServerNodeDefinition:
     name: str
     nls_prefix: str
     slot: str
-    statuses: Dict[str, str]
-    status_names: Dict[str, str]
-    sends_commands: List[str]
-    accepts_commands: List[str]
+    statuses: dict[str, str]
+    status_names: dict[str, str]
+    sends_commands: list[str]
+    accepts_commands: list[str]
 
 
 @dataclass
@@ -302,7 +301,7 @@ class NodeServerNodeEditor:
     subset: str
     nls: str
     slot: str
-    values: Dict[str, str]
+    values: dict[str, str]
 
 
 @dataclass
@@ -310,7 +309,7 @@ class NodeServerNLS:
     """Node Server Natural Language Selection definition."""
 
     slot: str
-    nls: Dict[str, str]
+    nls: dict[str, str]
 
 
 @dataclass
