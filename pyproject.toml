@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools~=62.3", "wheel","setuptools_scm[toml]>=6.2",]
+requires = ["setuptools>=62.3,<79.0", "wheel","setuptools_scm[toml]>=6.2",]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -38,136 +38,119 @@ dependencies = [
 
 [tool.setuptools_scm]
 
-[tool.black]
-target-version = ["py39", "py310"]
-
-[tool.isort]
-# https://github.com/timothycrosley/isort
-# https://github.com/timothycrosley/isort/wiki/isort-Settings
-# splits long import on multiple lines indented by 4 spaces
-multi_line_output = 3
-include_trailing_comma=true
-force_grid_wrap=0
-use_parentheses=true
-line_length=88
-indent = "    "
-# will group `import x` and `from x import` of the same module.
-force_sort_within_sections = true
-default_section = "THIRDPARTY"
-known_first_party = ["pyisy","tests"]
-forced_separate = ["tests"]
-combine_as_imports = true
 
 
-[tool.pylint.MAIN]
-py-version = "3.9"
+[tool.ruff]
+target-version = "py39"
+line-length = 110
+
+[tool.ruff.lint]
 ignore = [
-    "tests",
+    "S101", # use of assert
+    "TID252", # skip
+    "SLF001", # design choice
+    "SIM110", # this is slower
+    "S318", # intentional
+    "TRY003", # nice to have
+    "PLR2004", # to many to fix right now
+    "PLR0913",  # ship has sail on this one
+    "PLR0911",  # ship has sail on this one
+    "PLR0912", # hard to fix without a major refactor
+    "PLR0915", # hard to fix without a major refactor
+    "PYI034", # enable when we drop Py3.10
+    "RUF003", # probably not worth fixing
+    "SIM105", # this is slower
+    "SIM102", # TODO
+    "PERF401", # TODO
+    "SIM108", # TODO
+    "RUF006", # TODO: this is a significant issue
+    "SIM201", # TODO
+    "RSE102", # TODO
+    "C419", # TODO
+    "RET504", # TODO
+    "RET503", # TODO
+    "PLW2901", # TODO
+    "RUF013", # TODO
+    "SIM118", # TODO
+    "G201", # TODO
+    "PERF203", # TODO
+    "TRY400", # TODO
+    "TRY401", # TODO
+    "ASYNC110", # TODO
 ]
-# Use a conservative default here; 2 should speed up most setups and not hurt
-# any too bad. Override on command line as appropriate.
-jobs = 2
-
-load-plugins = [
-    "pylint.extensions.code_style",
-    "pylint.extensions.typing",
-]
-persistent = false
-extension-pkg-allow-list = []
-fail-on = [
-    "I",
-]
-
-[tool.pylint.BASIC]
-class-const-naming-style = "any"
-good-names = [
-    "_",
-    "ev",
-    "ex",
-    "fp",
-    "i",
-    "id",
-    "j",
-    "k",
-    "Run",
-    "ip",
-    "ws",
-    "st",
-]
-
-[tool.pylint."MESSAGES CONTROL"]
-# Reasons disabled:
-# format - handled by black
-# locally-disabled - it spams too much
-# duplicate-code - unavoidable
-# cyclic-import - doesn't test if both import on load
-# abstract-class-little-used - prevents from setting right foundation
-# unused-argument - generic callbacks and setup methods create a lot of warnings
-# too-many-* - are not enforced for the sake of readability
-# too-few-* - same as too-many-*
-# abstract-method - with intro of async there are always methods missing
-# inconsistent-return-statements - doesn't handle raise
-# too-many-ancestors - it's too strict.
-# wrong-import-order - isort guards this
-# consider-using-f-string - str.format sometimes more readable
-# ---
-# Enable once current issues are fixed:
-# consider-using-namedtuple-or-dataclass (Pylint CodeStyle extension)
-# consider-using-assignment-expr (Pylint CodeStyle extension)
-disable = [
-    "format",
-    "abstract-method",
-    "cyclic-import",
-    "duplicate-code",
-    "inconsistent-return-statements",
-    "locally-disabled",
-    "not-context-manager",
-    "too-few-public-methods",
-    "too-many-ancestors",
-    "too-many-arguments",
-    "too-many-branches",
-    "too-many-instance-attributes",
-    "too-many-lines",
-    "too-many-locals",
-    "too-many-public-methods",
-    "too-many-positional-arguments",
-    "too-many-return-statements",
-    "too-many-statements",
-    "too-many-boolean-expressions",
-    "unused-argument",
-    "wrong-import-order",
-    "consider-using-f-string",
-    "consider-using-namedtuple-or-dataclass",
-    "consider-using-assignment-expr",
-]
-enable = [
-    #"useless-suppression",  # temporarily every now and then to clean them up
-    "use-symbolic-message-instead",
+select = [
+    "ASYNC", # async rules
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "S",   # flake8-bandit
+    "F",   # pyflake
+    "E",   # pycodestyle
+    "W",   # pycodestyle
+    "UP",  # pyupgrade
+    "I",   # isort
+    "RUF", # ruff specific
+    "FLY", # flynt
+    "G", # flake8-logging-format   ,
+    "PERF", # Perflint
+    "PGH", # pygrep-hooks
+    "PIE", # flake8-pie
+    "PL", # pylint
+    "PT", # flake8-pytest-style
+    "PTH", # flake8-pathlib
+    "PYI", # flake8-pyi
+    "RET", # flake8-return
+    "RSE", # flake8-raise    ,
+    "SIM", # flake8-simplify
+    "SLF", # flake8-self
+    "SLOT", # flake8-slots
+    "T100", # Trace found: {name} used
+    "T20", # flake8-print
+    "TID", # Tidy imports
+    "TRY", # tryceratops
 ]
 
-[tool.pylint.REPORTS]
-score = false
-
-[tool.pylint.TYPECHECK]
-ignored-classes = [
-    "_CountingAttr",  # for attrs
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*" = [
+    "D100",
+    "D101",
+    "D102",
+    "D103",
+    "D104",
+    "S101",
+    "SLF001",
+    "PLR2004", # too many to fix right now
+    "PT011", # too many to fix right now
+    "PT006", # too many to fix right now
+    "PGH003", # too many to fix right now
+    "PT007", # too many to fix right now
+    "PT027",  # too many to fix right now
+    "PLW0603" , # too many to fix right now
+    "PLR0915", # too many to fix right now
+    "FLY002", # too many to fix right now
+    "PT018", # too many to fix right now
+    "PLR0124", # too many to fix right now
+    "SIM202" , # too many to fix right now
+    "PT012" , # too many to fix right now
+    "TID252", # too many to fix right now
+    "PLR0913", # skip this one
+    "SIM102" , # too many to fix right now
+    "SIM108", # too many to fix right now
+    "T201", # too many to fix right now
+    "PT004", # nice to have
 ]
-mixin-class-rgx = ".*[Mm]ix[Ii]n"
-
-[tool.pylint.FORMAT]
-expected-line-ending-format = "LF"
-
-[tool.pylint.EXCEPTIONS]
-overgeneral-exceptions = [
-    "BaseException",
-    "Exception",
+"bench/**/*" = [
+    "T201", # intended
+]
+"examples/**/*" = [
+    "T201", # intended
+]
+"setup.py" = ["D100"]
+"conftest.py" = ["D100"]
+"docs/conf.py" = [
+    "D100",
+    "PTH100"
 ]
 
-[tool.pylint.TYPING]
-runtime-typing = true
-
-[tool.pylint.CODE_STYLE]
-max-line-length-suggestions = 72
 
 [tool.pytest.ini_options]
 testpaths = [

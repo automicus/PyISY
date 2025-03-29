@@ -1,4 +1,5 @@
 """Constants for the PyISY Module."""
+
 import datetime
 
 UPDATE_INTERVAL = 0.5
@@ -687,17 +688,13 @@ UOM_TO_STATES = {
         "4": "highly polluted",
     },
     "97": {  # Barrier Status
-        **{
-            "0": "closed",
-            "100": "open",
-            "101": "unknown",
-            "102": "stopped",
-            "103": "closing",
-            "104": "opening",
-        },
-        **{
-            str(b): f"{b} %" for a, b in enumerate(list(range(1, 100)))
-        },  # 1-99 are percentage open
+        "0": "closed",
+        "100": "open",
+        "101": "unknown",
+        "102": "stopped",
+        "103": "closing",
+        "104": "opening",
+        **{str(b): f"{b} %" for a, b in enumerate(list(range(1, 100)))},  # 1-99 are percentage open
     },
     "98": {  # Insteon Thermostat Mode
         "0": "off",
@@ -782,7 +779,7 @@ INSTEON_TYPE_THERMOSTAT = [
 ZWAVE_CAT_THERMOSTAT = ["140"]
 
 # Other special categories or types
-INSTEON_TYPE_LOCK = ["4.64"]
+INSTEON_TYPE_LOCK = ["15.", "4.64"]
 ZWAVE_CAT_LOCK = ["111"]
 
 INSTEON_TYPE_DIMMABLE = ["1."]

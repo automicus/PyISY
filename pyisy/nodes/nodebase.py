@@ -1,4 +1,5 @@
 """Base object for nodes and groups."""
+
 from xml.dom import minidom
 
 from ..constants import (
@@ -85,9 +86,7 @@ class NodeBase:
     def description(self):
         """Return the description of the node from it's notes."""
         if self._notes is None:
-            _LOGGER.debug(
-                "No notes retrieved for node. Call get_notes() before accessing."
-            )
+            _LOGGER.debug("No notes retrieved for node. Call get_notes() before accessing.")
         return self._notes[TAG_DESCRIPTION]
 
     @property
@@ -109,9 +108,7 @@ class NodeBase:
     def is_load(self):
         """Return the isLoad property of the node from it's notes."""
         if self._notes is None:
-            _LOGGER.debug(
-                "No notes retrieved for node. Call get_notes() before accessing."
-            )
+            _LOGGER.debug("No notes retrieved for node. Call get_notes() before accessing.")
         return self._notes[TAG_IS_LOAD]
 
     @property
@@ -128,9 +125,7 @@ class NodeBase:
     def location(self):
         """Return the location of the node from it's notes."""
         if self._notes is None:
-            _LOGGER.debug(
-                "No notes retrieved for node. Call get_notes() before accessing."
-            )
+            _LOGGER.debug("No notes retrieved for node. Call get_notes() before accessing.")
         return self._notes[TAG_LOCATION]
 
     @property
@@ -152,9 +147,7 @@ class NodeBase:
     def spoken(self):
         """Return the text of the Spoken property inside the group notes."""
         if self._notes is None:
-            _LOGGER.debug(
-                "No notes retrieved for node. Call get_notes() before accessing."
-            )
+            _LOGGER.debug("No notes retrieved for node. Call get_notes() before accessing.")
         return self._notes[TAG_SPOKEN]
 
     @property
@@ -263,9 +256,7 @@ class NodeBase:
                 self._id,
             )
             return False
-        _LOGGER.debug(
-            "ISY command %s sent to %s.", COMMAND_FRIENDLY_NAME.get(cmd), self._id
-        )
+        _LOGGER.debug("ISY command %s sent to %s.", COMMAND_FRIENDLY_NAME.get(cmd), self._id)
         return True
 
     async def beep(self):
@@ -291,9 +282,7 @@ class NodeBase:
 
     async def enable(self):
         """Send command to the node to enable it."""
-        if not await self.isy.conn.request(
-            self.isy.conn.compile_url([URL_NODES, str(self._id), CMD_ENABLE])
-        ):
+        if not await self.isy.conn.request(self.isy.conn.compile_url([URL_NODES, str(self._id), CMD_ENABLE])):
             _LOGGER.warning("ISY could not %s %s.", CMD_ENABLE, self._id)
             return False
         return True

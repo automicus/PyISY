@@ -1,14 +1,14 @@
 """ISY Event Stream."""
+
 import asyncio
 import logging
 import socket
 import ssl
-from threading import Thread, ThreadError
 import time
 import xml
+from threading import Thread, ThreadError
 from xml.dom import minidom
 
-from . import strings
 from ..constants import (
     ACTION_KEY,
     ACTION_KEY_CHANGED,
@@ -31,6 +31,7 @@ from ..constants import (
 from ..exceptions import ISYInvalidAuthError, ISYMaxConnections, ISYStreamDataError
 from ..helpers import attr_from_xml, now, value_from_xml
 from ..logging import LOG_VERBOSE
+from . import strings
 from .eventreader import ISYEventReader
 
 _LOGGER = logging.getLogger(__name__)  # Allows targeting pyisy.events in handlers.
@@ -125,9 +126,7 @@ class EventStream:
                 if action == ACTION_KEY_CHANGED:
                     self._program_key = value_from_xml(xmldoc, TAG_NODE)
                 # Need to reload programs
-                asyncio.run_coroutine_threadsafe(
-                    self.isy.programs.update(), self.isy.loop
-                )
+                asyncio.run_coroutine_threadsafe(self.isy.programs.update(), self.isy.loop)
         elif cntrl == "_3":  # Node Changed/Updated
             self.isy.nodes.node_changed_received(xmldoc)
 
@@ -175,9 +174,7 @@ class EventStream:
                 if self.data.get("tls"):
                     self.cert = self.socket.getpeercert()
             except OSError as err:
-                _LOGGER.exception(
-                    "PyISY could not connect to ISY event stream. %s", err
-                )
+                _LOGGER.exception("PyISY could not connect to ISY event stream. %s", err)
                 if self._on_lost_function is not None:
                     self._on_lost_function()
                 return False
@@ -267,14 +264,10 @@ class EventStream:
                 self._lost_connection(RECONNECT_DELAY)
                 return
             except ISYInvalidAuthError:
-                _LOGGER.error(
-                    "Invalid authentication used to connect to the event stream."
-                )
+                _LOGGER.error("Invalid authentication used to connect to the event stream.")
                 return
             except ISYStreamDataError as ex:
-                _LOGGER.warning(
-                    "PyISY encountered an error while reading the event stream: %s.", ex
-                )
+                _LOGGER.warning("PyISY encountered an error while reading the event stream: %s.", ex)
                 self._lost_connection()
                 return
             except OSError as ex:
@@ -289,9 +282,7 @@ class EventStream:
                 try:
                     self._route_message(message)
                 except Exception as ex:  # pylint: disable=broad-except
-                    _LOGGER.warning(
-                        "PyISY encountered while routing message '%s': %s", message, ex
-                    )
+                    _LOGGER.warning("PyISY encountered while routing message '%s': %s", message, ex)
                     raise
 
     def __del__(self):
