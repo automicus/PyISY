@@ -35,7 +35,7 @@ ES_NOT_STARTED = "not_started"
 ISY_VALUE_UNKNOWN = -1 * float("inf")
 ISY_PROP_NOT_SET = "-1"
 
-""" Dictionary of X10 commands. """
+# Dictionary of X10 commands.
 X10_COMMANDS = {"all_off": 1, "all_on": 4, "on": 3, "off": 11, "bright": 7, "dim": 15}
 
 ACTION_EVENT_STATUS = "0"
