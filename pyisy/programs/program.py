@@ -1,4 +1,5 @@
 """Representation of a program from the ISY."""
+
 from ..constants import (
     CMD_DISABLE_RUN_AT_STARTUP,
     CMD_ENABLE_RUN_AT_STARTUP,

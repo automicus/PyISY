@@ -1,4 +1,5 @@
 """Exceptions used by the PyISY module."""
+
 from xml.parsers.expat import ExpatError
 
 XML_ERRORS = (AttributeError, KeyError, ValueError, TypeError, IndexError, ExpatError)

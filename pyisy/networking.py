@@ -1,4 +1,5 @@
 """ISY Network Resources Module."""
+
 from asyncio import sleep
 from xml.dom import minidom
 
@@ -109,7 +110,7 @@ class NetworkResources:
 
     def __setitem__(self, val, value):
         """Set the item value."""
-        return None
+        return
 
     def get_by_id(self, val):
         """

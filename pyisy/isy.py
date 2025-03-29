@@ -1,4 +1,5 @@
 """Module for connecting to and interacting with the ISY."""
+
 import asyncio
 from threading import Thread
 
@@ -187,15 +188,11 @@ class ISY:
     def auto_update(self, val):
         """Set the auto_update property."""
         if self.websocket is not None:
-            _LOGGER.warning(
-                "Websockets are enabled. Use isy.websocket.start() or .stop() instead."
-            )
+            _LOGGER.warning("Websockets are enabled. Use isy.websocket.start() or .stop() instead.")
             return
         if val and not self.auto_update:
             # create new event stream socket
-            self._events = EventStream(
-                self, self.conn.connection_info, self._on_lost_event_stream
-            )
+            self._events = EventStream(self, self.conn.connection_info, self._on_lost_event_stream)
         if self._events is not None:
             self.connection_events.notify(ES_START_UPDATES if val else ES_STOP_UPDATES)
             self._events.running = val
@@ -231,9 +228,7 @@ class ISY:
         while self.auto_reconnect and not self.auto_update:
             _LOGGER.warning("PyISY attempting stream reconnect.")
             del self._events
-            self._events = EventStream(
-                self, self.conn.connection_info, self._on_lost_event_stream
-            )
+            self._events = EventStream(self, self.conn.connection_info, self._on_lost_event_stream)
             self._events.running = True
             self.connection_events.notify(ES_RECONNECTING)
 

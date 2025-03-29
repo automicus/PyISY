@@ -57,11 +57,9 @@ async def main(url, username, password, tls_ver, events, node_servers):
     try:
         await isy.initialize(node_servers)
     except (ISYInvalidAuthError, ISYConnectionError):
-        _LOGGER.error(
-            "Failed to connect to the ISY, please adjust settings and try again."
-        )
+        _LOGGER.error("Failed to connect to the ISY, please adjust settings and try again.")
         await isy.shutdown()
-        return
+        return None
     except Exception as err:
         _LOGGER.error("Unknown error occurred: %s", err.args[0])
         await isy.shutdown()
@@ -91,12 +89,8 @@ async def main(url, username, password, tls_ver, events, node_servers):
     try:
         if events:
             isy.websocket.start()
-            node_changed_subscriber = isy.nodes.status_events.subscribe(
-                node_changed_handler
-            )
-            system_status_subscriber = isy.status_events.subscribe(
-                system_status_handler
-            )
+            node_changed_subscriber = isy.nodes.status_events.subscribe(node_changed_handler)
+            system_status_subscriber = isy.status_events.subscribe(system_status_handler)
         while True:
             await asyncio.sleep(1)
     except asyncio.CancelledError:
@@ -117,9 +111,7 @@ if __name__ == "__main__":
     parser.add_argument("-t", "--tls-ver", dest="tls_ver", type=float)
     parser.add_argument("-v", "--verbose", action="store_true")
     parser.add_argument("-q", "--no-events", dest="no_events", action="store_true")
-    parser.add_argument(
-        "-n", "--node-servers", dest="node_servers", action="store_true"
-    )
+    parser.add_argument("-n", "--node-servers", dest="node_servers", action="store_true")
     parser.set_defaults(use_https=False, tls_ver=1.1, verbose=False)
     args = parser.parse_args()
 
