@@ -1,4 +1,5 @@
 """Representation of groups (scenes) from an ISY."""
+
 from ..constants import (
     FAMILY_GENERIC,
     INSTEON_STATELESS_NODEDEFID,
@@ -43,14 +44,11 @@ class Group(NodeBase):
         self._all_on = False
         self._controllers = controllers or []
         self._members = members or []
-        super().__init__(
-            nodes, address, name, 0, family_id=family_id, pnode=pnode, flag=flag
-        )
+        super().__init__(nodes, address, name, 0, family_id=family_id, pnode=pnode, flag=flag)
 
         # listen for changes in children
         self._members_handlers = [
-            self._nodes[m].status_events.subscribe(self.update_callback)
-            for m in self.members
+            self._nodes[m].status_events.subscribe(self.update_callback) for m in self.members
         ]
 
         # get and update the status

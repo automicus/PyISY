@@ -1,7 +1,8 @@
 """ISY Node Server Information."""
+
 import asyncio
-from dataclasses import dataclass
 import re
+from dataclasses import dataclass
 from xml.dom import getDOMImplementation, minidom
 
 from .constants import (
@@ -146,8 +147,7 @@ class NodeServers:
                     file_list.append(f"{slot}/download/{dir_name}/{file_name}")
 
         file_tasks = [
-            self.isy.conn.request(self.isy.conn.compile_url([URL_PROFILE_NS, file]))
-            for file in file_list
+            self.isy.conn.request(self.isy.conn.compile_url([URL_PROFILE_NS, file])) for file in file_list
         ]
         file_contents: list[str] = await asyncio.gather(*file_tasks)
         self._profiles: dict = dict(zip(file_list, file_contents))
@@ -157,11 +157,7 @@ class NodeServers:
     async def parse_node_server_defs(self, slot: str):
         """Retrieve and parse the node server definitions."""
         _LOGGER.info("Parsing node server slot %s", slot)
-        node_server_profile = {
-            key: value
-            for (key, value) in self._profiles.items()
-            if key.startswith(slot)
-        }
+        node_server_profile = {key: value for (key, value) in self._profiles.items() if key.startswith(slot)}
 
         node_defs_impl = getDOMImplementation()
         editors_impl = getDOMImplementation()
@@ -188,11 +184,7 @@ class NodeServers:
             if "editors" in file:
                 editors_xml.firstChild.appendChild(contents_xml)
             if "nls" in file and "en_us" in file:
-                nls_list = [
-                    line
-                    for line in contents.split("\n")
-                    if not line.startswith("#") and line != ""
-                ]
+                nls_list = [line for line in contents.split("\n") if not line.startswith("#") and line != ""]
                 if nls_list:
                     nls_lookup = dict(re.split(r"\s?=\s?", line) for line in nls_list)
                     self._node_server_nls.append(
@@ -259,9 +251,7 @@ class NodeServers:
             values = None
             if nls_lookup and uom == "25":
                 values = {
-                    key.partition("-")[2]: value
-                    for (key, value) in nls_lookup.items()
-                    if key.startswith(nls)
+                    key.partition("-")[2]: value for (key, value) in nls_lookup.items() if key.startswith(nls)
                 }
 
             self._node_server_node_editors.append(

@@ -1,4 +1,5 @@
 """Manage variables from the ISY."""
+
 from __future__ import annotations
 
 from ..constants import (
@@ -175,7 +176,7 @@ class Variable:
         self._last_update = now()
         await self._variables.update(wait_time)
 
-    async def set_init(self, value: int | float) -> bool:
+    async def set_init(self, value: float) -> bool:
         """
         Set the initial value for the variable after the controller boots.
 
@@ -183,7 +184,7 @@ class Variable:
         """
         return await self.set_value(value, True)
 
-    async def set_value(self, value: int | float, init: bool = False) -> bool:
+    async def set_value(self, value: float, init: bool = False) -> bool:
         """
         Set the value of the variable.
 
