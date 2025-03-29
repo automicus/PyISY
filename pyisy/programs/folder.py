@@ -1,4 +1,5 @@
 """ISY Program Folders."""
+
 from ..constants import (
     ATTR_LAST_CHANGED,
     ATTR_LAST_UPDATE,

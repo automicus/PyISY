@@ -1,7 +1,7 @@
 """Connection to the ISY."""
+
 import asyncio
 import ssl
-import sys
 from urllib.parse import quote, urlencode
 
 import aiohttp
@@ -146,13 +146,16 @@ class Connection:
         if delay:
             await asyncio.sleep(delay)
         try:
-            async with self.semaphore, self.req_session.get(
-                url,
-                auth=self._auth,
-                headers=HTTP_HEADERS,
-                timeout=HTTP_TIMEOUT,
-                ssl=self.sslcontext,
-            ) as res:
+            async with (
+                self.semaphore,
+                self.req_session.get(
+                    url,
+                    auth=self._auth,
+                    headers=HTTP_HEADERS,
+                    timeout=HTTP_TIMEOUT,
+                    ssl=self.sslcontext,
+                ) as res,
+            ):
                 endpoint = url.split("rest", 1)[1]
                 if res.status == HTTP_OK:
                     _LOGGER.debug("ISY Response Received: %s", endpoint)
@@ -166,17 +169,13 @@ class Connection:
                         _LOGGER.debug("ISY Response Received %s", endpoint)
                         res.release()
                         return ""
-                    _LOGGER.error(
-                        "ISY Reported an Invalid Command Received %s", endpoint
-                    )
+                    _LOGGER.error("ISY Reported an Invalid Command Received %s", endpoint)
                     res.release()
                     return None
                 if res.status == HTTP_UNAUTHORIZED:
                     _LOGGER.error("Invalid credentials provided for ISY connection.")
                     res.release()
-                    raise ISYInvalidAuthError(
-                        "Invalid credentials provided for ISY connection."
-                    )
+                    raise ISYInvalidAuthError("Invalid credentials provided for ISY connection.")
                 if res.status == HTTP_SERVICE_UNAVAILABLE:
                     _LOGGER.warning("ISY too busy to process request %s", endpoint)
                     res.release()
@@ -189,9 +188,7 @@ class Connection:
         ):
             _LOGGER.debug("ISY not ready or closed connection.")
         except aiohttp.ClientResponseError as err:
-            _LOGGER.error(
-                "Client Response Error from ISY: %s %s.", err.status, err.message
-            )
+            _LOGGER.error("Client Response Error from ISY: %s %s.", err.status, err.message)
         except aiohttp.ClientError as err:
             _LOGGER.error(
                 "ISY Could not receive response from device because of a network issue: %s",
@@ -283,9 +280,7 @@ class Connection:
         )
         results = [r for r in results if r is not None]  # Strip any bad requests.
         result = "".join(results)
-        result = result.replace(
-            '</vars><?xml version="1.0" encoding="UTF-8"?><vars>', ""
-        )
+        result = result.replace('</vars><?xml version="1.0" encoding="UTF-8"?><vars>', "")
         return result
 
     async def get_network(self):
@@ -305,12 +300,7 @@ def get_new_client_session(use_https, tls_ver=1.1):
     """Create a new Client Session for Connecting."""
     if use_https:
         if not can_https(tls_ver):
-            raise (
-                ValueError(
-                    "PyISY could not connect to the ISY. "
-                    "Check log for SSL/TLS error."
-                )
-            )
+            raise (ValueError("PyISY could not connect to the ISY. Check log for SSL/TLS error."))
 
         return aiohttp.ClientSession(cookie_jar=aiohttp.CookieJar(unsafe=True))
 
@@ -327,9 +317,7 @@ def get_sslcontext(use_https, tls_ver=1.1):
         context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
 
     # Allow older ciphers for older ISYs
-    context.set_ciphers(
-        "DEFAULT:!aNULL:!eNULL:!MD5:!3DES:!DES:!RC4:!IDEA:!SEED:!aDSS:!SRP:!PSK"
-    )
+    context.set_ciphers("DEFAULT:!aNULL:!eNULL:!MD5:!3DES:!DES:!RC4:!IDEA:!SEED:!aDSS:!SRP:!PSK")
     return context
 
 
@@ -341,23 +329,14 @@ def can_https(tls_ver):
     """
     output = True
 
-    # check python version
-    if sys.version_info < (3, 7):
-        _LOGGER.error("PyISY cannot use HTTPS: Invalid Python version. See docs.")
-        output = False
-
     # check that Python was compiled against correct OpenSSL lib
     if "PROTOCOL_TLSv1_1" not in dir(ssl):
-        _LOGGER.error(
-            "PyISY cannot use HTTPS: Compiled against old OpenSSL library. See docs."
-        )
+        _LOGGER.error("PyISY cannot use HTTPS: Compiled against old OpenSSL library. See docs.")
         output = False
 
     # check the requested TLS version
     if tls_ver not in [1.1, 1.2]:
-        _LOGGER.error(
-            "PyISY cannot use HTTPS: Only TLS 1.1 and 1.2 are supported by the ISY controller."
-        )
+        _LOGGER.error("PyISY cannot use HTTPS: Only TLS 1.1 and 1.2 are supported by the ISY controller.")
         output = False
 
     return output

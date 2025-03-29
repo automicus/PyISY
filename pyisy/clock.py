@@ -1,4 +1,5 @@
 """ISY Clock/Location Information."""
+
 from asyncio import sleep
 from xml.dom import minidom
 
@@ -65,12 +66,8 @@ class Clock:
 
     def __repr__(self):
         """Return a long string showing all the clock values."""
-        props = [
-            name for name, value in vars(Clock).items() if isinstance(value, property)
-        ]
-        return "ISY Clock: {!r}".format(
-            {prop: str(getattr(self, prop)) for prop in props}
-        )
+        props = [name for name, value in vars(Clock).items() if isinstance(value, property)]
+        return f"ISY Clock: { ({prop: str(getattr(self, prop)) for prop in props})!r}"
 
     def parse(self, xml):
         """

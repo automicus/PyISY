@@ -40,8 +40,8 @@ except PackageNotFoundError:
 
 __all__ = [
     "ISY",
-    "ISYInvalidAuthError",
     "ISYConnectionError",
+    "ISYInvalidAuthError",
     "ISYMaxConnections",
     "ISYResponseParseError",
     "ISYStreamDataError",

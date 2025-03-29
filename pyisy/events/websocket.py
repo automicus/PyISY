@@ -1,4 +1,5 @@
 """ISY Websocket Event Stream."""
+
 import asyncio
 import logging
 import xml
@@ -258,13 +259,9 @@ class WebSocketClient:
             if isinstance(ws.exception(), asyncio.TimeoutError):
                 _LOGGER.debug("Websocket Timeout.")
             elif isinstance(ws.exception(), aiohttp.streams.EofStream):
-                _LOGGER.warning(
-                    "Websocket disconnected unexpectedly. Check network connection."
-                )
+                _LOGGER.warning("Websocket disconnected unexpectedly. Check network connection.")
             else:
-                _LOGGER.warning(
-                    "Websocket disconnected unexpectedly with code: %s", ws.close_code
-                )
+                _LOGGER.warning("Websocket disconnected unexpectedly with code: %s", ws.close_code)
         if self.status != ES_STOP_UPDATES:
             self.status = ES_LOST_STREAM_CONNECTION
             self._loop.create_task(self.reconnect(retries=retries))

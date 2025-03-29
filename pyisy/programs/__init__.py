@@ -1,4 +1,5 @@
 """Init for management of ISY Programs."""
+
 import asyncio
 from xml.dom import minidom
 
@@ -152,9 +153,7 @@ class Programs:
         try:
             pobj = self.get_by_id(address).leaf
         except ValueError:
-            _LOGGER.warning(
-                "ISY received program update for new program; reload the module to update"
-            )
+            _LOGGER.warning("ISY received program update for new program; reload the module to update")
             return  # this is a new program that hasn't been registered
 
         if not isinstance(pobj, Program):
@@ -320,7 +319,7 @@ class Programs:
 
     def __setitem__(self, val, value):
         """Set the item value."""
-        return None
+        return
 
     def get_by_name(self, val):
         """
@@ -329,9 +328,7 @@ class Programs:
         |  val: The name of the child program/folder to look for.
         """
         for i in range(len(self.addresses)):
-            if (self.root is None or self.pparents[i] == self.root) and self.pnames[
-                i
-            ] == val:
+            if (self.root is None or self.pparents[i] == self.root) and self.pnames[i] == val:
                 return self.get_by_index(i)
         return None
 

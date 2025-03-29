@@ -1,10 +1,11 @@
 """Helper functions for the PyISY Module."""
+
 from __future__ import annotations
 
-from collections.abc import Callable
-from dataclasses import dataclass, is_dataclass
 import datetime
 import time
+from collections.abc import Callable
+from dataclasses import dataclass, is_dataclass
 
 from .constants import (
     ATTR_FORMATTED,
@@ -170,13 +171,9 @@ class EventEmitter:
         """Initialize a new Event Emitter class."""
         self._subscribers = []
 
-    def subscribe(
-        self, callback: Callable, event_filter: dict | str = None, key: str = None
-    ):
+    def subscribe(self, callback: Callable, event_filter: dict | str = None, key: str = None):
         """Subscribe to the events."""
-        listener = EventListener(
-            emitter=self, callback=callback, event_filter=event_filter, key=key
-        )
+        listener = EventListener(emitter=self, callback=callback, event_filter=event_filter, key=key)
         self._subscribers.append(listener)
         return listener
 

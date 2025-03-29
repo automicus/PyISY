@@ -1,4 +1,5 @@
 """ISY TCP Socket Event Reader."""
+
 import errno
 import select
 import ssl
@@ -40,9 +41,7 @@ class ISYEventReader:
         while True:
             # Read the headers if we do not have content length yet
             if not self._event_content_length:
-                seperator_position = self._event_buffer.find(
-                    self.HTTP_HEADER_BODY_SEPERATOR
-                )
+                seperator_position = self._event_buffer.find(self.HTTP_HEADER_BODY_SEPERATOR)
                 if seperator_position == -1:
                     return events
                 self._parse_headers(seperator_position)
@@ -75,9 +74,8 @@ class ISYEventReader:
         try:
             # We have data on the wire, read as much as we can
             # up to 32 * SOCKET_BUFFER_SIZE
-            for read_count in range(0, 32):
+            for read_count in range(32):
                 new_data = self._socket.recv(SOCKET_BUFFER_SIZE)
-                print(f"read_count: {read_count} new_data: {new_data}")
                 if len(new_data) == 0:
                     if read_count != 0:
                         break
@@ -101,9 +99,7 @@ class ISYEventReader:
             raise ISYMaxConnections(self._event_buffer)
         if headers.startswith(self.HTTP_NOT_AUTHORIZED_RESPONSE):
             raise ISYInvalidAuthError(self._event_buffer)
-        self._event_buffer = self._event_buffer[
-            seperator_position + self.HTTP_HEADER_BODY_SEPERATOR_LEN :
-        ]
+        self._event_buffer = self._event_buffer[seperator_position + self.HTTP_HEADER_BODY_SEPERATOR_LEN :]
         for header in headers.split(self.HTTP_HEADER_SEPERATOR)[1:]:
             header_name, header_value = header.split(self.HEADER_SEPERATOR, 1)
             if header_name.strip().lower() != self.CONTENT_LENGTH_HEADER:

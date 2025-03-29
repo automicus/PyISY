@@ -1,7 +1,8 @@
 """Representation of ISY Nodes."""
+
+import re
 from asyncio import sleep
 from dataclasses import dataclass
-import re
 from xml.dom import minidom
 
 from ..constants import (
@@ -229,15 +230,11 @@ class Nodes:
         value = value_from_xml(xmldoc, ATTR_ACTION, "")
         value = int(value) if value != "" else ISY_VALUE_UNKNOWN
         prec = attr_from_xml(xmldoc, ATTR_ACTION, ATTR_PRECISION, DEFAULT_PRECISION)
-        uom = attr_from_xml(
-            xmldoc, ATTR_ACTION, ATTR_UNIT_OF_MEASURE, DEFAULT_UNIT_OF_MEASURE
-        )
+        uom = attr_from_xml(xmldoc, ATTR_ACTION, ATTR_UNIT_OF_MEASURE, DEFAULT_UNIT_OF_MEASURE)
         formatted = value_from_xml(xmldoc, TAG_FORMATTED)
 
         # Process the action and value if provided in event data.
-        node.update_state(
-            NodeProperty(PROP_STATUS, value, prec, uom, formatted, address)
-        )
+        node.update_state(NodeProperty(PROP_STATUS, value, prec, uom, formatted, address))
         _LOGGER.debug("ISY Updated Node: %s", address)
 
     def control_message_received(self, xmldoc):
@@ -267,27 +264,19 @@ class Nodes:
         value = value_from_xml(xmldoc, ATTR_ACTION, 0)
         value = int(value) if value != "" else ISY_VALUE_UNKNOWN
         prec = attr_from_xml(xmldoc, ATTR_ACTION, ATTR_PRECISION, DEFAULT_PRECISION)
-        uom = attr_from_xml(
-            xmldoc, ATTR_ACTION, ATTR_UNIT_OF_MEASURE, DEFAULT_UNIT_OF_MEASURE
-        )
+        uom = attr_from_xml(xmldoc, ATTR_ACTION, ATTR_UNIT_OF_MEASURE, DEFAULT_UNIT_OF_MEASURE)
         formatted = value_from_xml(xmldoc, TAG_FORMATTED)
 
         if cntrl == PROP_RAMP_RATE:
             value = INSTEON_RAMP_RATES.get(value, value)
             uom = UOM_SECONDS
         node_property = NodeProperty(cntrl, value, prec, uom, formatted, address)
-        if (
-            cntrl == PROP_COMMS_ERROR
-            and value == 0
-            and PROP_COMMS_ERROR in node.aux_properties
-        ):
+        if cntrl == PROP_COMMS_ERROR and value == 0 and PROP_COMMS_ERROR in node.aux_properties:
             # Clear a previous comms error
             del node.aux_properties[PROP_COMMS_ERROR]
         if cntrl == PROP_BATTERY_LEVEL and node.is_battery_node:
             # Update the state if this is a battery node
-            node.update_state(
-                NodeProperty(PROP_STATUS, value, prec, uom, formatted, address)
-            )
+            node.update_state(NodeProperty(PROP_STATUS, value, prec, uom, formatted, address))
             _LOGGER.debug("ISY Updated Node: %s", address)
         elif cntrl not in EVENT_PROPS_IGNORED:
             node.update_property(node_property)
@@ -449,10 +438,7 @@ class Nodes:
                     # Build list of controllers
                     controllers = []
                     for mem in mems:
-                        if (
-                            int(attr_from_element(mem, TAG_TYPE, 0))
-                            == NODE_IS_CONTROLLER
-                        ):
+                        if int(attr_from_element(mem, TAG_TYPE, 0)) == NODE_IS_CONTROLLER:
                             controllers.append(mem.firstChild.nodeValue)
                     self.insert(
                         address,
@@ -490,7 +476,7 @@ class Nodes:
 
         if xml is None:
             _LOGGER.warning("ISY Failed to update nodes.")
-            return
+            return None
 
         try:
             xmldoc = minidom.parseString(xml)
@@ -568,7 +554,7 @@ class Nodes:
 
     def __setitem__(self, item, value):
         """Set item value."""
-        return None
+        return
 
     def get_by_name(self, val):
         """
@@ -577,9 +563,7 @@ class Nodes:
         |  val: String representing name to look for.
         """
         for i in range(len(self.addresses)):
-            if (self.root is None or self.nparents[i] == self.root) and self.nnames[
-                i
-            ] == val:
+            if (self.root is None or self.nparents[i] == self.root) and self.nnames[i] == val:
                 return self.get_by_index(i)
         return None
 
@@ -635,9 +619,7 @@ class Nodes:
             ident = self.root
         out = [
             (self.ntypes[i], self.nnames[i], self.addresses[i])
-            for i in [
-                index for index, parent in enumerate(self.nparents) if parent == ident
-            ]
+            for i in [index for index, parent in enumerate(self.nparents) if parent == ident]
         ]
         return out
 

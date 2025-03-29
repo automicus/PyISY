@@ -1,4 +1,5 @@
 """ISY Variables."""
+
 from asyncio import sleep
 from xml.dom import minidom
 
@@ -203,7 +204,7 @@ class Variables:
 
     def __setitem__(self, val, value):
         """Handle the setitem function for the Class."""
-        return None
+        return
 
     def get_by_name(self, val):
         """
