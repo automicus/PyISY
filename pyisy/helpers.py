@@ -106,7 +106,7 @@ def attr_from_xml(xml, tag_name, attr_name, default=None):
 def attr_from_element(element, attr_name, default=None):
     """Extract an attribute value from an XML element."""
     value = default
-    if attr_name in element.attributes.keys():
+    if attr_name in element.attributes:
         value = element.attributes[attr_name].value
     return value
 
@@ -171,7 +171,7 @@ class EventEmitter:
         """Initialize a new Event Emitter class."""
         self._subscribers = []
 
-    def subscribe(self, callback: Callable, event_filter: dict | str = None, key: str = None):
+    def subscribe(self, callback: Callable, event_filter: dict | str | None = None, key: str | None = None):
         """Subscribe to the events."""
         listener = EventListener(emitter=self, callback=callback, event_filter=event_filter, key=key)
         self._subscribers.append(listener)
