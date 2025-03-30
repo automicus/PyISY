@@ -1,5 +1,7 @@
 """Base object for nodes and groups."""
 
+from __future__ import annotations
+
 from xml.dom import minidom
 
 from ..constants import (
@@ -47,7 +49,7 @@ class NodeBase:
         nodes,
         address,
         name,
-        status,
+        status: float,
         family_id=None,
         aux_properties=None,
         pnode=None,
@@ -56,7 +58,7 @@ class NodeBase:
         """Initialize a Node Base class."""
         self._aux_properties = aux_properties if aux_properties is not None else {}
         self._family = NODE_FAMILY_ID.get(family_id)
-        self._id = address
+        self._id: str = address
         self._name = name
         self._nodes = nodes
         self._notes = None
@@ -192,7 +194,7 @@ class NodeBase:
                 notes_dom = minidom.parseString(notes_xml)
             except XML_ERRORS as exc:
                 _LOGGER.error("%s: Node Notes %s", XML_PARSE_ERROR, notes_xml)
-                raise ISYResponseParseError() from exc
+                raise ISYResponseParseError from exc
 
             spoken = value_from_xml(notes_dom, TAG_SPOKEN)
             location = value_from_xml(notes_dom, TAG_LOCATION)
@@ -218,7 +220,7 @@ class NodeBase:
 
         aux_prop = self.aux_properties.get(prop.control)
         if aux_prop:
-            if prop.uom == "" and not aux_prop.uom == "":
+            if prop.uom == "" and aux_prop.uom != "":
                 # Guard against overwriting known UOM with blank UOM (ISYv4).
                 prop.uom = aux_prop.uom
             if aux_prop == prop:

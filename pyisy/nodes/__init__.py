@@ -184,13 +184,12 @@ class Nodes:
         folders.sort(key=itemgetter(1))
         groups.sort(key=itemgetter(1))
         nodes.sort(key=itemgetter(1))
-        out = (
+        return (
             f"{self}\n"
             f"{self.__repr_folders__(folders)}"
             f"{self.__repr_groups__(groups)}"
             f"{self.__repr_nodes__(nodes)}"
         )
-        return out
 
     def __repr_folders__(self, folders: list[tuple[str, str, str]]) -> str:
         """Return a representation of the folder structure."""
@@ -457,10 +456,11 @@ class Nodes:
                     # Build list of members
                     members = [mem.firstChild.nodeValue for mem in mems]
                     # Build list of controllers
-                    controllers = []
-                    for mem in mems:
-                        if int(attr_from_element(mem, TAG_TYPE, 0)) == NODE_IS_CONTROLLER:
-                            controllers.append(mem.firstChild.nodeValue)
+                    controllers = [
+                        mem.firstChild.nodeValue
+                        for mem in mems
+                        if int(attr_from_element(mem, TAG_TYPE, 0)) == NODE_IS_CONTROLLER
+                    ]
                     self.insert(
                         address,
                         nname,
@@ -513,6 +513,7 @@ class Nodes:
                 continue
 
         _LOGGER.info("ISY Updated Node Statuses.")
+        return None
 
     async def update_nodes(self, wait_time: float = 0.0) -> None:
         """
@@ -637,11 +638,10 @@ class Nodes:
         """Return the children of the class."""
         if ident is None:
             ident = self.root
-        out = [
+        return [
             (self.ntypes[i], self.nnames[i], self.addresses[i])
             for i in [index for index, parent in enumerate(self.nparents) if parent == ident]
         ]
-        return out
 
     @property
     def has_children(self) -> bool:

@@ -220,19 +220,14 @@ class Variables:
     @property
     def children(self):
         """Get the children of the class."""
-        if self.root is None:
-            types = [1, 2]
-        else:
-            types = [self.root]
+        types = [1, 2] if self.root is None else [self.root]
 
-        out = []
-        for vtype in types:
-            for ind in range(len(self.vids[vtype])):
-                out.append(
-                    (
-                        vtype,
-                        self.vnames[vtype].get(self.vids[vtype][ind], ""),
-                        self.vids[vtype][ind],
-                    )
-                )
-        return out
+        return [
+            (
+                vtype,
+                self.vnames[vtype].get(self.vids[vtype][ind], ""),
+                self.vids[vtype][ind],
+            )
+            for vtype in types
+            for ind in range(len(self.vids[vtype]))
+        ]
