@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Any
+from datetime import datetime
+from typing import TYPE_CHECKING, Any
 
 from ..constants import (
     ATTR_LAST_CHANGED,
@@ -23,6 +24,9 @@ from ..constants import (
 from ..helpers import EventEmitter, now
 from ..logging import _LOGGER
 
+if TYPE_CHECKING:
+    from . import Programs
+
 
 class Folder:
     """
@@ -40,7 +44,7 @@ class Folder:
 
     dtype = TAG_FOLDER
 
-    def __init__(self, programs, address, pname, pstatus, plastup):
+    def __init__(self, programs: Programs, address: str, pname: str, pstatus: int, plastup: datetime) -> None:
         """Initialize the Folder class."""
         self._id = address
         self._last_update = plastup
@@ -51,61 +55,61 @@ class Folder:
         self.isy = programs.isy
         self.status_events = EventEmitter()
 
-    def __str__(self):
+    def __str__(self) -> str:
         """Return a string representation of the node."""
         return f"{type(self).__name__}({self._id})"
 
     @property
-    def address(self):
+    def address(self) -> str:
         """Return the program or folder ID."""
         return self._id
 
     @property
-    def last_changed(self):
+    def last_changed(self) -> datetime:
         """Return the last time the program was changed in this module."""
         return self._last_changed
 
     @last_changed.setter
-    def last_changed(self, value):
+    def last_changed(self, value: datetime) -> datetime:
         """Set the last time the program was changed."""
         if self._last_changed != value:
             self._last_changed = value
         return self._last_changed
 
     @property
-    def last_update(self):
+    def last_update(self) -> datetime:
         """Return the last time the program was updated."""
         return self._last_update
 
     @last_update.setter
-    def last_update(self, value):
+    def last_update(self, value: datetime) -> datetime:
         """Set the last time the program was updated."""
         if self._last_update != value:
             self._last_update = value
         return self._last_update
 
     @property
-    def leaf(self):
+    def leaf(self) -> Folder:
         """Get the leaf property."""
         return self
 
     @property
-    def name(self):
+    def name(self) -> str:
         """Return the name of the Node."""
         return self._name
 
     @property
-    def protocol(self):
+    def protocol(self) -> str:
         """Return the protocol for this entity."""
         return PROTO_FOLDER
 
     @property
-    def status(self):
+    def status(self) -> int:
         """Return the current node state."""
         return self._status
 
     @status.setter
-    def status(self, value):
+    def status(self, value: int) -> int:
         """Set the current node state and notify listeners."""
         if self._status != value:
             self._status = value
@@ -113,7 +117,7 @@ class Folder:
         return self._status
 
     @property
-    def status_feedback(self):
+    def status_feedback(self) -> dict[str, Any]:
         """Return information for a status change event."""
         return {
             TAG_ADDRESS: self.address,
@@ -127,7 +131,7 @@ class Folder:
         self._last_changed = now()
         self.status = data["pstatus"]
 
-    async def update(self, wait_time=UPDATE_INTERVAL, data=None):
+    async def update(self, wait_time: float = UPDATE_INTERVAL, data: dict[str, Any] | None = None) -> None:
         """
         Update the status of the program.
 
@@ -139,7 +143,7 @@ class Folder:
             return
         await self._programs.update(wait_time=wait_time, address=self._id)
 
-    async def send_cmd(self, command):
+    async def send_cmd(self, command: str) -> bool:
         """Run the appropriate clause of the object."""
         req_url = self.isy.conn.compile_url([URL_PROGRAMS, str(self._id), command])
         result = await self.isy.conn.request(req_url)
@@ -151,26 +155,26 @@ class Folder:
             await self.update()
         return True
 
-    async def enable(self):
+    async def enable(self) -> bool:
         """Send command to the program/folder to enable it."""
         return await self.send_cmd(CMD_ENABLE)
 
-    async def disable(self):
+    async def disable(self) -> bool:
         """Send command to the program/folder to enable it."""
         return await self.send_cmd(CMD_DISABLE)
 
-    async def run(self):
+    async def run(self) -> bool:
         """Send a run command to the program/folder."""
         return await self.send_cmd(CMD_RUN)
 
-    async def run_then(self):
+    async def run_then(self) -> bool:
         """Send a runThen command to the program/folder."""
         return await self.send_cmd(CMD_RUN_THEN)
 
-    async def run_else(self):
+    async def run_else(self) -> bool:
         """Send a runElse command to the program/folder."""
         return await self.send_cmd(CMD_RUN_ELSE)
 
-    async def stop(self):
+    async def stop(self) -> bool:
         """Send a stop command to the program/folder."""
         return await self.send_cmd(CMD_STOP)
