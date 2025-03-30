@@ -106,7 +106,7 @@ def attr_from_xml(xml, tag_name, attr_name, default=None):
 def attr_from_element(element, attr_name, default=None):
     """Extract an attribute value from an XML element."""
     value = default
-    if attr_name in element.attributes.keys():
+    if attr_name in element.attributes:
         value = element.attributes[attr_name].value
     return value
 
