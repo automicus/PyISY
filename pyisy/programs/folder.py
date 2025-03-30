@@ -46,7 +46,7 @@ class Folder:
 
     def __init__(self, programs: Programs, address: str, pname: str, pstatus: int, plastup: datetime) -> None:
         """Initialize the Folder class."""
-        self._id: str = address
+        self._id = address
         self._last_update = plastup
         self._last_changed = now()
         self._name = pname
