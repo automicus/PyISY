@@ -1,8 +1,12 @@
 """ISY Websocket Event Stream."""
 
+from __future__ import annotations
+
 import asyncio
 import logging
 import xml
+from datetime import datetime
+from typing import TYPE_CHECKING
 from xml.dom import minidom
 
 import aiohttp
@@ -30,6 +34,10 @@ from ..constants import (
 from ..helpers import attr_from_xml, now, value_from_xml
 from ..logging import LOG_VERBOSE, enable_logging
 
+if TYPE_CHECKING:
+    from ..isy import ISY
+
+
 _LOGGER = logging.getLogger(__name__)  # Allows targeting pyisy.events in handlers.
 
 WS_HEADERS = {
@@ -49,16 +57,16 @@ class WebSocketClient:
 
     def __init__(
         self,
-        isy,
-        address,
-        port,
-        username,
-        password,
-        use_https=False,
+        isy: ISY,
+        address: str,
+        port: int,
+        username: str,
+        password: str,
+        use_https: bool = False,
         tls_ver=1.1,
-        webroot="",
-        websession=None,
-    ):
+        webroot: str = "",
+        websession: aiohttp.ClientSession | None = None,
+    ) -> None:
         """Initialize a new Web Socket Client class."""
         if len(_LOGGER.handlers) == 0:
             enable_logging(add_null_handler=True)
@@ -72,13 +80,13 @@ class WebSocketClient:
         self._webroot = webroot.rstrip("/")
         self._tls_ver = tls_ver
         self.use_https = use_https
-        self._status = ES_NOT_STARTED
-        self._lasthb = None
-        self._hbwait = WS_HEARTBEAT
+        self._status: str = ES_NOT_STARTED
+        self._lasthb: datetime | None = None
+        self._hbwait: int = WS_HEARTBEAT
         self._sid = None
         self._program_key = None
-        self.websocket_task = None
-        self.guardian_task = None
+        self.websocket_task: asyncio.Task[None] = None
+        self.guardian_task: asyncio.Task[None] = None
 
         if websession is None:
             websession = get_new_client_session(use_https, tls_ver)
@@ -90,7 +98,7 @@ class WebSocketClient:
         self._url = "wss://" if self.use_https else "ws://"
         self._url += f"{self._address}:{self._port}{self._webroot}/rest/subscribe"
 
-    def start(self, retries=0):
+    def start(self, retries: int = 0) -> None:
         """Start the websocket connection."""
         if self.status != ES_CONNECTED:
             _LOGGER.debug("Starting websocket connection.")
@@ -98,7 +106,7 @@ class WebSocketClient:
             self.websocket_task = self._loop.create_task(self.websocket(retries))
             self.guardian_task = self._loop.create_task(self._websocket_guardian())
 
-    def stop(self):
+    def stop(self) -> None:
         """Close websocket connection."""
         self.status = ES_STOP_UPDATES
         if self.websocket_task is not None:
@@ -139,7 +147,7 @@ class WebSocketClient:
         self.start(retries)
 
     @property
-    def status(self):
+    def status(self) -> str:
         """Return if the websocket is running or not."""
         return self._status
 
@@ -152,12 +160,12 @@ class WebSocketClient:
         return self._status
 
     @property
-    def last_heartbeat(self):
+    def last_heartbeat(self) -> datetime | None:
         """Return the last received heartbeat time from the ISY."""
         return self._lasthb
 
     @property
-    def heartbeat_time(self):
+    def heartbeat_time(self) -> float:
         """Return the time since the last ISY Heartbeat."""
         if self._lasthb is not None:
             return (now() - self._lasthb).seconds
@@ -177,7 +185,7 @@ class WebSocketClient:
                 self._reconnect()
                 return
 
-    async def _route_message(self, msg):
+    async def _route_message(self, msg: str) -> None:
         """Route a received message from the event stream."""
         # check xml formatting
         try:
@@ -227,12 +235,12 @@ class WebSocketClient:
         elif cntrl == "_7":  # Progress report, device programming event
             self.isy.nodes.progress_report_received(xmldoc)
 
-    def update_received(self, xmldoc):
+    def update_received(self, xmldoc: minidom.Element) -> None:
         """Set the socket ID."""
         self._sid = attr_from_xml(xmldoc, "Event", ATTR_STREAM_ID)
         _LOGGER.debug("ISY Updated Events Stream ID: %s", self._sid)
 
-    async def websocket(self, retries=0):
+    async def websocket(self, retries: int = 0) -> None:
         """Start websocket connection."""
         try:
             async with self.req_session.ws_connect(
