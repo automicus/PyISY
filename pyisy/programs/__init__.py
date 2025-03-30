@@ -71,7 +71,7 @@ class Programs:
         addresses: list[str] | None = None,
         pnames: list[str] | None = None,
         pparents: list[str] | None = None,
-        pobjs: list[Program | Programs] | None = None,
+        pobjs: list[Program | Folder] | None = None,
         ptypes: list[str] | None = None,
         xml: str | None = None,
         _address_index: dict[str, int] | None = None,
@@ -86,7 +86,7 @@ class Programs:
         self.pnames: list[str] = []
         self._pnames_index: dict[str, int] = {}
         self.pparents: list[str] = []
-        self.pobjs: list[Program | Programs] = []
+        self.pobjs: list[Program | Folder] = []
         self.ptypes: list[str] = []
 
         if xml is not None:
@@ -312,7 +312,7 @@ class Programs:
         self.ptypes.append(ptype)
         self.pobjs.append(pobj)
 
-    def __getitem__(self, val: str) -> Program | Programs | None:
+    def __getitem__(self, val: str) -> Program | Folder | None:
         """
         Navigate through the hierarchy using names or IDs.
 
@@ -337,7 +337,7 @@ class Programs:
         """Set the item value."""
         return
 
-    def get_by_name(self, val: str) -> Program | Programs | None:
+    def get_by_name(self, val: str) -> Program | Folder | Programs | None:
         """
         Get a child program/folder with the given name.
 
@@ -348,7 +348,7 @@ class Programs:
             return self.get_by_index(i)
         return None
 
-    def get_by_id(self, address: str) -> Program | Programs:
+    def get_by_id(self, address: str) -> Program | Folder | Programs:
         """
         Get a program/folder with the given ID.
 
@@ -356,7 +356,7 @@ class Programs:
         """
         return self.get_by_index(self._address_index[address])
 
-    def get_by_index(self, i: int) -> Program | Programs:
+    def get_by_index(self, i: int) -> Program | Folder | Programs:
         """
         Get the program/folder at the given index.
 
@@ -386,7 +386,7 @@ class Programs:
         ]
 
     @property
-    def leaf(self) -> Program | Programs:
+    def leaf(self) -> Program | Folder:
         """Return the leaf property."""
         if self.root is not None:
             ind = self._address_index[self.root]

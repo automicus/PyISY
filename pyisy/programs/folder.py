@@ -1,5 +1,9 @@
 """ISY Program Folders."""
 
+from __future__ import annotations
+
+from typing import Any
+
 from ..constants import (
     ATTR_LAST_CHANGED,
     ATTR_LAST_UPDATE,
@@ -118,6 +122,11 @@ class Folder:
             ATTR_LAST_UPDATE: self._last_update,
         }
 
+    def _update(self, data: dict[str, Any]) -> None:
+        """Update the folder with values from the controller."""
+        self._last_changed = now()
+        self.status = data["pstatus"]
+
     async def update(self, wait_time=UPDATE_INTERVAL, data=None):
         """
         Update the status of the program.
@@ -126,8 +135,7 @@ class Folder:
         |  wait_time: [optional] Seconds to wait before updating.
         """
         if data is not None:
-            self._last_changed = now()
-            self.status = data["pstatus"]
+            self._update(data)
             return
         await self._programs.update(wait_time=wait_time, address=self._id)
 
