@@ -75,7 +75,6 @@ ignore = [
     "PERF203", # TODO
     "TRY400", # TODO
     "TRY401", # TODO
-    "ASYNC110", # TODO
 ]
 select = [
     "ASYNC", # async rules
