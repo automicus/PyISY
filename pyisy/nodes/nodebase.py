@@ -192,7 +192,7 @@ class NodeBase:
                 notes_dom = minidom.parseString(notes_xml)
             except XML_ERRORS as exc:
                 _LOGGER.error("%s: Node Notes %s", XML_PARSE_ERROR, notes_xml)
-                raise ISYResponseParseError() from exc
+                raise ISYResponseParseError from exc
 
             spoken = value_from_xml(notes_dom, TAG_SPOKEN)
             location = value_from_xml(notes_dom, TAG_LOCATION)
