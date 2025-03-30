@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from datetime import datetime
+from typing import TYPE_CHECKING
 from xml.dom import minidom
 
 from ..constants import (
@@ -38,6 +40,9 @@ from ..exceptions import XML_ERRORS, XML_PARSE_ERROR, ISYResponseParseError
 from ..helpers import EventEmitter, NodeProperty, now, value_from_xml
 from ..logging import _LOGGER
 
+if TYPE_CHECKING:
+    from . import Nodes
+
 
 class NodeBase:
     """Base Object for Nodes and Groups/Scenes."""
@@ -46,27 +51,27 @@ class NodeBase:
 
     def __init__(
         self,
-        nodes,
-        address,
-        name,
+        nodes: Nodes,
+        address: str,
+        name: str,
         status: float,
-        family_id=None,
-        aux_properties=None,
-        pnode=None,
-        flag=0,
-    ):
+        family_id: str | None = None,
+        aux_properties: dict[str, NodeProperty] | None = None,
+        pnode: str | None = None,
+        flag: int = 0,
+    ) -> None:
         """Initialize a Node Base class."""
         self._aux_properties = aux_properties if aux_properties is not None else {}
         self._family = NODE_FAMILY_ID.get(family_id)
         self._id: str = address
         self._name = name
         self._nodes = nodes
-        self._notes = None
+        self._notes: str | None = None
         self._primary_node = pnode
         self._flag = flag
         self._status = status
         self._last_update = now()
-        self._last_changed = now()
+        self._last_changed = self._last_update
         self.isy = nodes.isy
         self.status_events = EventEmitter()
 
@@ -75,68 +80,68 @@ class NodeBase:
         return f"{type(self).__name__}({self._id})"
 
     @property
-    def aux_properties(self):
+    def aux_properties(self) -> dict[str, NodeProperty]:
         """Return the aux properties that were in the Node Definition."""
         return self._aux_properties
 
     @property
-    def address(self):
+    def address(self) -> str:
         """Return the Node ID."""
         return self._id
 
     @property
-    def description(self):
+    def description(self) -> str | None:
         """Return the description of the node from it's notes."""
         if self._notes is None:
             _LOGGER.debug("No notes retrieved for node. Call get_notes() before accessing.")
         return self._notes[TAG_DESCRIPTION]
 
     @property
-    def family(self):
+    def family(self) -> str | None:
         """Return the ISY Family category."""
         return self._family
 
     @property
-    def flag(self):
+    def flag(self) -> int:
         """Return the flag of the current node as a property."""
         return self._flag
 
     @property
-    def folder(self):
+    def folder(self) -> str | None:
         """Return the folder of the current node as a property."""
         return self._nodes.get_folder(self.address)
 
     @property
-    def is_load(self):
+    def is_load(self) -> bool | None:
         """Return the isLoad property of the node from it's notes."""
         if self._notes is None:
             _LOGGER.debug("No notes retrieved for node. Call get_notes() before accessing.")
         return self._notes[TAG_IS_LOAD]
 
     @property
-    def last_changed(self):
+    def last_changed(self) -> datetime:
         """Return the UTC Time of the last status change for this node."""
         return self._last_changed
 
     @property
-    def last_update(self):
+    def last_update(self) -> datetime:
         """Return the UTC Time of the last update for this node."""
         return self._last_update
 
     @property
-    def location(self):
+    def location(self) -> str | None:
         """Return the location of the node from it's notes."""
         if self._notes is None:
             _LOGGER.debug("No notes retrieved for node. Call get_notes() before accessing.")
         return self._notes[TAG_LOCATION]
 
     @property
-    def name(self):
+    def name(self) -> str:
         """Return the name of the Node."""
         return self._name
 
     @property
-    def primary_node(self):
+    def primary_node(self) -> str | None:
         """Return just the parent/primary node address.
 
         This is similar to Node.parent_node but does not return the whole Node
@@ -146,19 +151,19 @@ class NodeBase:
         return self._primary_node
 
     @property
-    def spoken(self):
+    def spoken(self) -> str | None:
         """Return the text of the Spoken property inside the group notes."""
         if self._notes is None:
             _LOGGER.debug("No notes retrieved for node. Call get_notes() before accessing.")
         return self._notes[TAG_SPOKEN]
 
     @property
-    def status(self):
+    def status(self) -> float:
         """Return the current node state."""
         return self._status
 
     @status.setter
-    def status(self, value):
+    def status(self, value: float) -> float:
         """Set the current node state and notify listeners."""
         if self._status != value:
             self._status = value
@@ -167,7 +172,7 @@ class NodeBase:
         return self._status
 
     @property
-    def status_feedback(self):
+    def status_feedback(self) -> dict[str, str | datetime]:
         """Return information for a status change event."""
         return {
             TAG_ADDRESS: self.address,
@@ -176,7 +181,7 @@ class NodeBase:
             ATTR_LAST_UPDATE: self._last_update,
         }
 
-    async def get_notes(self):
+    async def get_notes(self) -> dict[str, str | None]:
         """Retrieve and parse the notes for a given node.
 
         Notes are not retrieved unless explicitly requested by
@@ -211,7 +216,7 @@ class NodeBase:
         """Update the group with values from the controller."""
         self.update_last_update()
 
-    def update_property(self, prop):
+    def update_property(self, prop: NodeProperty) -> None:
         """Update an aux property for the node when received."""
         if not isinstance(prop, NodeProperty):
             _LOGGER.error("Could not update property value. Invalid type provided.")
@@ -229,19 +234,19 @@ class NodeBase:
         self.update_last_changed()
         self.status_events.notify(self.status_feedback)
 
-    def update_last_changed(self, timestamp=None):
+    def update_last_changed(self, timestamp: datetime | None = None) -> None:
         """Set the UTC Time of the last status change for this node."""
         if timestamp is None:
             timestamp = now()
         self._last_changed = timestamp
 
-    def update_last_update(self, timestamp=None):
+    def update_last_update(self, timestamp: datetime | None = None) -> None:
         """Set the UTC Time of the last update for this node."""
         if timestamp is None:
             timestamp = now()
         self._last_update = timestamp
 
-    async def send_cmd(self, cmd, val=None, uom=None, query=None):
+    async def send_cmd(self, cmd: str, val=None, uom=None, query=None) -> bool:
         """Send a command to the device."""
         value = str(val) if val is not None else None
         _uom = str(uom) if uom is not None else None
@@ -261,19 +266,19 @@ class NodeBase:
         _LOGGER.debug("ISY command %s sent to %s.", COMMAND_FRIENDLY_NAME.get(cmd), self._id)
         return True
 
-    async def beep(self):
+    async def beep(self) -> bool:
         """Identify physical device by sound (if supported)."""
         return await self.send_cmd(CMD_BEEP)
 
-    async def brighten(self):
+    async def brighten(self) -> bool:
         """Increase brightness of a device by ~3%."""
         return await self.send_cmd(CMD_BRIGHTEN)
 
-    async def dim(self):
+    async def dim(self) -> bool:
         """Decrease brightness of a device by ~3%."""
         return await self.send_cmd(CMD_DIM)
 
-    async def disable(self):
+    async def disable(self) -> bool:
         """Send command to the node to disable it."""
         if not await self.isy.conn.request(
             self.isy.conn.compile_url([URL_NODES, str(self._id), CMD_DISABLE])
@@ -282,38 +287,38 @@ class NodeBase:
             return False
         return True
 
-    async def enable(self):
+    async def enable(self) -> bool:
         """Send command to the node to enable it."""
         if not await self.isy.conn.request(self.isy.conn.compile_url([URL_NODES, str(self._id), CMD_ENABLE])):
             _LOGGER.warning("ISY could not %s %s.", CMD_ENABLE, self._id)
             return False
         return True
 
-    async def fade_down(self):
+    async def fade_down(self) -> bool:
         """Begin fading down (dim) a device."""
         return await self.send_cmd(CMD_FADE_DOWN)
 
-    async def fade_stop(self):
+    async def fade_stop(self) -> bool:
         """Stop fading a device."""
         return await self.send_cmd(CMD_FADE_STOP)
 
-    async def fade_up(self):
+    async def fade_up(self) -> bool:
         """Begin fading up (dim) a device."""
         return await self.send_cmd(CMD_FADE_UP)
 
-    async def fast_off(self):
+    async def fast_off(self) -> bool:
         """Start manually brightening a device."""
         return await self.send_cmd(CMD_OFF_FAST)
 
-    async def fast_on(self):
+    async def fast_on(self) -> bool:
         """Start manually brightening a device."""
         return await self.send_cmd(CMD_ON_FAST)
 
-    async def query(self):
+    async def query(self) -> bool:
         """Request the ISY query this node."""
         return await self.isy.query(address=self.address)
 
-    async def turn_off(self):
+    async def turn_off(self) -> bool:
         """Turn off the nodes/group in the ISY."""
         return await self.send_cmd(CMD_OFF)
 

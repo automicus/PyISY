@@ -1,5 +1,9 @@
 """Representation of groups (scenes) from an ISY."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from ..constants import (
     FAMILY_GENERIC,
     INSTEON_STATELESS_NODEDEFID,
@@ -7,7 +11,11 @@ from ..constants import (
     PROTO_GROUP,
 )
 from ..helpers import now
+from .node import Node
 from .nodebase import NodeBase
+
+if TYPE_CHECKING:
+    from . import Nodes
 
 
 class Group(NodeBase):
@@ -31,19 +39,19 @@ class Group(NodeBase):
 
     def __init__(
         self,
-        nodes,
-        address,
-        name,
-        members=None,
-        controllers=None,
+        nodes: Nodes,
+        address: str,
+        name: str,
+        members: list[str] | None = None,
+        controllers: list[str] | None = None,
         family_id=FAMILY_GENERIC,
         pnode=None,
         flag=0,
     ):
         """Initialize a Group class."""
-        self._all_on = False
-        self._controllers = controllers or []
-        self._members = members or []
+        self._all_on: bool = False
+        self._controllers: list[str] = controllers or []
+        self._members: list[str] = members or []
         super().__init__(nodes, address, name, 0, family_id=family_id, pnode=pnode, flag=flag)
 
         # listen for changes in children
@@ -60,17 +68,17 @@ class Group(NodeBase):
             handler.unsubscribe()
 
     @property
-    def controllers(self):
+    def controllers(self) -> list[str]:
         """Get the controller nodes of the scene/group."""
         return self._controllers
 
     @property
-    def group_all_on(self):
+    def group_all_on(self) -> bool:
         """Return the current node state."""
         return self._all_on
 
     @group_all_on.setter
-    def group_all_on(self, value):
+    def group_all_on(self, value: bool) -> bool:
         """Set the current node state and notify listeners."""
         if self._all_on != value:
             self._all_on = value
@@ -80,32 +88,33 @@ class Group(NodeBase):
         return self._all_on
 
     @property
-    def members(self):
+    def members(self) -> list[str]:
         """Get the members of the scene/group."""
         return self._members
 
     @property
-    def protocol(self):
+    def protocol(self) -> str:
         """Return the protocol for this entity."""
         return PROTO_GROUP
 
-    async def update(self, event=None, wait_time=0, xmldoc=None):
+    async def update(self, event=None, wait_time: float = 0.0, xmldoc=None):
         """Update the group with values from the controller."""
         return self._update(event, wait_time, xmldoc)
 
-    def _update(self, event=None, wait_time=0, xmldoc=None):
+    def _update(self, event=None, wait_time: float = 0.0, xmldoc=None):
         """Update the group with values from the controller."""
         self._last_update = now()
+        address_to_node: dict[str, Node] = {address: self._nodes[address] for address in self.members}
         valid_nodes = [
-            node
-            for node in self.members
+            address
+            for address, node_obj in address_to_node.items()
             if (
-                self._nodes[node].status is not None
-                and self._nodes[node].status != ISY_VALUE_UNKNOWN
-                and self._nodes[node].node_def_id not in INSTEON_STATELESS_NODEDEFID
+                node_obj.status is not None
+                and node_obj.status != ISY_VALUE_UNKNOWN
+                and node_obj.node_def_id not in INSTEON_STATELESS_NODEDEFID
             )
         ]
-        on_nodes = [node for node in valid_nodes if int(self._nodes[node].status) > 0]
+        on_nodes = [node for node in valid_nodes if int(address_to_node[node].status) > 0]
         if on_nodes:
             self.group_all_on = len(on_nodes) == len(valid_nodes)
             self.status = 255

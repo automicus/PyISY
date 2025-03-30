@@ -3,6 +3,8 @@
 import asyncio
 from threading import Thread
 
+import aiohttp
+
 from .clock import Clock
 from .configuration import Configuration
 from .connection import Connection
@@ -63,16 +65,16 @@ class ISY:
 
     def __init__(
         self,
-        address,
-        port,
-        username,
-        password,
-        use_https=False,
-        tls_ver=1.1,
-        webroot="",
-        websession=None,
-        use_websocket=False,
-    ):
+        address: str,
+        port: int,
+        username: str,
+        password: str,
+        use_https: bool = False,
+        tls_ver: float = 1.1,
+        webroot: str = "",
+        websession: aiohttp.ClientSession | None = None,
+        use_websocket: bool = False,
+    ) -> None:
         """Initialize the primary ISY Class."""
         self._events = None  # create this JIT so no socket reuse
         self._reconnect_thread = None
