@@ -1,5 +1,7 @@
 """Init for management of ISY Programs."""
 
+from __future__ import annotations
+
 import asyncio
 from xml.dom import minidom
 
@@ -257,7 +259,7 @@ class Programs:
                 self.insert(address, pname, pparent, pobj, ptype)
             else:
                 pobj = self.get_by_id(address).leaf
-                asyncio.create_task(pobj.update(data=data))
+                pobj._update(data=data)
 
         _LOGGER.info("ISY Loaded/Updated Programs")
 
@@ -269,6 +271,7 @@ class Programs:
         |  address: The program ID to update.
         """
         await asyncio.sleep(wait_time)
+
         xml = await self.isy.conn.get_programs(address)
 
         if xml is not None:
@@ -332,7 +335,7 @@ class Programs:
                 return self.get_by_index(i)
         return None
 
-    def get_by_id(self, address):
+    def get_by_id(self, address: str) -> Program | Programs:
         """
         Get a program/folder with the given ID.
 
@@ -341,7 +344,7 @@ class Programs:
         i = self.addresses.index(address)
         return self.get_by_index(i)
 
-    def get_by_index(self, i):
+    def get_by_index(self, i: int) -> Program | Programs:
         """
         Get the program/folder at the given index.
 

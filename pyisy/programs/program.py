@@ -1,5 +1,7 @@
 """Representation of a program from the ISY."""
 
+from typing import Any
+
 from ..constants import (
     CMD_DISABLE_RUN_AT_STARTUP,
     CMD_ENABLE_RUN_AT_STARTUP,
@@ -143,7 +145,22 @@ class Program(Folder):
             self._running = value
         return self._running
 
-    async def update(self, wait_time=UPDATE_INTERVAL, data=None):
+    def _update(self, data: dict[str, Any]) -> None:
+        """Update the program with values on the controller."""
+        self._enabled = data["penabled"]
+        self._last_finished = data["plastfin"]
+        self._last_run = data["plastrun"]
+        self._last_update = data["plastup"]
+        self._run_at_startup = data["pstartrun"]
+        self._running = (data["plastrun"] >= data["plastup"]) or data["prunning"]
+        # Update Status last and make sure the change event fires, but only once.
+        if self.status != data["pstatus"]:
+            self.status = data["pstatus"]
+        else:
+            # Status didn't change, but something did, so fire the event.
+            self.status_events.notify(self.status)
+
+    async def update(self, wait_time=UPDATE_INTERVAL, data: dict[str, Any] | None = None):
         """
         Update the program with values on the controller.
 
@@ -151,18 +168,7 @@ class Program(Folder):
         |  data: [optional] Data to update the object with.
         """
         if data is not None:
-            self._enabled = data["penabled"]
-            self._last_finished = data["plastfin"]
-            self._last_run = data["plastrun"]
-            self._last_update = data["plastup"]
-            self._run_at_startup = data["pstartrun"]
-            self._running = (data["plastrun"] >= data["plastup"]) or data["prunning"]
-            # Update Status last and make sure the change event fires, but only once.
-            if self.status != data["pstatus"]:
-                self.status = data["pstatus"]
-            else:
-                # Status didn't change, but something did, so fire the event.
-                self.status_events.notify(self.status)
+            self._update(data)
             return
         await self._programs.update(wait_time, address=self._id)
 
