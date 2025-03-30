@@ -177,7 +177,7 @@ class Node(NodeBase):
 
         Check ISYv4 UOM, then Insteon and Z-Wave Types for dimmable types.
         """
-        dimmable = (
+        return (
             "%" in str(self._uom)
             or (
                 self._protocol == PROTO_INSTEON
@@ -191,7 +191,6 @@ class Node(NodeBase):
                 and self._zwave_props.category in ZWAVE_CAT_DIMMABLE
             )
         )
-        return dimmable
 
     @property
     def is_lock(self):

@@ -163,13 +163,12 @@ class Nodes:
         folders.sort(key=lambda x: x[1])
         groups.sort(key=lambda x: x[1])
         nodes.sort(key=lambda x: x[1])
-        out = (
+        return (
             f"{self}\n"
             f"{self.__repr_folders__(folders)}"
             f"{self.__repr_groups__(groups)}"
             f"{self.__repr_nodes__(nodes)}"
         )
-        return out
 
     def __repr_folders__(self, folders):
         """Return a representation of the folder structure."""
@@ -618,11 +617,10 @@ class Nodes:
         """Return the children of the class."""
         if ident is None:
             ident = self.root
-        out = [
+        return [
             (self.ntypes[i], self.nnames[i], self.addresses[i])
             for i in [index for index, parent in enumerate(self.nparents) if parent == ident]
         ]
-        return out
 
     @property
     def has_children(self):
