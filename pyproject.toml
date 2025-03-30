@@ -67,7 +67,6 @@ ignore = [
     "SIM118", # TODO
     "G201", # TODO
     "PERF203", # TODO
-    "TRY400", # TODO
 ]
 select = [
     "ASYNC", # async rules

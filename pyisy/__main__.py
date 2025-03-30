@@ -57,11 +57,11 @@ async def main(url, username, password, tls_ver, events, node_servers):
     try:
         await isy.initialize(node_servers)
     except (ISYInvalidAuthError, ISYConnectionError):
-        _LOGGER.error("Failed to connect to the ISY, please adjust settings and try again.")
+        _LOGGER.exception("Failed to connect to the ISY, please adjust settings and try again.")
         await isy.shutdown()
         return None
     except Exception as err:
-        _LOGGER.error("Unknown error occurred: %s", err.args[0])
+        _LOGGER.exception("Unknown error occurred: %s", err.args[0])
         await isy.shutdown()
         raise
 
