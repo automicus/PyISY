@@ -230,11 +230,12 @@ class WebSocketClient:
                 _LOGGER.debug("Successfully connected to websocket.")
 
                 async for msg in ws:
-                    if msg.type == aiohttp.WSMsgType.TEXT:
+                    msg_type = msg.type
+                    if msg_type is aiohttp.WSMsgType.TEXT:
                         await self._route_message(msg.data)
-                    elif msg.type == aiohttp.WSMsgType.BINARY:
+                    elif msg_type is aiohttp.WSMsgType.BINARY:
                         _LOGGER.warning("Unexpected binary message received.")
-                    elif msg.type == aiohttp.WSMsgType.ERROR:
+                    elif msg_type is aiohttp.WSMsgType.ERROR:
                         _LOGGER.error("Error during receive %s", ws.exception())
                         break
 
