@@ -430,7 +430,7 @@ class Node(NodeBase):
 
         return True
 
-    async def update(self, event=None, wait_time=0, xmldoc=None):
+    async def update(self, event=None, wait_time: int = 0, xmldoc=None):
         """Update the value of the node from the controller."""
         if not self.isy.auto_update and not xmldoc:
             await asyncio.sleep(wait_time)
@@ -452,7 +452,7 @@ class Node(NodeBase):
         self.update_state(state)
         _LOGGER.debug("ISY updated node: %s", self._id)
 
-    def update_state(self, state):
+    def update_state(self, state: NodeProperty) -> None:
         """Update the various state properties when received."""
         if not isinstance(state, NodeProperty):
             _LOGGER.error("Could not update state values. Invalid type provided.")
@@ -481,14 +481,14 @@ class Node(NodeBase):
             self._last_changed = now()
             self.status_events.notify(self.status_feedback)
 
-    def get_command_value(self, uom, cmd):
+    def get_command_value(self, uom: str, cmd: str) -> str | None:
         """Check against the list of UOM States if this is a valid command."""
         if cmd not in UOM_TO_STATES[uom].values():
             _LOGGER.warning("Failed to call %s on %s, invalid command.", cmd, self.address)
             return None
         return list(UOM_TO_STATES[uom].keys())[list(UOM_TO_STATES[uom].values()).index(cmd)]
 
-    def get_groups(self, controller=True, responder=True):
+    def get_groups(self, controller=True, responder=True) -> list[str]:
         """
         Return the groups (scenes) of which this node is a member.
 
@@ -496,7 +496,7 @@ class Node(NodeBase):
         If responder is True, then the scenes it is a responder of are added to
         the list.
         """
-        groups = []
+        groups: list[str] = []
         for child in self._nodes.all_lower_nodes:
             if child[0] == TAG_GROUP:
                 if responder:
@@ -506,27 +506,27 @@ class Node(NodeBase):
                     groups.append(child[2])
         return groups
 
-    def get_property_uom(self, prop):
+    def get_property_uom(self, prop: str) -> str | None:
         """Get the Unit of Measurement an aux property."""
         if aux_prop := self._aux_properties.get(prop):
             return aux_prop.uom
         return None
 
-    async def secure_lock(self):
+    async def secure_lock(self) -> bool:
         """Send a command to securely lock a lock device."""
         if not self.is_lock:
             _LOGGER.warning("Failed to lock %s, it is not a lock node.", self.address)
             return None
         return await self.send_cmd(CMD_SECURE, "1")
 
-    async def secure_unlock(self):
+    async def secure_unlock(self) -> bool:
         """Send a command to securely lock a lock device."""
         if not self.is_lock:
             _LOGGER.warning("Failed to unlock %s, it is not a lock node.", self.address)
             return None
         return await self.send_cmd(CMD_SECURE, "0")
 
-    async def set_climate_mode(self, cmd):
+    async def set_climate_mode(self, cmd: str) -> bool:
         """Send a command to the device to set the climate mode."""
         if not self.is_thermostat:
             _LOGGER.warning(
@@ -537,7 +537,7 @@ class Node(NodeBase):
             return await self.send_cmd(CMD_CLIMATE_MODE, cmd_value)
         return False
 
-    async def set_climate_setpoint(self, val):
+    async def set_climate_setpoint(self, val: int) -> bool:
         """Send a command to the device to set the system setpoints."""
         if not self.is_thermostat:
             _LOGGER.warning(
@@ -554,15 +554,15 @@ class Node(NodeBase):
         result = await asyncio.gather(*commands, return_exceptions=True)
         return all(result)
 
-    async def set_climate_setpoint_heat(self, val):
+    async def set_climate_setpoint_heat(self, val: int) -> bool:
         """Send a command to the device to set the system heat setpoint."""
         return await self._set_climate_setpoint(val, "heat", PROP_SETPOINT_HEAT)
 
-    async def set_climate_setpoint_cool(self, val):
+    async def set_climate_setpoint_cool(self, val: int) -> bool:
         """Send a command to the device to set the system heat setpoint."""
         return await self._set_climate_setpoint(val, "cool", PROP_SETPOINT_COOL)
 
-    async def _set_climate_setpoint(self, val, setpoint_name, setpoint_prop):
+    async def _set_climate_setpoint(self, val: int, setpoint_name: str, setpoint_prop: str) -> bool:
         """Send a command to the device to set the system heat setpoint."""
         if not self.is_thermostat:
             _LOGGER.warning(
@@ -576,21 +576,21 @@ class Node(NodeBase):
             val = 2 * val
         return await self.send_cmd(setpoint_prop, str(val), self.get_property_uom(setpoint_prop))
 
-    async def set_fan_mode(self, cmd):
+    async def set_fan_mode(self, cmd: str) -> bool:
         """Send a command to the device to set the fan mode setting."""
         cmd_value = self.get_command_value(UOM_FAN_MODES, cmd)
         if cmd_value:
             return await self.send_cmd(CMD_CLIMATE_FAN_SETTING, cmd_value)
         return False
 
-    async def set_on_level(self, val):
+    async def set_on_level(self, val: int) -> bool:
         """Set the ON Level for a device."""
         if not val or isnan(val) or int(val) not in range(256):
             _LOGGER.warning("Invalid value for On Level for %s. Valid values are 0-255.", self._id)
             return False
         return await self.send_cmd(PROP_ON_LEVEL, str(val))
 
-    async def set_ramp_rate(self, val):
+    async def set_ramp_rate(self, val: int) -> bool:
         """Set the Ramp Rate for a device."""
         if not val or isnan(val) or int(val) not in range(32):
             _LOGGER.warning(
@@ -601,12 +601,12 @@ class Node(NodeBase):
             return False
         return await self.send_cmd(PROP_RAMP_RATE, str(val))
 
-    async def start_manual_dimming(self):
+    async def start_manual_dimming(self) -> bool:
         """Begin manually dimming a device."""
         _LOGGER.warning("'%s' is depreciated, use FADE__ commands instead", CMD_MANUAL_DIM_BEGIN)
         return await self.send_cmd(CMD_MANUAL_DIM_BEGIN)
 
-    async def stop_manual_dimming(self):
+    async def stop_manual_dimming(self) -> bool:
         """Stop manually dimming  a device."""
         _LOGGER.warning("'%s' is depreciated, use FADE__ commands instead", CMD_MANUAL_DIM_STOP)
         return await self.send_cmd(CMD_MANUAL_DIM_STOP)

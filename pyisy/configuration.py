@@ -1,5 +1,6 @@
 """ISY Configuration Lookup."""
 
+from typing import TypedDict
 from xml.dom import minidom
 
 from .constants import (
@@ -21,7 +22,7 @@ from .helpers import value_from_nested_xml, value_from_xml
 from .logging import _LOGGER
 
 
-class Configuration(dict):
+class Configuration(TypedDict, total=False):
     """
     ISY Configuration class.
 
@@ -67,18 +68,24 @@ class Configuration(dict):
 
     """
 
-    def __init__(self, xml=None):
+    firmware: str
+    uuid: str
+    name: str
+    model: str
+    variables: bool
+    nodedefs: bool
+
+    def __init__(self, xml: str | None = None) -> None:
         """
         Initialize configuration class.
 
         xml: String of xml data containing the configuration data
         """
         super().__init__()
-
         if xml is not None:
             self.parse(xml)
 
-    def parse(self, xml):
+    def parse(self, xml: str) -> None:
         """
         Parse the xml data.
 
