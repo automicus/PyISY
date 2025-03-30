@@ -1,5 +1,7 @@
 """ISY Variables."""
 
+from __future__ import annotations
+
 from asyncio import sleep
 from typing import TYPE_CHECKING
 from xml.dom import minidom
