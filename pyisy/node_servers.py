@@ -150,7 +150,7 @@ class NodeServers:
             self.isy.conn.request(self.isy.conn.compile_url([URL_PROFILE_NS, file])) for file in file_list
         ]
         file_contents: list[str] = await asyncio.gather(*file_tasks)
-        self._profiles: dict = dict(zip(file_list, file_contents))
+        self._profiles: dict[str, str] = dict(zip(file_list, file_contents))
 
         _LOGGER.info("ISY downloaded node server files")
 
@@ -165,9 +165,9 @@ class NodeServers:
         editors_xml = editors_impl.createDocument(None, TAG_ROOT, None)
         nls_lookup: dict = {}
 
-        for file, contents in node_server_profile.items():
+        for file_raw, contents in node_server_profile.items():
             contents_xml = ""
-            file = file.lower()
+            file = file_raw.lower()
             if file.endswith(".xml"):
                 try:
                     contents_xml = minidom.parseString(contents).firstChild
@@ -210,13 +210,8 @@ class NodeServers:
             cmds_accepts = node_def.getElementsByTagName(TAG_ACCEPTS)[0]
             cmds_sends_cmd = cmds_sends.getElementsByTagName(TAG_CMD)
             cmds_accepts_cmd = cmds_accepts.getElementsByTagName(TAG_CMD)
-            sends_commands = []
-            accepts_commands = []
-
-            for cmd in cmds_sends_cmd:
-                sends_commands.append(attr_from_element(cmd, ATTR_ID))
-            for cmd in cmds_accepts_cmd:
-                accepts_commands.append(attr_from_element(cmd, ATTR_ID))
+            sends_commands = [attr_from_element(cmd, ATTR_ID) for cmd in cmds_sends_cmd]
+            accepts_commands = [attr_from_element(cmd, ATTR_ID) for cmd in cmds_accepts_cmd]
 
             status_names = {}
             name = node_def_id
