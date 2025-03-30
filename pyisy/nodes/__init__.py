@@ -1,8 +1,12 @@
 """Representation of ISY Nodes."""
 
+from __future__ import annotations
+
 import re
 from asyncio import sleep
 from dataclasses import dataclass
+from operator import itemgetter
+from typing import TYPE_CHECKING
 from xml.dom import minidom
 
 from ..constants import (
@@ -71,10 +75,14 @@ from ..node_servers import NodeServers
 from .group import Group
 from .node import Node
 
+if TYPE_CHECKING:
+    from ..isy import ISY
+
 MEMORY_REGEX = (
     r".*dbAddr=(?P<dbAddr>[A-F0-9x]*) \[(?P<value>[A-F0-9]{2})\] "
     r"cmd1=(?P<cmd1>[A-F0-9x]{4}) cmd2=(?P<cmd2>[A-F0-9x]{4})"
 )
+SINGLE_NODE_TYPES = {TAG_GROUP, TAG_NODE}
 
 
 class Nodes:
@@ -103,24 +111,28 @@ class Nodes:
 
     def __init__(
         self,
-        isy,
-        root=None,
-        addresses=None,
-        nnames=None,
-        nparents=None,
-        nobjs=None,
-        ntypes=None,
-        xml=None,
-    ):
+        isy: ISY,
+        root: str | None = None,
+        addresses: list[str] | None = None,
+        nnames: list[str] | None = None,
+        nparents: list[str] | None = None,
+        nobjs: list[Node] | None = None,
+        ntypes: list[str] | None = None,
+        xml: str | None = None,
+        _address_index: dict[str, int] | None = None,  # Internal use only
+        _nnames_index: dict[str, int] | None = None,  # Internal use only
+    ) -> None:
         """Initialize the Nodes ISY Node Manager class."""
         self.isy = isy
         self.root = root
 
-        self.addresses = []
-        self.nnames = []
-        self.nparents = []
-        self.nobjs = []
-        self.ntypes = []
+        self.addresses: list[str] = []
+        self._address_index: dict[str, int] = {}
+        self.nnames: list[str] = []
+        self._nnames_index: dict[str, int] = {}
+        self.nparents: list[str] = []
+        self.nobjs: list[Node] = []
+        self.ntypes: list[str] = []
 
         self.status_events = EventEmitter()
 
@@ -128,41 +140,50 @@ class Nodes:
             self.parse(xml)
             return
 
-        self.addresses = addresses
-        self.nnames = nnames
-        self.nparents = nparents
-        self.nobjs = nobjs
-        self.ntypes = ntypes
+        if addresses is not None:
+            self.addresses = addresses
+            self._address_index = _address_index or {address: i for i, address in enumerate(addresses)}
+        if nnames is not None:
+            self.nnames = nnames
+            self._nnames_index = _nnames_index or {name: i for i, name in enumerate(nnames)}
+        if nparents is not None:
+            self.nparents = nparents
+        if nobjs is not None:
+            self.nobjs = nobjs
+        if ntypes is not None:
+            self.ntypes = ntypes
 
-    def __str__(self):
+    def __str__(self) -> str:
         """Return string representation of the nodes/folders/groups."""
         if self.root is None:
             return "Folder <root>"
-        ind = self.addresses.index(self.root)
-        if self.ntypes[ind] == TAG_FOLDER:
+        ind = self._address_index[self.root]
+        type_ = self.ntypes[ind]
+        if type_ == TAG_FOLDER:
             return f"Folder ({self.root})"
-        if self.ntypes[ind] == TAG_GROUP:
+        if type_ == TAG_GROUP:
             return f"Group ({self.root})"
         return f"Node ({self.root})"
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """Create a pretty representation of the nodes/folders/groups."""
         # get and sort children
-        folders = []
-        groups = []
-        nodes = []
+        folders: list[tuple[str, str, str]] = []
+        groups: list[tuple[str, str, str]] = []
+        nodes: list[tuple[str, str, str]] = []
         for child in self.children:
-            if child[0] == TAG_FOLDER:
+            child_type = child[0]
+            if child_type == TAG_FOLDER:
                 folders.append(child)
-            elif child[0] == TAG_GROUP:
+            elif child_type == TAG_GROUP:
                 groups.append(child)
-            elif child[0] == TAG_NODE:
+            elif child_type == TAG_NODE:
                 nodes.append(child)
 
         # initialize data
-        folders.sort(key=lambda x: x[1])
-        groups.sort(key=lambda x: x[1])
-        nodes.sort(key=lambda x: x[1])
+        folders.sort(key=itemgetter(1))
+        groups.sort(key=itemgetter(1))
+        nodes.sort(key=itemgetter(1))
         out = (
             f"{self}\n"
             f"{self.__repr_folders__(folders)}"
@@ -171,7 +192,7 @@ class Nodes:
         )
         return out
 
-    def __repr_folders__(self, folders):
+    def __repr_folders__(self, folders: list[tuple[str, str, str]]) -> str:
         """Return a representation of the folder structure."""
         out = ""
         for fold in folders:
@@ -182,7 +203,7 @@ class Nodes:
             out += "  -\n"
         return out
 
-    def __repr_groups__(self, groups):
+    def __repr_groups__(self, groups: list[tuple[str, str, str]]) -> str:
         """Return a representation of the groups structure."""
         out = ""
         for group in groups:
@@ -192,7 +213,7 @@ class Nodes:
             out += "  |\n  -\n"
         return out
 
-    def __repr_nodes__(self, nodes):
+    def __repr_nodes__(self, nodes: list[tuple[str, str, str]]) -> str:
         """Return a representation of the nodes structure."""
         out = ""
         for node in nodes:
@@ -204,17 +225,17 @@ class Nodes:
                 out += "  |\n  -\n"
         return out
 
-    def __iter__(self):
+    def __iter__(self) -> NodeIterator:
         """Return an iterator for each node below the current nav level."""
         iter_data = self.all_lower_nodes
         return NodeIterator(self, iter_data, delta=1)
 
-    def __reversed__(self):
+    def __reversed__(self) -> NodeIterator:
         """Return the iterator in reverse order."""
         iter_data = self.all_lower_nodes
         return NodeIterator(self, iter_data, delta=-1)
 
-    def update_received(self, xmldoc):
+    def update_received(self, xmldoc: minidom.Element) -> None:
         """Update nodes from event stream message."""
         address = value_from_xml(xmldoc, TAG_NODE)
 
@@ -237,7 +258,7 @@ class Nodes:
         node.update_state(NodeProperty(PROP_STATUS, value, prec, uom, formatted, address))
         _LOGGER.debug("ISY Updated Node: %s", address)
 
-    def control_message_received(self, xmldoc):
+    def control_message_received(self, xmldoc: minidom.Element) -> None:
         """
         Pass Control events from an event stream message to nodes.
 
@@ -283,7 +304,7 @@ class Nodes:
         node.control_events.notify(node_property)
         _LOGGER.debug("ISY Node Control Event: %s", node_property)
 
-    def node_changed_received(self, xmldoc):
+    def node_changed_received(self, xmldoc: minidom.Element) -> None:
         """Handle Node Change/Update events from an event stream message."""
         action = value_from_xml(xmldoc, ATTR_ACTION)
         if not action or action not in NODE_CHANGED_ACTIONS:
@@ -337,7 +358,7 @@ class Nodes:
             detail if detail else "",
         )
 
-    def parse(self, xml):
+    def parse(self, xml: str) -> None:
         """
         Parse the xml data.
 
@@ -460,7 +481,7 @@ class Nodes:
         if self.isy.node_servers is None:
             self.isy.node_servers = NodeServers(self.isy, set(node_servers))
 
-    async def update(self, wait_time=0, xml=None):
+    async def update(self, wait_time: float = 0.0, xml: str | None = None) -> None:
         """
         Update the status and properties of the nodes in the class.
 
@@ -493,7 +514,7 @@ class Nodes:
 
         _LOGGER.info("ISY Updated Node Statuses.")
 
-    async def update_nodes(self, wait_time=0):
+    async def update_nodes(self, wait_time: float = 0.0) -> None:
         """
         Update the contents of the class.
 
@@ -509,7 +530,7 @@ class Nodes:
             return
         self.parse(xml)
 
-    def insert(self, address, nname, nparent, nobj, ntype):
+    def insert(self, address: str, nname: str, nparent: str, nobj: Node, ntype: str) -> None:
         """
         Insert a new node into the lists.
 
@@ -520,26 +541,25 @@ class Nodes:
         |  ntype: node type
         """
         self.addresses.append(address)
+        self._address_index[address] = len(self.addresses) - 1
         self.nnames.append(nname)
+        self._nnames_index[nname] = len(self.nnames) - 1
         self.nparents.append(nparent)
         self.ntypes.append(ntype)
         self.nobjs.append(nobj)
 
-    def __getitem__(self, val):
+    def __getitem__(self, val: str) -> Node | Nodes:
         """Navigate through the node tree. Can take names or IDs."""
-        try:
-            self.addresses.index(val)
+        if val in self._address_index:
             fun = self.get_by_id
-        except ValueError:
+        elif val in self._nnames_index:
+            fun = self.get_by_name
+        else:
             try:
-                self.nnames.index(val)
-                fun = self.get_by_name
+                val = int(val)
+                fun = self.get_by_index
             except ValueError:
-                try:
-                    val = int(val)
-                    fun = self.get_by_index
-                except ValueError:
-                    fun = None
+                fun = None
 
         if fun:
             output = None
@@ -552,68 +572,68 @@ class Nodes:
                 return output
         raise KeyError(f"Unrecognized Key: [{val}]")
 
-    def __setitem__(self, item, value):
+    def __setitem__(self, item: object, value: object) -> None:
         """Set item value."""
         return
 
-    def get_by_name(self, val):
+    def get_by_name(self, val: str) -> Node | Nodes | None:
         """
         Get child object with the given name.
 
         |  val: String representing name to look for.
         """
-        for i in range(len(self.addresses)):
-            if (self.root is None or self.nparents[i] == self.root) and self.nnames[i] == val:
-                return self.get_by_index(i)
+        i = self._nnames_index.get(val)
+        if i is not None and (self.root is None or self.nparents[i] == self.root):
+            return self.get_by_index(i)
         return None
 
-    def get_by_id(self, address):
+    def get_by_id(self, address: str) -> Node | Nodes | None:
         """
         Get object with the given ID.
 
         |  address: Integer representing node/group/folder id.
         """
-        try:
-            i = self.addresses.index(address)
-        except ValueError:
+        if (i := self._address_index.get(address)) is None:
             return None
         return self.get_by_index(i)
 
-    def get_by_index(self, i):
+    def get_by_index(self, i: int) -> Node | Nodes:
         """
         Return the object at the given index in the list.
 
         |  i: Integer representing index of node/group/folder.
         """
-        if self.ntypes[i] in [TAG_GROUP, TAG_NODE]:
+        if self.ntypes[i] in SINGLE_NODE_TYPES:
             return self.nobjs[i]
         return Nodes(
-            self.isy,
-            self.addresses[i],
-            self.addresses,
-            self.nnames,
-            self.nparents,
-            self.nobjs,
-            self.ntypes,
+            isy=self.isy,
+            root=self.addresses[i],
+            addresses=self.addresses,
+            nnames=self.nnames,
+            nparents=self.nparents,
+            nobjs=self.nobjs,
+            ntypes=self.ntypes,
+            _address_index=self._address_index,
+            _nnames_index=self._nnames_index,
         )
 
-    def get_folder(self, address):
+    def get_folder(self, address: str) -> str | None:
         """Return the folder of a given node address."""
-        parent = self.nparents[self.addresses.index(address)]
+        parent = self.nparents[self._address_index[address]]
         if parent is None:
             # Node is in the root folder.
             return None
-        parent_index = self.addresses.index(parent)
+        parent_index = self._address_index[parent]
         if self.ntypes[parent_index] != TAG_FOLDER:
             return self.get_folder(parent)
         return self.nnames[parent_index]
 
     @property
-    def children(self):
+    def children(self) -> list[tuple[str, str, str]]:
         """Return the children of the class."""
         return self.get_children()
 
-    def get_children(self, ident=None):
+    def get_children(self, ident: str | None = None) -> list[tuple[str, str, str]]:
         """Return the children of the class."""
         if ident is None:
             ident = self.root
@@ -624,26 +644,25 @@ class Nodes:
         return out
 
     @property
-    def has_children(self):
+    def has_children(self) -> bool:
         """Return if the root has children."""
         return self.root in self.nparents
 
     @property
-    def name(self):
+    def name(self) -> str:
         """Return the name of the root."""
         if self.root is None:
             return ""
-        ind = self.addresses.index(self.root)
-        return self.nnames[ind]
+        return self.nnames[self._address_index[self.root]]
 
     @property
-    def all_lower_nodes(self):
+    def all_lower_nodes(self) -> list[tuple[str, str, str]]:
         """Return all nodes below the current root."""
-        output = []
+        output: list[tuple[str, str, str]] = []
         myname = self.name + "/"
 
         for dtype, name, ident in self.children:
-            if dtype in [TAG_GROUP, TAG_NODE]:
+            if dtype in SINGLE_NODE_TYPES:
                 output.append((dtype, myname + name, ident))
                 if dtype == TAG_NODE and ident in self.nparents:
                     output += [
@@ -661,7 +680,7 @@ class Nodes:
 class NodeIterator:
     """Iterate through a list of nodes, returning node objects."""
 
-    def __init__(self, nodes, iter_data, delta=1):
+    def __init__(self, nodes: Nodes, iter_data, delta: int = 1) -> None:
         """Initialize a NodeIterator class."""
         self._nodes = nodes
         self._iterdata = iter_data
