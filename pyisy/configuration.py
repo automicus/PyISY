@@ -67,18 +67,17 @@ class Configuration(dict):
 
     """
 
-    def __init__(self, xml=None):
+    def __init__(self, xml: str | None = None) -> None:
         """
         Initialize configuration class.
 
         xml: String of xml data containing the configuration data
         """
         super().__init__()
-
         if xml is not None:
             self.parse(xml)
 
-    def parse(self, xml):
+    def parse(self, xml: str) -> None:
         """
         Parse the xml data.
 

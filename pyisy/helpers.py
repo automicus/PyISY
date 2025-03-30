@@ -6,6 +6,7 @@ import datetime
 import time
 from collections.abc import Callable
 from dataclasses import dataclass, is_dataclass
+from xml.dom import minidom
 
 from .constants import (
     ATTR_FORMATTED,
@@ -32,7 +33,7 @@ from .exceptions import XML_ERRORS
 from .logging import _LOGGER
 
 
-def parse_xml_properties(xmldoc):
+def parse_xml_properties(xmldoc: minidom.Document) -> tuple[NodeProperty, dict[str, NodeProperty], bool]:
     """
     Parse the xml properties string.
 
@@ -40,10 +41,10 @@ def parse_xml_properties(xmldoc):
         xmldoc: xml document to parse
 
     Returns:
-        (state_val, state_uom, state_prec, aux_props)
+        (state, aux_props, state_set)
 
     """
-    aux_props = {}
+    aux_props: dict[str, NodeProperty] = {}
     state_set = False
     state = NodeProperty(PROP_STATUS, uom=ISY_PROP_NOT_SET)
 
@@ -82,7 +83,7 @@ def parse_xml_properties(xmldoc):
     return state, aux_props, state_set
 
 
-def value_from_xml(xml, tag_name, default=None):
+def value_from_xml(xml: minidom.Element, tag_name: str, default: object | None = None) -> object | None:
     """Extract a value from the XML element."""
     value = default
     try:
@@ -92,7 +93,9 @@ def value_from_xml(xml, tag_name, default=None):
     return value
 
 
-def attr_from_xml(xml, tag_name, attr_name, default=None):
+def attr_from_xml(
+    xml: minidom.Element, tag_name: str, attr_name: str, default: object | None = None
+) -> object | None:
     """Extract an attribute value from the raw XML."""
     value = default
     try:
@@ -103,7 +106,9 @@ def attr_from_xml(xml, tag_name, attr_name, default=None):
     return value
 
 
-def attr_from_element(element, attr_name, default=None):
+def attr_from_element(
+    element: minidom.Element, attr_name: str, default: object | None = None
+) -> object | None:
     """Extract an attribute value from an XML element."""
     value = default
     if attr_name in element.attributes:
@@ -111,7 +116,7 @@ def attr_from_element(element, attr_name, default=None):
     return value
 
 
-def value_from_nested_xml(base, chain, default=None):
+def value_from_nested_xml(base: minidom.Element, chain, default: object | None = None) -> object | None:
     """Extract a value from multiple nested tags."""
     value = default
     result = None
@@ -151,7 +156,7 @@ def ntp_to_system_time(timestamp):
     return datetime.datetime.fromtimestamp(timestamp - ntp_delta)
 
 
-def now():
+def now() -> datetime.datetime:
     """Get the current system time.
 
     Note: this module uses naive datetimes because the
@@ -169,7 +174,7 @@ class EventEmitter:
 
     def __init__(self):
         """Initialize a new Event Emitter class."""
-        self._subscribers = []
+        self._subscribers: list[EventListener] = []
 
     def subscribe(self, callback: Callable, event_filter: dict | str | None = None, key: str | None = None):
         """Subscribe to the events."""
@@ -177,7 +182,7 @@ class EventEmitter:
         self._subscribers.append(listener)
         return listener
 
-    def unsubscribe(self, listener):
+    def unsubscribe(self, listener: EventListener):
         """Unsubscribe from the events."""
         self._subscribers.remove(listener)
 
@@ -210,7 +215,7 @@ class EventListener:
     event_filter: dict | str
     key: str
 
-    def unsubscribe(self):
+    def unsubscribe(self) -> None:
         """Unsubscribe from the events."""
         self.emitter.unsubscribe(self)
 
