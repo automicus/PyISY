@@ -261,7 +261,7 @@ class Node(NodeBase):
     async def get_zwave_parameter(self, parameter):
         """Retrieve a Z-Wave Parameter from the ISY."""
 
-        if not self.protocol == PROTO_ZWAVE:
+        if self.protocol != PROTO_ZWAVE:
             _LOGGER.warning("Cannot retrieve parameters of non-Z-Wave device")
             return None
 
@@ -312,7 +312,7 @@ class Node(NodeBase):
     async def set_zwave_parameter(self, parameter, value, size):
         """Set a Z-Wave Parameter on an end device via the ISY."""
 
-        if not self.protocol == PROTO_ZWAVE:
+        if self.protocol != PROTO_ZWAVE:
             _LOGGER.warning("Cannot set parameters of non-Z-Wave device")
             return False
 
