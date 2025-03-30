@@ -1,5 +1,7 @@
 """Representation of a node from an ISY."""
 
+from __future__ import annotations
+
 import asyncio
 from math import isnan
 from xml.dom import minidom
@@ -14,9 +16,9 @@ from ..constants import (
     CMD_SECURE,
     FAMILY_ZMATTER_ZWAVE,
     INSTEON_SUBNODE_DIMMABLE,
-    INSTEON_TYPE_DIMMABLE,
-    INSTEON_TYPE_LOCK,
-    INSTEON_TYPE_THERMOSTAT,
+    INSTEON_TYPE_DIMMABLE_TUP,
+    INSTEON_TYPE_LOCK_TUP,
+    INSTEON_TYPE_THERMOSTAT_TUP,
     METHOD_GET,
     METHOD_SET,
     PROP_ON_LEVEL,
@@ -87,7 +89,7 @@ class Node(NodeBase):
         nodes,
         address,
         name,
-        state,
+        state: NodeProperty,
         aux_properties=None,
         zwave_props=None,
         node_def_id=None,
@@ -108,7 +110,7 @@ class Node(NodeBase):
         self._parent_node = pnode if pnode != address else None
         self._prec = state.prec
         self._protocol = protocol
-        self._type = device_type
+        self._type: str = device_type
         self._uom = state.uom
         self._zwave_props = zwave_props
         self.control_events = EventEmitter()
@@ -180,7 +182,7 @@ class Node(NodeBase):
             or (
                 self._protocol == PROTO_INSTEON
                 and self.type
-                and any({self.type.startswith(t) for t in INSTEON_TYPE_DIMMABLE})
+                and self.type.startswith(INSTEON_TYPE_DIMMABLE_TUP)
                 and self._id.endswith(INSTEON_SUBNODE_DIMMABLE)
             )
             or (
@@ -194,7 +196,7 @@ class Node(NodeBase):
     @property
     def is_lock(self):
         """Determine if this device is a door lock type."""
-        return (self.type and any({self.type.startswith(t) for t in INSTEON_TYPE_LOCK})) or (
+        return (self.type and self.type.startswith(INSTEON_TYPE_LOCK_TUP)) or (
             self.protocol == PROTO_ZWAVE
             and self.zwave_props.category
             and self.zwave_props.category in ZWAVE_CAT_LOCK
@@ -203,7 +205,7 @@ class Node(NodeBase):
     @property
     def is_thermostat(self):
         """Determine if this device is a thermostat/climate control device."""
-        return (self.type and any({self.type.startswith(t) for t in INSTEON_TYPE_THERMOSTAT})) or (
+        return (self.type and self.type.startswith(INSTEON_TYPE_THERMOSTAT_TUP)) or (
             self._protocol == PROTO_ZWAVE
             and self.zwave_props.category
             and self.zwave_props.category in ZWAVE_CAT_THERMOSTAT
