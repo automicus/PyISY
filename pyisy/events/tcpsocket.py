@@ -173,8 +173,8 @@ class EventStream:
                 self.socket.connect((self.data["addr"], self.data["port"]))
                 if self.data.get("tls"):
                     self.cert = self.socket.getpeercert()
-            except OSError as err:
-                _LOGGER.exception("PyISY could not connect to ISY event stream. %s", err)
+            except OSError:
+                _LOGGER.exception("PyISY could not connect to ISY event stream.")
                 if self._on_lost_function is not None:
                     self._on_lost_function()
                 return False
