@@ -169,7 +169,7 @@ class Programs:
         address = value_from_xml(xmldoc, ATTR_ID).zfill(4)
         try:
             pobj = self.get_by_id(address).leaf
-        except ValueError:
+        except (KeyError, ValueError):
             _LOGGER.warning("ISY received program update for new program; reload the module to update")
             return  # this is a new program that hasn't been registered
 
