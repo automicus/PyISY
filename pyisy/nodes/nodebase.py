@@ -218,7 +218,7 @@ class NodeBase:
 
         aux_prop = self.aux_properties.get(prop.control)
         if aux_prop:
-            if prop.uom == "" and not aux_prop.uom == "":
+            if prop.uom == "" and aux_prop.uom != "":
                 # Guard against overwriting known UOM with blank UOM (ISYv4).
                 prop.uom = aux_prop.uom
             if aux_prop == prop:
