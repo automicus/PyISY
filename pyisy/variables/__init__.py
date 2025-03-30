@@ -58,19 +58,19 @@ class Variables:
         self,
         isy: ISY,
         root=None,
-        vids=None,
-        vnames=None,
-        vobjs=None,
-        def_xml=None,
-        var_xml=None,
-    ):
+        vids: dict[int, list[int]] | None = None,
+        vnames: dict[int, dict[int, str]] | None = None,
+        vobjs: dict[int, dict[int, Variable]] | None = None,
+        def_xml: list[str] | None = None,
+        var_xml: str | None = None,
+    ) -> None:
         """Initialize a Variables ISY Variable Manager class."""
         self.isy = isy
         self.root = root
 
-        self.vids = {1: [], 2: []}
-        self.vobjs = {1: {}, 2: {}}
-        self.vnames = {1: {}, 2: {}}
+        self.vids: dict[int, list[int]] = {1: [], 2: []}
+        self.vobjs: dict[int, dict[int, Variable]] = {1: {}, 2: {}}
+        self.vnames: dict[int, dict[int, str]] = {1: {}, 2: {}}
 
         if vids is not None and vnames is not None and vobjs is not None:
             self.vids = vids
@@ -78,7 +78,7 @@ class Variables:
             self.vobjs = vobjs
             return
 
-        valid_definitions = False
+        valid_definitions: bool = False
         if def_xml is not None:
             valid_definitions = self.parse_definitions(def_xml)
         if valid_definitions and var_xml is not None:
@@ -101,7 +101,7 @@ class Variables:
             out += f"  {child[1]}: Variable({child[2]})\n"
         return out
 
-    def parse_definitions(self, xmls):
+    def parse_definitions(self, xmls: list[str]) -> bool:
         """Parse the XML Variable Definitions from the ISY."""
         valid_definitions = False
         for ind in range(2):
@@ -123,7 +123,7 @@ class Variables:
                 valid_definitions = True
         return valid_definitions
 
-    def parse(self, xml):
+    def parse(self, xml: str) -> None:
         """Parse XML from the controller with details about the variables."""
         try:
             xmldoc = minidom.parseString(xml)
@@ -155,7 +155,7 @@ class Variables:
 
         _LOGGER.info("ISY Loaded Variables")
 
-    async def update(self, wait_time=0):
+    async def update(self, wait_time: int = 0) -> None:
         """
         Update the variable objects with data from the controller.
 
@@ -188,7 +188,7 @@ class Variables:
 
         _LOGGER.debug("ISY Updated Variable: %s.%s", str(vtype), str(vid))
 
-    def __getitem__(self, val):
+    def __getitem__(self, val: int | str) -> Variable:
         """
         Navigate through the variables by ID or name.
 
