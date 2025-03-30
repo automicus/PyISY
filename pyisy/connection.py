@@ -129,7 +129,7 @@ class Connection:
         return self._url
 
     # COMMON UTILITIES
-    def compile_url(self, path, query=None):
+    def compile_url(self, path: list[str], query: str | None = None):
         """Compile the URL to fetch from the ISY."""
         url = self.url
         if path is not None:
