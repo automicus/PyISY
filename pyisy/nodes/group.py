@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from ..constants import (
     FAMILY_GENERIC,
     INSTEON_STATELESS_NODEDEFID,
@@ -9,9 +11,11 @@ from ..constants import (
     PROTO_GROUP,
 )
 from ..helpers import now
-from . import Nodes
 from .node import Node
 from .nodebase import NodeBase
+
+if TYPE_CHECKING:
+    from . import Nodes
 
 
 class Group(NodeBase):
