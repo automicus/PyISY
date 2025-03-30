@@ -263,8 +263,8 @@ class WebSocketClient:
             return
         except asyncio.TimeoutError:
             _LOGGER.debug("Websocket Timeout.")
-        except aiohttp.ClientConnectorError:
-            _LOGGER.exception("Websocket Client Connector Error")
+        except aiohttp.ClientConnectorError as err:
+            _LOGGER.error("Websocket Client Connector Error: %s", err)  # noqa: TRY400
         except (
             aiohttp.ClientOSError,
             aiohttp.client_exceptions.ServerDisconnectedError,
