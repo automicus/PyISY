@@ -220,10 +220,7 @@ class Variables:
     @property
     def children(self):
         """Get the children of the class."""
-        if self.root is None:
-            types = [1, 2]
-        else:
-            types = [self.root]
+        types = [1, 2] if self.root is None else [self.root]
 
         return [
             (
