@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+from typing import TYPE_CHECKING
 from xml.dom import minidom
 
 from dateutil import parser
@@ -31,6 +32,9 @@ from ..logging import _LOGGER
 from ..nodes import NodeIterator as ProgramIterator
 from .folder import Folder
 from .program import Program
+
+if TYPE_CHECKING:
+    from ..isy import ISY
 
 
 class Programs:
@@ -62,47 +66,58 @@ class Programs:
 
     def __init__(
         self,
-        isy,
-        root=None,
-        addresses=None,
-        pnames=None,
-        pparents=None,
-        pobjs=None,
-        ptypes=None,
-        xml=None,
-    ):
+        isy: ISY,
+        root: str | None = None,
+        addresses: list[str] | None = None,
+        pnames: list[str] | None = None,
+        pparents: list[str] | None = None,
+        pobjs: list[Program | Programs] | None = None,
+        ptypes: list[str] | None = None,
+        xml: str | None = None,
+        _address_index: dict[str, int] | None = None,
+        _pnames_index: dict[str, int] | None = None,
+    ) -> None:
         """Initialize the Programs ISY programs manager class."""
         self.isy = isy
         self.root = root
 
-        self.addresses = []
-        self.pnames = []
-        self.pparents = []
-        self.pobjs = []
-        self.ptypes = []
+        self.addresses: list[str] = []
+        self._address_index: dict[str, int] = {}
+        self.pnames: list[str] = []
+        self._pnames_index: dict[str, int] = {}
+        self.pparents: list[str] = []
+        self.pobjs: list[Program | Programs] = []
+        self.ptypes: list[str] = []
 
         if xml is not None:
             self.parse(xml)
             return
 
-        self.addresses = addresses
-        self.pnames = pnames
-        self.pparents = pparents
-        self.pobjs = pobjs
-        self.ptypes = ptypes
+        if addresses is not None:
+            self.addresses = addresses
+            self._address_index = _address_index or {address: i for i, address in enumerate(addresses)}
+        if pnames is not None:
+            self.pnames = pnames
+            self._pnames_index = _pnames_index or {name: i for i, name in enumerate(pnames)}
+        if pparents is not None:
+            self.pparents = pparents
+        if pobjs is not None:
+            self.pobjs = pobjs
+        if ptypes is not None:
+            self.ptypes = ptypes
 
-    def __str__(self):
+    def __str__(self) -> str:
         """Return a string representation of the program manager."""
         if self.root is None:
             return "Folder <root>"
-        ind = self.addresses.index(self.root)
+        ind = self._address_index[self.root]
         if self.ptypes[ind] == TAG_FOLDER:
             return f"Folder ({self.root})"
         if self.ptypes[ind] == TAG_PROGRAM:
             return f"Program ({self.root})"
         return ""
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """Return a string showing the hierarchy of the program manager."""
         # get and sort children
         folders = []
@@ -132,7 +147,7 @@ class Programs:
 
         return out
 
-    def __iter__(self):
+    def __iter__(self) -> ProgramIterator:
         """
         Return an iterator that iterates through all the programs.
 
@@ -142,12 +157,12 @@ class Programs:
         iter_data = self.all_lower_programs
         return ProgramIterator(self, iter_data, delta=1)
 
-    def __reversed__(self):
+    def __reversed__(self) -> ProgramIterator:
         """Return an iterator that goes in reverse order."""
         iter_data = self.all_lower_programs
         return ProgramIterator(self, iter_data, delta=-1)
 
-    def update_received(self, xmldoc):
+    def update_received(self, xmldoc: minidom.Document) -> None:
         """Update programs from EventStream message."""
         # pylint: disable=attribute-defined-outside-init
         xml = xmldoc.toxml()
@@ -189,7 +204,7 @@ class Programs:
 
         _LOGGER.debug("ISY Updated Program: %s", address)
 
-    def parse(self, xml):
+    def parse(self, xml: str) -> None:
         """
         Parse the XML from the controller and updates the state of the manager.
 
@@ -279,7 +294,7 @@ class Programs:
         else:
             _LOGGER.warning("ISY Failed to update programs.")
 
-    def insert(self, address, pname, pparent, pobj, ptype):
+    def insert(self, address: str, pname: str, pparent: str, pobj: Program | Programs, ptype: str) -> None:
         """
         Insert a new program or folder into the manager.
 
@@ -290,31 +305,29 @@ class Programs:
         |  ptype: The type of the item being added (program/folder).
         """
         self.addresses.append(address)
+        self._address_index[address] = len(self.addresses) - 1
         self.pnames.append(pname)
+        self._pnames_index[pname] = len(self.pnames) - 1
         self.pparents.append(pparent)
         self.ptypes.append(ptype)
         self.pobjs.append(pobj)
 
-    def __getitem__(self, val):
+    def __getitem__(self, val: str) -> Program | Programs | None:
         """
         Navigate through the hierarchy using names or IDs.
 
         |  val: Name or ID to navigate to.
         """
-        try:
-            self.addresses.index(val)
+        if val in self._address_index:
             fun = self.get_by_id
-        except ValueError:
+        elif val in self._pnames_index:
+            fun = self.get_by_name
+        else:
             try:
-                self.pnames.index(val)
-                fun = self.get_by_name
-            except ValueError:
-                try:
-                    val = int(val)
-                    fun = self.get_by_index
-                except (TypeError, ValueError) as err:
-                    raise KeyError("Unrecognized Key: " + str(val)) from err
-
+                val = int(val)
+                fun = self.get_by_index
+            except (TypeError, ValueError) as err:
+                raise KeyError("Unrecognized Key: " + str(val)) from err
         try:
             return fun(val)
         except (ValueError, KeyError, IndexError):
@@ -324,15 +337,15 @@ class Programs:
         """Set the item value."""
         return
 
-    def get_by_name(self, val):
+    def get_by_name(self, val: str) -> Program | Programs | None:
         """
         Get a child program/folder with the given name.
 
         |  val: The name of the child program/folder to look for.
         """
-        for i in range(len(self.addresses)):
-            if (self.root is None or self.pparents[i] == self.root) and self.pnames[i] == val:
-                return self.get_by_index(i)
+        i = self._pnames_index.get(val)
+        if i is not None and (self.root is None or self.pparents[i] == self.root):
+            return self.get_by_index(i)
         return None
 
     def get_by_id(self, address: str) -> Program | Programs:
@@ -341,8 +354,7 @@ class Programs:
 
         |  address: The program/folder ID to look for.
         """
-        i = self.addresses.index(address)
-        return self.get_by_index(i)
+        return self.get_by_index(self._address_index[address])
 
     def get_by_index(self, i: int) -> Program | Programs:
         """
@@ -352,44 +364,45 @@ class Programs:
         """
         if self.ptypes[i] == TAG_FOLDER:
             return Programs(
-                self.isy,
-                self.addresses[i],
-                self.addresses,
-                self.pnames,
-                self.pparents,
-                self.pobjs,
-                self.ptypes,
+                isy=self.isy,
+                root=self.addresses[i],
+                addresses=self.addresses,
+                pnames=self.pnames,
+                pparents=self.pparents,
+                pobjs=self.pobjs,
+                ptypes=self.ptypes,
+                _address_index=self._address_index,
+                _pnames_index=self._pnames_index,
             )
         return self.pobjs[i]
 
     @property
-    def children(self):
+    def children(self) -> list[tuple[str, str, str]]:
         """Return the children of the class."""
-        out = []
-        for ind, name in enumerate(self.pnames):
-            if self.pparents[ind] == self.root:
-                out.append((self.ptypes[ind], name, self.addresses[ind]))
-        return out
+        return [
+            (self.ptypes[ind], self.pnames[ind], self.addresses[ind])
+            for ind in range(len(self.pnames))
+            if self.pparents[ind] == self.root
+        ]
 
     @property
-    def leaf(self):
+    def leaf(self) -> Program | Programs:
         """Return the leaf property."""
         if self.root is not None:
-            ind = self.addresses.index(self.root)
+            ind = self._address_index[self.root]
             if self.pobjs[ind] is not None:
                 return self.pobjs[ind]
         return self
 
     @property
-    def name(self):
+    def name(self) -> str:
         """Return the name of the path."""
         if self.root is not None:
-            ind = self.addresses.index(self.root)
-            return self.pnames[ind]
+            return self.pnames[self._address_index[self.root]]
         return ""
 
     @property
-    def all_lower_programs(self):
+    def all_lower_programs(self) -> list[tuple[str, str, str]]:
         """Return all lower programs in a path."""
         output = []
         myname = self.name + "/"
