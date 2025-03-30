@@ -243,8 +243,8 @@ class WebSocketClient:
             return
         except asyncio.TimeoutError:
             _LOGGER.debug("Websocket Timeout.")
-        except aiohttp.ClientConnectorError as err:
-            _LOGGER.error("Websocket Client Connector Error %s", err, exc_info=True)
+        except aiohttp.ClientConnectorError:
+            _LOGGER.exception("Websocket Client Connector Error")
         except (
             aiohttp.ClientOSError,
             aiohttp.client_exceptions.ServerDisconnectedError,
@@ -253,8 +253,8 @@ class WebSocketClient:
         except aiohttp.client_exceptions.WSServerHandshakeError as err:
             _LOGGER.warning("Web socket server response error: %s", err.message)
         # pylint: disable=broad-except
-        except Exception as err:
-            _LOGGER.error("Unexpected websocket error %s", err, exc_info=True)
+        except Exception:
+            _LOGGER.exception("Unexpected websocket error")
         else:
             if isinstance(ws.exception(), asyncio.TimeoutError):
                 _LOGGER.debug("Websocket Timeout.")
