@@ -492,6 +492,7 @@ class Nodes:
                 continue
 
         _LOGGER.info("ISY Updated Node Statuses.")
+        return None
 
     async def update_nodes(self, wait_time=0):
         """

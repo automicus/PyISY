@@ -61,7 +61,6 @@ ignore = [
     "RUF003", # probably not worth fixing
     "SIM105", # this is slower
     "RUF006", # TODO: this is a significant issue
-    "RET503", # TODO
     "PLW2901", # TODO
     "RUF013", # TODO
     "SIM118", # TODO
