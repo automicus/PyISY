@@ -322,7 +322,7 @@ class NodeBase:
         """Turn off the nodes/group in the ISY."""
         return await self.send_cmd(CMD_OFF)
 
-    async def turn_on(self, val=None):
+    async def turn_on(self, val: int | None = None) -> bool:
         """
         Turn the node on.
 
@@ -338,7 +338,7 @@ class NodeBase:
             val = None
         return await self.send_cmd(cmd, val)
 
-    async def rename(self, new_name):
+    async def rename(self, new_name: str) -> bool:
         """
         Rename the node or group in the ISY.
 

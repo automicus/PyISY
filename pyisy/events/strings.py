@@ -1,5 +1,7 @@
 """Strings for Event Stream Requests."""
 
+from __future__ import annotations
+
 # Subscribe Message
 SUB_MSG = {
     "head": """POST /services HTTP/1.1

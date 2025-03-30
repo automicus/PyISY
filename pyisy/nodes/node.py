@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 from math import isnan
+from typing import TYPE_CHECKING
 from xml.dom import minidom
 
 from ..constants import (
@@ -51,12 +52,16 @@ from ..exceptions import XML_ERRORS, XML_PARSE_ERROR, ISYResponseParseError
 from ..helpers import (
     EventEmitter,
     NodeProperty,
+    ZWaveProperties,
     attr_from_xml,
     now,
     parse_xml_properties,
 )
 from ..logging import _LOGGER
 from .nodebase import NodeBase
+
+if TYPE_CHECKING:
+    from . import Nodes
 
 
 class Node(NodeBase):
@@ -86,22 +91,22 @@ class Node(NodeBase):
 
     def __init__(
         self,
-        nodes,
-        address,
-        name,
+        nodes: Nodes,
+        address: str,
+        name: str,
         state: NodeProperty,
-        aux_properties=None,
-        zwave_props=None,
-        node_def_id=None,
-        pnode=None,
-        device_type=None,
-        enabled=None,
-        node_server=None,
-        protocol=None,
-        family_id=None,
-        state_set=True,
-        flag=0,
-    ):
+        aux_properties: dict[str, NodeProperty] | None = None,
+        zwave_props: ZWaveProperties | None = None,
+        node_def_id: str | None = None,
+        pnode: str | None = None,
+        device_type: str | None = None,
+        enabled: bool | None = None,
+        node_server: object | None = None,
+        protocol: str | None = None,
+        family_id: str | None = None,
+        state_set: bool = True,
+        flag: int = 0,
+    ) -> None:
         """Initialize a Node class."""
         self._enabled = enabled if enabled is not None else True
         self._formatted = state.formatted
@@ -110,7 +115,7 @@ class Node(NodeBase):
         self._parent_node = pnode if pnode != address else None
         self._prec = state.prec
         self._protocol = protocol
-        self._type: str = device_type
+        self._type = device_type
         self._uom = state.uom
         self._zwave_props = zwave_props
         self.control_events = EventEmitter()
@@ -127,7 +132,7 @@ class Node(NodeBase):
         )
 
     @property
-    def dimmable(self):
+    def dimmable(self) -> bool:
         """
         Return the best guess if this is a dimmable node.
 
@@ -137,23 +142,23 @@ class Node(NodeBase):
         return self.is_dimmable
 
     @property
-    def enabled(self):
+    def enabled(self) -> bool:
         """Return if the device is enabled or not in the ISY."""
         return self._enabled
 
     @enabled.setter
-    def enabled(self, value):
+    def enabled(self, value: bool) -> None:
         """Set if the device is enabled or not in the ISY."""
         if self._enabled != value:
             self._enabled = value
 
     @property
-    def formatted(self):
+    def formatted(self) -> str | None:
         """Return the formatted value with units, if provided."""
         return self._formatted
 
     @property
-    def is_battery_node(self):
+    def is_battery_node(self) -> bool:
         """
         Confirm if this is a battery node or a normal node.
 
@@ -193,7 +198,7 @@ class Node(NodeBase):
         )
 
     @property
-    def is_lock(self):
+    def is_lock(self) -> bool:
         """Determine if this device is a door lock type."""
         return (self.type and self.type.startswith(INSTEON_TYPE_LOCK_TUP)) or (
             self.protocol == PROTO_ZWAVE
@@ -202,7 +207,7 @@ class Node(NodeBase):
         )
 
     @property
-    def is_thermostat(self):
+    def is_thermostat(self) -> bool:
         """Determine if this device is a thermostat/climate control device."""
         return (self.type and self.type.startswith(INSTEON_TYPE_THERMOSTAT_TUP)) or (
             self._protocol == PROTO_ZWAVE
@@ -211,17 +216,17 @@ class Node(NodeBase):
         )
 
     @property
-    def node_def_id(self):
+    def node_def_id(self) -> str | None:
         """Return the node definition id (used for ISYv5)."""
         return self._node_def_id
 
     @property
-    def node_server(self):
+    def node_server(self) -> object | None:
         """Return the node server parent slot (used for v5 Node Server devices)."""
         return self._node_server
 
     @property
-    def parent_node(self):
+    def parent_node(self) -> Node | None:
         """
         Return the parent node object of this node.
 
@@ -235,31 +240,31 @@ class Node(NodeBase):
         return None
 
     @property
-    def prec(self):
+    def prec(self) -> int:
         """Return the precision of the raw device value."""
         return self._prec
 
     @property
-    def protocol(self):
+    def protocol(self) -> str | None:
         """Return the device standard used (Z-Wave, Zigbee, Insteon, Node Server)."""
         return self._protocol
 
     @property
-    def type(self):
+    def type(self) -> str | None:
         """Return the device typecode (Used for Insteon)."""
         return self._type
 
     @property
-    def uom(self):
+    def uom(self) -> str | None:
         """Return the unit of measurement for the device."""
         return self._uom
 
     @property
-    def zwave_props(self):
+    def zwave_props(self) -> ZWaveProperties | None:
         """Return the Z-Wave Properties (used for Z-Wave devices)."""
         return self._zwave_props
 
-    async def get_zwave_parameter(self, parameter):
+    async def get_zwave_parameter(self, parameter: int) -> dict[str, str] | bool | None:
         """Retrieve a Z-Wave Parameter from the ISY."""
 
         if self.protocol != PROTO_ZWAVE:
@@ -310,7 +315,7 @@ class Node(NodeBase):
 
         return {TAG_PARAMETER: parameter, TAG_SIZE: size, TAG_VALUE: value}
 
-    async def set_zwave_parameter(self, parameter, value, size):
+    async def set_zwave_parameter(self, parameter: int, value: int | str, size: int) -> bool:
         """Set a Z-Wave Parameter on an end device via the ISY."""
 
         if self.protocol != PROTO_ZWAVE:
@@ -430,7 +435,7 @@ class Node(NodeBase):
 
         return True
 
-    async def update(self, event=None, wait_time: int = 0, xmldoc=None):
+    async def update(self, event=None, wait_time: int = 0, xmldoc: minidom.Document | None = None) -> None:
         """Update the value of the node from the controller."""
         if not self.isy.auto_update and not xmldoc:
             await asyncio.sleep(wait_time)

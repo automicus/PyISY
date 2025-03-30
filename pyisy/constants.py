@@ -1,5 +1,7 @@
 """Constants for the PyISY Module."""
 
+from __future__ import annotations
+
 import datetime
 
 UPDATE_INTERVAL = 0.5

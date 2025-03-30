@@ -8,6 +8,8 @@ This script can also be copied and used as a template for
 using this module.
 """
 
+from __future__ import annotations
+
 import argparse
 import asyncio
 import logging

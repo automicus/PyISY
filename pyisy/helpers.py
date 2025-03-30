@@ -172,7 +172,7 @@ class EventEmitter:
 
     _subscribers: list[EventListener]
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize a new Event Emitter class."""
         self._subscribers: list[EventListener] = []
 
@@ -248,7 +248,7 @@ class ZWaveProperties:
     raw: str = ""
 
     @classmethod
-    def from_xml(cls, xml):
+    def from_xml(cls, xml: minidom.Element) -> ZWaveProperties:
         """Return a Z-Wave Properties class from an xml DOM object."""
         category = value_from_xml(xml, TAG_CATEGORY)
         devtype_mfg = value_from_xml(xml, TAG_MFG)
