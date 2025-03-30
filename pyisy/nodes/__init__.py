@@ -436,10 +436,11 @@ class Nodes:
                     # Build list of members
                     members = [mem.firstChild.nodeValue for mem in mems]
                     # Build list of controllers
-                    controllers = []
-                    for mem in mems:
-                        if int(attr_from_element(mem, TAG_TYPE, 0)) == NODE_IS_CONTROLLER:
-                            controllers.append(mem.firstChild.nodeValue)
+                    controllers = [
+                        mem.firstChild.nodeValue
+                        for mem in mems
+                        if int(attr_from_element(mem, TAG_TYPE, 0)) == NODE_IS_CONTROLLER
+                    ]
                     self.insert(
                         address,
                         nname,

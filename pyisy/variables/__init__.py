@@ -225,14 +225,12 @@ class Variables:
         else:
             types = [self.root]
 
-        out = []
-        for vtype in types:
-            for ind in range(len(self.vids[vtype])):
-                out.append(
-                    (
-                        vtype,
-                        self.vnames[vtype].get(self.vids[vtype][ind], ""),
-                        self.vids[vtype][ind],
-                    )
-                )
-        return out
+        return [
+            (
+                vtype,
+                self.vnames[vtype].get(self.vids[vtype][ind], ""),
+                self.vids[vtype][ind],
+            )
+            for vtype in types
+            for ind in range(len(self.vids[vtype]))
+        ]
