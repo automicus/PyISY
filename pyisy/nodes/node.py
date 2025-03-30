@@ -501,9 +501,8 @@ class Node(NodeBase):
                 if responder:
                     if self._id in self._nodes[child[2]].members:
                         groups.append(child[2])
-                elif controller:
-                    if self._id in self._nodes[child[2]].controllers:
-                        groups.append(child[2])
+                elif controller and self._id in self._nodes[child[2]].controllers:
+                    groups.append(child[2])
         return groups
 
     def get_property_uom(self, prop):
