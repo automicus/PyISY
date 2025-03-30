@@ -62,7 +62,6 @@ ignore = [
     "SIM105", # this is slower
     "SIM108", # TODO
     "RUF006", # TODO: this is a significant issue
-    "RSE102", # TODO
     "C419", # TODO
     "RET504", # TODO
     "RET503", # TODO

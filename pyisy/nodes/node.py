@@ -293,7 +293,7 @@ class Node(NodeBase):
             parameter_dom = minidom.parseString(parameter_xml)
         except XML_ERRORS as exc:
             _LOGGER.error("%s: Node Parameter %s", XML_PARSE_ERROR, parameter_xml)
-            raise ISYResponseParseError() from exc
+            raise ISYResponseParseError from exc
 
         size = int(attr_from_xml(parameter_dom, TAG_CONFIG, TAG_SIZE))
         value = attr_from_xml(parameter_dom, TAG_CONFIG, TAG_VALUE)

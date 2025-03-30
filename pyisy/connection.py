@@ -95,7 +95,7 @@ class Connection:
         config = await self.get_config(retries=None)
         if not config:
             _LOGGER.error("Could not connect to the ISY with the parameters provided.")
-            raise ISYConnectionError()
+            raise ISYConnectionError
         return config
 
     def increase_available_connections(self):
@@ -196,7 +196,7 @@ class Connection:
             )
 
         if retries is None:
-            raise ISYConnectionError()
+            raise ISYConnectionError
         if retries < MAX_RETRIES:
             _LOGGER.debug(
                 "Retrying ISY Request in %ss, retry %s.",
