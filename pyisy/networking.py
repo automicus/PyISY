@@ -1,6 +1,9 @@
 """ISY Network Resources Module."""
 
+from __future__ import annotations
+
 from asyncio import sleep
+from typing import TYPE_CHECKING
 from xml.dom import minidom
 
 from .constants import (
@@ -14,6 +17,9 @@ from .constants import (
 from .exceptions import XML_ERRORS, XML_PARSE_ERROR
 from .helpers import value_from_xml
 from .logging import _LOGGER
+
+if TYPE_CHECKING:
+    from .isy import ISY
 
 
 class NetworkResources:
@@ -41,7 +47,7 @@ class NetworkResources:
 
     """
 
-    def __init__(self, isy, xml=None):
+    def __init__(self, isy: ISY, xml: str | None = None) -> None:
         """
         Initialize the network resources class.
 
@@ -50,14 +56,16 @@ class NetworkResources:
         """
         self.isy = isy
 
-        self.addresses = []
-        self.nnames = []
-        self.nobjs = []
+        self.addresses: list[int] = []
+        self._address_index: dict[int, int] = {}
+        self.nnames: list[str] = []
+        self._nnames_index: dict[str, int] = {}
+        self.nobjs: list[NetworkCommand] = []
 
         if xml is not None:
             self.parse(xml)
 
-    def parse(self, xml):
+    def parse(self, xml: str) -> None:
         """
         Parse the xml data.
 
@@ -72,16 +80,19 @@ class NetworkResources:
         features = xmldoc.getElementsByTagName(TAG_NET_RULE)
         for feature in features:
             address = int(value_from_xml(feature, ATTR_ID))
-            if address not in self.addresses:
-                nname = value_from_xml(feature, TAG_NAME)
-                nobj = NetworkCommand(self, address, nname)
-                self.addresses.append(address)
-                self.nnames.append(nname)
-                self.nobjs.append(nobj)
+            if address in self._address_index:
+                continue
+            nname = value_from_xml(feature, TAG_NAME)
+            nobj = NetworkCommand(self, address, nname)
+            self.addresses.append(address)
+            self._address_index[address] = len(self.addresses) - 1
+            self.nnames.append(nname)
+            self._nnames_index[nname] = len(self.nnames) - 1
+            self.nobjs.append(nobj)
 
         _LOGGER.info("ISY Loaded Network Resources Commands")
 
-    async def update(self, wait_time=0):
+    async def update(self, wait_time: int = 0) -> None:
         """
         Update the contents of the networking class.
 
@@ -91,7 +102,7 @@ class NetworkResources:
         xml = await self.isy.conn.get_network()
         self.parse(xml)
 
-    async def update_threaded(self, interval):
+    async def update_threaded(self, interval: int) -> None:
         """
         Continually update the class until it is told to stop.
 
@@ -100,7 +111,7 @@ class NetworkResources:
         while self.isy.auto_update:
             await self.update(interval)
 
-    def __getitem__(self, val):
+    def __getitem__(self, val: str | int) -> NetworkCommand | None:
         """Return the item from the collection."""
         try:
             val = int(val)
@@ -112,31 +123,25 @@ class NetworkResources:
         """Set the item value."""
         return
 
-    def get_by_id(self, val):
+    def get_by_id(self, val: int) -> NetworkCommand | None:
         """
         Return command object being given a command id.
 
         val: Integer representing command id
         """
-        try:
-            ind = self.addresses.index(val)
-            return self.get_by_index(ind)
-        except (ValueError, KeyError):
-            return None
+        ind = self._address_index.get(val)
+        return None if ind is None else self.get_by_index(ind)
 
-    def get_by_name(self, val):
+    def get_by_name(self, val: str) -> NetworkCommand | None:
         """
         Return command object being given a command name.
 
         val: String representing command name
         """
-        try:
-            ind = self.nnames.index(val)
-            return self.get_by_index(ind)
-        except (ValueError, KeyError):
-            return None
+        ind = self._nnames_index.get(val)
+        return None if ind is None else self.get_by_index(ind)
 
-    def get_by_index(self, val):
+    def get_by_index(self, val: int) -> NetworkCommand | None:
         """
         Return command object being given a command index.
 
@@ -157,7 +162,7 @@ class NetworkCommand:
 
     """
 
-    def __init__(self, network_resources, address, name):
+    def __init__(self, network_resources: NetworkResources, address: int, name: str) -> None:
         """Initialize network command class.
 
         network_resources: NetworkResources class
@@ -169,25 +174,26 @@ class NetworkCommand:
         self._name = name
 
     @property
-    def address(self):
+    def address(self) -> str:
         """Return the Resource ID for the Network Resource."""
         return str(self._id)
 
     @property
-    def name(self):
+    def name(self) -> str:
         """Return the name of this entity."""
         return self._name
 
     @property
-    def protocol(self):
+    def protocol(self) -> str:
         """Return the Protocol for this node."""
         return PROTO_NETWORK
 
-    async def run(self):
+    async def run(self) -> None:
         """Execute the networking command."""
-        req_url = self.isy.conn.compile_url([URL_NETWORK, URL_RESOURCES, str(self._id)])
+        address = self.address
+        req_url = self.isy.conn.compile_url([URL_NETWORK, URL_RESOURCES, address])
 
         if not await self.isy.conn.request(req_url, ok404=True):
-            _LOGGER.warning("ISY could not run networking command: %s", str(self._id))
+            _LOGGER.warning("ISY could not run networking command: %s", address)
             return
-        _LOGGER.debug("ISY ran networking command: %s", str(self._id))
+        _LOGGER.debug("ISY ran networking command: %s", address)
