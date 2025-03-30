@@ -1,5 +1,6 @@
 """Base object for nodes and groups."""
 
+from typing import TYPE_CHECKING
 from xml.dom import minidom
 
 from ..constants import (
@@ -36,6 +37,9 @@ from ..exceptions import XML_ERRORS, XML_PARSE_ERROR, ISYResponseParseError
 from ..helpers import EventEmitter, NodeProperty, now, value_from_xml
 from ..logging import _LOGGER
 
+if TYPE_CHECKING:
+    from . import Nodes
+
 
 class NodeBase:
     """Base Object for Nodes and Groups/Scenes."""
@@ -58,7 +62,7 @@ class NodeBase:
         self._family = NODE_FAMILY_ID.get(family_id)
         self._id = address
         self._name = name
-        self._nodes = nodes
+        self._nodes: Nodes = nodes
         self._notes = None
         self._primary_node = pnode
         self._flag = flag
