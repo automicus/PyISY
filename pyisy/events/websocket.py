@@ -94,6 +94,7 @@ class WebSocketClient:
         self.req_session = websession
         self.sslcontext = get_sslcontext(use_https, tls_ver)
         self._loop = asyncio.get_running_loop()
+        self._reconnect_timer: asyncio.TimerHandle | None = None
 
         self._url = "wss://" if self.use_https else "ws://"
         self._url += f"{self._address}:{self._port}{self._webroot}/rest/subscribe"
@@ -115,12 +116,9 @@ class WebSocketClient:
         if self.guardian_task is not None:
             self.guardian_task.cancel()
             self._lasthb = None
-
-    async def reconnect(self, delay: float | None = None, retries: int = 0) -> None:
-        """Reconnect to a disconnected websocket."""
-        to_sleep = self.__reconnect_step1(delay, retries)
-        await asyncio.sleep(to_sleep)
-        self.__reconnect_step2(retries)
+        if self._reconnect_timer is not None:
+            self._reconnect_timer.cancel()
+            self._reconnect_timer = None
 
     def _reconnect(self, retries: int = 0) -> None:
         """Reconnect to a disconnected websocket.
@@ -129,10 +127,12 @@ class WebSocketClient:
 
         Unlike the async reconnect method, this method does not use asyncio.sleep.
         """
-        self.__reconnect_step1(None, retries)
-        self.__reconnect_step2(retries)
+        if delay := self._reconnect_prepare(None, retries):
+            self._reconnect_timer = self._loop.call_later(delay, self._reconnect_execute, retries)
+        else:
+            self._reconnect_execute(retries)
 
-    def __reconnect_step1(self, delay: float | None, retries: int) -> float:
+    def _reconnect_prepare(self, delay: float | None, retries: int) -> float:
         """Start the reconnect process."""
         self.stop()
         self.status = ES_RECONNECTING
@@ -141,7 +141,7 @@ class WebSocketClient:
         _LOGGER.info("PyISY attempting stream reconnect in %ss.", delay)
         return delay
 
-    def __reconnect_step2(self, retries: int) -> None:
+    def _reconnect_execute(self, retries: int) -> None:
         """Finish the reconnect process."""
         retries = (retries + 1) if retries < WS_MAX_RETRIES else WS_MAX_RETRIES
         self.start(retries)
