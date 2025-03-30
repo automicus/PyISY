@@ -294,31 +294,31 @@ class NodeBase:
             return False
         return True
 
-    async def fade_down(self):
+    async def fade_down(self) -> bool:
         """Begin fading down (dim) a device."""
         return await self.send_cmd(CMD_FADE_DOWN)
 
-    async def fade_stop(self):
+    async def fade_stop(self) -> bool:
         """Stop fading a device."""
         return await self.send_cmd(CMD_FADE_STOP)
 
-    async def fade_up(self):
+    async def fade_up(self) -> bool:
         """Begin fading up (dim) a device."""
         return await self.send_cmd(CMD_FADE_UP)
 
-    async def fast_off(self):
+    async def fast_off(self) -> bool:
         """Start manually brightening a device."""
         return await self.send_cmd(CMD_OFF_FAST)
 
-    async def fast_on(self):
+    async def fast_on(self) -> bool:
         """Start manually brightening a device."""
         return await self.send_cmd(CMD_ON_FAST)
 
-    async def query(self):
+    async def query(self) -> bool:
         """Request the ISY query this node."""
         return await self.isy.query(address=self.address)
 
-    async def turn_off(self):
+    async def turn_off(self) -> bool:
         """Turn off the nodes/group in the ISY."""
         return await self.send_cmd(CMD_OFF)
 
