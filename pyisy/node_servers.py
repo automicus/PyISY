@@ -210,13 +210,8 @@ class NodeServers:
             cmds_accepts = node_def.getElementsByTagName(TAG_ACCEPTS)[0]
             cmds_sends_cmd = cmds_sends.getElementsByTagName(TAG_CMD)
             cmds_accepts_cmd = cmds_accepts.getElementsByTagName(TAG_CMD)
-            sends_commands = []
-            accepts_commands = []
-
-            for cmd in cmds_sends_cmd:
-                sends_commands.append(attr_from_element(cmd, ATTR_ID))
-            for cmd in cmds_accepts_cmd:
-                accepts_commands.append(attr_from_element(cmd, ATTR_ID))
+            sends_commands = [attr_from_element(cmd, ATTR_ID) for cmd in cmds_sends_cmd]
+            accepts_commands = [attr_from_element(cmd, ATTR_ID) for cmd in cmds_accepts_cmd]
 
             status_names = {}
             name = node_def_id
