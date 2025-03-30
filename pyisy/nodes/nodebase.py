@@ -1,6 +1,8 @@
 """Base object for nodes and groups."""
 
-from typing import TYPE_CHECKING
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
 from xml.dom import minidom
 
 from ..constants import (
@@ -48,22 +50,22 @@ class NodeBase:
 
     def __init__(
         self,
-        nodes,
-        address,
-        name,
+        nodes: Nodes,
+        address: str,
+        name: str,
         status,
         family_id=None,
-        aux_properties=None,
-        pnode=None,
-        flag=0,
+        aux_properties: dict[str, Any] = None,
+        pnode: str | None = None,
+        flag: int = 0,
     ):
         """Initialize a Node Base class."""
         self._aux_properties = aux_properties if aux_properties is not None else {}
         self._family = NODE_FAMILY_ID.get(family_id)
         self._id = address
         self._name = name
-        self._nodes: Nodes = nodes
-        self._notes = None
+        self._nodes = nodes
+        self._notes: str | None = None
         self._primary_node = pnode
         self._flag = flag
         self._status = status
