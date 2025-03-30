@@ -1,6 +1,10 @@
 """ISY Clock/Location Information."""
 
+from __future__ import annotations
+
 from asyncio import sleep
+from datetime import datetime
+from typing import TYPE_CHECKING
 from xml.dom import minidom
 
 from .constants import (
@@ -18,6 +22,9 @@ from .constants import (
 from .exceptions import XML_ERRORS, XML_PARSE_ERROR, ISYResponseParseError
 from .helpers import ntp_to_system_time, value_from_xml
 from .logging import _LOGGER
+
+if TYPE_CHECKING:
+    from .isy import ISY
 
 
 class Clock:
@@ -40,7 +47,7 @@ class Clock:
 
     """
 
-    def __init__(self, isy, xml=None):
+    def __init__(self, isy: ISY, xml: str | None = None) -> None:
         """
         Initialize the network resources class.
 
@@ -60,16 +67,16 @@ class Clock:
         if xml is not None:
             self.parse(xml)
 
-    def __str__(self):
+    def __str__(self) -> str:
         """Return a string representing the clock Class."""
         return f"ISY Clock (Last Updated {self.last_called})"
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """Return a long string showing all the clock values."""
         props = [name for name, value in vars(Clock).items() if isinstance(value, property)]
         return f"ISY Clock: { ({prop: str(getattr(self, prop)) for prop in props})!r}"
 
-    def parse(self, xml):
+    def parse(self, xml: str) -> None:
         """
         Parse the xml data.
 
@@ -93,7 +100,7 @@ class Clock:
 
         _LOGGER.info("ISY Loaded Clock Information")
 
-    async def update(self, wait_time=0):
+    async def update(self, wait_time: int = 0) -> None:
         """
         Update the contents of the networking class.
 
@@ -103,7 +110,7 @@ class Clock:
         xml = await self.isy.conn.get_time()
         self.parse(xml)
 
-    async def update_thread(self, interval):
+    async def update_thread(self, interval: int) -> None:
         """
         Continually update the class until it is told to stop.
 
@@ -113,41 +120,41 @@ class Clock:
             await self.update(interval)
 
     @property
-    def last_called(self):
+    def last_called(self) -> datetime:
         """Get the time of the last call to /rest/time in UTC."""
         return self._last_called
 
     @property
-    def tz_offset(self):
+    def tz_offset(self) -> float:
         """Provide the Time Zone Offset from the isy in Hours."""
         return self._tz_offset
 
     @property
-    def dst(self):
+    def dst(self) -> bool:
         """Confirm if DST is enabled or not on the ISY."""
         return self._dst
 
     @property
-    def latitude(self):
+    def latitude(self) -> float:
         """Provide the latitude information from the isy."""
         return self._latitude
 
     @property
-    def longitude(self):
+    def longitude(self) -> float:
         """Provide the longitude information from the isy."""
         return self._longitude
 
     @property
-    def sunrise(self):
+    def sunrise(self) -> datetime:
         """Provide the sunrise information from the isy (UTC)."""
         return self._sunrise
 
     @property
-    def sunset(self):
+    def sunset(self) -> datetime:
         """Provide the sunset information from the isy (UTC)."""
         return self._sunset
 
     @property
-    def military(self):
+    def military(self) -> bool:
         """Confirm if military time is in use or not on the isy."""
         return self._military

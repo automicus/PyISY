@@ -1,6 +1,9 @@
 """ISY Variables."""
 
+from __future__ import annotations
+
 from asyncio import sleep
+from typing import TYPE_CHECKING
 from xml.dom import minidom
 
 from dateutil import parser
@@ -20,6 +23,10 @@ from ..exceptions import XML_ERRORS, XML_PARSE_ERROR, ISYResponseParseError
 from ..helpers import attr_from_element, attr_from_xml, now, value_from_xml
 from ..logging import _LOGGER
 from .variable import Variable
+
+if TYPE_CHECKING:
+    from ..isy import ISY
+
 
 EMPTY_VARIABLE_RESPONSES = [
     "/CONF/INTEGER.VAR not found",
@@ -49,7 +56,7 @@ class Variables:
 
     def __init__(
         self,
-        isy,
+        isy: ISY,
         root=None,
         vids=None,
         vnames=None,
@@ -79,13 +86,13 @@ class Variables:
         else:
             _LOGGER.warning("No valid variables defined")
 
-    def __str__(self):
+    def __str__(self) -> str:
         """Return a string representation of the variable manager."""
         if self.root is None:
             return "Variable Collection"
         return f"Variable Collection (Type: {self.root})"
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """Return a string representing the children variables."""
         if self.root is None:
             return repr(self[1]) + repr(self[2])
@@ -161,7 +168,7 @@ class Variables:
         else:
             _LOGGER.warning("ISY Failed to update variables.")
 
-    def update_received(self, xmldoc):
+    def update_received(self, xmldoc: minidom.Document) -> None:
         """Process an update received from the event stream."""
         xml = xmldoc.toxml()
         vtype = int(attr_from_xml(xmldoc, ATTR_VAR, TAG_TYPE))
@@ -206,7 +213,7 @@ class Variables:
         """Handle the setitem function for the Class."""
         return
 
-    def get_by_name(self, val):
+    def get_by_name(self, val: str) -> Variable | None:
         """
         Get a variable with the given name.
 
@@ -218,7 +225,7 @@ class Variables:
         return self.vobjs[vtype].get(vid)
 
     @property
-    def children(self):
+    def children(self) -> list[tuple[int, str, int]]:
         """Get the children of the class."""
         types = [1, 2] if self.root is None else [self.root]
 
