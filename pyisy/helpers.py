@@ -171,7 +171,7 @@ class EventEmitter:
         """Initialize a new Event Emitter class."""
         self._subscribers = []
 
-    def subscribe(self, callback: Callable, event_filter: dict | str = None, key: str = None):
+    def subscribe(self, callback: Callable, event_filter: dict | str | None = None, key: str | None = None):
         """Subscribe to the events."""
         listener = EventListener(emitter=self, callback=callback, event_filter=event_filter, key=key)
         self._subscribers.append(listener)
