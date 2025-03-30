@@ -60,7 +60,6 @@ ignore = [
     "PYI034", # enable when we drop Py3.10
     "RUF003", # probably not worth fixing
     "SIM105", # this is slower
-    "SIM102", # TODO
     "PERF401", # TODO
     "SIM108", # TODO
     "RUF006", # TODO: this is a significant issue
