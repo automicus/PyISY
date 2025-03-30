@@ -206,8 +206,7 @@ class Connection:
             # sleep to allow the ISY to catch up
             await asyncio.sleep(RETRY_BACKOFF[retries])
             # recurse to try again
-            retry_result = await self.request(url, retries + 1, ok404=ok404)
-            return retry_result
+            return await self.request(url, retries + 1, ok404=ok404)
         # fail for good
         _LOGGER.error(
             "Bad ISY Request: (%s) Failed after %s retries.",
@@ -226,14 +225,12 @@ class Connection:
         """Fetch the services description from the ISY."""
         url = "https://" if self.use_https else "http://"
         url += f"{self._address}:{self._port}{self._webroot}/desc"
-        result = await self.request(url)
-        return result
+        return await self.request(url)
 
     async def get_config(self, retries=0):
         """Fetch the configuration from the ISY."""
         req_url = self.compile_url([URL_CONFIG])
-        result = await self.request(req_url, retries=retries)
-        return result
+        return await self.request(req_url, retries=retries)
 
     async def get_programs(self, address=None):
         """Fetch the list of programs from the ISY."""
@@ -241,20 +238,17 @@ class Connection:
         if address is not None:
             addr.append(str(address))
         req_url = self.compile_url(addr, {URL_SUBFOLDERS: XML_TRUE})
-        result = await self.request(req_url)
-        return result
+        return await self.request(req_url)
 
     async def get_nodes(self):
         """Fetch the list of nodes/groups/scenes from the ISY."""
         req_url = self.compile_url([URL_NODES], {URL_MEMBERS: XML_FALSE})
-        result = await self.request(req_url)
-        return result
+        return await self.request(req_url)
 
     async def get_status(self):
         """Fetch the status of nodes/groups/scenes from the ISY."""
         req_url = self.compile_url([URL_STATUS])
-        result = await self.request(req_url)
-        return result
+        return await self.request(req_url)
 
     async def get_variable_defs(self):
         """Fetch the list of variables from the ISY."""
@@ -263,10 +257,7 @@ class Connection:
             [URL_VARIABLES, URL_DEFINITIONS, VAR_STATE],
         ]
         req_urls = [self.compile_url(req) for req in req_list]
-        results = await asyncio.gather(
-            *[self.request(req_url) for req_url in req_urls], return_exceptions=True
-        )
-        return results
+        return await asyncio.gather(*[self.request(req_url) for req_url in req_urls], return_exceptions=True)
 
     async def get_variables(self):
         """Fetch the variable details from the ISY to update local copy."""
@@ -280,20 +271,17 @@ class Connection:
         )
         results = [r for r in results if r is not None]  # Strip any bad requests.
         result = "".join(results)
-        result = result.replace('</vars><?xml version="1.0" encoding="UTF-8"?><vars>', "")
-        return result
+        return result.replace('</vars><?xml version="1.0" encoding="UTF-8"?><vars>', "")
 
     async def get_network(self):
         """Fetch the list of network resources from the ISY."""
         req_url = self.compile_url([URL_NETWORK, URL_RESOURCES])
-        result = await self.request(req_url)
-        return result
+        return await self.request(req_url)
 
     async def get_time(self):
         """Fetch the system time info from the ISY."""
         req_url = self.compile_url([URL_CLOCK])
-        result = await self.request(req_url)
-        return result
+        return await self.request(req_url)
 
 
 def get_new_client_session(use_https, tls_ver=1.1):
