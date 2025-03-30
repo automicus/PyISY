@@ -24,6 +24,8 @@ from .variable import Variable
 
 if TYPE_CHECKING:
     from ..isy import ISY
+
+
 EMPTY_VARIABLE_RESPONSES = [
     "/CONF/INTEGER.VAR not found",
     "/CONF/STATE.VAR not found",
