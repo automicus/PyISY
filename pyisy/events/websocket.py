@@ -41,7 +41,7 @@ WS_HEARTBEAT = 30
 WS_HB_GRACE = 2
 WS_TIMEOUT = 10.0
 WS_MAX_RETRIES = 4
-WS_RETRY_BACKOFF = [0.01, 1, 10, 30, 60]  # Seconds
+WS_RETRY_BACKOFF: list[float] = [0.01, 1, 10, 30, 60]  # Seconds
 
 
 class WebSocketClient:
@@ -108,14 +108,33 @@ class WebSocketClient:
             self.guardian_task.cancel()
             self._lasthb = None
 
-    async def reconnect(self, delay=None, retries=0):
+    async def reconnect(self, delay: float | None = None, retries: int = 0) -> None:
         """Reconnect to a disconnected websocket."""
+        to_sleep = self.__reconnect_step1(delay, retries)
+        await asyncio.sleep(to_sleep)
+        self.__reconnect_step2(retries)
+
+    def _reconnect(self, retries: int = 0) -> None:
+        """Reconnect to a disconnected websocket.
+
+        This is a synchronous method that will be called from the event loop.
+
+        Unlike the async reconnect method, this method does not use asyncio.sleep.
+        """
+        self.__reconnect_step1(None, retries)
+        self.__reconnect_step2(retries)
+
+    def __reconnect_step1(self, delay: float | None, retries: int) -> float:
+        """Start the reconnect process."""
         self.stop()
         self.status = ES_RECONNECTING
         if delay is None:
             delay = WS_RETRY_BACKOFF[retries]
         _LOGGER.info("PyISY attempting stream reconnect in %ss.", delay)
-        await asyncio.sleep(delay)
+        return delay
+
+    def __reconnect_step2(self, retries: int) -> None:
+        """Finish the reconnect process."""
         retries = (retries + 1) if retries < WS_MAX_RETRIES else WS_MAX_RETRIES
         self.start(retries)
 
@@ -155,7 +174,7 @@ class WebSocketClient:
             ):
                 _LOGGER.debug("Websocket missed a heartbeat, resetting connection.")
                 self.status = ES_LOST_STREAM_CONNECTION
-                self._loop.create_task(self.reconnect())
+                self._reconnect()
                 return
 
     async def _route_message(self, msg):
@@ -265,4 +284,4 @@ class WebSocketClient:
                 _LOGGER.warning("Websocket disconnected unexpectedly with code: %s", ws.close_code)
         if self.status != ES_STOP_UPDATES:
             self.status = ES_LOST_STREAM_CONNECTION
-            self._loop.create_task(self.reconnect(retries=retries))
+            self._reconnect(retries=retries)
