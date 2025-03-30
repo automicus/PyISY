@@ -2,6 +2,7 @@
 
 import asyncio
 from threading import Thread
+from xml.dom import minidom
 
 import aiohttp
 
@@ -29,6 +30,7 @@ from .events.websocket import WebSocketClient
 from .helpers import EventEmitter, value_from_xml
 from .logging import _LOGGER, enable_logging
 from .networking import NetworkResources
+from .node_servers import NodeServers
 from .nodes import Nodes
 from .programs import Programs
 from .variables import Variables
@@ -108,19 +110,19 @@ class ISY:
                 websession=websession,
             )
 
-        self.configuration = None
-        self.clock = None
-        self.nodes = None
-        self.node_servers = None
-        self.programs = None
-        self.variables = None
-        self.networking = None
+        self.configuration: Configuration | None = None
+        self.clock: Clock | None = None
+        self.nodes: Nodes | None = None
+        self.node_servers: NodeServers | None = None
+        self.programs: Programs | None = None
+        self.variables: Variables | None = None
+        self.networking: NetworkResources | None = None
         self._hostname = address
         self.connection_events = EventEmitter()
         self.status_events = EventEmitter()
         self.system_status = SYSTEM_BUSY
         self.loop = asyncio.get_running_loop()
-        self._uuid = None
+        self._uuid: str | None = None
 
     async def initialize(self, with_node_servers=False):
         """Initialize the connection with the ISY."""
@@ -158,7 +160,7 @@ class ISY:
 
         self._connected = True
 
-    async def shutdown(self):
+    async def shutdown(self) -> None:
         """Cleanup connections and prepare for exit."""
         if self.websocket is not None:
             self.websocket.stop()
@@ -168,17 +170,17 @@ class ISY:
         await self.conn.close()
 
     @property
-    def conf(self):
+    def conf(self) -> Configuration:
         """Return the status of the connection (shortcut property)."""
         return self.configuration
 
     @property
-    def connected(self):
+    def connected(self) -> bool:
         """Return the status of the connection."""
         return self._connected
 
     @property
-    def auto_update(self):
+    def auto_update(self) -> bool:
         """Return the auto_update property."""
         if self.websocket is not None:
             return self.websocket.status == ES_CONNECTED
@@ -187,7 +189,7 @@ class ISY:
         return False
 
     @auto_update.setter
-    def auto_update(self, val):
+    def auto_update(self, val: bool) -> None:
         """Set the auto_update property."""
         if self.websocket is not None:
             _LOGGER.warning("Websockets are enabled. Use isy.websocket.start() or .stop() instead.")
@@ -200,21 +202,21 @@ class ISY:
             self._events.running = val
 
     @property
-    def hostname(self):
+    def hostname(self) -> str:
         """Return the hostname."""
         return self._hostname
 
     @property
-    def protocol(self):
+    def protocol(self) -> str:
         """Return the protocol for this entity."""
         return PROTO_ISY
 
     @property
-    def uuid(self):
+    def uuid(self) -> str:
         """Return the ISY's uuid."""
         return self._uuid
 
-    def _on_lost_event_stream(self):
+    def _on_lost_event_stream(self) -> None:
         """Handle lost connection to event stream."""
         del self._events
         self._events = None
@@ -225,7 +227,7 @@ class ISY:
             self._reconnect_thread.daemon = True
             self._reconnect_thread.start()
 
-    def _auto_reconnecter(self):
+    def _auto_reconnecter(self) -> None:
         """Auto-reconnect to the event stream."""
         while self.auto_reconnect and not self.auto_update:
             _LOGGER.warning("PyISY attempting stream reconnect.")
@@ -244,7 +246,7 @@ class ISY:
 
         self._reconnect_thread = None
 
-    async def query(self, address=None):
+    async def query(self, address: str | None = None) -> bool:
         """Query all the nodes or a specific node if an address is provided .
 
         Args:
@@ -263,7 +265,7 @@ class ISY:
         _LOGGER.debug("ISY Query requested successfully.")
         return True
 
-    async def send_x10_cmd(self, address, cmd):
+    async def send_x10_cmd(self, address: str, cmd: str) -> None:
         """
         Send an X10 command.
 
@@ -279,7 +281,7 @@ class ISY:
             else:
                 _LOGGER.error("ISY Failed to send X10 Command: %s To: %s", cmd, address)
 
-    def system_status_changed_received(self, xmldoc):
+    def system_status_changed_received(self, xmldoc: minidom.Element) -> None:
         """Handle System Status events from an event stream message."""
         action = value_from_xml(xmldoc, ATTR_ACTION)
         if not action or action not in SYSTEM_STATUS:

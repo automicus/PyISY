@@ -140,7 +140,7 @@ class Connection:
 
         return url
 
-    async def request(self, url, retries=0, ok404=False, delay=0):
+    async def request(self, url: str, retries: int = 0, ok404: bool = False, delay: int = 0) -> str | None:
         """Execute request to ISY REST interface."""
         _LOGGER.debug("ISY Request: %s", url)
         if delay:
@@ -215,24 +215,24 @@ class Connection:
         )
         return None
 
-    async def ping(self):
+    async def ping(self) -> bool:
         """Test connection to the ISY and return True if alive."""
         req_url = self.compile_url([URL_PING])
         result = await self.request(req_url, ok404=True)
         return result is not None
 
-    async def get_description(self):
+    async def get_description(self) -> str | None:
         """Fetch the services description from the ISY."""
         url = "https://" if self.use_https else "http://"
         url += f"{self._address}:{self._port}{self._webroot}/desc"
         return await self.request(url)
 
-    async def get_config(self, retries=0):
+    async def get_config(self, retries: int = 0) -> str | None:
         """Fetch the configuration from the ISY."""
         req_url = self.compile_url([URL_CONFIG])
         return await self.request(req_url, retries=retries)
 
-    async def get_programs(self, address=None):
+    async def get_programs(self, address: int | str | None = None) -> str | None:
         """Fetch the list of programs from the ISY."""
         addr = [URL_PROGRAMS]
         if address is not None:
@@ -240,17 +240,17 @@ class Connection:
         req_url = self.compile_url(addr, {URL_SUBFOLDERS: XML_TRUE})
         return await self.request(req_url)
 
-    async def get_nodes(self):
+    async def get_nodes(self) -> str | None:
         """Fetch the list of nodes/groups/scenes from the ISY."""
         req_url = self.compile_url([URL_NODES], {URL_MEMBERS: XML_FALSE})
         return await self.request(req_url)
 
-    async def get_status(self):
+    async def get_status(self) -> str | None:
         """Fetch the status of nodes/groups/scenes from the ISY."""
         req_url = self.compile_url([URL_STATUS])
         return await self.request(req_url)
 
-    async def get_variable_defs(self):
+    async def get_variable_defs(self) -> list[str | BaseException] | None:
         """Fetch the list of variables from the ISY."""
         req_list = [
             [URL_VARIABLES, URL_DEFINITIONS, VAR_INTEGER],
@@ -259,7 +259,7 @@ class Connection:
         req_urls = [self.compile_url(req) for req in req_list]
         return await asyncio.gather(*[self.request(req_url) for req_url in req_urls], return_exceptions=True)
 
-    async def get_variables(self):
+    async def get_variables(self) -> str | None:
         """Fetch the variable details from the ISY to update local copy."""
         req_list = [
             [URL_VARIABLES, METHOD_GET, VAR_INTEGER],
@@ -273,18 +273,18 @@ class Connection:
         result = "".join(results)
         return result.replace('</vars><?xml version="1.0" encoding="UTF-8"?><vars>', "")
 
-    async def get_network(self):
+    async def get_network(self) -> str | None:
         """Fetch the list of network resources from the ISY."""
         req_url = self.compile_url([URL_NETWORK, URL_RESOURCES])
         return await self.request(req_url)
 
-    async def get_time(self):
+    async def get_time(self) -> str | None:
         """Fetch the system time info from the ISY."""
         req_url = self.compile_url([URL_CLOCK])
         return await self.request(req_url)
 
 
-def get_new_client_session(use_https, tls_ver=1.1):
+def get_new_client_session(use_https: bool, tls_ver: float = 1.1) -> aiohttp.ClientSession:
     """Create a new Client Session for Connecting."""
     if use_https:
         if not can_https(tls_ver):
@@ -295,7 +295,7 @@ def get_new_client_session(use_https, tls_ver=1.1):
     return aiohttp.ClientSession()
 
 
-def get_sslcontext(use_https, tls_ver=1.1):
+def get_sslcontext(use_https: bool, tls_ver: float = 1.1) -> ssl.SSLContext | None:
     """Create an SSLContext object to use for the connections."""
     if not use_https:
         return None
@@ -309,7 +309,7 @@ def get_sslcontext(use_https, tls_ver=1.1):
     return context
 
 
-def can_https(tls_ver):
+def can_https(tls_ver: float) -> bool:
     """
     Verify minimum requirements to use an HTTPS connection.
 
