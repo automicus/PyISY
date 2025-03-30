@@ -1,5 +1,7 @@
 """ISY TCP Socket Event Reader."""
 
+from __future__ import annotations
+
 import errno
 import select
 import ssl

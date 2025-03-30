@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+from operator import itemgetter
 from typing import TYPE_CHECKING
 from xml.dom import minidom
 
@@ -120,8 +121,8 @@ class Programs:
     def __repr__(self) -> str:
         """Return a string showing the hierarchy of the program manager."""
         # get and sort children
-        folders = []
-        programs = []
+        folders: list[tuple[str, str, str]] = []
+        programs: list[tuple[str, str, str]] = []
         for child in self.children:
             if child[0] == TAG_FOLDER:
                 folders.append(child)
@@ -129,8 +130,8 @@ class Programs:
                 programs.append(child)
 
         # initialize data
-        folders.sort(key=lambda x: x[1])
-        programs.sort(key=lambda x: x[1])
+        folders.sort(key=itemgetter(1))
+        programs.sort(key=itemgetter(1))
         out = str(self) + "\n"
 
         # format folders

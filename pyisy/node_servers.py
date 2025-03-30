@@ -1,8 +1,11 @@
 """ISY Node Server Information."""
 
+from __future__ import annotations
+
 import asyncio
 import re
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 from xml.dom import getDOMImplementation, minidom
 
 from .constants import (
@@ -16,6 +19,9 @@ from .constants import (
 from .exceptions import XML_ERRORS, XML_PARSE_ERROR, ISYResponseParseError
 from .helpers import attr_from_element, value_from_xml
 from .logging import _LOGGER
+
+if TYPE_CHECKING:
+    from .isy import ISY
 
 ATTR_DIR = "dir"
 ATTR_EDITOR = "editor"
@@ -54,7 +60,7 @@ class NodeServers:
 
     """
 
-    def __init__(self, isy, slots: list[str]):
+    def __init__(self, isy: ISY, slots: list[str]) -> None:
         """
         Initialize the NodeServers class.
 
@@ -68,9 +74,9 @@ class NodeServers:
         self._node_server_node_definitions = []
         self._node_server_node_editors = []
         self._node_server_nls = []
-        self.loaded = False
+        self.loaded: bool = False
 
-    async def load_node_servers(self):
+    async def load_node_servers(self) -> None:
         """Load information about node servers from the ISY."""
 
         await self.get_connection_info()
@@ -82,7 +88,7 @@ class NodeServers:
         # _LOGGER.debug(self._node_server_node_definitions)
         # _LOGGER.debug(self._node_server_node_editors)
 
-    async def get_connection_info(self):
+    async def get_connection_info(self) -> None:
         """Fetch the node server connections from the ISY."""
         result = await self.isy.conn.request(
             self.isy.conn.compile_url([URL_PROFILE_NS, "0", "connection"]),
@@ -116,7 +122,7 @@ class NodeServers:
             )
         _LOGGER.info("ISY updated node server connection info")
 
-    async def get_node_server_profiles(self):
+    async def get_node_server_profiles(self) -> None:
         """Retrieve the node server definition files from the ISY."""
         node_server_file_list = await self.isy.conn.request(
             self.isy.conn.compile_url([URL_PROFILE_NS, "0", "files"]), ok404=False
@@ -154,7 +160,7 @@ class NodeServers:
 
         _LOGGER.info("ISY downloaded node server files")
 
-    async def parse_node_server_defs(self, slot: str):
+    async def parse_node_server_defs(self, slot: str) -> None:
         """Retrieve and parse the node server definitions."""
         _LOGGER.info("Parsing node server slot %s", slot)
         node_server_profile = {key: value for (key, value) in self._profiles.items() if key.startswith(slot)}

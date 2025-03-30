@@ -1,5 +1,7 @@
 """ISY Configuration Lookup."""
 
+from __future__ import annotations
+
 from xml.dom import minidom
 
 from .constants import (

@@ -1,5 +1,7 @@
 """Connection to the ISY."""
 
+from __future__ import annotations
+
 import asyncio
 import ssl
 from urllib.parse import quote, urlencode
@@ -57,15 +59,15 @@ class Connection:
 
     def __init__(
         self,
-        address,
-        port,
-        username,
-        password,
-        use_https=False,
-        tls_ver=1.1,
-        webroot="",
-        websession=None,
-    ):
+        address: str,
+        port: int,
+        username: str,
+        password: str,
+        use_https: bool = False,
+        tls_ver: float = 1.1,
+        webroot: str = "",
+        websession: aiohttp.ClientSession | None = None,
+    ) -> None:
         """Initialize the Connection object."""
         if len(_LOGGER.handlers) == 0:
             enable_logging(add_null_handler=True)
@@ -90,7 +92,7 @@ class Connection:
         self.req_session = websession
         self.sslcontext = get_sslcontext(use_https, tls_ver)
 
-    async def test_connection(self):
+    async def test_connection(self) -> str | None:
         """Test the connection and get the config for the ISY."""
         config = await self.get_config(retries=None)
         if not config:
@@ -98,19 +100,19 @@ class Connection:
             raise ISYConnectionError
         return config
 
-    def increase_available_connections(self):
+    def increase_available_connections(self) -> None:
         """Increase the number of allowed connections for newer hardware."""
         _LOGGER.debug("Increasing available simultaneous connections")
         self.semaphore = asyncio.Semaphore(
             MAX_HTTPS_CONNECTIONS_IOX if self.use_https else MAX_HTTP_CONNECTIONS_IOX
         )
 
-    async def close(self):
+    async def close(self) -> None:
         """Cleanup connections and prepare for exit."""
         await self.req_session.close()
 
     @property
-    def connection_info(self):
+    def connection_info(self) -> dict[str, str | int | bytes | None]:
         """Return the connection info required to connect to the ISY."""
         connection_info = {}
         connection_info["auth"] = self._auth.encode()
@@ -124,12 +126,12 @@ class Connection:
         return connection_info
 
     @property
-    def url(self):
+    def url(self) -> str:
         """Return the full connection url."""
         return self._url
 
     # COMMON UTILITIES
-    def compile_url(self, path: list[str], query: str | None = None):
+    def compile_url(self, path: list[str], query: str | None = None) -> str:
         """Compile the URL to fetch from the ISY."""
         url = self.url
         if path is not None:

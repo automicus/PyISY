@@ -1,5 +1,7 @@
 """Module for connecting to and interacting with the ISY."""
 
+from __future__ import annotations
+
 import asyncio
 from threading import Thread
 from xml.dom import minidom
@@ -78,9 +80,9 @@ class ISY:
         use_websocket: bool = False,
     ) -> None:
         """Initialize the primary ISY Class."""
-        self._events = None  # create this JIT so no socket reuse
+        self._events: EventStream | None = None  # create this JIT so no socket reuse
         self._reconnect_thread = None
-        self._connected = False
+        self._connected: bool = False
 
         if len(_LOGGER.handlers) == 0:
             enable_logging(add_null_handler=True)
@@ -96,7 +98,7 @@ class ISY:
             websession=websession,
         )
 
-        self.websocket = None
+        self.websocket: WebSocketClient | None = None
         if use_websocket:
             self.websocket = WebSocketClient(
                 isy=self,

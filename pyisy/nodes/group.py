@@ -44,10 +44,10 @@ class Group(NodeBase):
         name: str,
         members: list[str] | None = None,
         controllers: list[str] | None = None,
-        family_id=FAMILY_GENERIC,
-        pnode=None,
-        flag=0,
-    ):
+        family_id: str = FAMILY_GENERIC,
+        pnode: str | None = None,
+        flag: int = 0,
+    ) -> None:
         """Initialize a Group class."""
         self._all_on: bool = False
         self._controllers: list[str] = controllers or []
@@ -62,7 +62,7 @@ class Group(NodeBase):
         # get and update the status
         self._update()
 
-    def __del__(self):
+    def __del__(self) -> None:
         """Cleanup event handlers before deleting."""
         for handler in self._members_handlers:
             handler.unsubscribe()
