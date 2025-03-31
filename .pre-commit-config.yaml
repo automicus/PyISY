@@ -28,7 +28,7 @@ repos:
   - hooks:
       - args:
           [
-            "--ignore-words-list=pyisy,hass,isy,nid,dof,dfof,don,dfon,tim,automic,automicus,BATLVL,homeassistant,colorlog,nd",
+            "--ignore-words-list=aNULL,ETO,pyisy,hass,isy,nid,dof,dfof,don,dfon,tim,automic,automicus,BATLVL,homeassistant,colorlog,nd,eto",
             '--skip="./.*,*.json"',
             --quiet-level=2,
           ]
