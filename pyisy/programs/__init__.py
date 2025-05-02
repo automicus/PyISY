@@ -76,7 +76,6 @@ class Programs:
         ptypes: list[str] | None = None,
         xml: str | None = None,
         _address_index: dict[str, int] | None = None,
-        _pnames_index: dict[str, int] | None = None,
     ) -> None:
         """Initialize the Programs ISY programs manager class."""
         self.isy = isy
@@ -85,7 +84,6 @@ class Programs:
         self.addresses: list[str] = []
         self._address_index: dict[str, int] = {}
         self.pnames: list[str] = []
-        self._pnames_index: dict[str, int] = {}
         self.pparents: list[str] = []
         self.pobjs: list[Program | Folder] = []
         self.ptypes: list[str] = []
@@ -99,7 +97,6 @@ class Programs:
             self._address_index = _address_index or {address: i for i, address in enumerate(addresses)}
         if pnames is not None:
             self.pnames = pnames
-            self._pnames_index = _pnames_index or {name: i for i, name in enumerate(pnames)}
         if pparents is not None:
             self.pparents = pparents
         if pobjs is not None:
@@ -308,7 +305,6 @@ class Programs:
         self.addresses.append(address)
         self._address_index[address] = len(self.addresses) - 1
         self.pnames.append(pname)
-        self._pnames_index[pname] = len(self.pnames) - 1
         self.pparents.append(pparent)
         self.ptypes.append(ptype)
         self.pobjs.append(pobj)
@@ -321,14 +317,16 @@ class Programs:
         """
         if val in self._address_index:
             fun = self.get_by_id
-        elif val in self._pnames_index:
-            fun = self.get_by_name
         else:
             try:
-                val = int(val)
-                fun = self.get_by_index
-            except (TypeError, ValueError) as err:
-                raise KeyError("Unrecognized Key: " + str(val)) from err
+                self.pnames.index(val)
+                fun = self.get_by_name
+            except ValueError:
+                try:
+                    val = int(val)
+                    fun = self.get_by_index
+                except (TypeError, ValueError) as err:
+                    raise KeyError("Unrecognized Key: " + str(val)) from err
         try:
             return fun(val)
         except (ValueError, KeyError, IndexError):
@@ -344,9 +342,9 @@ class Programs:
 
         |  val: The name of the child program/folder to look for.
         """
-        i = self._pnames_index.get(val)
-        if i is not None and (self.root is None or self.pparents[i] == self.root):
-            return self.get_by_index(i)
+        for i in range(len(self.addresses)):
+            if (self.root is None or self.pparents[i] == self.root) and self.pnames[i] == val:
+                return self.get_by_index(i)
         return None
 
     def get_by_id(self, address: str) -> Program | Folder | Programs:
@@ -373,7 +371,6 @@ class Programs:
                 pobjs=self.pobjs,
                 ptypes=self.ptypes,
                 _address_index=self._address_index,
-                _pnames_index=self._pnames_index,
             )
         return self.pobjs[i]
 

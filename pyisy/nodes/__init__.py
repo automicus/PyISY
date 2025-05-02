@@ -120,7 +120,6 @@ class Nodes:
         ntypes: list[str] | None = None,
         xml: str | None = None,
         _address_index: dict[str, int] | None = None,  # Internal use only
-        _nnames_index: dict[str, int] | None = None,  # Internal use only
     ) -> None:
         """Initialize the Nodes ISY Node Manager class."""
         self.isy = isy
@@ -129,7 +128,6 @@ class Nodes:
         self.addresses: list[str] = []
         self._address_index: dict[str, int] = {}
         self.nnames: list[str] = []
-        self._nnames_index: dict[str, int] = {}
         self.nparents: list[str] = []
         self.nobjs: list[Node] = []
         self.ntypes: list[str] = []
@@ -145,7 +143,6 @@ class Nodes:
             self._address_index = _address_index or {address: i for i, address in enumerate(addresses)}
         if nnames is not None:
             self.nnames = nnames
-            self._nnames_index = _nnames_index or {name: i for i, name in enumerate(nnames)}
         if nparents is not None:
             self.nparents = nparents
         if nobjs is not None:
@@ -544,7 +541,6 @@ class Nodes:
         self.addresses.append(address)
         self._address_index[address] = len(self.addresses) - 1
         self.nnames.append(nname)
-        self._nnames_index[nname] = len(self.nnames) - 1
         self.nparents.append(nparent)
         self.ntypes.append(ntype)
         self.nobjs.append(nobj)
@@ -553,14 +549,16 @@ class Nodes:
         """Navigate through the node tree. Can take names or IDs."""
         if val in self._address_index:
             fun = self.get_by_id
-        elif val in self._nnames_index:
-            fun = self.get_by_name
         else:
             try:
-                val = int(val)
-                fun = self.get_by_index
+                self.nnames.index(val)
+                fun = self.get_by_name
             except ValueError:
-                fun = None
+                try:
+                    val = int(val)
+                    fun = self.get_by_index
+                except ValueError:
+                    fun = None
 
         if fun:
             output = None
@@ -583,9 +581,9 @@ class Nodes:
 
         |  val: String representing name to look for.
         """
-        i = self._nnames_index.get(val)
-        if i is not None and (self.root is None or self.nparents[i] == self.root):
-            return self.get_by_index(i)
+        for i in range(len(self.addresses)):
+            if (self.root is None or self.nparents[i] == self.root) and self.nnames[i] == val:
+                return self.get_by_index(i)
         return None
 
     def get_by_id(self, address: str) -> Node | Nodes | None:
@@ -615,7 +613,6 @@ class Nodes:
             nobjs=self.nobjs,
             ntypes=self.ntypes,
             _address_index=self._address_index,
-            _nnames_index=self._nnames_index,
         )
 
     def get_folder(self, address: str) -> str | None:
