@@ -59,7 +59,6 @@ class NetworkResources:
         self.addresses: list[int] = []
         self._address_index: dict[int, int] = {}
         self.nnames: list[str] = []
-        self._nnames_index: dict[str, int] = {}
         self.nobjs: list[NetworkCommand] = []
 
         if xml is not None:
@@ -87,7 +86,6 @@ class NetworkResources:
             self.addresses.append(address)
             self._address_index[address] = len(self.addresses) - 1
             self.nnames.append(nname)
-            self._nnames_index[nname] = len(self.nnames) - 1
             self.nobjs.append(nobj)
 
         _LOGGER.info("ISY Loaded Network Resources Commands")
@@ -138,8 +136,11 @@ class NetworkResources:
 
         val: String representing command name
         """
-        ind = self._nnames_index.get(val)
-        return None if ind is None else self.get_by_index(ind)
+        try:
+            ind = self.nnames.index(val)
+            return self.get_by_index(ind)
+        except (ValueError, KeyError):
+            return None
 
     def get_by_index(self, val: int) -> NetworkCommand | None:
         """
