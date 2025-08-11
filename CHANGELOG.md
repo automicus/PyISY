@@ -118,7 +118,6 @@ V2 is a significant refactoring and cleanup of the original PyISY code, with the
 - A node Event is now returned as an `NodeProperty(dict)` object. In most cases this is a benefit because it returns more details than just the received command (value, uom, precision, etc); direct comparisons will now fail unless updated:
   - "`event == "DON"`" must be replaced with "`event.control == "DON"`"
 - Node Unit of Measure is returned as a string if it is not a list of UOMs, otherwise it is returned as a list. Previously this was returned as a 1-item list if there was only 1 UOM.
-
   - ISYv4 and before returned the UOM as a string ('%/on/off' or 'degrees'), ISYv5 phases this out and uses numerical UOMs that correspond to a defined value in the SDK (included in constants file).
   - Previous implementations of `unit = uom[0]` should be replaced with `unit = uom` and for compatibility, UOM should be checked if it is a list with `isinstance(uom, list)`.
 
