@@ -285,7 +285,8 @@ class Connection:
     async def get_network(self) -> str | None:
         """Fetch the list of network resources from the ISY."""
         req_url = self.compile_url([URL_NETWORK, URL_RESOURCES])
-        return await self.request(req_url)
+        result = await self.request(req_url, ok404=True)
+        return result or None
 
     async def get_time(self) -> str | None:
         """Fetch the system time info from the ISY."""
