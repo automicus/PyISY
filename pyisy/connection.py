@@ -190,7 +190,14 @@ class Connection:
         ):
             _LOGGER.debug("ISY not ready or closed connection.")
         except aiohttp.ClientResponseError as err:
-            _LOGGER.error("Client Response Error from ISY: %s %s.", err.status, err.message)
+            _LOGGER.error(
+                "Client Response Error from ISY: %s %s.",
+                err.status,
+                err.message,
+            )
+            if retries is None:
+                raise ISYConnectionError from err
+            return None
         except aiohttp.ClientError as err:
             _LOGGER.error(
                 "ISY Could not receive response from device because of a network issue: %s",
