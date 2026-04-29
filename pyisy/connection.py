@@ -190,7 +190,15 @@ class Connection:
         ):
             _LOGGER.debug("ISY not ready or closed connection.")
         except aiohttp.ClientResponseError as err:
-            _LOGGER.error("Client Response Error from ISY: %s %s.", err.status, err.message)
+            # Malformed framing/protocol error — retrying won't recover; bail.
+            _LOGGER.error(
+                "Client Response Error from ISY: %s %s.",
+                err.status,
+                err.message,
+            )
+            if retries is None:
+                raise ISYConnectionError from err
+            return None
         except aiohttp.ClientError as err:
             _LOGGER.error(
                 "ISY Could not receive response from device because of a network issue: %s",
@@ -278,7 +286,8 @@ class Connection:
     async def get_network(self) -> str | None:
         """Fetch the list of network resources from the ISY."""
         req_url = self.compile_url([URL_NETWORK, URL_RESOURCES])
-        return await self.request(req_url)
+        result = await self.request(req_url, ok404=True)
+        return result or None
 
     async def get_time(self) -> str | None:
         """Fetch the system time info from the ISY."""
