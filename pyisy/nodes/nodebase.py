@@ -261,7 +261,7 @@ class NodeBase:
         if _uom:
             req.append(_uom)
         req_url = self.isy.conn.compile_url(req, query)
-        if not await self.isy.conn.request(req_url):
+        if not await self.isy.conn.request(req_url, retry404=True):
             _LOGGER.warning(
                 "ISY could not send %s command to %s.",
                 COMMAND_FRIENDLY_NAME.get(cmd),
@@ -286,7 +286,8 @@ class NodeBase:
     async def disable(self) -> bool:
         """Send command to the node to disable it."""
         if not await self.isy.conn.request(
-            self.isy.conn.compile_url([URL_NODES, str(self._id), CMD_DISABLE])
+            self.isy.conn.compile_url([URL_NODES, str(self._id), CMD_DISABLE]),
+            retry404=True,
         ):
             _LOGGER.warning("ISY could not %s %s.", CMD_DISABLE, self._id)
             return False
@@ -294,7 +295,10 @@ class NodeBase:
 
     async def enable(self) -> bool:
         """Send command to the node to enable it."""
-        if not await self.isy.conn.request(self.isy.conn.compile_url([URL_NODES, str(self._id), CMD_ENABLE])):
+        if not await self.isy.conn.request(
+            self.isy.conn.compile_url([URL_NODES, str(self._id), CMD_ENABLE]),
+            retry404=True,
+        ):
             _LOGGER.warning("ISY could not %s %s.", CMD_ENABLE, self._id)
             return False
         return True
@@ -355,7 +359,7 @@ class NodeBase:
             [URL_NODES, self._id, URL_CHANGE],
             query={TAG_NAME: new_name},
         )
-        if not await self.isy.conn.request(req_url):
+        if not await self.isy.conn.request(req_url, retry404=True):
             _LOGGER.warning(
                 "ISY could not update name for %s.",
                 self._id,
