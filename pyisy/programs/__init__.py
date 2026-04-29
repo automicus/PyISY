@@ -25,7 +25,7 @@ from ..constants import (
     XML_ON,
     XML_TRUE,
 )
-from ..exceptions import XML_ERRORS, XML_PARSE_ERROR
+from ..exceptions import XML_ERRORS, XML_PARSE_ERROR, ISYResponseParseError
 from ..helpers import attr_from_element, now, parse_isy_datetime, value_from_xml
 from ..logging import _LOGGER
 from ..nodes import NodeIterator as ProgramIterator
@@ -208,9 +208,9 @@ class Programs:
         """
         try:
             xmldoc = minidom.parseString(xml)
-        except XML_ERRORS:
+        except XML_ERRORS as exc:
             _LOGGER.error("%s: Programs, programs not loaded", XML_PARSE_ERROR)
-            return
+            raise ISYResponseParseError(XML_PARSE_ERROR) from exc
 
         plastup = now()
 

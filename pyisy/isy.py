@@ -29,6 +29,7 @@ from .constants import (
 )
 from .events.tcpsocket import EventStream
 from .events.websocket import WebSocketClient
+from .exceptions import ISYResponseParseError
 from .helpers import EventEmitter, value_from_xml
 from .logging import _LOGGER, enable_logging
 from .networking import NetworkResources
@@ -145,6 +146,14 @@ class ISY:
         if self.configuration[CONFIG_NETWORKING] or self.configuration.get(CONFIG_PORTAL):
             isy_setup_tasks.append(asyncio.create_task(self.conn.get_network()))
         isy_setup_results = await asyncio.gather(*isy_setup_tasks)
+
+        # Fail fast if the controller didn't return any of the load-bearing
+        # responses — most often because the ISY is still booting. Mounting
+        # empty managers silently leads to confused downstream consumers.
+        if any(isy_setup_results[i] is None for i in (0, 1, 2, 3)):
+            raise ISYResponseParseError(
+                "ISY did not return all setup data; the controller may still be initializing."
+            )
 
         self.clock = Clock(self, xml=isy_setup_results[1])
         self.nodes = Nodes(self, xml=isy_setup_results[2])
