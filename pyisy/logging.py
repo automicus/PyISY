@@ -20,8 +20,7 @@ def enable_logging(
     # Adapted from home-assistant/core/homeassistant/bootstrap.py
     if not log_no_color and not add_null_handler:
         try:
-            # pylint: disable=import-outside-toplevel
-            from colorlog import ColoredFormatter
+            from colorlog import ColoredFormatter  # noqa: PLC0415
 
             # basicConfig must be called after importing colorlog in order to
             # ensure that the handlers it sets up wraps the correct streams.
