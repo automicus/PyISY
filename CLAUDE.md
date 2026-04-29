@@ -33,6 +33,7 @@ cd docs && make html
 There is **no test suite** in this repo (the `tests/` directory does not exist; `pyproject.toml` references it for future use). CI runs only pre-commit (`.github/workflows/ci.yml`). When changing behavior, validate against a real ISY via `python3 -m pyisy ...` — there is no offline harness.
 
 Lint stack (all run by pre-commit):
+
 - **ruff** (lint + format) — config in `pyproject.toml`, target `py39`, line length 110
 - **pyupgrade** (`--py39-plus`)
 - **codespell** with an ISY-specific ignore list (`isy`, `nid`, `dof`, `don`, `BATLVL`, etc. — extend it if codespell flags a real ISY term)
