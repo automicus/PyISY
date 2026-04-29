@@ -190,6 +190,7 @@ class Connection:
         ):
             _LOGGER.debug("ISY not ready or closed connection.")
         except aiohttp.ClientResponseError as err:
+            # Malformed framing/protocol error — retrying won't recover; bail.
             _LOGGER.error(
                 "Client Response Error from ISY: %s %s.",
                 err.status,
