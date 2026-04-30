@@ -1,5 +1,7 @@
 ## CHANGELOG
 
+**NOTE:** This file is no longer maintained. Please refer to [GitHub Releases](https://github.com/automicus/PyISY/releases) for the latest changes and release notes.
+
 ### GitHub Release Versioning
 
 As of v3.0.7, this module will document all changes within the GitHub release information to avoid duplication.
