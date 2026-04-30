@@ -147,8 +147,8 @@ class Connection:
         url: str,
         retries: int = 0,
         ok404: bool = False,
-        retry404: bool = False,
         delay: int = 0,
+        retry404: bool = False,
     ) -> str | None:
         """Execute request to ISY REST interface.
 
