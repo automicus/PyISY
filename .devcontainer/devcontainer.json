@@ -4,7 +4,7 @@
     "context": "..",
     "dockerfile": "Dockerfile",
     "args": {
-      "VARIANT": "3.9-bullseye"
+      "VARIANT": "3.11-bookworm"
     }
   },
   "runArgs": ["-e", "GIT_EDITOR=code --wait"],
@@ -18,23 +18,19 @@
         "github.vscode-pull-request-github",
         "streetsidesoftware.code-spell-checker",
         "njpwerner.autodocstring",
-        "ms-python.black-formatter"
+        "charliermarsh.ruff"
       ],
       "settings": {
-        "python.pythonPath": "/usr/local/bin/python",
-        "python.linting.enabled": true,
-        "python.linting.pylintEnabled": true,
-        "python.formatting.blackPath": "/usr/local/bin/black",
-        "python.linting.flake8Path": "/usr/local/bin/flake8",
-        "python.linting.pycodestylePath": "/usr/local/bin/pycodestyle",
-        "python.linting.pydocstylePath": "/usr/local/bin/pydocstyle",
-        "python.linting.mypyPath": "/usr/local/bin/mypy",
-        "python.linting.pylintPath": "/usr/local/bin/pylint",
-        "python.formatting.provider": "black",
+        "python.defaultInterpreterPath": "/usr/local/bin/python",
         "python.testing.pytestArgs": ["--no-cov"],
         "editor.formatOnPaste": false,
         "editor.formatOnSave": true,
         "editor.formatOnType": true,
+        "editor.codeActionsOnSave": {
+          "source.fixAll": "explicit",
+          "source.organizeImports": "explicit"
+        },
+        "editor.defaultFormatter": "charliermarsh.ruff",
         "files.trimTrailingWhitespace": true,
         "terminal.integrated.profiles.linux": {
           "zsh": {
