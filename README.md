@@ -1,50 +1,99 @@
-## PyISY
+# PyISY
 
-### Python Library for the ISY Controller
+Python library for the Universal Devices ISY-994, Polisy, and eisy controllers.
 
-This library allows for easy interaction with ISY nodes, programs, variables, and the network module. This class also allows for functions to be
-assigned as handlers when ISY parameters are changed. ISY parameters can be
-monitored automatically as changes are reported from the device.
+This library allows for easy interaction with ISY nodes, programs, variables, and the network module. It provides asynchronous communication and supports near real-time updates via WebSocket or SOAP event streams.
 
-**NOTE:** Significant changes have been made in V2, please refer to the [CHANGELOG](CHANGELOG.md) for details. It is recommended you do not update to the latest version without testing for any unknown breaking changes or impacts to your dependent code.
+The full documentation is available at [https://pyisy.readthedocs.io](https://pyisy.readthedocs.io).
 
-### Examples
+## Features
 
-See the [examples](examples/) folder for connection examples.
+- Asynchronous communication via `asyncio` and `aiohttp`.
+- Support for ISY-994 (v4 and v5 firmware), Polisy, and eisy.
+- Automatic updates from the device via WebSocket or SOAP.
+- Interaction with nodes, groups, programs, variables, and networking modules.
+- Command-line interface for quick testing and monitoring.
 
-The full documentation is available at https://pyisy.readthedocs.io.
-
-### Development Team
-
-- Greg Laabs ([@overloadut]) - Maintainer
-- Ryan Kraus ([@rmkraus]) - Creator
-- Tim ([@shbatm]) - Version 2 Contributor
-
-### Contributing
-
-A note on contributing: contributions of any sort are more than welcome! This repo uses precommit hooks to validate all code. We use `black` to format our code, `isort` to sort our imports, `flake8` for linting and syntax checks, and `codespell` for spell check.
-
-To use [pre-commit](https://pre-commit.com/#installation), see the installation instructions for more details.
-
-Short version:
+## Installation
 
 ```shell
-# From your copy of the pyisy repo folder:
-pip install pre-commit
+pip install pyisy
+```
+
+## Quick Start
+
+You can test the connection to your ISY directly from the command line:
+
+```shell
+python3 -m pyisy http://your-isy-url:port username password
+```
+
+### Basic Usage
+
+```python
+import asyncio
+from pyisy import ISY
+
+async def main():
+    # Connect to ISY controller
+    isy = ISY("192.168.1.10", 80, "admin", "password")
+
+    # Initialize the connection and download information
+    await isy.initialize()
+
+    # Get a node by its address
+    node = isy.nodes["1A 2B 3C 1"]
+    print(f"Node Name: {node.name}")
+    print(f"Node Status: {node.status}")
+
+    # Turn a node on
+    await node.turn_on()
+
+    # Shutdown the connection
+    await isy.shutdown()
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+## Development
+
+Contributions are welcome! This project uses `pre-commit` to ensure code quality.
+
+### Setup
+
+```shell
+# Clone the repository
+git clone https://github.com/automicus/PyISY.git
+cd PyISY
+
+# Install development dependencies
+pip install -r requirements.txt -r requirements-dev.txt
+pip install -e .
+
+# Install pre-commit hooks
 pre-commit install
 ```
 
-A [VSCode DevContainer](https://code.visualstudio.com/docs/remote/containers#_getting-started) is also available to provide a consistent development environment.
+We use `ruff` for formatting and linting. You can run it manually:
 
-Assuming you have the pre-requisites installed from the link above (VSCode, Docker, & Remote-Containers Extension), to get started:
+```shell
+ruff check .
+ruff format .
+```
 
-1. Fork the repository.
-2. Clone the repository to your computer.
-3. Open the repository using Visual Studio code.
-4. When you open this repository with Visual Studio code you are asked to "Reopen in Container", this will start the build of the container.
-   - If you don't see this notification, open the command palette and select Remote-Containers: Reopen Folder in Container.
-5. Once started, you will also have a `test_scripts/` folder with a copy of the example scripts to run in the container which won't be committed to the repo, so you can update them with your connection details and test directly on your ISY.
+A VSCode DevContainer is also provided for a consistent development environment.
 
-[@overloadut]: https://github.com/overloadut
+## Releases
+
+Detailed change logs are available on the [GitHub Releases](https://github.com/automicus/PyISY/releases) page.
+
+## Credits
+
+- Ryan Kraus ([@rmkraus]) - Creator
+- Tim ([@shbatm]) - lead Maintainer
+- Greg Laabs ([@overloadut]) - Maintainer
+
 [@rmkraus]: https://github.com/rmkraus
 [@shbatm]: https://github.com/shbatm
+[@overloadut]: https://github.com/overloadut
