@@ -13,7 +13,6 @@
     "vscode": {
       "extensions": [
         "ms-python.vscode-pylance",
-        "visualstudioexptteam.vscodeintellicode",
         "esbenp.prettier-vscode",
         "github.vscode-pull-request-github",
         "streetsidesoftware.code-spell-checker",

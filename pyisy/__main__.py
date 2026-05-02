@@ -93,7 +93,7 @@ async def main(url, username, password, tls_ver, events, node_servers):
             isy.websocket.start()
             node_changed_subscriber = isy.nodes.status_events.subscribe(node_changed_handler)
             system_status_subscriber = isy.status_events.subscribe(system_status_handler)
-        await asyncio.Event.wait()
+        await asyncio.Event().wait()
     except asyncio.CancelledError:
         pass
     finally:
