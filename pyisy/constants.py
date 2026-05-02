@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import datetime
+from enum import StrEnum
 
 UPDATE_INTERVAL = 0.5
 
@@ -23,17 +24,37 @@ RECONNECT_DELAY = 60
 SOCKET_BUFFER_SIZE = 4096
 THREAD_SLEEP_TIME = 30.0
 
-ES_LOST_STREAM_CONNECTION = "lost_stream_connection"
-ES_CONNECTED = "connected"
-ES_DISCONNECTED = "disconnected"
-ES_START_UPDATES = "start_updates"
-ES_STOP_UPDATES = "stop_updates"
-ES_INITIALIZING = "stream_initializing"
-ES_LOADED = "stream_loaded"
-ES_RECONNECT_FAILED = "reconnect_failed"
-ES_RECONNECTING = "reconnecting"
-ES_DISCONNECTING = "stream_disconnecting"
-ES_NOT_STARTED = "not_started"
+
+class EventStreamStatus(StrEnum):
+    """Connection / lifecycle status values published on `ISY.connection_events`."""
+
+    LOST_STREAM_CONNECTION = "lost_stream_connection"
+    CONNECTED = "connected"
+    DISCONNECTED = "disconnected"
+    START_UPDATES = "start_updates"
+    STOP_UPDATES = "stop_updates"
+    INITIALIZING = "stream_initializing"
+    LOADED = "stream_loaded"
+    RECONNECT_FAILED = "reconnect_failed"
+    RECONNECTING = "reconnecting"
+    DISCONNECTING = "stream_disconnecting"
+    NOT_STARTED = "not_started"
+
+
+# Back-compat module-level aliases. Home Assistant Core and other downstream
+# consumers import these names directly; the StrEnum members compare equal to
+# their string values, so existing `== ES_CONNECTED` checks keep working.
+ES_LOST_STREAM_CONNECTION = EventStreamStatus.LOST_STREAM_CONNECTION
+ES_CONNECTED = EventStreamStatus.CONNECTED
+ES_DISCONNECTED = EventStreamStatus.DISCONNECTED
+ES_START_UPDATES = EventStreamStatus.START_UPDATES
+ES_STOP_UPDATES = EventStreamStatus.STOP_UPDATES
+ES_INITIALIZING = EventStreamStatus.INITIALIZING
+ES_LOADED = EventStreamStatus.LOADED
+ES_RECONNECT_FAILED = EventStreamStatus.RECONNECT_FAILED
+ES_RECONNECTING = EventStreamStatus.RECONNECTING
+ES_DISCONNECTING = EventStreamStatus.DISCONNECTING
+ES_NOT_STARTED = EventStreamStatus.NOT_STARTED
 
 ISY_VALUE_UNKNOWN = -1 * float("inf")
 ISY_PROP_NOT_SET = "-1"
