@@ -269,7 +269,7 @@ class WebSocketClient:
         except asyncio.CancelledError:
             self.status = ES_DISCONNECTED
             return
-        except asyncio.TimeoutError:
+        except TimeoutError:
             _LOGGER.debug("Websocket Timeout.")
         except aiohttp.ClientConnectorError as err:
             _LOGGER.error("Websocket Client Connector Error: %s", err)  # noqa: TRY400
@@ -284,7 +284,7 @@ class WebSocketClient:
         except Exception:
             _LOGGER.exception("Unexpected websocket error")
         else:
-            if isinstance(ws.exception(), asyncio.TimeoutError):
+            if isinstance(ws.exception(), TimeoutError):
                 _LOGGER.debug("Websocket Timeout.")
             elif isinstance(ws.exception(), aiohttp.streams.EofStream):
                 _LOGGER.warning("Websocket disconnected unexpectedly. Check network connection.")

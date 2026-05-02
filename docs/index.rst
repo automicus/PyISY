@@ -46,12 +46,11 @@ See the :ref:`PyISY Tutorial<tutorial>` for guidance on how to use the module.
 Requirements
 ~~~~~~~~~~~~
 
-This package requires three other packages, also available from pip. They are
+This package requires two other packages, also available from pip. They are
 installed automatically when PyISY is installed using pip.
 
-* `requests <http://docs.python-requests.org/en/latest/>`_
-* `dateutil <https://dateutil.readthedocs.io/en/stable/>`_
 * `aiohttp <https://docs.aiohttp.org/en/stable/>`_
+* `colorlog <https://github.com/borntyping/python-colorlog>`_
 
 Contents
 ~~~~~~~~

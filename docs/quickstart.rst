@@ -106,7 +106,7 @@ everything up. This can be done using the :class:`Connection<pyisy.connection.Co
     )
 
     try:
-        with async_timeout.timeout(30):
+        async with asyncio.timeout(30):
             isy_conf_xml = await isy_conn.test_connection()
     except (ISYInvalidAuthError, ISYConnectionError):
         _LOGGER.error(

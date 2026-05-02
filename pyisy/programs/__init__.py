@@ -7,8 +7,6 @@ from operator import itemgetter
 from typing import TYPE_CHECKING
 from xml.dom import minidom
 
-from dateutil import parser
-
 from ..constants import (
     ATTR_ID,
     ATTR_PARENT,
@@ -28,7 +26,7 @@ from ..constants import (
     XML_TRUE,
 )
 from ..exceptions import XML_ERRORS, XML_PARSE_ERROR
-from ..helpers import attr_from_element, now, value_from_xml
+from ..helpers import attr_from_element, now, parse_isy_datetime, value_from_xml
 from ..logging import _LOGGER
 from ..nodes import NodeIterator as ProgramIterator
 from .folder import Folder
@@ -185,10 +183,10 @@ class Programs:
                 pobj.ran_else += 1
 
         if f"<{TAG_PRGM_RUN}>" in xml:
-            pobj.last_run = parser.parse(value_from_xml(xmldoc, TAG_PRGM_RUN))
+            pobj.last_run = parse_isy_datetime(value_from_xml(xmldoc, TAG_PRGM_RUN))
 
         if f"<{TAG_PRGM_FINISH}>" in xml:
-            pobj.last_finished = parser.parse(value_from_xml(xmldoc, TAG_PRGM_FINISH))
+            pobj.last_finished = parse_isy_datetime(value_from_xml(xmldoc, TAG_PRGM_FINISH))
 
         if XML_ON in xml or XML_OFF in xml:
             pobj.enabled = XML_ON in xml
@@ -240,12 +238,12 @@ class Programs:
                 # last run time
                 plastrun = value_from_xml(feature, "lastRunTime", EMPTY_TIME)
                 if plastrun != EMPTY_TIME:
-                    plastrun = parser.parse(plastrun)
+                    plastrun = parse_isy_datetime(plastrun)
 
                 # last finish time
                 plastfin = value_from_xml(feature, "lastFinishTime", EMPTY_TIME)
                 if plastfin != EMPTY_TIME:
-                    plastfin = parser.parse(plastfin)
+                    plastfin = parse_isy_datetime(plastfin)
 
                 # enabled, run at startup, running
                 penabled = bool(attr_from_element(feature, TAG_ENABLED) == XML_TRUE)

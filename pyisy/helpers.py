@@ -16,18 +16,23 @@ from .constants import (
     ATTR_VALUE,
     DEFAULT_PRECISION,
     DEFAULT_UNIT_OF_MEASURE,
+    EMPTY_TIME,
     INSTEON_RAMP_RATES,
     ISY_EPOCH_OFFSET,
     ISY_PROP_NOT_SET,
     ISY_VALUE_UNKNOWN,
+    MILITARY_TIME,
     PROP_BATTERY_LEVEL,
     PROP_RAMP_RATE,
     PROP_STATUS,
+    STANDARD_TIME,
     TAG_CATEGORY,
     TAG_GENERIC,
     TAG_MFG,
     TAG_PROPERTY,
     UOM_SECONDS,
+    XML_STRPTIME,
+    XML_STRPTIME_YY,
 )
 from .exceptions import XML_ERRORS
 from .logging import _LOGGER
@@ -134,7 +139,7 @@ def value_from_nested_xml(base: minidom.Element, chain, default: object | None =
     return value
 
 
-def ntp_to_system_time(timestamp):
+def ntp_to_system_time(timestamp: int) -> datetime.datetime:
     """Convert a ISY NTP time to system UTC time.
 
     Adapted from Python ntplib module.
@@ -154,6 +159,28 @@ def ntp_to_system_time(timestamp):
     ntp_delta = ((_system_epoch - _ntp_epoch).days * 24 * 3600) - ISY_EPOCH_OFFSET
 
     return datetime.datetime.fromtimestamp(timestamp - ntp_delta)
+
+
+def parse_isy_datetime(dt_str: str) -> datetime.datetime:
+    """Parse an ISY datetime string, returning EMPTY_TIME on failure."""
+    if not dt_str or not isinstance(dt_str, str):
+        return EMPTY_TIME
+
+    # The ISY emits trailing whitespace on some datetime fields (e.g. program
+    # last-run/last-finished), which strptime rejects.
+    dt_str = dt_str.strip()
+
+    for fmt in (MILITARY_TIME, STANDARD_TIME, XML_STRPTIME, XML_STRPTIME_YY):
+        try:
+            return datetime.datetime.strptime(dt_str, fmt)
+        except ValueError:
+            continue
+
+    try:
+        return datetime.datetime.fromisoformat(dt_str)
+    except ValueError:
+        _LOGGER.debug("Could not parse ISY datetime: %s", dt_str)
+        return EMPTY_TIME
 
 
 def now() -> datetime.datetime:

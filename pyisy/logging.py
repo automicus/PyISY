@@ -54,6 +54,4 @@ def enable_logging(
         _LOGGER.addHandler(logging.NullHandler())
 
     # Suppress overly verbose logs from libraries that aren't helpful
-    logging.getLogger("requests").setLevel(logging.WARNING)
-    logging.getLogger("urllib3").setLevel(logging.WARNING)
     logging.getLogger("aiohttp.access").setLevel(logging.WARNING)
