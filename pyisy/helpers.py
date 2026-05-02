@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import datetime
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass, is_dataclass
+from typing import Self
 from xml.dom import minidom
 
 from .constants import (
@@ -88,7 +89,7 @@ def parse_xml_properties(xmldoc: minidom.Document) -> tuple[NodeProperty, dict[s
     return state, aux_props, state_set
 
 
-def value_from_xml(xml: minidom.Element, tag_name: str, default: object | None = None) -> object | None:
+def value_from_xml(xml: minidom.Element, tag_name: str, default: str | None = None) -> str | None:
     """Extract a value from the XML element."""
     value = default
     try:
@@ -99,8 +100,8 @@ def value_from_xml(xml: minidom.Element, tag_name: str, default: object | None =
 
 
 def attr_from_xml(
-    xml: minidom.Element, tag_name: str, attr_name: str, default: object | None = None
-) -> object | None:
+    xml: minidom.Element, tag_name: str, attr_name: str, default: str | None = None
+) -> str | None:
     """Extract an attribute value from the raw XML."""
     value = default
     try:
@@ -111,9 +112,7 @@ def attr_from_xml(
     return value
 
 
-def attr_from_element(
-    element: minidom.Element, attr_name: str, default: object | None = None
-) -> object | None:
+def attr_from_element(element: minidom.Element, attr_name: str, default: str | None = None) -> str | None:
     """Extract an attribute value from an XML element."""
     value = default
     if attr_name in element.attributes:
@@ -121,18 +120,15 @@ def attr_from_element(
     return value
 
 
-def value_from_nested_xml(base: minidom.Element, chain, default: object | None = None) -> object | None:
+def value_from_nested_xml(
+    base: minidom.Element, chain: Sequence[str], default: str | None = None
+) -> str | None:
     """Extract a value from multiple nested tags."""
     value = default
-    result = None
     try:
         result = base.getElementsByTagName(chain[0])[0]
-        if len(chain) > 1:
-            result = result.getElementsByTagName(chain[1])[0]
-        if len(chain) > 2:
-            result = result.getElementsByTagName(chain[2])[0]
-        if len(chain) > 3:
-            result = result.getElementsByTagName(chain[3])[0]
+        for tag in chain[1:]:
+            result = result.getElementsByTagName(tag)[0]
         value = result.firstChild.toxml()
     except XML_ERRORS:
         pass
@@ -239,8 +235,8 @@ class EventListener:
 
     emitter: EventEmitter
     callback: Callable
-    event_filter: dict | str
-    key: str
+    event_filter: dict | str | None
+    key: str | None
 
     def unsubscribe(self) -> None:
         """Unsubscribe from the events."""
@@ -254,9 +250,9 @@ class NodeProperty:
     control: str
     value: int | float = ISY_VALUE_UNKNOWN
     prec: str = DEFAULT_PRECISION
-    uom: str = DEFAULT_UNIT_OF_MEASURE
-    formatted: str = None
-    address: str = None
+    uom: str | list[str] = DEFAULT_UNIT_OF_MEASURE
+    formatted: str | None = None
+    address: str | None = None
 
 
 @dataclass
@@ -275,7 +271,7 @@ class ZWaveProperties:
     raw: str = ""
 
     @classmethod
-    def from_xml(cls, xml: minidom.Element) -> ZWaveProperties:
+    def from_xml(cls, xml: minidom.Element) -> Self:
         """Return a Z-Wave Properties class from an xml DOM object."""
         category = value_from_xml(xml, TAG_CATEGORY)
         devtype_mfg = value_from_xml(xml, TAG_MFG)
@@ -292,7 +288,7 @@ class ZWaveProperties:
         if devtype_mfg:
             (mfr_id, prod_type_id, product_id) = devtype_mfg.split(".")
 
-        return ZWaveProperties(
+        return cls(
             category=category,
             devtype_mfg=devtype_mfg,
             devtype_gen=devtype_gen,

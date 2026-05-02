@@ -435,7 +435,12 @@ class Node(NodeBase):
 
         return True
 
-    async def update(self, event=None, wait_time: int = 0, xmldoc: minidom.Document | None = None) -> None:
+    async def update(
+        self,
+        event: object = None,
+        wait_time: float = 0.0,
+        xmldoc: minidom.Document | None = None,
+    ) -> None:
         """Update the value of the node from the controller."""
         if not self.isy.auto_update and not xmldoc:
             await asyncio.sleep(wait_time)
