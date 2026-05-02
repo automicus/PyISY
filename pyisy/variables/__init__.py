@@ -126,8 +126,7 @@ class Variables:
         try:
             xmldoc = minidom.parseString(xml)
         except XML_ERRORS as exc:
-            _LOGGER.error("%s: Variables", XML_PARSE_ERROR)
-            raise ISYResponseParseError(XML_PARSE_ERROR) from exc
+            raise ISYResponseParseError(f"{XML_PARSE_ERROR}: Variables") from exc
 
         features = xmldoc.getElementsByTagName(ATTR_VAR)
         for feature in features:

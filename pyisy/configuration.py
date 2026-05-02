@@ -88,8 +88,7 @@ class Configuration(dict):
         try:
             xmldoc = minidom.parseString(xml)
         except XML_ERRORS as exc:
-            _LOGGER.error("%s: Configuration", XML_PARSE_ERROR)
-            raise ISYResponseParseError(XML_PARSE_ERROR) from exc
+            raise ISYResponseParseError(f"{XML_PARSE_ERROR}: Configuration") from exc
 
         self["firmware"] = value_from_xml(xmldoc, TAG_FIRMWARE)
         self["uuid"] = value_from_nested_xml(xmldoc, [TAG_ROOT, ATTR_ID])

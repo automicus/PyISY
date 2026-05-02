@@ -100,8 +100,7 @@ class NodeServers:
         try:
             connections_xml = minidom.parseString(result)
         except XML_ERRORS as exc:
-            _LOGGER.error("%s while parsing Node Server connections", XML_PARSE_ERROR)
-            raise ISYResponseParseError(XML_PARSE_ERROR) from exc
+            raise ISYResponseParseError(f"{XML_PARSE_ERROR}: Node Server connections") from exc
 
         connections = connections_xml.getElementsByTagName(TAG_CONNECTION)
         for connection in connections:
@@ -136,8 +135,7 @@ class NodeServers:
         try:
             file_list_xml = minidom.parseString(node_server_file_list)
         except XML_ERRORS as exc:
-            _LOGGER.error("%s while parsing Node Server files", XML_PARSE_ERROR)
-            raise ISYResponseParseError(XML_PARSE_ERROR) from exc
+            raise ISYResponseParseError(f"{XML_PARSE_ERROR}: Node Server files") from exc
 
         file_list: list[str] = []
 
