@@ -11,13 +11,19 @@ This package has a successor, **PyISYoX**, which is a from-scratch rewrite by th
 ## Commands
 
 ```bash
-# Install dev dependencies + editable install
-pip install -r requirements.txt -r requirements-dev.txt
+# Install dev + test dependencies + editable install
+pip install -r requirements.txt -r requirements-dev.txt -r requirements-test.txt
 pip install -e .
 
 # Set up pre-commit (CI runs the same)
 pre-commit install
 pre-commit run --all-files
+
+# Run the offline pytest suite
+pytest                                      # full run
+pytest --cov=pyisy --cov-report=term-missing
+pytest tests/test_nodes.py                  # one file
+pytest --snapshot-update                    # refresh syrupy snapshots after intentional behavior changes
 
 # Smoke-test against a real ISY (also a usable script template)
 python3 -m pyisy http://your-isy-url:80 username password
@@ -30,7 +36,7 @@ python3 -m pyisy -n ...     # also load node servers
 cd docs && make html
 ```
 
-There is **no test suite** in this repo (the `tests/` directory does not exist; `pyproject.toml` references it for future use). CI runs only pre-commit (`.github/workflows/ci.yml`). When changing behavior, validate against a real ISY via `python3 -m pyisy ...` — there is no offline harness.
+CI (`.github/workflows/ci.yml`) runs **two jobs**: `pre-commit` (lint) and `tests` (pytest on Python 3.11 and 3.14, the HA-supported range). Coverage prints to the workflow log; there's no external coverage service wired up. The suite is fully **offline** — fixtures under `tests/fixtures/` are anonymized real-controller XML and `tests/conftest.FakeConnection` serves them, so no live ISY is required. Snapshots live under `tests/__snapshots__/*.ambr` and are tracked. For behaviors that genuinely need a controller (event stream / websocket reconnect, REST round-trips), still validate via `python3 -m pyisy ...`.
 
 Lint stack (all run by pre-commit):
 
@@ -98,6 +104,8 @@ Each platform module is a dict-like collection that owns its entities and expose
 - **XML decoding**: always go through `Connection.request()` so the UTF-8-with-ignore decode is applied. Don't read aiohttp responses directly.
 - **Ruff ignores in `pyproject.toml`** are deliberate (e.g. `S101`, `SLF001`, `PLR091*`); don't try to fix what's listed there as part of unrelated work.
 - **`ISYResponseParseError` is the canonical "controller returned bad/missing data" signal.** Every `parse()` method raises it on `XML_ERRORS`, and `ISY.initialize()` raises it when load-bearing setup responses (status, time, nodes, programs) are `None` so HA Core can convert that into `ConfigEntryNotReady` and retry instead of silently mounting an empty controller (see #297).
+- **Test fixtures must stay anonymized.** Anything added or refreshed under `tests/fixtures/` must have Insteon prefixes randomized (the 3-byte device prefix; keep the 4th byte so subnode/group references stay consistent across `nodes.xml` / `status.xml` / `programs.xml`), personal names replaced, and lat/long zeroed. Z-Wave addresses (`ZY007_1`) and folder/group integer ids are not Insteon device addresses — leave them. A reproducible scrubber lives outside the repo at `~/src/.devcontainer_shared/home-assistant-core/isy994_stashed/anonymize_insteon_addresses.py`; re-run with the same seed if you need new captures.
+- **Test design.** Tests use `tests.conftest.FakeConnection` (serves canned XML from `tests/fixtures/`) plus a `build_isy(nodes_xml, status_xml)` factory for feature-specific scenarios. Action-method tests (climate, lock, program/folder, node commands) replace `isy.conn.request` with an `AsyncMock` and assert the URL it was invoked with — the connection's real `compile_url` runs so URL-encoding regressions surface. Snapshots (syrupy) capture only structural/feature-flag summaries, never raw fixture contents.
 
 ## Branches
 
