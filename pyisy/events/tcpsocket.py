@@ -282,7 +282,7 @@ class EventStream:
             for message in events:
                 try:
                     self._route_message(message)
-                except Exception as ex:  # pylint: disable=broad-except  # noqa: PERF203
+                except Exception as ex:  # pylint: disable=broad-except
                     _LOGGER.warning("PyISY encountered while routing message '%s': %s", message, ex)
                     raise
 
