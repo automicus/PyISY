@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
+from xml.dom import minidom
 
 from ..constants import (
     FAMILY_GENERIC,
@@ -97,11 +98,21 @@ class Group(NodeBase):
         """Return the protocol for this entity."""
         return PROTO_GROUP
 
-    async def update(self, event=None, wait_time: float = 0.0, xmldoc=None):
+    async def update(
+        self,
+        event: object = None,
+        wait_time: float = 0.0,
+        xmldoc: minidom.Document | None = None,
+    ) -> None:
         """Update the group with values from the controller."""
         return self._update(event, wait_time, xmldoc)
 
-    def _update(self, event=None, wait_time: float = 0.0, xmldoc=None):
+    def _update(
+        self,
+        event: object = None,
+        wait_time: float = 0.0,
+        xmldoc: minidom.Document | None = None,
+    ) -> None:
         """Update the group with values from the controller."""
         self._last_update = now()
         address_to_node: dict[str, Node] = {address: self._nodes[address] for address in self.members}

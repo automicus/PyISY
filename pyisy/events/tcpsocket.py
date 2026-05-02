@@ -8,7 +8,9 @@ import socket
 import ssl
 import time
 import xml
+from collections.abc import Callable
 from threading import Thread, ThreadError
+from typing import TYPE_CHECKING
 from xml.dom import minidom
 
 from ..constants import (
@@ -36,13 +38,21 @@ from ..logging import LOG_VERBOSE
 from . import strings
 from .eventreader import ISYEventReader
 
+if TYPE_CHECKING:
+    from ..isy import ISY
+
 _LOGGER = logging.getLogger(__name__)  # Allows targeting pyisy.events in handlers.
 
 
 class EventStream:
     """Class to represent the Event Stream from the ISY."""
 
-    def __init__(self, isy, connection_info, on_lost_func=None):
+    def __init__(
+        self,
+        isy: ISY,
+        connection_info: dict[str, str | int | bytes | None],
+        on_lost_func: Callable[[], None] | None = None,
+    ) -> None:
         """Initialize the EventStream class."""
         self.isy = isy
         self._running = False
@@ -72,7 +82,7 @@ class EventStream:
         else:
             self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-    def _create_message(self, msg):
+    def _create_message(self, msg: dict[str, str]) -> str:
         """Prepare a message for sending."""
         head = msg["head"]
         body = msg["body"]
@@ -81,7 +91,7 @@ class EventStream:
         head = head.format(length=length, **self.data)
         return head + body
 
-    def _route_message(self, msg):
+    def _route_message(self, msg: str) -> None:
         """Route a received message from the event stream."""
         # check xml formatting
         try:
@@ -132,7 +142,7 @@ class EventStream:
         elif cntrl == "_3":  # Node Changed/Updated
             self.isy.nodes.node_changed_received(xmldoc)
 
-    def update_received(self, xmldoc):
+    def update_received(self, xmldoc: minidom.Document) -> None:
         """Set the socket ID."""
         self.data[ATTR_STREAM_ID] = attr_from_xml(xmldoc, "Event", ATTR_STREAM_ID)
         _LOGGER.debug("ISY Updated Events Stream ID %s", self.data[ATTR_STREAM_ID])

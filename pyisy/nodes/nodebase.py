@@ -212,7 +212,12 @@ class NodeBase:
             TAG_LOCATION: location,
         }
 
-    async def update(self, event=None, wait_time=0, xmldoc=None):
+    async def update(
+        self,
+        event: object = None,
+        wait_time: float = 0.0,
+        xmldoc: minidom.Document | None = None,
+    ) -> None:
         """Update the group with values from the controller."""
         self.update_last_update()
 
