@@ -146,7 +146,7 @@ class Folder:
     async def send_cmd(self, command: str) -> bool:
         """Run the appropriate clause of the object."""
         req_url = self.isy.conn.compile_url([URL_PROGRAMS, str(self._id), command])
-        result = await self.isy.conn.request(req_url)
+        result = await self.isy.conn.request(req_url, retry404=True)
         if not result:
             _LOGGER.warning('ISY could not call "%s" on program: %s', command, self._id)
             return False

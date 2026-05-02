@@ -261,7 +261,7 @@ class ISY:
         if address is not None:
             req_path.append(address)
         req_url = self.conn.compile_url(req_path)
-        if not await self.conn.request(req_url):
+        if not await self.conn.request(req_url, retry404=True):
             _LOGGER.warning("Error performing query.")
             return False
         _LOGGER.debug("ISY Query requested successfully.")
@@ -277,7 +277,7 @@ class ISY:
         if cmd in X10_COMMANDS:
             command = X10_COMMANDS.get(cmd)
             req_url = self.conn.compile_url([CMD_X10, address, str(command)])
-            result = await self.conn.request(req_url)
+            result = await self.conn.request(req_url, retry404=True)
             if result is not None:
                 _LOGGER.info("ISY Sent X10 Command: %s To: %s", cmd, address)
             else:

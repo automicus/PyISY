@@ -217,7 +217,7 @@ class Variable:
                 str(value),
             ]
         )
-        if not await self.isy.conn.request(req_url):
+        if not await self.isy.conn.request(req_url, retry404=True):
             _LOGGER.warning(
                 "ISY could not set variable%s: %s.%s",
                 " init value" if init else "",

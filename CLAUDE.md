@@ -58,6 +58,7 @@ Lint stack (all run by pre-commit):
 
 - Uses an asyncio Semaphore to enforce ISY-994's strict simultaneous-connection limit (2 HTTPS / 5 HTTP); `increase_available_connections()` raises it for IoX.
 - `request()` handles retries with backoff, swallows expected 404s when `ok404=True`, and force-decodes responses as UTF-8 with `errors="ignore"` (ISY firmware emits invalid UTF-8 in some node names — see CHANGELOG #126).
+- `request(retry404=True)` makes the 404 branch fall into the retry/backoff loop instead of returning `None`. Use this from command-issuing callers (`NodeBase.send_cmd`, `Folder.send_cmd`, `Variable.set_value`, `ISY.query`, `ISY.send_x10_cmd`) — the ISY-994 firmware emits spurious 404s on `/rest/nodes/.../cmd/...` when its Insteon network is overwhelmed (#184). Don't enable on read paths; the existing retry budget is bounded (5 retries, ~3.4s) but multiplying that across status polls is wasteful.
 - `get_new_client_session(use_https, tls_ver)` and `get_sslcontext()` are module-level helpers because the ISY-994 supports legacy TLS 1.1 and weak ciphers; consumers (HA Core) need to obtain a session compatible with the device.
 
 ### Event streams (`events/`)

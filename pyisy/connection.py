@@ -142,8 +142,21 @@ class Connection:
 
         return url
 
-    async def request(self, url: str, retries: int = 0, ok404: bool = False, delay: int = 0) -> str | None:
-        """Execute request to ISY REST interface."""
+    async def request(
+        self,
+        url: str,
+        retries: int = 0,
+        ok404: bool = False,
+        delay: int = 0,
+        retry404: bool = False,
+    ) -> str | None:
+        """Execute request to ISY REST interface.
+
+        retry404: ISY-994 returns spurious 404s on `/rest/nodes/.../cmd/...`
+        when the Insteon network is overwhelmed. Pass True from command-issuing
+        callers so a 404 falls into the existing retry/backoff loop instead of
+        being treated as a permanent failure.
+        """
         _LOGGER.debug("ISY Request: %s", url)
         if delay:
             await asyncio.sleep(delay)
@@ -171,9 +184,18 @@ class Connection:
                         _LOGGER.debug("ISY Response Received %s", endpoint)
                         res.release()
                         return ""
-                    _LOGGER.error("ISY Reported an Invalid Command Received %s", endpoint)
-                    res.release()
-                    return None
+                    if retry404:
+                        # ISY-994 emits spurious 404s when the Insteon network
+                        # is busy; fall through to the retry/backoff loop.
+                        _LOGGER.debug(
+                            "ISY returned 404 for %s; controller may be busy, will retry",
+                            endpoint,
+                        )
+                        res.release()
+                    else:
+                        _LOGGER.error("ISY Reported an Invalid Command Received %s", endpoint)
+                        res.release()
+                        return None
                 if res.status == HTTP_UNAUTHORIZED:
                     _LOGGER.error("Invalid credentials provided for ISY connection.")
                     res.release()
@@ -216,7 +238,7 @@ class Connection:
             # sleep to allow the ISY to catch up
             await asyncio.sleep(RETRY_BACKOFF[retries])
             # recurse to try again
-            return await self.request(url, retries + 1, ok404=ok404)
+            return await self.request(url, retries + 1, ok404=ok404, retry404=retry404)
         # fail for good
         _LOGGER.error(
             "Bad ISY Request: (%s) Failed after %s retries.",
