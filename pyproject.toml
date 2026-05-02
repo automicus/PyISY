@@ -98,6 +98,10 @@ select = [
     "D103",
     "D104",
     "S101",
+    "S105", # hardcoded password literal — fixture credentials
+    "S106", # hardcoded password kwarg — fixture credentials
+    "S603", # subprocess call — used in CLI tests
+    "PLC0415", # local imports — fine in tests
     "SLF001",
     "PLR2004", # too many to fix right now
     "PT011", # too many to fix right now

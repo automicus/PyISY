@@ -1,0 +1,5 @@
+<CList type="VAR_INT">
+    <e id="1" name="Int_1">
+        <val id="prec">1</val>
+    </e>
+</CList>

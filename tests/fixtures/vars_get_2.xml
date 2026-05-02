@@ -1,0 +1,82 @@
+<vars>
+    <var type="2" id="1">
+        <init>0</init>
+        <val>100</val>
+        <ts>20260502 09:00:00</ts>
+    </var>
+    <var type="2" id="2">
+        <init>0</init>
+        <val>0</val>
+        <ts>20260502 09:00:00</ts>
+    </var>
+    <var type="2" id="3">
+        <init>0</init>
+        <val>50</val>
+        <ts>20260502 09:00:00</ts>
+    </var>
+    <var type="2" id="4">
+        <init>0</init>
+        <val>0</val>
+        <ts>20260502 09:00:00</ts>
+    </var>
+    <var type="2" id="5">
+        <init>0</init>
+        <val>5</val>
+        <ts>20260502 09:00:00</ts>
+    </var>
+    <var type="2" id="6">
+        <init>0</init>
+        <val>0</val>
+        <ts>20260502 09:00:00</ts>
+    </var>
+    <var type="2" id="7">
+        <init>0</init>
+        <val>0</val>
+        <ts>20260502 09:00:00</ts>
+    </var>
+    <var type="2" id="8">
+        <init>0</init>
+        <val>0</val>
+        <ts>20260502 09:00:00</ts>
+    </var>
+    <var type="2" id="10">
+        <init>0</init>
+        <val>0</val>
+        <ts>20260502 09:00:00</ts>
+    </var>
+    <var type="2" id="11">
+        <init>0</init>
+        <val>0</val>
+        <ts>20260502 09:00:00</ts>
+    </var>
+    <var type="2" id="12">
+        <init>0</init>
+        <val>0</val>
+        <ts>20260502 09:00:00</ts>
+    </var>
+    <var type="2" id="17">
+        <init>0</init>
+        <val>0</val>
+        <ts>20260502 09:00:00</ts>
+    </var>
+    <var type="2" id="18">
+        <init>0</init>
+        <val>0</val>
+        <ts>20260502 09:00:00</ts>
+    </var>
+    <var type="2" id="23">
+        <init>0</init>
+        <val>1</val>
+        <ts>20260502 09:00:00</ts>
+    </var>
+    <var type="2" id="24">
+        <init>0</init>
+        <val>0</val>
+        <ts>20260502 09:00:00</ts>
+    </var>
+    <var type="2" id="28">
+        <init>0</init>
+        <val>0</val>
+        <ts>20260502 09:00:00</ts>
+    </var>
+</vars>

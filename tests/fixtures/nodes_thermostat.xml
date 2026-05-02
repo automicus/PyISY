@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<nodes>
+    <root />
+    <folder flag="0">
+        <address>43399</address>
+        <name>Climate</name>
+        <family>1</family>
+    </folder>
+    <node flag="128" nodeDefId="Thermostat">
+        <address>91 DD DB 1</address>
+        <name>Hallway Thermostat</name>
+        <parent type="3">43399</parent>
+        <type>5.3.149.254</type>
+        <enabled>true</enabled>
+        <deviceClass>13957622</deviceClass>
+        <wattage>8</wattage>
+        <dcPeriod>0</dcPeriod>
+        <startDelay>114</startDelay>
+        <endDelay>32</endDelay>
+        <pnode>91 DD DB 1</pnode>
+        <property id="ST" value="136" formatted="68.0&#176;" uom="101" />
+        <property id="CLIMD" value="5" formatted="Program Auto" uom="98" />
+        <property id="CLISPC" value="156" formatted="78.0&#176;" uom="101" />
+        <property id="CLISPH" value="130" formatted="65.0&#176;" uom="101" />
+        <property id="CLIHUM" value="1" formatted="1%" uom="22" />
+    </node>
+</nodes>

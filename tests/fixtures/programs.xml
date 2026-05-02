@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<programs>
+    <program id="0001" status="true" folder="true">
+        <name>My Programs</name>
+        <lastRunTime/>
+        <lastFinishTime/>
+    </program>
+    <program id="009C" parentId="0001" status="true" folder="true">
+        <name>Fix Scene</name>
+        <lastRunTime/>
+        <lastFinishTime/>
+    </program>
+    <program id="0005" parentId="0001" status="true" folder="true">
+        <name>HA.switch</name>
+        <lastRunTime/>
+        <lastFinishTime/>
+    </program>
+    <program id="003F" parentId="0001" status="true" folder="true">
+        <name>Kitchen</name>
+        <lastRunTime/>
+        <lastFinishTime/>
+    </program>
+    <program id="007D" parentId="0001" status="true" folder="true">
+        <name>Main Bathroom</name>
+        <lastRunTime/>
+        <lastFinishTime/>
+    </program>
+    <program id="0006" parentId="0005" status="true" folder="true">
+        <name>Main Bedroom Keypad Backlights</name>
+        <lastRunTime/>
+        <lastFinishTime/>
+    </program>
+    <program id="001B" parentId="0001" status="true" folder="true">
+        <name>Powder</name>
+        <lastRunTime/>
+        <lastFinishTime/>
+    </program>
+    <program id="0045" parentId="0001" status="true" folder="true">
+        <name>System</name>
+        <lastRunTime/>
+        <lastFinishTime/>
+    </program>
+    <program id="008E" parentId="009C" status="false" folder="false" enabled="true" runAtStartup="false" running="idle">
+        <name>Main Bath Guest Sink Off</name>
+        <lastRunTime>2026/04/24 10:11:05 AM</lastRunTime>
+        <lastFinishTime>2026/04/24 10:11:05 AM</lastFinishTime>
+    </program>
+    <program id="008D" parentId="009C" status="false" folder="false" enabled="true" runAtStartup="false" running="idle">
+        <name>Main Bath Guest Sink On</name>
+        <lastRunTime>2026/04/24 10:11:05 AM</lastRunTime>
+        <lastFinishTime>2026/04/24 10:11:05 AM</lastFinishTime>
+    </program>
+    <program id="008F" parentId="009C" status="false" folder="false" enabled="true" runAtStartup="false" running="idle">
+        <name>Main Bath Toilet Light Off</name>
+        <lastRunTime>2026/04/24 09:56:38 AM</lastRunTime>
+        <lastFinishTime>2026/04/24 09:56:38 AM</lastFinishTime>
+    </program>
+    <program id="0094" parentId="009C" status="false" folder="false" enabled="true" runAtStartup="false" running="idle">
+        <name>Main Bath Toilet Light On</name>
+        <lastRunTime>2026/04/24 09:56:38 AM</lastRunTime>
+        <lastFinishTime>2026/04/24 09:56:38 AM</lastFinishTime>
+    </program>
+    <program id="002C" parentId="009C" status="false" folder="false" enabled="true" runAtStartup="false" running="idle">
+        <name>Main Bedroom Recessed Brightness</name>
+        <lastRunTime>2026/04/24 09:49:41 AM</lastRunTime>
+        <lastFinishTime>2026/04/24 09:49:41 AM</lastFinishTime>
+    </program>
+    <program id="002F" parentId="009C" status="false" folder="false" enabled="true" runAtStartup="false" running="idle">
+        <name>Main Bedroom Recessed Slave</name>
+        <lastRunTime>2026/04/24 09:49:41 AM</lastRunTime>
+        <lastFinishTime>2026/04/24 09:49:41 AM</lastFinishTime>
+    </program>
+    <program id="003D" parentId="001B" status="false" folder="false" enabled="true" runAtStartup="false" running="idle">
+        <name>Powder Fan Delay Off</name>
+        <lastRunTime>2026/04/24 09:45:28 AM</lastRunTime>
+        <lastFinishTime>2026/04/24 09:45:28 AM</lastFinishTime>
+    </program>
+    <program id="00A3" parentId="001B" status="false" folder="false" enabled="true" runAtStartup="false" running="idle">
+        <name>Powder Fan FastOn</name>
+        <lastRunTime>2026/04/24 09:45:28 AM</lastRunTime>
+        <lastFinishTime>2026/04/24 09:45:28 AM</lastFinishTime>
+    </program>
+</programs>

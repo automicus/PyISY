@@ -1,0 +1,18 @@
+# serializer version: 1
+# name: test_snapshot_known_keys
+  dict({
+    '21010': True,
+    '21040': True,
+    '21060': True,
+    '21075': True,
+    '21100': False,
+    'A10/X10 Module': True,
+    'Networking Module': True,
+    'OpenADR': True,
+    'Portal Integration - UDI': True,
+    'Z-Wave Module': False,
+    'model': 'eisy',
+    'nodedefs': True,
+    'variables': True,
+  })
+# ---
