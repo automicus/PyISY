@@ -97,6 +97,7 @@ Each platform module is a dict-like collection that owns its entities and expose
 - **UOM/precision sentinel**: `ISY_PROP_NOT_SET = "-1"` distinguishes "node has no ST property" from `ISY_VALUE_UNKNOWN` ("status not yet reported"). Don't conflate them — see CHANGELOG v2.1.0 #98.
 - **XML decoding**: always go through `Connection.request()` so the UTF-8-with-ignore decode is applied. Don't read aiohttp responses directly.
 - **Ruff ignores in `pyproject.toml`** are deliberate (e.g. `S101`, `SLF001`, `PLR091*`); don't try to fix what's listed there as part of unrelated work.
+- **`ISYResponseParseError` is the canonical "controller returned bad/missing data" signal.** Every `parse()` method raises it on `XML_ERRORS`, and `ISY.initialize()` raises it when load-bearing setup responses (status, time, nodes, programs) are `None` so HA Core can convert that into `ConfigEntryNotReady` and retry instead of silently mounting an empty controller (see #297).
 
 ## Branches
 
