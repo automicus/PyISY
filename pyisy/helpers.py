@@ -166,6 +166,10 @@ def parse_isy_datetime(dt_str: str) -> datetime.datetime:
     if not dt_str or not isinstance(dt_str, str):
         return EMPTY_TIME
 
+    # The ISY emits trailing whitespace on some datetime fields (e.g. program
+    # last-run/last-finished), which strptime rejects.
+    dt_str = dt_str.strip()
+
     for fmt in (MILITARY_TIME, STANDARD_TIME, XML_STRPTIME, XML_STRPTIME_YY):
         try:
             return datetime.datetime.strptime(dt_str, fmt)
