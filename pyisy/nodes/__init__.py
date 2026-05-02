@@ -363,8 +363,7 @@ class Nodes:
         try:
             xmldoc = minidom.parseString(xml)
         except XML_ERRORS as exc:
-            _LOGGER.error("%s: Nodes", XML_PARSE_ERROR)
-            raise ISYResponseParseError(XML_PARSE_ERROR) from exc
+            raise ISYResponseParseError(f"{XML_PARSE_ERROR}: Nodes") from exc
 
         # get nodes
         ntypes = [TAG_FOLDER, TAG_NODE, TAG_GROUP]

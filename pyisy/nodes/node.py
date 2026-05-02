@@ -298,8 +298,7 @@ class Node(NodeBase):
         try:
             parameter_dom = minidom.parseString(parameter_xml)
         except XML_ERRORS as exc:
-            _LOGGER.error("%s: Node Parameter %s", XML_PARSE_ERROR, parameter_xml)
-            raise ISYResponseParseError from exc
+            raise ISYResponseParseError(f"{XML_PARSE_ERROR}: Node Parameter {parameter_xml}") from exc
 
         size = int(attr_from_xml(parameter_dom, TAG_CONFIG, TAG_SIZE))
         value = attr_from_xml(parameter_dom, TAG_CONFIG, TAG_VALUE)
@@ -449,8 +448,7 @@ class Node(NodeBase):
             try:
                 xmldoc = minidom.parseString(xml)
             except XML_ERRORS as exc:
-                _LOGGER.error("%s: Nodes", XML_PARSE_ERROR)
-                raise ISYResponseParseError(XML_PARSE_ERROR) from exc
+                raise ISYResponseParseError(f"{XML_PARSE_ERROR}: Nodes") from exc
 
         if xmldoc is None:
             _LOGGER.warning("ISY could not update node: %s", self._id)
