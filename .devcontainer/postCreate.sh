@@ -8,7 +8,7 @@ cp -r pyisy/__main__.py example/example_connection.py
 
 # Install the editable local package
 pip3 install -e .
-pip3 install -r requirements-dev.txt
+pip3 install -r requirements-dev.txt -r requirements-test.txt
 
 # Install pre-commit requirements
 pre-commit install --install-hooks
