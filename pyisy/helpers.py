@@ -6,6 +6,7 @@ import datetime
 import time
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, is_dataclass
+from typing import Self
 from xml.dom import minidom
 
 from .constants import (
@@ -270,7 +271,7 @@ class ZWaveProperties:
     raw: str = ""
 
     @classmethod
-    def from_xml(cls, xml: minidom.Element) -> ZWaveProperties:
+    def from_xml(cls, xml: minidom.Element) -> Self:
         """Return a Z-Wave Properties class from an xml DOM object."""
         category = value_from_xml(xml, TAG_CATEGORY)
         devtype_mfg = value_from_xml(xml, TAG_MFG)
@@ -287,7 +288,7 @@ class ZWaveProperties:
         if devtype_mfg:
             (mfr_id, prod_type_id, product_id) = devtype_mfg.split(".")
 
-        return ZWaveProperties(
+        return cls(
             category=category,
             devtype_mfg=devtype_mfg,
             devtype_gen=devtype_gen,
