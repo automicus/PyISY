@@ -182,7 +182,7 @@ class Connection:
                     _LOGGER.warning("ISY too busy to process request %s", endpoint)
                     res.release()
 
-        except asyncio.TimeoutError:
+        except TimeoutError:
             _LOGGER.warning("Timeout while trying to connect to the ISY.")
         except (
             aiohttp.ClientOSError,

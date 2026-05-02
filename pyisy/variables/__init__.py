@@ -6,8 +6,6 @@ from asyncio import sleep
 from typing import TYPE_CHECKING
 from xml.dom import minidom
 
-from dateutil import parser
-
 from ..constants import (
     ATTR_ID,
     ATTR_INIT,
@@ -20,7 +18,7 @@ from ..constants import (
     TAG_VARIABLE,
 )
 from ..exceptions import XML_ERRORS, XML_PARSE_ERROR, ISYResponseParseError
-from ..helpers import attr_from_element, attr_from_xml, now, value_from_xml
+from ..helpers import attr_from_element, attr_from_xml, now, parse_isy_datetime, value_from_xml
 from ..logging import _LOGGER
 from .variable import Variable
 
@@ -139,7 +137,7 @@ class Variables:
             prec = int(value_from_xml(feature, ATTR_PRECISION, 0))
             val = value_from_xml(feature, ATTR_VAL)
             ts_raw = value_from_xml(feature, ATTR_TS)
-            timestamp = parser.parse(ts_raw)
+            timestamp = parse_isy_datetime(ts_raw)
             vname = self.vnames[vtype].get(vid, "")
 
             vobj = self.vobjs[vtype].get(vid)
@@ -184,7 +182,7 @@ class Variables:
         else:
             vobj.status = int(value_from_xml(xmldoc, ATTR_VAL))
             vobj.prec = int(value_from_xml(xmldoc, ATTR_PRECISION, 0))
-            vobj.last_edited = parser.parse(value_from_xml(xmldoc, ATTR_TS))
+            vobj.last_edited = parse_isy_datetime(value_from_xml(xmldoc, ATTR_TS))
 
         _LOGGER.debug("ISY Updated Variable: %s.%s", str(vtype), str(vid))
 

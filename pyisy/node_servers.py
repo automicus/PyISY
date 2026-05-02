@@ -156,7 +156,7 @@ class NodeServers:
             self.isy.conn.request(self.isy.conn.compile_url([URL_PROFILE_NS, file])) for file in file_list
         ]
         file_contents: list[str] = await asyncio.gather(*file_tasks)
-        self._profiles: dict[str, str] = dict(zip(file_list, file_contents))
+        self._profiles: dict[str, str] = dict(zip(file_list, file_contents, strict=False))
 
         _LOGGER.info("ISY downloaded node server files")
 

@@ -19,7 +19,6 @@ import sphinx_rtd_theme
 sys.path.insert(0, os.path.abspath(".."))
 
 MOCK_MODULES = [
-    "dateutil",
     "aiohttp",
 ]
 for mod_name in MOCK_MODULES:
