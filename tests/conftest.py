@@ -26,6 +26,14 @@ def load_fixture(name: str) -> str:
     return (FIXTURES / name).read_text(encoding="utf-8")
 
 
+def load_events(name: str = "websocket_events.log") -> list[str]:
+    """Return one ``<?xml ...><Event>...</Event>`` string per line of the
+    captured websocket log fixture. Useful for replaying real wire-format
+    events through ``WebSocketClient._route_message``."""
+    text = (FIXTURES / name).read_text(encoding="utf-8")
+    return [line for line in text.splitlines() if line.strip()]
+
+
 class FakeConnection:
     """Minimal stand-in for :class:`pyisy.connection.Connection`.
 

@@ -72,3 +72,6 @@ example/
 .output/*
 
 .venv/
+
+# Test fixtures captured from real ISY hardware — sanitized and tracked.
+!tests/fixtures/*.log
