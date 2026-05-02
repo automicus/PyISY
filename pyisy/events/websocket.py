@@ -284,7 +284,7 @@ class WebSocketClient:
         except Exception:
             _LOGGER.exception("Unexpected websocket error")
         else:
-            if isinstance(ws.exception(), asyncio.TimeoutError):
+            if isinstance(ws.exception(), TimeoutError):
                 _LOGGER.debug("Websocket Timeout.")
             elif isinstance(ws.exception(), aiohttp.streams.EofStream):
                 _LOGGER.warning("Websocket disconnected unexpectedly. Check network connection.")
