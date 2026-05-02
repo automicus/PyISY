@@ -96,8 +96,7 @@ class Connection:
         """Test the connection and get the config for the ISY."""
         config = await self.get_config(retries=None)
         if not config:
-            _LOGGER.error("Could not connect to the ISY with the parameters provided.")
-            raise ISYConnectionError
+            raise ISYConnectionError("Could not connect to the ISY with the parameters provided.")
         return config
 
     def increase_available_connections(self) -> None:
@@ -197,7 +196,6 @@ class Connection:
                         res.release()
                         return None
                 if res.status == HTTP_UNAUTHORIZED:
-                    _LOGGER.error("Invalid credentials provided for ISY connection.")
                     res.release()
                     raise ISYInvalidAuthError("Invalid credentials provided for ISY connection.")
                 if res.status == HTTP_SERVICE_UNAVAILABLE:
