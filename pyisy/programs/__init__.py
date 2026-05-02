@@ -209,8 +209,7 @@ class Programs:
         try:
             xmldoc = minidom.parseString(xml)
         except XML_ERRORS as exc:
-            _LOGGER.error("%s: Programs, programs not loaded", XML_PARSE_ERROR)
-            raise ISYResponseParseError(XML_PARSE_ERROR) from exc
+            raise ISYResponseParseError(f"{XML_PARSE_ERROR}: Programs") from exc
 
         plastup = now()
 
