@@ -170,7 +170,10 @@ class Connection:
                     ssl=self.sslcontext,
                 ) as res,
             ):
-                endpoint = url.split("rest", 1)[1]
+                # /desc and other non-/rest URLs lack the "rest" substring.
+                _, _, endpoint = url.partition("rest")
+                if not endpoint:
+                    endpoint = url
                 if res.status == HTTP_OK:
                     _LOGGER.debug("ISY Response Received: %s", endpoint)
                     results = await res.text(encoding="utf-8", errors="ignore")
