@@ -167,17 +167,17 @@ def test_update_received_run_finish_timestamps(isy: ISY) -> None:
     assert program.last_finished is not None
 
 
-def test_update_received_on_off_toggle_currently_no_op(isy: ISY) -> None:
-    """The ``<on />`` / ``<off />`` enable-toggle branch is dead code
-    because ``minidom.toxml()`` strips the space (``"<off/>"``) so the
-    constants ``XML_ON = "<on />"`` / ``XML_OFF = "<off />"`` never
-    match the re-serialized event. Filed as #487. This test pins the
-    current (incorrect) behavior so the bug fix flips the assertion
-    intentionally rather than silently."""
+def test_update_received_off_event_disables_program(isy: ISY) -> None:
+    """An ``<off />`` element in the event payload flips ``enabled`` to
+    False; ``<on />`` flips it back to True. Pre-#487 this branch was
+    dead because ``minidom.toxml()`` strips the space and the substring
+    check never matched."""
     program = _first_program(isy)
-    starting_enabled = program.enabled
+    program.enabled = True
     isy.programs.update_received(_wrap_event(f"<id>{program.address}</id><off /><nr />"))
-    assert program.enabled is starting_enabled  # unchanged — branch never fires
+    assert program.enabled is False
+    isy.programs.update_received(_wrap_event(f"<id>{program.address}</id><on /><nr />"))
+    assert program.enabled is True
 
 
 def test_update_received_unknown_address_warns_and_ignores(isy: ISY, caplog) -> None:
