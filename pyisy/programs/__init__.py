@@ -21,8 +21,6 @@ from ..constants import (
     TAG_PRGM_STATUS,
     TAG_PROGRAM,
     UPDATE_INTERVAL,
-    XML_OFF,
-    XML_ON,
     XML_TRUE,
 )
 from ..exceptions import XML_ERRORS, XML_PARSE_ERROR, ISYResponseParseError
@@ -188,8 +186,13 @@ class Programs:
         if f"<{TAG_PRGM_FINISH}>" in xml:
             pobj.last_finished = parse_isy_datetime(value_from_xml(xmldoc, TAG_PRGM_FINISH))
 
-        if XML_ON in xml or XML_OFF in xml:
-            pobj.enabled = XML_ON in xml
+        # minidom.toxml() collapses "<on />" to "<on/>", so substring
+        # matching the serialized form against XML_ON/XML_OFF never
+        # fires. Walk the parsed DOM instead (#487).
+        if xmldoc.getElementsByTagName("on"):
+            pobj.enabled = True
+        elif xmldoc.getElementsByTagName("off"):
+            pobj.enabled = False
 
         # Update Status last and make sure the change event fires, but only once.
         if pobj.status != new_status:
