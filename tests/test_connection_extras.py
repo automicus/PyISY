@@ -204,6 +204,18 @@ async def test_request_client_response_error_returns_none(conn: Connection) -> N
     assert result is None
 
 
+async def test_request_non_rest_url_does_not_crash(conn: Connection) -> None:
+    """Regression for #488: ``request()`` derives its debug-log endpoint
+    from the URL by splitting on ``"rest"``. ``get_description()`` builds
+    a ``/desc`` URL that lacks that substring, so the happy path used to
+    raise ``IndexError`` before the body could be returned."""
+    url = "http://h:80/desc"
+    with aioresponses() as mocked:
+        mocked.get(url, status=200, body="<root/>")
+        result = await conn.request(url)
+    assert result == "<root/>"
+
+
 async def test_request_retry404_eventually_returns_none(conn: Connection) -> None:
     """``retry404=True`` from #184 makes 404s fall into the retry loop
     instead of returning immediately. After the retry budget is spent
