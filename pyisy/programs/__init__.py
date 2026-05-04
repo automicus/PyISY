@@ -325,8 +325,8 @@ class Programs:
                 try:
                     val = int(val)
                     fun = self.get_by_index
-                except (TypeError, ValueError) as err:
-                    raise KeyError("Unrecognized Key: " + str(val)) from err
+                except (TypeError, ValueError):
+                    return None
         try:
             return fun(val)
         except (ValueError, KeyError, IndexError):

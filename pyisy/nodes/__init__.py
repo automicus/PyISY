@@ -67,6 +67,7 @@ from ..helpers import (
     ZWaveProperties,
     attr_from_element,
     attr_from_xml,
+    now,
     parse_xml_properties,
     value_from_xml,
 )
@@ -412,7 +413,11 @@ class Nodes:
                     self.insert(address, nname, nparent, None, ntype)
                 elif ntype == TAG_NODE:
                     if address in self.addresses:
-                        self.get_by_id(address).update(xmldoc=feature)
+                        node = self.get_by_id(address)
+                        node._last_update = now()
+                        state, _aux_props, _ = parse_xml_properties(feature)
+                        node._aux_properties.update(_aux_props)
+                        node.update_state(state)
                         continue
                     state, aux_props, state_set = parse_xml_properties(feature)
                     self.insert(
@@ -687,6 +692,9 @@ class NodeIterator:
             self._ind = 0
         else:
             self._ind = self._len - 1
+
+    def __iter__(self):
+        return self
 
     def __next__(self):
         """Get the next element in the iteration."""
