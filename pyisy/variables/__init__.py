@@ -201,7 +201,7 @@ class Variables:
             except (ValueError, KeyError) as err:
                 raise KeyError(f"Unrecognized variable id: {val}") from err
 
-        for vid, vname in self.vnames[self.root]:
+        for vid, vname in self.vnames[self.root].items():
             if vname == val:
                 return self.vobjs[self.root][vid]
         raise KeyError(f"Unrecognized variable name: {val}")
@@ -215,11 +215,15 @@ class Variables:
         Get a variable with the given name.
 
         |  val: The name of the variable to look for.
+
+        Returns the first match. Variable names are not guaranteed
+        unique by the controller (see #445), so callers that need a
+        specific instance should look up by ``(type, id)`` instead.
         """
-        vtype, _, vid = next(item for item in self.children if val in item)
-        if not vid and vtype:
-            raise KeyError(f"Unrecognized variable name: {val}")
-        return self.vobjs[vtype].get(vid)
+        for vtype, name, vid in self.children:
+            if name == val:
+                return self.vobjs[vtype].get(vid)
+        return None
 
     @property
     def children(self) -> list[tuple[int, str, int]]:
