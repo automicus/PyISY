@@ -130,7 +130,9 @@ class Variable:
     @property
     def protocol(self) -> str:
         """Return the protocol for this entity."""
-        return PROTO_INT_VAR if self._type == VAR_INTEGER else PROTO_STATE_VAR
+        # Variables.parse() stores _type as int but VAR_INTEGER is the
+        # string "1"; cast for the comparison (#485).
+        return PROTO_INT_VAR if str(self._type) == VAR_INTEGER else PROTO_STATE_VAR
 
     @property
     def name(self) -> str:
