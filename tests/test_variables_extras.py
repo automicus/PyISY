@@ -51,6 +51,35 @@ def test_variable_name_and_vid(isy: ISY) -> None:
     assert var.vid == 1
 
 
+def test_variables_getitem_by_name_returns_variable(isy: ISY) -> None:
+    """Within a type bucket, indexing by name returns the variable
+    (regression for #486 — was a TypeError because the lookup tried to
+    unpack a dict's keys)."""
+    var = isy.variables[1]["Int_1"]
+    assert var.vid == 1
+    assert var.name == "Int_1"
+
+
+def test_variables_getitem_unknown_name_raises_keyerror(isy: ISY) -> None:
+    with pytest.raises(KeyError):
+        _ = isy.variables[1]["does-not-exist"]
+
+
+def test_variables_get_by_name_returns_first_match(isy: ISY) -> None:
+    """``Variables.get_by_name`` walks ``children`` and returns the
+    first ``(vtype, name, vid)`` whose name matches exactly. Pre-#486
+    it used substring-against-tuple-repr, so partial matches could
+    return the wrong variable."""
+    var = isy.variables.get_by_name("Int_1")
+    assert var is not None
+    assert var.vid == 1
+    assert var.protocol == PROTO_INT_VAR
+
+
+def test_variables_get_by_name_unknown_returns_none(isy: ISY) -> None:
+    assert isy.variables.get_by_name("does-not-exist") is None
+
+
 @pytest.mark.parametrize(
     ("attr", "new_value"),
     [
