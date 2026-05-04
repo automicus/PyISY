@@ -36,17 +36,13 @@ def test_variable_address(isy: ISY) -> None:
     assert state_var.address == "2.1"
 
 
-def test_variable_protocol_returns_known_constant(isy: ISY) -> None:
-    """``Variable.protocol`` is supposed to distinguish integer vs state
-    variables; the line is exercised here. NOTE: there is a real bug —
-    ``Variable.__init__`` stores ``_type`` as ``int`` while the
-    ``VAR_INTEGER`` / ``VAR_STATE`` constants are strings, so the
-    comparison in the property body is always False and every variable
-    reports as a state variable. Asserting one-of guards against an
-    accidental rename of the protocol constants without locking in the
-    incorrect classification."""
-    var = isy.variables[1][1]
-    assert var.protocol in {PROTO_INT_VAR, PROTO_STATE_VAR}
+def test_variable_protocol_distinguishes_int_and_state(isy: ISY) -> None:
+    """``Variable.protocol`` returns ``PROTO_INT_VAR`` for type-1
+    variables and ``PROTO_STATE_VAR`` for type-2. Pre-#485 the
+    comparison was an int-vs-str mismatch and every variable reported
+    as a state variable."""
+    assert isy.variables[1][1].protocol == PROTO_INT_VAR
+    assert isy.variables[2][1].protocol == PROTO_STATE_VAR
 
 
 def test_variable_name_and_vid(isy: ISY) -> None:
