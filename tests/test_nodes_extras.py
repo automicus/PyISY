@@ -546,3 +546,167 @@ def test_group_update_callback_drives_update(isy: ISY) -> None:
     directly with a fake event must not raise."""
     group = isy.nodes[_group_addr(isy)]
     group.update_callback(event=MagicMock())
+
+
+# -- Node small property accessors -----------------------------------
+
+
+def test_node_formatted_property_returns_state_formatted(isy: ISY) -> None:
+    """``Node.formatted`` exposes the ``formatted`` field captured from
+    the controller's status XML at construction time."""
+    node = isy.nodes[_node_addr(isy)]
+    # Pulled from the parsed state; could be None if the fixture node
+    # had no formatted value, but the property itself must work.
+    assert node.formatted == node._formatted
+
+
+def test_node_is_backlight_supported_returns_bool(isy: ISY) -> None:
+    """The predicate combines protocol + node_def_id membership in
+    ``BACKLIGHT_SUPPORT`` — exercised here purely for the line."""
+    node = isy.nodes[_node_addr(isy)]
+    assert isinstance(node.is_backlight_supported, bool)
+
+
+def test_node_node_server_property(isy: ISY) -> None:
+    node = isy.nodes[_node_addr(isy)]
+    # Insteon fixture nodes have no node_server slot.
+    assert node.node_server == node._node_server
+
+
+def test_node_parent_node_returns_node_when_pnode_set(isy: ISY) -> None:
+    """A node whose ``pnode`` differs from its own address resolves to
+    the parent through ``Nodes.get_by_id``."""
+    parented = next(
+        (
+            isy.nodes[a]
+            for a in isy.nodes.addresses
+            if isy.nodes.ntypes[isy.nodes._address_index[a]] == TAG_NODE and isy.nodes[a]._parent_node
+        ),
+        None,
+    )
+    if parented is None:
+        pytest.skip("fixture has no subnode with a different parent address")
+    parent = parented.parent_node
+    assert parent is not None
+    assert parent.address == parented._parent_node
+
+
+def test_node_parent_node_returns_none_when_no_parent(isy: ISY) -> None:
+    """A primary node (pnode == address, so ``_parent_node`` is None)
+    returns None instead of looking itself up."""
+    primary = next(
+        isy.nodes[a]
+        for a in isy.nodes.addresses
+        if isy.nodes.ntypes[isy.nodes._address_index[a]] == TAG_NODE and isy.nodes[a]._parent_node is None
+    )
+    assert primary.parent_node is None
+
+
+# -- update / update_state error and edge paths ----------------------
+
+
+async def test_node_update_raises_on_malformed_xml(isy: ISY) -> None:
+    """``Node.update`` parses the ``/get/ST`` response; bad XML surfaces
+    as ``ISYResponseParseError`` so HA can convert it into a retry."""
+    from pyisy.exceptions import ISYResponseParseError
+
+    isy.conn.request = AsyncMock(return_value="<<not xml>>")
+    node = isy.nodes[_node_addr(isy)]
+    with pytest.raises(ISYResponseParseError):
+        await node.update()
+
+
+async def test_node_update_warns_when_request_returns_none(isy: ISY, caplog) -> None:
+    """When the controller is unreachable ``request`` returns ``None``;
+    ``minidom.parseString(None)`` raises which falls into the
+    ISYResponseParseError branch — this test pins that contract."""
+    from pyisy.exceptions import ISYResponseParseError
+
+    isy.conn.request = AsyncMock(return_value=None)
+    node = isy.nodes[_node_addr(isy)]
+    with pytest.raises(ISYResponseParseError):
+        await node.update()
+
+
+async def test_node_update_warns_when_xmldoc_explicitly_none(isy: ISY, caplog) -> None:
+    """The auto-update + xmldoc-None path: caller passes nothing and
+    the ISY is in auto-update mode (so the inner fetch is skipped),
+    leaving xmldoc as None and triggering the warning + early return."""
+    isy._connected = True
+    # Force the inner fetch branch to be skipped.
+    isy.websocket = MagicMock()
+    isy.websocket.status = "connected"
+    # auto_update returns True via the websocket branch above.
+    node = isy.nodes[_node_addr(isy)]
+    with caplog.at_level("WARNING", logger="pyisy"):
+        await node.update()  # xmldoc=None, auto_update=True
+    assert any("could not update node" in r.message.lower() for r in caplog.records)
+
+
+def test_node_update_state_emits_event_on_prec_change(isy: ISY) -> None:
+    """Changing ``prec`` (without changing ``status``) hits the
+    `changed = True` branch and fires a status_feedback event."""
+    node = isy.nodes[_node_addr(isy)]
+    seen: list = []
+    node.status_events.subscribe(seen.append)
+    new_prec = "9" if node.prec != "9" else "8"
+    node.update_state(
+        NodeProperty(PROP_STATUS, node.status, new_prec, node.uom, node.formatted, node.address)
+    )
+    assert seen
+    assert node.prec == new_prec
+
+
+# -- get_groups / set_climate_mode warning paths ---------------------
+
+
+def test_node_get_groups_finds_responder_membership(isy: ISY) -> None:
+    """A node that appears in a scene's ``members`` list is returned
+    by ``get_groups(responder=True)``. Walks the fixture to locate a
+    scene whose first member is a node we can index, since
+    ``members`` and ``controllers`` are separate lists in PyISY."""
+    target_group_addr = None
+    target_member_id = None
+    for addr in isy.nodes.addresses:
+        if isy.nodes.ntypes[isy.nodes._address_index[addr]] != TAG_GROUP:
+            continue
+        group = isy.nodes[addr]
+        for member in group.members:
+            if isy.nodes.get_by_id(member) is not None:
+                target_group_addr = addr
+                target_member_id = member
+                break
+        if target_group_addr:
+            break
+    if not target_group_addr:
+        pytest.skip("fixture has no scene with a resolvable member node")
+    node = isy.nodes[target_member_id]
+    assert target_group_addr in node.get_groups(controller=False, responder=True)
+
+
+def test_node_get_groups_finds_controller_membership(isy: ISY) -> None:
+    """The controller branch (``responder=False``, ``controller=True``)
+    is exercised by forcing a known group's ``_controllers`` to point
+    at the test node. The fixture's natural controller/member shapes
+    don't always have a node that is a controller while also being
+    visible through ``all_lower_nodes`` from the right navigation
+    root, so this avoids depending on those particulars."""
+    node_addr = _node_addr(isy)
+    group_addr = _group_addr(isy)
+    group = isy.nodes[group_addr]
+    group._controllers = [node_addr]
+    group._members = []
+    node = isy.nodes[node_addr]
+    assert group_addr in node.get_groups(controller=True, responder=False)
+
+
+async def test_node_set_climate_mode_on_non_thermostat_warns(isy: ISY, caplog) -> None:
+    """``set_climate_mode`` emits a warning on a non-thermostat node
+    but still resolves the command and (with a valid mode) attempts to
+    send it. The warning emit at line 540 is what we're after."""
+    isy.conn.request = AsyncMock(return_value="<x/>")
+    node = isy.nodes[_node_addr(isy)]
+    assert not node.is_thermostat
+    with caplog.at_level("WARNING", logger="pyisy"):
+        await node.set_climate_mode("heat")
+    assert any("not a thermostat" in r.message.lower() for r in caplog.records)

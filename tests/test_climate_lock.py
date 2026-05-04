@@ -266,3 +266,65 @@ async def test_get_zwave_parameter_rejects_non_zwave(isy: ISY) -> None:
     )
     assert await plain.get_zwave_parameter(2) is None
     assert await plain.set_zwave_parameter(parameter=2, value=1, size=1) is False
+
+
+async def test_get_zwave_parameter_rejects_non_integer(lock_node, lock_request: AsyncMock) -> None:
+    """Z-Wave node, but the parameter number is non-int → returns None
+    without issuing a request."""
+    assert await lock_node.get_zwave_parameter("abc") is None
+    lock_request.assert_not_called()
+
+
+async def test_get_zwave_parameter_returns_false_on_empty_response(
+    lock_node, lock_request: AsyncMock
+) -> None:
+    """An empty body from the controller means "couldn't read"; the
+    method warns and returns False (distinct from the typed None which
+    means "not a Z-Wave device")."""
+    lock_request.return_value = ""
+    assert await lock_node.get_zwave_parameter(2) is False
+
+
+async def test_get_zwave_parameter_raises_on_malformed_xml(lock_node, lock_request: AsyncMock) -> None:
+    from pyisy.exceptions import ISYResponseParseError
+
+    lock_request.return_value = "<<not xml>>"
+    with pytest.raises(ISYResponseParseError):
+        await lock_node.get_zwave_parameter(2)
+
+
+async def test_set_zwave_parameter_rejects_non_integer_parameter_on_zwave_node(
+    lock_node, lock_request: AsyncMock
+) -> None:
+    """Hits the int(parameter) ValueError branch on an actual Z-Wave
+    node (the protocol guard would otherwise short-circuit)."""
+    assert await lock_node.set_zwave_parameter(parameter="abc", value=1, size=1) is False
+    lock_request.assert_not_called()
+
+
+async def test_set_zwave_parameter_rejects_invalid_hex_value(lock_node, lock_request: AsyncMock) -> None:
+    """``0x...`` values must parse as base-16; ``0xZZ`` does not and
+    must short-circuit before any request."""
+    assert await lock_node.set_zwave_parameter(parameter=2, value="0xZZ", size=1) is False
+    lock_request.assert_not_called()
+
+
+async def test_set_zwave_parameter_returns_false_on_request_failure(
+    lock_node, lock_request: AsyncMock
+) -> None:
+    lock_request.return_value = None
+    assert await lock_node.set_zwave_parameter(parameter=2, value=80, size=1) is False
+
+
+async def test_set_zwave_lock_code_returns_false_on_request_failure(
+    lock_node, lock_request: AsyncMock
+) -> None:
+    lock_request.return_value = None
+    assert await lock_node.set_zwave_lock_code(user_num=2, code=1234) is False
+
+
+async def test_delete_zwave_lock_code_returns_false_on_request_failure(
+    lock_node, lock_request: AsyncMock
+) -> None:
+    lock_request.return_value = None
+    assert await lock_node.delete_zwave_lock_code(user_num=3) is False
