@@ -241,3 +241,25 @@ def test_system_status_defaults_to_busy_pre_event(isy: ISY) -> None:
     # in this test; pre-fixture default still applies if not otherwise
     # touched.
     assert isy.system_status in {SYSTEM_BUSY} or isinstance(isy.system_status, str)
+
+
+# -- initialize: optional node_servers load --------------------------
+
+
+async def test_initialize_with_node_servers_loads_them(fake_connection) -> None:
+    """``initialize(with_node_servers=True)`` only triggers the load
+    when ``isy.node_servers`` was populated during ``Nodes.parse``.
+    The default fixture has none, so pre-stub a ``NodeServers``-shaped
+    object with an ``AsyncMock.load_node_servers`` and assert it was
+    awaited at the end of initialize."""
+    isy = ISY(address="127.0.0.1", port=80, username="u", password="p")
+    await isy.conn.close()
+    isy.conn = fake_connection
+    stub = MagicMock()
+    stub.load_node_servers = AsyncMock()
+    isy.node_servers = stub
+    try:
+        await isy.initialize(with_node_servers=True)
+        stub.load_node_servers.assert_awaited_once()
+    finally:
+        await isy.shutdown()
