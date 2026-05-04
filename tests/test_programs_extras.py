@@ -266,13 +266,11 @@ def test_programs_getitem_by_name_returns_match(isy: ISY) -> None:
     assert addr == program.address
 
 
-def test_programs_getitem_unknown_raises_keyerror(isy: ISY) -> None:
-    """A string that can't be resolved as id, name, or int index raises
-    ``KeyError`` — the docstring suggests it should return ``None``, but
-    the code path that would catch the inner KeyError doesn't because
-    that error escapes before the outer try/except is reached."""
-    with pytest.raises(KeyError):
-        _ = isy.programs["does-not-exist"]
+def test_programs_getitem_unknown_returns_none(isy: ISY) -> None:
+    """A string that can't be resolved as id, name, or int index
+    returns ``None`` — consistent with the rest of the method's miss
+    paths and the ``-> ... | None`` signature (PR #493)."""
+    assert isy.programs["does-not-exist"] is None
 
 
 def test_programs_setitem_is_silently_no_op(isy: ISY) -> None:
