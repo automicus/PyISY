@@ -25,6 +25,18 @@ from .nodes import NodeChangedEvent
 _LOGGER = logging.getLogger(__name__)
 
 
+def _tls_ver(value: str) -> str | float:
+    """Argparse type for --tls-ver: accepts 'auto' or a float."""
+    if value == "auto":
+        return value
+    try:
+        return float(value)
+    except ValueError:
+        raise argparse.ArgumentTypeError(
+            f"invalid TLS version {value!r}: expected 'auto' or one of 1.1, 1.2, 1.3"
+        ) from None
+
+
 async def main(url, username, password, tls_ver, events, node_servers):
     """Execute connection to ISY and load all system info."""
     _LOGGER.info("Starting PyISY...")
@@ -113,7 +125,7 @@ if __name__ == "__main__":
         "-t",
         "--tls-ver",
         dest="tls_ver",
-        type=lambda s: s if s == "auto" else float(s),
+        type=_tls_ver,
         help="TLS version: 'auto' (default), 1.1, 1.2, or 1.3",
     )
     parser.add_argument("-v", "--verbose", action="store_true")
