@@ -150,10 +150,12 @@ class NodeServers:
                     file_name = attr_from_element(file, TAG_NAME)
                     file_list.append(f"{slot}/download/{dir_name}/{file_name}")
 
-        file_tasks = [
-            self.isy.conn.request(self.isy.conn.compile_url([URL_PROFILE_NS, file])) for file in file_list
-        ]
-        file_contents: list[str] = await asyncio.gather(*file_tasks)
+        async with asyncio.TaskGroup() as tg:
+            file_tasks = [
+                tg.create_task(self.isy.conn.request(self.isy.conn.compile_url([URL_PROFILE_NS, file])))
+                for file in file_list
+            ]
+        file_contents: list[str] = [t.result() for t in file_tasks]
         self._profiles: dict[str, str] = dict(zip(file_list, file_contents, strict=True))
 
         _LOGGER.info("ISY downloaded node server files")
