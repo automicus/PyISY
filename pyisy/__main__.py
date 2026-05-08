@@ -109,11 +109,17 @@ if __name__ == "__main__":
     parser.add_argument("url", type=str)
     parser.add_argument("username", type=str)
     parser.add_argument("password", type=str)
-    parser.add_argument("-t", "--tls-ver", dest="tls_ver", type=float)
+    parser.add_argument(
+        "-t",
+        "--tls-ver",
+        dest="tls_ver",
+        type=lambda s: s if s == "auto" else float(s),
+        help="TLS version: 'auto' (default), 1.1, 1.2, or 1.3",
+    )
     parser.add_argument("-v", "--verbose", action="store_true")
     parser.add_argument("-q", "--no-events", dest="no_events", action="store_true")
     parser.add_argument("-n", "--node-servers", dest="node_servers", action="store_true")
-    parser.set_defaults(use_https=False, tls_ver=1.1, verbose=False)
+    parser.set_defaults(use_https=False, tls_ver="auto", verbose=False)
     args = parser.parse_args()
 
     enable_logging(LOG_VERBOSE if args.verbose else logging.DEBUG)

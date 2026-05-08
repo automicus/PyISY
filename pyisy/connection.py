@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import asyncio
 import ssl
+import warnings
+from typing import Literal
 from urllib.parse import quote, urlencode
 
 import aiohttp
@@ -29,6 +31,8 @@ from .constants import (
 )
 from .exceptions import ISYConnectionError, ISYInvalidAuthError
 from .logging import _LOGGER, enable_logging
+
+TLSVer = float | Literal["auto"]
 
 MAX_HTTPS_CONNECTIONS_ISY = 2
 MAX_HTTP_CONNECTIONS_ISY = 5
@@ -64,9 +68,10 @@ class Connection:
         username: str,
         password: str,
         use_https: bool = False,
-        tls_ver: float = 1.1,
+        tls_ver: TLSVer = "auto",
         webroot: str = "",
         websession: aiohttp.ClientSession | None = None,
+        verify_ssl: bool = False,
     ) -> None:
         """Initialize the Connection object."""
         if len(_LOGGER.handlers) == 0:
@@ -90,7 +95,7 @@ class Connection:
         if websession is None:
             websession = get_new_client_session(use_https, tls_ver)
         self.req_session = websession
-        self.sslcontext = get_sslcontext(use_https, tls_ver)
+        self.sslcontext = get_sslcontext(use_https, tls_ver, verify_ssl)
 
     async def test_connection(self) -> str | None:
         """Test the connection and get the config for the ISY."""
@@ -318,7 +323,7 @@ class Connection:
         return await self.request(req_url)
 
 
-def get_new_client_session(use_https: bool, tls_ver: float = 1.1) -> aiohttp.ClientSession:
+def get_new_client_session(use_https: bool, tls_ver: TLSVer = "auto") -> aiohttp.ClientSession:
     """Create a new Client Session for Connecting."""
     if use_https:
         if not can_https(tls_ver):
@@ -329,21 +334,66 @@ def get_new_client_session(use_https: bool, tls_ver: float = 1.1) -> aiohttp.Cli
     return aiohttp.ClientSession()
 
 
-def get_sslcontext(use_https: bool, tls_ver: float = 1.1) -> ssl.SSLContext | None:
-    """Create an SSLContext object to use for the connections."""
+_TLS_VERSION_MAP: dict[float, ssl.TLSVersion] = {
+    1.1: ssl.TLSVersion.TLSv1_1,
+    1.2: ssl.TLSVersion.TLSv1_2,
+    1.3: ssl.TLSVersion.TLSv1_3,
+}
+
+# Floor for "auto" negotiation. Current eisy/Polisy IoX firmware rejects
+# TLS <=1.1 (RFC 8996). Stock ISY-994 firmware (4.5.4+) defaults to TLS 1.2
+# and is user-configurable down to 1.0/1.1; users who have manually
+# downgraded their ISY-994's HTTPS Server Settings can still pin tls_ver=1.1.
+_TLS_AUTO_MIN = ssl.TLSVersion.TLSv1_2
+
+
+def _warn_deprecated_pin(tls_ver: float) -> None:
+    """Warn callers that pinning tls_ver is deprecated."""
+    warnings.warn(
+        f"Passing tls_ver={tls_ver!r} is deprecated. The default 'auto' lets "
+        "OpenSSL negotiate the highest TLS version both peers support "
+        "(floor: TLS 1.2). Only pin tls_ver=1.1 if you have manually "
+        "downgraded an ISY-994's HTTPS Server Settings below TLS 1.2.",
+        DeprecationWarning,
+        stacklevel=3,
+    )
+
+
+def get_sslcontext(
+    use_https: bool,
+    tls_ver: TLSVer = "auto",
+    verify_ssl: bool = False,
+) -> ssl.SSLContext | None:
+    """Create an SSLContext object to use for the connections.
+
+    eisy/Polisy and stock ISY-994 ship a self-signed cert, so verify_ssl
+    defaults to False. Set verify_ssl=True for users who have installed a
+    properly-signed certificate (CA-signed or imported via PKCS12) and have
+    a CA bundle the OS trusts.
+    """
     if not use_https:
         return None
-    if tls_ver == 1.1:
-        context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_1)
-    elif tls_ver == 1.2:
-        context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
 
-    # Allow older ciphers for older ISYs
+    context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+    context.check_hostname = verify_ssl
+    context.verify_mode = ssl.CERT_REQUIRED if verify_ssl else ssl.CERT_NONE
+
+    if tls_ver == "auto":
+        context.minimum_version = _TLS_AUTO_MIN
+    elif tls_ver in _TLS_VERSION_MAP:
+        _warn_deprecated_pin(tls_ver)
+        context.minimum_version = _TLS_VERSION_MAP[tls_ver]
+        context.maximum_version = _TLS_VERSION_MAP[tls_ver]
+    else:
+        raise ValueError(f"Unsupported TLS version: {tls_ver!r}")
+
+    # Allow older ciphers for original ISY-994 hardware (TLS 1.1/1.2 only;
+    # set_ciphers does not affect TLS 1.3 ciphersuites).
     context.set_ciphers("DEFAULT:!aNULL:!eNULL:!MD5:!3DES:!DES:!RC4:!IDEA:!SEED:!aDSS:!SRP:!PSK")
     return context
 
 
-def can_https(tls_ver: float) -> bool:
+def can_https(tls_ver: TLSVer) -> bool:
     """
     Verify minimum requirements to use an HTTPS connection.
 
@@ -352,13 +402,16 @@ def can_https(tls_ver: float) -> bool:
     output = True
 
     # check that Python was compiled against correct OpenSSL lib
-    if "PROTOCOL_TLSv1_1" not in dir(ssl):
+    if "PROTOCOL_TLS_CLIENT" not in dir(ssl):
         _LOGGER.error("PyISY cannot use HTTPS: Compiled against old OpenSSL library. See docs.")
         output = False
 
     # check the requested TLS version
-    if tls_ver not in [1.1, 1.2]:
-        _LOGGER.error("PyISY cannot use HTTPS: Only TLS 1.1 and 1.2 are supported by the ISY controller.")
+    if tls_ver != "auto" and tls_ver not in _TLS_VERSION_MAP:
+        _LOGGER.error(
+            "PyISY cannot use HTTPS: tls_ver must be 'auto' or one of "
+            "1.1, 1.2, 1.3 (only ISY/IoX-supported versions)."
+        )
         output = False
 
     return output

@@ -11,7 +11,7 @@ from xml.dom import minidom
 
 import aiohttp
 
-from ..connection import get_new_client_session, get_sslcontext
+from ..connection import TLSVer, get_new_client_session, get_sslcontext
 from ..constants import (
     ACTION_KEY,
     ACTION_KEY_CHANGED,
@@ -63,9 +63,10 @@ class WebSocketClient:
         username: str,
         password: str,
         use_https: bool = False,
-        tls_ver=1.1,
+        tls_ver: TLSVer = "auto",
         webroot: str = "",
         websession: aiohttp.ClientSession | None = None,
+        verify_ssl: bool = False,
     ) -> None:
         """Initialize a new Web Socket Client class."""
         if len(_LOGGER.handlers) == 0:
@@ -92,7 +93,7 @@ class WebSocketClient:
             websession = get_new_client_session(use_https, tls_ver)
 
         self.req_session = websession
-        self.sslcontext = get_sslcontext(use_https, tls_ver)
+        self.sslcontext = get_sslcontext(use_https, tls_ver, verify_ssl)
         self._loop = asyncio.get_running_loop()
         self._reconnect_timer: asyncio.TimerHandle | None = None
 

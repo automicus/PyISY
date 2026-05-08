@@ -10,7 +10,7 @@ import aiohttp
 
 from .clock import Clock
 from .configuration import Configuration
-from .connection import Connection
+from .connection import Connection, TLSVer
 from .constants import (
     ATTR_ACTION,
     CMD_X10,
@@ -48,8 +48,17 @@ class ISY:
     |  username: String of the administrator username for the ISY
     |  password: String of the administrator password for the ISY
     |  use_https: [optional] Boolean of whether secured HTTP should be used
-    |  tls_ver: [optional] Number indicating the version of TLS encryption to
-       use. Valid options are 1.1 or 1.2.
+    |  tls_ver: [optional, deprecated] TLS version to use. Defaults to "auto",
+       which lets OpenSSL negotiate the highest version both peers support
+       (floor: TLS 1.2). Stock ISY-994 firmware (4.5.4+) defaults to TLS 1.2
+       and current eisy/Polisy IoX firmware supports TLS 1.2 + 1.3, so "auto"
+       works for all unmodified controllers. Passing a numeric value (1.1,
+       1.2, 1.3) still works but emits a DeprecationWarning; pin only when
+       needed (e.g. an ISY-994 manually downgraded to TLS 1.0/1.1).
+    |  verify_ssl: [optional] If True, validate the controller's certificate
+       and hostname. Defaults to False because eisy/Polisy/ISY-994 ship
+       self-signed certs out of the box. Set True only when you have
+       installed a properly-signed certificate on the controller.
 
     :ivar auto_reconnect: Boolean value that indicates if the class should
                           auto-reconnect to the event stream if the connection
@@ -75,10 +84,11 @@ class ISY:
         username: str,
         password: str,
         use_https: bool = False,
-        tls_ver: float = 1.1,
+        tls_ver: TLSVer = "auto",
         webroot: str = "",
         websession: aiohttp.ClientSession | None = None,
         use_websocket: bool = False,
+        verify_ssl: bool = False,
     ) -> None:
         """Initialize the primary ISY Class."""
         self._events: EventStream | None = None  # create this JIT so no socket reuse
@@ -97,6 +107,7 @@ class ISY:
             tls_ver=tls_ver,
             webroot=webroot,
             websession=websession,
+            verify_ssl=verify_ssl,
         )
 
         self.websocket: WebSocketClient | None = None
@@ -111,6 +122,7 @@ class ISY:
                 tls_ver=tls_ver,
                 webroot=webroot,
                 websession=websession,
+                verify_ssl=verify_ssl,
             )
 
         self.configuration: Configuration | None = None
