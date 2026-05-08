@@ -222,8 +222,28 @@ class Connection:
             #     a modern OpenSSL distro with ``MinProtocol=TLSv1.2``).
             #   * ``verify_ssl=True`` against the controller's self-signed
             #     cert (``ClientConnectorCertificateError``).
-            # Always raise — retrying won't recover from a config
-            # mismatch, and callers (HA Core) need a definitive failure
+            #   * ISY-994 firmware (pre-RFC-5746) rejected by OpenSSL 3.x
+            #     with ``UNSAFE_LEGACY_RENEGOTIATION_DISABLED``. We
+            #     identify ISY-994 by the failure itself (the only peer
+            #     class that fails this way) and degrade the SSL context
+            #     once for the lifetime of the ``Connection`` — modern
+            #     peers (eisy/Polisy IoX, ISY-994 firmware that does
+            #     RFC 5746) stay strict.
+            if (
+                self.sslcontext is not None
+                and not (self.sslcontext.options & ssl.OP_LEGACY_SERVER_CONNECT)
+                and "UNSAFE_LEGACY_RENEGOTIATION_DISABLED" in str(err)
+            ):
+                _LOGGER.warning(
+                    "Enabling ISY-994 legacy-renegotiation TLS compatibility for "
+                    "this controller; eisy/Polisy IoX peers do not need this. "
+                    "Original error: %s",
+                    err,
+                )
+                self.sslcontext.options |= ssl.OP_LEGACY_SERVER_CONNECT
+                return await self.request(url, retries=retries, ok404=ok404, delay=delay, retry404=retry404)
+            # Always raise — retrying a real version/cert mismatch won't
+            # recover, and callers (HA Core) need a definitive failure
             # to translate into ``ConfigEntryNotReady`` rather than a
             # silent ``None`` that looks like a transient miss. The SSL
             # detail rides along in the exception chain.
@@ -434,6 +454,13 @@ def get_sslcontext(
     # Allow older ciphers for original ISY-994 hardware (TLS 1.1/1.2 only;
     # set_ciphers does not affect TLS 1.3 ciphersuites).
     context.set_ciphers("DEFAULT:!aNULL:!eNULL:!MD5:!3DES:!DES:!RC4:!IDEA:!SEED:!aDSS:!SRP:!PSK")
+    # Note: ``OP_LEGACY_SERVER_CONNECT`` (ISY-994 RFC-5746 compat) is
+    # NOT set here. ``Connection.request()`` enables it on demand the
+    # first time the peer rejects the handshake with
+    # ``UNSAFE_LEGACY_RENEGOTIATION_DISABLED`` — that way modern peers
+    # (eisy/Polisy IoX, ISY-994 firmware that honors RFC 5746) keep
+    # strict TLS, and only the controllers that actually need it
+    # degrade.
     return context
 
 
