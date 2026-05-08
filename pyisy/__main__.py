@@ -25,7 +25,7 @@ from .nodes import NodeChangedEvent
 _LOGGER = logging.getLogger(__name__)
 
 
-async def main(url, username, password, tls_ver, events, node_servers):
+async def main(url, username, password, events, node_servers):
     """Execute connection to ISY and load all system info."""
     _LOGGER.info("Starting PyISY...")
     t_0 = time.time()
@@ -40,8 +40,13 @@ async def main(url, username, password, tls_ver, events, node_servers):
         _LOGGER.error("host value in configuration is invalid.")
         return False
 
-    # Use the helper function to get a new aiohttp.ClientSession.
-    websession = get_new_client_session(https, tls_ver)
+    # Use the helper function to get a new aiohttp.ClientSession. tls_ver
+    # defaults to "auto" (negotiate the highest TLS version both peers
+    # support, floor TLS 1.2). verify_ssl=False is the current standard for
+    # eisy/Polisy/ISY-994 because they ship with a self-signed certificate;
+    # set verify_ssl=True only when the controller has a properly-signed
+    # certificate installed.
+    websession = get_new_client_session(https)
 
     # Connect to ISY controller.
     isy = ISY(
@@ -50,10 +55,10 @@ async def main(url, username, password, tls_ver, events, node_servers):
         username=username,
         password=password,
         use_https=https,
-        tls_ver=tls_ver,
         webroot=host.path,
         websession=websession,
         use_websocket=True,
+        verify_ssl=False,
     )
 
     try:
@@ -109,21 +114,15 @@ if __name__ == "__main__":
     parser.add_argument("url", type=str)
     parser.add_argument("username", type=str)
     parser.add_argument("password", type=str)
-    parser.add_argument("-t", "--tls-ver", dest="tls_ver", type=float)
     parser.add_argument("-v", "--verbose", action="store_true")
     parser.add_argument("-q", "--no-events", dest="no_events", action="store_true")
     parser.add_argument("-n", "--node-servers", dest="node_servers", action="store_true")
-    parser.set_defaults(use_https=False, tls_ver=1.1, verbose=False)
+    parser.set_defaults(use_https=False, verbose=False)
     args = parser.parse_args()
 
     enable_logging(LOG_VERBOSE if args.verbose else logging.DEBUG)
 
-    _LOGGER.info(
-        "ISY URL: %s, username: %s, TLS: %s",
-        args.url,
-        args.username,
-        args.tls_ver,
-    )
+    _LOGGER.info("ISY URL: %s, username: %s", args.url, args.username)
 
     try:
         asyncio.run(
@@ -131,7 +130,6 @@ if __name__ == "__main__":
                 url=args.url,
                 username=args.username,
                 password=args.password,
-                tls_ver=args.tls_ver,
                 events=(not args.no_events),
                 node_servers=args.node_servers,
             )
