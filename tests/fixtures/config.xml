@@ -1,0 +1,944 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <deviceSpecs>
+        <make>Universal Devices</make>
+        <manufacturerURL>https://www.universal-devices.com/</manufacturerURL>
+        <model>IoX</model>
+        <icon>/WEB/udlogo.jpg</icon>
+        <archive>/WEB/iox.jar</archive>
+        <chart>/WEB/chart.jar</chart>
+        <queryOnInit>true</queryOnInit>
+        <oneNodeAtATime>true</oneNodeAtATime>
+        <baseProtocolOptional>true</baseProtocolOptional>
+    </deviceSpecs>
+    <upnpSpecs>
+        <upnpDevice>
+            <utype>X_IoX_Device</utype>
+            <version>1</version>
+        </upnpDevice>
+        <upnpService>
+            <utype>X_IoX_Service</utype>
+            <version>1</version>
+        </upnpService>
+    </upnpSpecs>
+    <controls>
+        <control ID="1">
+            <name>ST</name>
+            <label>Status</label>
+            <readOnly>true</readOnly>
+            <isQueryAble>true</isQueryAble>
+            <isNumeric>true</isNumeric>
+            <numericUnit>%</numericUnit>
+        </control>
+        <control ID="2">
+            <name>OL</name>
+            <label>On Level</label>
+            <readOnly>false</readOnly>
+            <isQueryAble>true</isQueryAble>
+            <isNumeric>true</isNumeric>
+            <numericUnit>%</numericUnit>
+        </control>
+        <control ID="3">
+            <name>RR</name>
+            <label>Ramp Rate</label>
+            <readOnly>false</readOnly>
+            <isQueryAble>true</isQueryAble>
+            <isNumeric>true</isNumeric>
+            <numericUnit>%</numericUnit>
+        </control>
+        <control ID="4">
+            <name>CLITEMP</name>
+            <label>Current Temperature</label>
+            <readOnly>true</readOnly>
+            <isQueryAble>true</isQueryAble>
+            <isNumeric>true</isNumeric>
+            <numericUnit>F</numericUnit>
+        </control>
+        <control ID="5">
+            <name>CLISPH</name>
+            <label>Heat Setpoint</label>
+            <readOnly>false</readOnly>
+            <isQueryAble>true</isQueryAble>
+            <isNumeric>true</isNumeric>
+            <numericUnit>F</numericUnit>
+        </control>
+        <control ID="6">
+            <name>CLISPC</name>
+            <label>Cool Setpoint</label>
+            <readOnly>false</readOnly>
+            <isQueryAble>true</isQueryAble>
+            <isNumeric>true</isNumeric>
+            <numericUnit>F</numericUnit>
+        </control>
+        <control ID="7">
+            <name>CLIFS</name>
+            <label>Fan Setting</label>
+            <readOnly>false</readOnly>
+            <isQueryAble>true</isQueryAble>
+            <isNumeric>false</isNumeric>
+            <actions>
+                <action>
+                    <name>7</name>
+                    <label>On</label>
+                </action>
+                <action>
+                    <name>8</name>
+                    <label>Auto</label>
+                </action>
+            </actions>
+        </control>
+        <control ID="8">
+            <name>CLIFSO</name>
+            <label>Fan Setting Override</label>
+        </control>
+        <control ID="9">
+            <name>CLIFRS</name>
+            <label>Fan Running State</label>
+        </control>
+        <control ID="10">
+            <name>CLIMD</name>
+            <label>Thermostat Mode</label>
+            <readOnly>false</readOnly>
+            <isQueryAble>true</isQueryAble>
+            <isNumeric>false</isNumeric>
+            <actions>
+                <action>
+                    <name>0</name>
+                    <label>Off</label>
+                </action>
+                <action>
+                    <name>1</name>
+                    <label>Heat</label>
+                </action>
+                <action>
+                    <name>2</name>
+                    <label>Cool</label>
+                </action>
+                <action>
+                    <name>3</name>
+                    <label>Auto</label>
+                </action>
+                <action>
+                    <name>4</name>
+                    <label>Fan</label>
+                </action>
+                <action>
+                    <name>5</name>
+                    <label>Program Auto</label>
+                </action>
+                <action>
+                    <name>6</name>
+                    <label>Program Heat</label>
+                </action>
+                <action>
+                    <name>7</name>
+                    <label>Program Cool</label>
+                </action>
+            </actions>
+        </control>
+        <control ID="11">
+            <name>CLISMD</name>
+            <label>Schedule Mode</label>
+            <readOnly>false</readOnly>
+            <isQueryAble>true</isQueryAble>
+            <isNumeric>false</isNumeric>
+            <actions>
+                <action>
+                    <name>0</name>
+                    <label>Hold</label>
+                </action>
+                <action>
+                    <name>1</name>
+                    <label>Run</label>
+                </action>
+                <action>
+                    <name>2</name>
+                    <label>Away</label>
+                </action>
+            </actions>
+        </control>
+        <control ID="12">
+            <name>CLIHUM</name>
+            <label>Humidity</label>
+            <readOnly>true</readOnly>
+            <isQueryAble>true</isQueryAble>
+            <isNumeric>true</isNumeric>
+            <numericUnit>%</numericUnit>
+        </control>
+        <control ID="13">
+            <name>CLIHCS</name>
+            <label>Heat/Cool State</label>
+            <readOnly>true</readOnly>
+            <isQueryAble>true</isQueryAble>
+            <isNumeric>false</isNumeric>
+            <actions>
+                <action>
+                    <name>0</name>
+                    <label>Off</label>
+                </action>
+                <action>
+                    <name>1</name>
+                    <label>Heat On</label>
+                </action>
+                <action>
+                    <name>2</name>
+                    <label>Cool On</label>
+                </action>
+            </actions>
+        </control>
+        <control ID="14">
+            <name>CLIEMD</name>
+            <label>Energy Mode</label>
+            <readOnly>true</readOnly>
+            <isQueryAble>true</isQueryAble>
+            <isNumeric>true</isNumeric>
+            <numericUnit>%</numericUnit>
+        </control>
+        <control ID="15">
+            <name>UOM</name>
+            <label>Unit</label>
+            <readOnly>true</readOnly>
+            <isQueryAble>true</isQueryAble>
+            <isNumeric>false</isNumeric>
+            <actions>
+                <action>
+                    <name>1</name>
+                    <label>Celsius</label>
+                </action>
+                <action>
+                    <name>2</name>
+                    <label>Fahrenheit</label>
+                </action>
+            </actions>
+        </control>
+        <control ID="16">
+            <name>CV</name>
+            <label>Current Voltage</label>
+            <readOnly>true</readOnly>
+            <isQueryAble>true</isQueryAble>
+            <isNumeric>true</isNumeric>
+            <numericUnit>V</numericUnit>
+        </control>
+        <control ID="17">
+            <name>CC</name>
+            <label>Current Current</label>
+            <readOnly>true</readOnly>
+            <isQueryAble>true</isQueryAble>
+            <isNumeric>true</isNumeric>
+            <numericUnit>A</numericUnit>
+        </control>
+        <control ID="18">
+            <name>PPW</name>
+            <label>Polarized Power Used</label>
+            <readOnly>true</readOnly>
+            <isQueryAble>true</isQueryAble>
+            <isNumeric>true</isNumeric>
+            <numericUnit>W</numericUnit>
+        </control>
+        <control ID="19">
+            <name>CPW</name>
+            <label>Current Power Used</label>
+            <readOnly>true</readOnly>
+            <isQueryAble>true</isQueryAble>
+            <isNumeric>true</isNumeric>
+            <numericUnit>W</numericUnit>
+        </control>
+        <control ID="20">
+            <name>TPW</name>
+            <label>Total Energy Used</label>
+            <readOnly>true</readOnly>
+            <isQueryAble>true</isQueryAble>
+            <isNumeric>true</isNumeric>
+            <numericUnit>kWs</numericUnit>
+        </control>
+        <control ID="21">
+            <name>PF</name>
+            <label>Power Factor</label>
+            <readOnly>true</readOnly>
+            <isQueryAble>true</isQueryAble>
+            <isNumeric>true</isNumeric>
+            <numericUnit>%</numericUnit>
+        </control>
+        <control ID="22">
+            <name>ADRPST</name>
+            <label>Auto DR Processing State</label>
+            <readOnly>false</readOnly>
+            <isQueryAble>true</isQueryAble>
+            <isNumeric>false</isNumeric>
+            <actions>
+                <action>
+                    <name>0</name>
+                    <label>Auto Apply Off</label>
+                </action>
+                <action>
+                    <name>1</name>
+                    <label>Auto Apply On</label>
+                </action>
+            </actions>
+        </control>
+        <control ID="23">
+            <name>SECMD</name>
+            <label>Device secure mode</label>
+            <actions>
+                <action>
+                    <name>0</name>
+                    <label>Device operation is not secured</label>
+                </action>
+                <action>
+                    <name>1</name>
+                    <label>Device operation is secured</label>
+                </action>
+            </actions>
+        </control>
+        <control ID="24">
+            <name>QUERY</name>
+            <label>Query Device</label>
+        </control>
+        <control ID="25">
+            <name>DON</name>
+            <label>On</label>
+        </control>
+        <control ID="26">
+            <name>DFON</name>
+            <label>Fast On</label>
+        </control>
+        <control ID="27">
+            <name>DOF</name>
+            <label>Off</label>
+        </control>
+        <control ID="28">
+            <name>DFOF</name>
+            <label>Fast Off</label>
+        </control>
+        <control ID="29">
+            <name>BRT</name>
+            <label>Brighten</label>
+        </control>
+        <control ID="30">
+            <name>DIM</name>
+            <label>Dim</label>
+        </control>
+        <control ID="31">
+            <name>BMAN</name>
+            <label>Deprecated - Use FDUP or FDDOWN</label>
+        </control>
+        <control ID="32">
+            <name>SMAN</name>
+            <label>Deprecated - Use FDSTOP</label>
+        </control>
+        <control ID="33">
+            <name>FDUP</name>
+            <label>Fade Up</label>
+        </control>
+        <control ID="34">
+            <name>FDDOWN</name>
+            <label>Fade Down</label>
+        </control>
+        <control ID="35">
+            <name>FDSTOP</name>
+            <label>Fade Stop</label>
+        </control>
+        <control ID="36">
+            <name>BEEP</name>
+            <label>Beep</label>
+        </control>
+        <control ID="37">
+            <name>RESET</name>
+            <label>Reset values</label>
+        </control>
+        <control ID="38">
+            <name>ERR</name>
+            <label>Error</label>
+        </control>
+        <control ID="39">
+            <name>BATLVL</name>
+            <label>Battery level</label>
+        </control>
+        <control ID="40">
+            <name>UAC</name>
+            <label>Valid user access code entered</label>
+        </control>
+        <control ID="41">
+            <name>USRNUM</name>
+            <label>The user access code that associated with the most recent Alarm</label>
+        </control>
+        <control ID="42">
+            <name>ALARM</name>
+            <label>An alarm occurred (values are different for each device type)</label>
+        </control>
+        <control ID="43">
+            <name>BUSY</name>
+            <label>Device is Busy</label>
+        </control>
+        <control ID="44">
+            <name>CTL</name>
+            <label>Controller Action</label>
+        </control>
+        <control ID="45">
+            <name>AWAKE</name>
+            <label>Awake</label>
+        </control>
+        <control ID="46">
+            <name>DON3</name>
+            <label>On 3 Key Presses</label>
+        </control>
+        <control ID="47">
+            <name>DON4</name>
+            <label>On 4 Key Presses</label>
+        </control>
+        <control ID="48">
+            <name>DON5</name>
+            <label>On 5 Key Presses</label>
+        </control>
+        <control ID="49">
+            <name>DOF3</name>
+            <label>Off 3 Key Presses</label>
+        </control>
+        <control ID="50">
+            <name>DOF4</name>
+            <label>Off 4 Key Presses</label>
+        </control>
+        <control ID="51">
+            <name>DOF5</name>
+            <label>Off 5 Key Presses</label>
+        </control>
+        <control ID="52">
+            <name>HAIL</name>
+            <label>Hail</label>
+        </control>
+        <control ID="53">
+            <name>AIRFLOW</name>
+            <label>Air Flow</label>
+        </control>
+        <control ID="54">
+            <name>ATMPRES</name>
+            <label>Atmospheric Pressure</label>
+        </control>
+        <control ID="55">
+            <name>BARPRES</name>
+            <label>Barometric Pressure</label>
+        </control>
+        <control ID="56">
+            <name>ANGLPOS</name>
+            <label>Angle Position</label>
+        </control>
+        <control ID="57">
+            <name>CO2LVL</name>
+            <label>CO2 Level</label>
+        </control>
+        <control ID="58">
+            <name>DELAY</name>
+            <label>Delay</label>
+        </control>
+        <control ID="59">
+            <name>DEWPT</name>
+            <label>Dew Point</label>
+        </control>
+        <control ID="60">
+            <name>DISTANC</name>
+            <label>Distance</label>
+        </control>
+        <control ID="61">
+            <name>DUR</name>
+            <label>Duration</label>
+        </control>
+        <control ID="62">
+            <name>ELECCON</name>
+            <label>Electrical Conductivity</label>
+        </control>
+        <control ID="63">
+            <name>ELECRES</name>
+            <label>Electrical Resistivity</label>
+        </control>
+        <control ID="64">
+            <name>GPV</name>
+            <label>General Purpose Value</label>
+        </control>
+        <control ID="65">
+            <name>GVOL</name>
+            <label>Water Volume</label>
+        </control>
+        <control ID="66">
+            <name>LUMIN</name>
+            <label>Luminance</label>
+        </control>
+        <control ID="67">
+            <name>MODE</name>
+            <label>Mode</label>
+        </control>
+        <control ID="68">
+            <name>MOIST</name>
+            <label>Moisture</label>
+        </control>
+        <control ID="69">
+            <name>PULSCNT</name>
+            <label>Pulse Count</label>
+        </control>
+        <control ID="70">
+            <name>RAINRT</name>
+            <label>Rain Rate</label>
+        </control>
+        <control ID="71">
+            <name>ROTATE</name>
+            <label>Rotation</label>
+        </control>
+        <control ID="72">
+            <name>SEISINT</name>
+            <label>Seismic Intensity</label>
+        </control>
+        <control ID="73">
+            <name>SEISMAG</name>
+            <label>Seismic Magnitude</label>
+        </control>
+        <control ID="74">
+            <name>SOILT</name>
+            <label>Soil Temperature</label>
+        </control>
+        <control ID="75">
+            <name>SOLRAD</name>
+            <label>Solar Radiation</label>
+        </control>
+        <control ID="76">
+            <name>SPEED</name>
+            <label>Velocity</label>
+        </control>
+        <control ID="77">
+            <name>SVOL</name>
+            <label>Sound Volume</label>
+        </control>
+        <control ID="78">
+            <name>TANKCAP</name>
+            <label>Tank Capacity</label>
+        </control>
+        <control ID="79">
+            <name>TIDELVL</name>
+            <label>Tide Level</label>
+        </control>
+        <control ID="80">
+            <name>TIMEREM</name>
+            <label>Time remaining</label>
+        </control>
+        <control ID="81">
+            <name>UV</name>
+            <label>Ultraviolet</label>
+        </control>
+        <control ID="82">
+            <name>VOCLVL</name>
+            <label>Volatile Organic Compound (VOC) level</label>
+        </control>
+        <control ID="83">
+            <name>WATERT</name>
+            <label>Water Temperature</label>
+        </control>
+        <control ID="84">
+            <name>WEIGHT</name>
+            <label>Weight</label>
+        </control>
+        <control ID="85">
+            <name>WINDDIR</name>
+            <label>Wind Direction</label>
+        </control>
+        <control ID="86">
+            <name>WVOL</name>
+            <label>Water Volume</label>
+        </control>
+        <control ID="87">
+            <name>GV0</name>
+            <label>Custom Control 0</label>
+        </control>
+        <control ID="88">
+            <name>GV1</name>
+            <label>Custom Control 1</label>
+        </control>
+        <control ID="89">
+            <name>GV2</name>
+            <label>Custom Control 2</label>
+        </control>
+        <control ID="90">
+            <name>GV3</name>
+            <label>Custom Control 3</label>
+        </control>
+        <control ID="91">
+            <name>GV4</name>
+            <label>Custom Control 4</label>
+        </control>
+        <control ID="92">
+            <name>GV5</name>
+            <label>Custom Control 5</label>
+        </control>
+        <control ID="93">
+            <name>GV6</name>
+            <label>Custom Control 6</label>
+        </control>
+        <control ID="94">
+            <name>GV7</name>
+            <label>Custom Control 7</label>
+        </control>
+        <control ID="95">
+            <name>GV8</name>
+            <label>Custom Control 8</label>
+        </control>
+        <control ID="96">
+            <name>GV9</name>
+            <label>Custom Control 9</label>
+        </control>
+        <control ID="97">
+            <name>GV10</name>
+            <label>Custom Control 10</label>
+        </control>
+        <control ID="98">
+            <name>GV11</name>
+            <label>Custom Control 11</label>
+        </control>
+        <control ID="99">
+            <name>GV12</name>
+            <label>Custom Control 12</label>
+        </control>
+        <control ID="100">
+            <name>GV13</name>
+            <label>Custom Control 13</label>
+        </control>
+        <control ID="101">
+            <name>GV14</name>
+            <label>Custom Control 14</label>
+        </control>
+        <control ID="102">
+            <name>GV15</name>
+            <label>Custom Control 15</label>
+        </control>
+        <control ID="103">
+            <name>GV16</name>
+            <label>Custom Control 16</label>
+        </control>
+        <control ID="104">
+            <name>GV17</name>
+            <label>Custom Control 17</label>
+        </control>
+        <control ID="105">
+            <name>GV18</name>
+            <label>Custom Control 18</label>
+        </control>
+        <control ID="106">
+            <name>GV19</name>
+            <label>Custom Control 19</label>
+        </control>
+        <control ID="107">
+            <name>GV20</name>
+            <label>Custom Control 20</label>
+        </control>
+        <control ID="108">
+            <name>GV21</name>
+            <label>Custom Control 21</label>
+        </control>
+        <control ID="109">
+            <name>GV22</name>
+            <label>Custom Control 22</label>
+        </control>
+        <control ID="110">
+            <name>GV23</name>
+            <label>Custom Control 23</label>
+        </control>
+        <control ID="111">
+            <name>GV24</name>
+            <label>Custom Control 24</label>
+        </control>
+        <control ID="112">
+            <name>GV25</name>
+            <label>Custom Control 25</label>
+        </control>
+        <control ID="113">
+            <name>GV26</name>
+            <label>Custom Control 26</label>
+        </control>
+        <control ID="114">
+            <name>GV27</name>
+            <label>Custom Control 27</label>
+        </control>
+        <control ID="115">
+            <name>GV28</name>
+            <label>Custom Control 28</label>
+        </control>
+        <control ID="116">
+            <name>GV29</name>
+            <label>Custom Control 29</label>
+        </control>
+        <control ID="117">
+            <name>GV30</name>
+            <label>Custom Control 30</label>
+        </control>
+        <control ID="118">
+            <name>FREQ</name>
+            <label>Frequency</label>
+        </control>
+        <control ID="119">
+            <name>TIME</name>
+            <label>Time</label>
+        </control>
+        <control ID="120">
+            <name>TTEMP</name>
+            <label>Target temperature</label>
+        </control>
+        <control ID="121">
+            <name>PM25</name>
+            <label>Particulate matter 2 5</label>
+        </control>
+        <control ID="122">
+            <name>CH20</name>
+            <label>Formaldehyde ch2o level</label>
+        </control>
+        <control ID="123">
+            <name>RADON</name>
+            <label>Radon concentration</label>
+        </control>
+        <control ID="124">
+            <name>METHANE</name>
+            <label>Methane density ch4</label>
+        </control>
+        <control ID="125">
+            <name>CO</name>
+            <label>Carbon monoxide level</label>
+        </control>
+        <control ID="126">
+            <name>SOILH</name>
+            <label>Soil humidity</label>
+        </control>
+        <control ID="127">
+            <name>SOILR</name>
+            <label>Soil reactivity</label>
+        </control>
+        <control ID="128">
+            <name>SOILS</name>
+            <label>Soil salinity</label>
+        </control>
+        <control ID="129">
+            <name>HR</name>
+            <label>Heart rate</label>
+        </control>
+        <control ID="130">
+            <name>BPDIA</name>
+            <label>Blood pressure Diastolic</label>
+        </control>
+        <control ID="131">
+            <name>BPSYS</name>
+            <label>Blood pressure Systolic</label>
+        </control>
+        <control ID="132">
+            <name>MUSCLEM</name>
+            <label>Muscle mass</label>
+        </control>
+        <control ID="133">
+            <name>FATM</name>
+            <label>Fat mass</label>
+        </control>
+        <control ID="134">
+            <name>BONEM</name>
+            <label>Bone mass</label>
+        </control>
+        <control ID="135">
+            <name>TBW</name>
+            <label>Total body water</label>
+        </control>
+        <control ID="136">
+            <name>BMR</name>
+            <label>Basic metabolic rate</label>
+        </control>
+        <control ID="137">
+            <name>BMI</name>
+            <label>Body mass index</label>
+        </control>
+        <control ID="138">
+            <name>ACCX</name>
+            <label>Acceleration x axis</label>
+        </control>
+        <control ID="139">
+            <name>ACCY</name>
+            <label>Acceleration y axis</label>
+        </control>
+        <control ID="140">
+            <name>ACCZ</name>
+            <label>Acceleration z axis</label>
+        </control>
+        <control ID="141">
+            <name>SMOKED</name>
+            <label>Smoke density</label>
+        </control>
+        <control ID="142">
+            <name>WATERF</name>
+            <label>Water flow</label>
+        </control>
+        <control ID="143">
+            <name>WATERP</name>
+            <label>Water pressure</label>
+        </control>
+        <control ID="144">
+            <name>RFSS</name>
+            <label>Rf signal strength</label>
+        </control>
+        <control ID="145">
+            <name>PM10</name>
+            <label>Particulate matter</label>
+        </control>
+        <control ID="146">
+            <name>RESPR</name>
+            <label>Respiratory rate</label>
+        </control>
+        <control ID="147">
+            <name>RELMOD</name>
+            <label>Relative modulation level</label>
+        </control>
+        <control ID="148">
+            <name>WATERTB</name>
+            <label>Boiler water temperature</label>
+        </control>
+        <control ID="149">
+            <name>WATERTD</name>
+            <label>Domestic hot water temperature</label>
+        </control>
+        <control ID="150">
+            <name>TEMPOUT</name>
+            <label>Outside temperature</label>
+        </control>
+        <control ID="151">
+            <name>TEMPEXH</name>
+            <label>Exhaust temperature</label>
+        </control>
+        <control ID="152">
+            <name>GUST</name>
+            <label>Gust</label>
+        </control>
+        <control ID="153">
+            <name>PRECIP</name>
+            <label>Precipitation</label>
+        </control>
+        <control ID="154">
+            <name>MOON</name>
+            <label>Moon Phase</label>
+        </control>
+        <control ID="155">
+            <name>OZONE</name>
+            <label>Ozone</label>
+        </control>
+        <control ID="156">
+            <name>AQI</name>
+            <label>Air Quality Index</label>
+        </control>
+        <control ID="157">
+            <name>POP</name>
+            <label>Percent chance of precipitation</label>
+        </control>
+        <control ID="158">
+            <name>HEATIX</name>
+            <label>Heat Index</label>
+        </control>
+        <control ID="159">
+            <name>WINDCH</name>
+            <label>Wind Chill</label>
+        </control>
+        <control ID="160">
+            <name>ETO</name>
+            <label>Evapotranspiration</label>
+        </control>
+        <control ID="161">
+            <name>CLISBO</name>
+            <label>Setback Offset</label>
+        </control>
+        <control ID="162">
+            <name>CLISBS</name>
+            <label>Setback State</label>
+        </control>
+        <control ID="163">
+            <name>CLISBT</name>
+            <label>Setback Type</label>
+        </control>
+        <control ID="164">
+            <name>CLISPF</name>
+            <label>Furnace Setpoint</label>
+        </control>
+        <control ID="165">
+            <name>CLISPDA</name>
+            <label>Dry Air Setpoint</label>
+        </control>
+        <control ID="166">
+            <name>CLISPMA</name>
+            <label>Moist Air</label>
+        </control>
+        <control ID="167">
+            <name>CLISPAC</name>
+            <label>Auto Changeover Setpoint</label>
+        </control>
+        <control ID="168">
+            <name>CLISPEH</name>
+            <label>Energy Save Heating Setpoint</label>
+        </control>
+        <control ID="169">
+            <name>CLISPEC</name>
+            <label>Energy Save Cooling Setpoint</label>
+        </control>
+        <control ID="170">
+            <name>CLISPWH</name>
+            <label>Away Heating Setpoint</label>
+        </control>
+        <control ID="171">
+            <name>CLISPWC</name>
+            <label>Away Cooling Setpoint</label>
+        </control>
+        <control ID="172">
+            <name>CLISPFP</name>
+            <label>Full Power Setpoint</label>
+        </control>
+    </controls>
+    <driver_timestamp>2025-12-18-18:51:58</driver_timestamp>
+    <app>IoX</app>
+    <app_version>6.0.4</app_version>
+    <app_full_version>6.0.4</app_full_version>
+    <platform>IoX</platform>
+    <build_timestamp>2025-12-18-18:51:58</build_timestamp>
+    <root>
+        <id>00:11:22:33:44:55</id>
+        <name>Test ISY</name>
+    </root>
+    <product>
+        <id>5226</id>
+        <desc>eisy</desc>
+    </product>
+    <features>
+        <feature>
+            <id>21010</id>
+            <desc>OpenADR</desc>
+            <isInstalled>true</isInstalled>
+            <isAvailable>true</isAvailable>
+        </feature>
+        <feature>
+            <id>21040</id>
+            <desc>Networking Module</desc>
+            <isInstalled>true</isInstalled>
+            <isAvailable>true</isAvailable>
+        </feature>
+        <feature>
+            <id>21075</id>
+            <desc>Portal Integration - UDI</desc>
+            <isInstalled>true</isInstalled>
+            <isAvailable>true</isAvailable>
+        </feature>
+        <feature>
+            <id>21100</id>
+            <desc>Z-Wave Module</desc>
+            <isInstalled>false</isInstalled>
+            <isAvailable>true</isAvailable>
+        </feature>
+        <feature>
+            <id>21060</id>
+            <desc>A10/X10 Module</desc>
+            <isInstalled>true</isInstalled>
+            <isAvailable>true</isAvailable>
+        </feature>
+    </features>
+    <triggers>true</triggers>
+    <maxTriggers>2048</maxTriggers>
+    <variables>true</variables>
+    <nodedefs>true</nodedefs>
+    <baseDriver type="INSTEON" version="2" />
+    <security v="3.3">SSL</security>
+    <isDefaultCert>false</isDefaultCert>
+    <maxSSLStrength>2048</maxSSLStrength>
+</configuration>

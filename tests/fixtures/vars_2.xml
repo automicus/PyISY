@@ -1,0 +1,50 @@
+<CList type="VAR_INT">
+    <e id="1" name="s.Dim.Upstairs">
+        <val id="prec">0</val>
+    </e>
+    <e id="2" name="s.ISY.Primary_Bed_Backlight_On">
+        <val id="prec">0</val>
+    </e>
+    <e id="3" name="s.Dim.Downstairs_Staircase">
+        <val id="prec">0</val>
+    </e>
+    <e id="4" name="s.Dim.First_Floor_Hall">
+        <val id="prec">0</val>
+    </e>
+    <e id="5" name="CurrentMonth">
+        <val id="prec">0</val>
+    </e>
+    <e id="6" name="s.Dim.Living_Room_Lamps">
+        <val id="prec">0</val>
+    </e>
+    <e id="7" name="s.Dim.Living_Room_Recessed">
+        <val id="prec">0</val>
+    </e>
+    <e id="8" name="State_8">
+        <val id="prec">0</val>
+    </e>
+    <e id="10" name="s.Dim.Primary_Bed_Fan">
+        <val id="prec">0</val>
+    </e>
+    <e id="11" name="s.Dim.Primary_Bed_Fan_Light">
+        <val id="prec">0</val>
+    </e>
+    <e id="12" name="s.Dim.Primary_Bed_Recessed">
+        <val id="prec">0</val>
+    </e>
+    <e id="17" name="s.Dim.Entry_Staircase">
+        <val id="prec">0</val>
+    </e>
+    <e id="18" name="s.Dim.Garage_Breezeway">
+        <val id="prec">0</val>
+    </e>
+    <e id="23" name="s.ISY.Fix_Scenes_Enabled">
+        <val id="prec">0</val>
+    </e>
+    <e id="24" name="s.Dim.Family_Room_Recessed">
+        <val id="prec">0</val>
+    </e>
+    <e id="28" name="s.Dim.Patio_Sconces">
+        <val id="prec">0</val>
+    </e>
+</CList>

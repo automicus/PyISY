@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<nodes>
+    <node id="91 DD DB 1">
+        <property id="CLIFS" value="8" formatted="Auto" uom="99" />
+        <property id="CLIHCS" value="0" formatted="Idle" uom="66" />
+        <property id="CLIHUM" value="1" formatted="1%" uom="22" />
+        <property id="CLIMD" value="5" formatted="Program Auto" uom="98" />
+        <property id="CLISPC" value="156" formatted="78.0&#176;" uom="101" />
+        <property id="CLISPH" value="130" formatted="65.0&#176;" uom="101" />
+        <property id="ERR" value="0" formatted="0" uom="0" />
+        <property id="ST" value="136" formatted="68.0&#176;" uom="101" />
+        <property id="UOM" value="2" formatted="2" uom="0" />
+    </node>
+</nodes>

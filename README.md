@@ -67,8 +67,8 @@ Contributions are welcome! This project uses `pre-commit` to ensure code quality
 git clone https://github.com/automicus/PyISY.git
 cd PyISY
 
-# Install development dependencies
-pip install -r requirements.txt -r requirements-dev.txt
+# Install development + test dependencies
+pip install -r requirements.txt -r requirements-dev.txt -r requirements-test.txt
 pip install -e .
 
 # Install pre-commit hooks
@@ -83,6 +83,42 @@ ruff format .
 ```
 
 A VSCode DevContainer is also provided for a consistent development environment.
+
+### Tests
+
+PyISY has an offline `pytest` suite covering the XML parsers, connection
+behavior, the full `ISY.initialize()` lifecycle, and the per-node /
+per-program action methods used by the Home Assistant `isy994`
+integration. The fixtures are anonymized real-controller exports —
+running the suite needs no live ISY.
+
+**Please run the tests before opening a PR.** They are fast (~10 s) and
+catch most regressions in the public API that Home Assistant Core
+depends on.
+
+```shell
+# Run the full suite
+pytest
+
+# Run with a coverage report
+pytest --cov=pyisy --cov-report=term-missing
+
+# Run a single file or test
+pytest tests/test_nodes.py
+pytest tests/test_climate_lock.py::test_set_climate_setpoint_heat_doubles_for_uom_101
+```
+
+The same `pytest` job runs in CI on Python 3.11 and 3.14 (matching the
+range Home Assistant supports). The terminal coverage report is visible
+in the workflow logs.
+
+If you change parsing or status behavior, be ready to refresh snapshots:
+
+```shell
+pytest --snapshot-update
+```
+
+Snapshots live under `tests/__snapshots__/` and are tracked in git.
 
 ## Releases
 

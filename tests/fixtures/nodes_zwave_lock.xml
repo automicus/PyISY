@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<nodes>
+    <root />
+    <folder flag="0">
+        <address>27574</address>
+        <name>Locks</name>
+        <family>12</family>
+    </folder>
+    <node flag="128" nodeDefId="ZY007_1">
+        <address>ZY007_1</address>
+        <name>Front Door</name>
+        <family>12</family>
+        <parent type="3">27574</parent>
+        <type>4.64.3.0</type>
+        <enabled>true</enabled>
+        <deviceClass>0</deviceClass>
+        <wattage>0</wattage>
+        <dcPeriod>0</dcPeriod>
+        <startDelay>0</startDelay>
+        <endDelay>0</endDelay>
+        <pnode>ZY007_1</pnode>
+        <rpnode>ZY007_1</rpnode>
+        <sgid>1</sgid>
+        <devtype>
+            <gen>4.64.3</gen>
+            <mfg>144.3.568</mfg>
+            <cat>111</cat>
+        </devtype>
+    </node>
+    <node flag="0" nodeDefId="ZY007_306">
+        <address>ZY007_306</address>
+        <name>Front Door Access</name>
+        <family>12</family>
+        <parent type="1">ZY007_1</parent>
+        <type>4.64.3.0</type>
+        <enabled>true</enabled>
+        <pnode>ZY007_1</pnode>
+        <rpnode>ZY007_1</rpnode>
+        <sgid>306</sgid>
+        <devtype>
+            <gen>4.64.3</gen>
+            <mfg>144.3.568</mfg>
+            <cat>0</cat>
+        </devtype>
+    </node>
+</nodes>

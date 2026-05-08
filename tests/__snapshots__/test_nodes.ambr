@@ -1,0 +1,11 @@
+# serializer version: 1
+# name: test_snapshot_summary
+  dict({
+    'count': 50,
+    'type_counts': dict({
+      'folder': 15,
+      'group': 5,
+      'node': 30,
+    }),
+  })
+# ---

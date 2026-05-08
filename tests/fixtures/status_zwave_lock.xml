@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<nodes>
+    <node id="ZY007_1">
+        <property id="BATLVL" value="60" formatted="60%" uom="51" />
+        <property id="ST" value="100" formatted="Locked" uom="11" />
+    </node>
+    <node id="ZY007_306">
+        <property id="ALARM" value="3" formatted="3" uom="25" />
+        <property id="USRNUM" value="0" formatted="0" uom="70" />
+    </node>
+</nodes>

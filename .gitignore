@@ -44,6 +44,8 @@ htmlcov/
 .tox/
 .coverage
 .coverage.*
+.pytest_cache/
+.venv/
 .cache
 nosetests.xml
 coverage.xml
@@ -70,3 +72,6 @@ example/
 .output/*
 
 .venv/
+
+# Test fixtures captured from real ISY hardware — sanitized and tracked.
+!tests/fixtures/*.log
