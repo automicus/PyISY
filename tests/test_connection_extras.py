@@ -15,6 +15,7 @@ from aioresponses import aioresponses
 
 from pyisy.connection import (
     EMPTY_XML_RESPONSE,
+    OP_LEGACY_SERVER_CONNECT,
     Connection,
     get_sslcontext,
 )
@@ -60,6 +61,17 @@ def test_get_sslcontext_auto_pins_min_v12_no_max() -> None:
     # Self-signed eisy/Polisy out-of-the-box default.
     assert ctx.verify_mode == ssl.CERT_NONE
     assert ctx.check_hostname is False
+
+
+def test_get_sslcontext_does_not_preset_legacy_renegotiation() -> None:
+    """``OP_LEGACY_SERVER_CONNECT`` (the ISY-994 RFC-5746 compat flag)
+    must NOT be set by default — modern peers (eisy/Polisy IoX, ISY-994
+    firmware that honors RFC 5746) keep strict TLS. The flag is enabled
+    on demand by ``Connection.request()`` only when the peer rejects
+    the handshake with ``UNSAFE_LEGACY_RENEGOTIATION_DISABLED``."""
+    ctx = get_sslcontext(use_https=True)
+    assert ctx is not None
+    assert not (ctx.options & OP_LEGACY_SERVER_CONNECT)
 
 
 def test_get_sslcontext_verify_ssl_true_flips_cert_verification() -> None:
@@ -350,6 +362,79 @@ async def test_request_ssl_error_raises_on_test_connection_path(
         mocked.get(url, exception=ssl_err)
         with pytest.raises(ISYConnectionError, match="SSL/TLS error"):
             await conn.request(url, retries=None)
+
+
+async def test_request_legacy_reneg_failure_enables_compat_and_retries() -> None:
+    """First handshake fails with ``UNSAFE_LEGACY_RENEGOTIATION_DISABLED``
+    (signature of ISY-994's pre-RFC-5746 TLS stack against modern OpenSSL).
+    ``request()`` must:
+
+    1. Flip ``OP_LEGACY_SERVER_CONNECT`` on the existing SSL context
+       (modern peers — eisy/Polisy IoX, ISY-994 firmware that honors
+       RFC 5746 — never reach this branch and stay strict).
+    2. Log a one-time WARNING explaining the degradation.
+    3. Retry the request and surface the second response normally.
+    """
+    from unittest.mock import MagicMock
+
+    https_conn = Connection(address="h", port=443, username="u", password="p", use_https=True)
+    try:
+        # Sanity: flag is OFF on a fresh connection (verifies the
+        # context-builder default; the request-path retry is what
+        # actually flips it).
+        assert https_conn.sslcontext is not None
+        assert not (https_conn.sslcontext.options & OP_LEGACY_SERVER_CONNECT)
+
+        url = https_conn.compile_url(["config"])
+        reneg_err = aiohttp.ClientConnectorSSLError(
+            MagicMock(),
+            ssl.SSLError(
+                1,
+                "[SSL: UNSAFE_LEGACY_RENEGOTIATION_DISABLED] unsafe legacy renegotiation disabled",
+            ),
+        )
+        with aioresponses() as mocked:
+            # First call: handshake refusal. Second call (after the
+            # retry flips the flag): success.
+            mocked.get(url, exception=reneg_err)
+            mocked.get(url, status=200, body="<configuration/>")
+            result = await https_conn.request(url)
+
+        assert result == "<configuration/>"
+        assert https_conn.sslcontext.options & OP_LEGACY_SERVER_CONNECT
+    finally:
+        await https_conn.close()
+
+
+async def test_request_legacy_reneg_does_not_trigger_for_unrelated_ssl_errors() -> None:
+    """Only the specific ``UNSAFE_LEGACY_RENEGOTIATION_DISABLED``
+    failure flips the flag. A generic protocol error
+    (``UNSUPPORTED_PROTOCOL``, cert verify failure, etc.) must surface
+    as ``ISYConnectionError`` without weakening the SSL context — those
+    are real config mismatches the user needs to fix, not ISY-994
+    legacy compat."""
+    from unittest.mock import MagicMock
+
+    from pyisy.exceptions import ISYConnectionError
+
+    https_conn = Connection(address="h", port=443, username="u", password="p", use_https=True)
+    try:
+        url = https_conn.compile_url(["config"])
+        proto_err = aiohttp.ClientConnectorSSLError(
+            MagicMock(),
+            ssl.SSLError(1, "[SSL: UNSUPPORTED_PROTOCOL] unsupported protocol"),
+        )
+        with aioresponses() as mocked:
+            mocked.get(url, exception=proto_err)
+            with pytest.raises(ISYConnectionError, match="SSL/TLS error"):
+                await https_conn.request(url)
+
+        # Flag must remain OFF — the user's security posture isn't
+        # silently weakened on every SSL failure.
+        assert https_conn.sslcontext is not None
+        assert not (https_conn.sslcontext.options & OP_LEGACY_SERVER_CONNECT)
+    finally:
+        await https_conn.close()
 
 
 async def test_request_non_rest_url_does_not_crash(conn: Connection) -> None:
