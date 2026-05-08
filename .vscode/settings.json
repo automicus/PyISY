@@ -1,12 +1,14 @@
 {
-  "python.linting.pylintEnabled": true,
-  "python.linting.enabled": true,
-  "python.formatting.provider": "black",
+  "python.testing.pytestArgs": ["--no-cov"],
   "editor.formatOnPaste": false,
   "editor.formatOnSave": true,
   "editor.formatOnType": true,
+  "editor.formatOnSaveMode": "file",
+  "editor.codeActionsOnSave": {
+    "source.fixAll": "explicit",
+    "source.organizeImports": "explicit"
+  },
+  "editor.defaultFormatter": "charliermarsh.ruff",
   "files.trimTrailingWhitespace": true,
-  "python.linting.flake8Enabled": false,
-  "cSpell.words": ["automodule"],
-  "editor.formatOnSaveMode": "file"
+  "cSpell.words": ["automodule", "pyisy"]
 }

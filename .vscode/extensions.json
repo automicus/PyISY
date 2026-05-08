@@ -1,7 +1,10 @@
 {
   "recommendations": [
+    "ms-python.vscode-pylance",
     "esbenp.prettier-vscode",
-    "ms-python.python",
-    "ms-python.black-formatter"
+    "github.vscode-pull-request-github",
+    "streetsidesoftware.code-spell-checker",
+    "njpwerner.autodocstring",
+    "charliermarsh.ruff"
   ]
 }
