@@ -304,10 +304,9 @@ class Connection:
             [URL_VARIABLES, METHOD_GET, VAR_STATE],
         ]
         req_urls = [self.compile_url(req) for req in req_list]
-        results = await asyncio.gather(
-            *[self.request(req_url) for req_url in req_urls], return_exceptions=True
-        )
-        results = [r for r in results if r is not None]  # Strip any bad requests.
+        async with asyncio.TaskGroup() as tg:
+            tasks = [tg.create_task(self.request(req_url)) for req_url in req_urls]
+        results = [r for r in (t.result() for t in tasks) if r is not None]
         result = "".join(results)
         return result.replace('</vars><?xml version="1.0" encoding="UTF-8"?><vars>', "")
 

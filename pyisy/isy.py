@@ -147,37 +147,40 @@ class ISY:
         if not self.configuration["model"].startswith("ISY 994"):
             self.conn.increase_available_connections()
 
-        isy_setup_tasks = [
-            self.conn.get_status(),
-            self.conn.get_time(),
-            self.conn.get_nodes(),
-            self.conn.get_programs(),
-            self.conn.get_variable_defs(),
-            self.conn.get_variables(),
-        ]
-        if self.configuration[CONFIG_NETWORKING] or self.configuration.get(CONFIG_PORTAL):
-            isy_setup_tasks.append(asyncio.create_task(self.conn.get_network()))
-        isy_setup_results = await asyncio.gather(*isy_setup_tasks)
+        load_network = bool(self.configuration[CONFIG_NETWORKING] or self.configuration.get(CONFIG_PORTAL))
+        async with asyncio.TaskGroup() as tg:
+            status_task = tg.create_task(self.conn.get_status())
+            time_task = tg.create_task(self.conn.get_time())
+            nodes_task = tg.create_task(self.conn.get_nodes())
+            programs_task = tg.create_task(self.conn.get_programs())
+            var_defs_task = tg.create_task(self.conn.get_variable_defs())
+            vars_task = tg.create_task(self.conn.get_variables())
+            network_task = tg.create_task(self.conn.get_network()) if load_network else None
+
+        status_xml = status_task.result()
+        time_xml = time_task.result()
+        nodes_xml = nodes_task.result()
+        programs_xml = programs_task.result()
 
         # Fail fast if the controller didn't return any of the load-bearing
         # responses — most often because the ISY is still booting. Mounting
         # empty managers silently leads to confused downstream consumers.
-        if any(isy_setup_results[i] is None for i in (0, 1, 2, 3)):
+        if any(x is None for x in (status_xml, time_xml, nodes_xml, programs_xml)):
             raise ISYResponseParseError(
                 "ISY did not return all setup data; the controller may still be initializing."
             )
 
-        self.clock = Clock(self, xml=isy_setup_results[1])
-        self.nodes = Nodes(self, xml=isy_setup_results[2])
-        self.programs = Programs(self, xml=isy_setup_results[3])
+        self.clock = Clock(self, xml=time_xml)
+        self.nodes = Nodes(self, xml=nodes_xml)
+        self.programs = Programs(self, xml=programs_xml)
         self.variables = Variables(
             self,
-            def_xml=isy_setup_results[4],
-            var_xml=isy_setup_results[5],
+            def_xml=var_defs_task.result(),
+            var_xml=vars_task.result(),
         )
-        if self.configuration[CONFIG_NETWORKING] or self.configuration.get(CONFIG_PORTAL):
-            self.networking = NetworkResources(self, xml=isy_setup_results[6])
-        await self.nodes.update(xml=isy_setup_results[0])
+        if network_task is not None:
+            self.networking = NetworkResources(self, xml=network_task.result())
+        await self.nodes.update(xml=status_xml)
         if self.node_servers and with_node_servers:
             await self.node_servers.load_node_servers()
 
