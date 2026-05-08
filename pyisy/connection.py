@@ -218,7 +218,24 @@ class Connection:
         ):
             _LOGGER.debug("ISY not ready or closed connection.")
         except aiohttp.ClientResponseError as err:
-            # Malformed framing/protocol error — retrying won't recover; bail.
+            # Malformed framing/protocol error — retrying won't recover.
+            # When the caller already opted into ``ok404=True`` we treat it
+            # as another flavor of "feature not present": ISY-994 firmware
+            # on a factory-reset / un-configured controller responds to
+            # missing optional resources (``/CONF/STATE.VAR``,
+            # ``/CONF/NET/RES.CFG``) with a real 404 whose framing trips
+            # aiohttp's parser when the connection is reused — the next
+            # request on the kept-alive socket reads the prior 404's HTML
+            # body where an HTTP status line should be. Demote that to a
+            # debug log and return ``""`` so the optional manager's
+            # "no resource configured" path handles it cleanly.
+            if ok404:
+                _LOGGER.debug(
+                    "ISY response framing error on optional endpoint %s: %s",
+                    url,
+                    err.message,
+                )
+                return ""
             _LOGGER.error(
                 "Client Response Error from ISY: %s %s.",
                 err.status,
@@ -289,13 +306,25 @@ class Connection:
         return await self.request(req_url)
 
     async def get_variable_defs(self) -> list[str | BaseException] | None:
-        """Fetch the list of variables from the ISY."""
+        """Fetch the list of variables from the ISY.
+
+        ``ok404=True`` because both endpoints legitimately 404 on a
+        factory-reset / un-configured ISY-994 (``/CONF/INTEGER.VAR not
+        found`` / ``/CONF/STATE.VAR not found``); the ``Variables``
+        parser already handles those bodies and ``None`` as
+        "no variables defined" (see ``EMPTY_VARIABLE_RESPONSES``).
+        Without ``ok404`` the request path emits ERROR-level log spam
+        for what is really an empty-config success.
+        """
         req_list = [
             [URL_VARIABLES, URL_DEFINITIONS, VAR_INTEGER],
             [URL_VARIABLES, URL_DEFINITIONS, VAR_STATE],
         ]
         req_urls = [self.compile_url(req) for req in req_list]
-        return await asyncio.gather(*[self.request(req_url) for req_url in req_urls], return_exceptions=True)
+        return await asyncio.gather(
+            *[self.request(req_url, ok404=True) for req_url in req_urls],
+            return_exceptions=True,
+        )
 
     async def get_variables(self) -> str | None:
         """Fetch the variable details from the ISY to update local copy."""

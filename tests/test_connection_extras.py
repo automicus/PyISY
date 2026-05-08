@@ -184,6 +184,19 @@ async def test_get_variable_defs_returns_two_responses(conn: Connection) -> None
     assert conn.request.await_count == 2
 
 
+async def test_get_variable_defs_passes_ok404(conn: Connection) -> None:
+    """Both per-type requests must be issued with ``ok404=True`` so a
+    factory-reset / un-configured ISY-994 doesn't surface its
+    ``/CONF/INTEGER.VAR not found`` 404 as ERROR-level log spam — the
+    Variables parser already treats that body as "no variables
+    defined"."""
+    conn.request = AsyncMock(return_value="")
+    await conn.get_variable_defs()
+    assert conn.request.await_count == 2
+    for call in conn.request.await_args_list:
+        assert call.kwargs.get("ok404") is True
+
+
 async def test_get_variables_concatenates_and_strips_inner_boundary(
     conn: Connection,
 ) -> None:
@@ -257,6 +270,32 @@ async def test_request_client_response_error_returns_none(conn: Connection) -> N
         )
         result = await conn.request(url)
     assert result is None
+
+
+async def test_request_client_response_error_with_ok404_returns_empty(
+    conn: Connection,
+) -> None:
+    """Regression: ISY-994 firmware on a factory-reset controller answers
+    missing optional resources (``/CONF/STATE.VAR``,
+    ``/CONF/NET/RES.CFG``) with a real 404 whose framing desyncs the
+    keep-alive connection — aiohttp's parser then raises
+    ``ClientResponseError("Expected HTTP/, RTSP/ or ICE/:")`` on the
+    *next* request that reuses the socket. Callers that already opted
+    into ``ok404=True`` (variable defs, network resources) should see
+    that absorbed as ``""`` rather than an ERROR-level log + None."""
+    url = conn.compile_url(["vars", "definitions", "1"])
+    with aioresponses() as mocked:
+        mocked.get(
+            url,
+            exception=aiohttp.ClientResponseError(
+                request_info=None,
+                history=(),
+                status=400,
+                message="Expected HTTP/, RTSP/ or ICE/:",
+            ),
+        )
+        result = await conn.request(url, ok404=True)
+    assert result == ""
 
 
 async def test_request_non_rest_url_does_not_crash(conn: Connection) -> None:
