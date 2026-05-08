@@ -15,6 +15,7 @@ from aioresponses import aioresponses
 
 from pyisy.connection import (
     EMPTY_XML_RESPONSE,
+    OP_LEGACY_SERVER_CONNECT,
     Connection,
     get_sslcontext,
 )
@@ -70,7 +71,7 @@ def test_get_sslcontext_does_not_preset_legacy_renegotiation() -> None:
     the handshake with ``UNSAFE_LEGACY_RENEGOTIATION_DISABLED``."""
     ctx = get_sslcontext(use_https=True)
     assert ctx is not None
-    assert not (ctx.options & ssl.OP_LEGACY_SERVER_CONNECT)
+    assert not (ctx.options & OP_LEGACY_SERVER_CONNECT)
 
 
 def test_get_sslcontext_verify_ssl_true_flips_cert_verification() -> None:
@@ -382,7 +383,7 @@ async def test_request_legacy_reneg_failure_enables_compat_and_retries() -> None
         # context-builder default; the request-path retry is what
         # actually flips it).
         assert https_conn.sslcontext is not None
-        assert not (https_conn.sslcontext.options & ssl.OP_LEGACY_SERVER_CONNECT)
+        assert not (https_conn.sslcontext.options & OP_LEGACY_SERVER_CONNECT)
 
         url = https_conn.compile_url(["config"])
         reneg_err = aiohttp.ClientConnectorSSLError(
@@ -400,7 +401,7 @@ async def test_request_legacy_reneg_failure_enables_compat_and_retries() -> None
             result = await https_conn.request(url)
 
         assert result == "<configuration/>"
-        assert https_conn.sslcontext.options & ssl.OP_LEGACY_SERVER_CONNECT
+        assert https_conn.sslcontext.options & OP_LEGACY_SERVER_CONNECT
     finally:
         await https_conn.close()
 
@@ -431,7 +432,7 @@ async def test_request_legacy_reneg_does_not_trigger_for_unrelated_ssl_errors() 
         # Flag must remain OFF — the user's security posture isn't
         # silently weakened on every SSL failure.
         assert https_conn.sslcontext is not None
-        assert not (https_conn.sslcontext.options & ssl.OP_LEGACY_SERVER_CONNECT)
+        assert not (https_conn.sslcontext.options & OP_LEGACY_SERVER_CONNECT)
     finally:
         await https_conn.close()
 

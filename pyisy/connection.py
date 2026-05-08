@@ -57,6 +57,13 @@ HTTP_HEADERS = {
 
 EMPTY_XML_RESPONSE = '<?xml version="1.0" encoding="UTF-8"?>'
 
+# ``ssl.OP_LEGACY_SERVER_CONNECT`` was added to the stdlib ``ssl``
+# module in Python 3.12; CI still runs on 3.11. The underlying OpenSSL
+# flag ``SSL_OP_LEGACY_SERVER_CONNECT`` has had the stable value
+# ``0x4`` for years, so fall back to the literal when the attribute is
+# missing.
+OP_LEGACY_SERVER_CONNECT = getattr(ssl, "OP_LEGACY_SERVER_CONNECT", 0x4)
+
 
 class Connection:
     """Connection object to manage connection to and interaction with ISY."""
@@ -231,7 +238,7 @@ class Connection:
             #     RFC 5746) stay strict.
             if (
                 self.sslcontext is not None
-                and not (self.sslcontext.options & ssl.OP_LEGACY_SERVER_CONNECT)
+                and not (self.sslcontext.options & OP_LEGACY_SERVER_CONNECT)
                 and "UNSAFE_LEGACY_RENEGOTIATION_DISABLED" in str(err)
             ):
                 _LOGGER.warning(
@@ -240,7 +247,7 @@ class Connection:
                     "Original error: %s",
                     err,
                 )
-                self.sslcontext.options |= ssl.OP_LEGACY_SERVER_CONNECT
+                self.sslcontext.options |= OP_LEGACY_SERVER_CONNECT
                 return await self.request(url, retries=retries, ok404=ok404, delay=delay, retry404=retry404)
             # Always raise — retrying a real version/cert mismatch won't
             # recover, and callers (HA Core) need a definitive failure
