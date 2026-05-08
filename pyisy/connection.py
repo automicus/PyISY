@@ -212,6 +212,22 @@ class Connection:
 
         except TimeoutError:
             _LOGGER.warning("Timeout while trying to connect to the ISY.")
+        except aiohttp.ClientSSLError as err:
+            # SSL/TLS handshake failure. Subclass of ``ClientOSError``, so
+            # the broader branch below would otherwise eat it silently as
+            # a generic "ISY not ready or closed connection." debug.
+            # Almost always one of:
+            #   * controller pinned below the ``tls_ver='auto'`` floor of
+            #     TLS 1.2 (e.g. an ISY-994 manually downgraded to 1.1, or
+            #     a modern OpenSSL distro with ``MinProtocol=TLSv1.2``).
+            #   * ``verify_ssl=True`` against the controller's self-signed
+            #     cert (``ClientConnectorCertificateError``).
+            # Always raise — retrying won't recover from a config
+            # mismatch, and callers (HA Core) need a definitive failure
+            # to translate into ``ConfigEntryNotReady`` rather than a
+            # silent ``None`` that looks like a transient miss. The SSL
+            # detail rides along in the exception chain.
+            raise ISYConnectionError(f"SSL/TLS error: {err}") from err
         except (
             aiohttp.ClientOSError,
             aiohttp.ServerDisconnectedError,

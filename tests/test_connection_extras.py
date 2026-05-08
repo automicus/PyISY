@@ -298,6 +298,60 @@ async def test_request_client_response_error_with_ok404_returns_empty(
     assert result == ""
 
 
+async def test_request_ssl_error_always_raises_connection_error(
+    conn: Connection,
+) -> None:
+    """SSL/TLS handshake failures are non-recoverable config mismatches
+    (controller pinned below auto-floor TLS 1.2, or ``verify_ssl=True``
+    against a self-signed cert). ``request`` must raise
+    ``ISYConnectionError`` rather than logging + returning ``None``,
+    even on the retry path — retrying a handshake that failed for a
+    protocol/cert reason won't help, and callers (HA Core) need a
+    definitive failure to translate into ``ConfigEntryNotReady``
+    instead of treating it as a transient miss.
+
+    The raise replaces the previous opaque
+    ``ClientOSError`` → DEBUG "ISY not ready or closed connection."
+    branch that silently ate ``ClientConnectorSSLError`` (a subclass).
+    The SSL detail rides along in ``__cause__`` and the exception
+    message — no separate WARNING/ERROR log so we don't double up."""
+    from unittest.mock import MagicMock
+
+    from pyisy.exceptions import ISYConnectionError
+
+    url = conn.compile_url(["status"])
+    ssl_err = aiohttp.ClientConnectorSSLError(
+        MagicMock(),
+        ssl.SSLError(1, "[SSL: UNSUPPORTED_PROTOCOL] unsupported protocol"),
+    )
+    with aioresponses() as mocked:
+        mocked.get(url, exception=ssl_err)
+        with pytest.raises(ISYConnectionError, match="SSL/TLS error") as excinfo:
+            await conn.request(url)
+    # Cause chain preserves the original aiohttp SSL error for
+    # callers / log handlers that want to introspect it.
+    assert isinstance(excinfo.value.__cause__, aiohttp.ClientSSLError)
+
+
+async def test_request_ssl_error_raises_on_test_connection_path(
+    conn: Connection,
+) -> None:
+    """Same behavior on the ``retries=None`` path used by
+    ``test_connection`` / ``ISY.initialize`` — verifying the SSL branch
+    is taken before the (formerly raise-on-retries-None) generic
+    ``ClientOSError`` branch."""
+    from unittest.mock import MagicMock
+
+    from pyisy.exceptions import ISYConnectionError
+
+    url = conn.compile_url(["config"])
+    ssl_err = aiohttp.ClientConnectorSSLError(MagicMock(), ssl.SSLError(1, "unsupported protocol"))
+    with aioresponses() as mocked:
+        mocked.get(url, exception=ssl_err)
+        with pytest.raises(ISYConnectionError, match="SSL/TLS error"):
+            await conn.request(url, retries=None)
+
+
 async def test_request_non_rest_url_does_not_crash(conn: Connection) -> None:
     """Regression for #488: ``request()`` derives its debug-log endpoint
     from the URL by splitting on ``"rest"``. ``get_description()`` builds
