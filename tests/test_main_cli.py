@@ -28,9 +28,12 @@ def test_help_text_lists_required_arguments() -> None:
     assert "url" in out
     assert "username" in out
     assert "password" in out
-    # And the documented optional flags.
-    for flag in ("--tls-ver", "--verbose", "--no-events", "--node-servers"):
+    # And the documented optional flags. tls_ver is no longer a CLI option:
+    # the script always uses the new "auto" default and verify_ssl=False,
+    # which is the correct configuration for every shipped controller.
+    for flag in ("--verbose", "--no-events", "--node-servers"):
         assert flag in out, f"help missing {flag!r}"
+    assert "--tls-ver" not in out, "--tls-ver should have been removed in #494"
 
 
 def test_missing_args_exits_with_usage_error() -> None:

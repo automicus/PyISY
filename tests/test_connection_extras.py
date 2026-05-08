@@ -5,6 +5,8 @@ wrappers, ``request`` retry / 503 / ClientResponseError branches,
 
 from __future__ import annotations
 
+import ssl
+import warnings
 from unittest.mock import AsyncMock, patch
 
 import aiohttp
@@ -39,11 +41,64 @@ def test_get_sslcontext_returns_none_for_http() -> None:
     assert get_sslcontext(use_https=False) is None
 
 
-def test_get_sslcontext_tls_1_2_returns_context() -> None:
-    """TLS 1.2 path is the modern eisy / IoX default. Older 1.1 path is
-    exercised by the existing ``test_can_https_*`` tests."""
-    ctx = get_sslcontext(use_https=True, tls_ver=1.2)
+def test_get_sslcontext_auto_pins_min_v12_no_max() -> None:
+    """``tls_ver='auto'`` (the new default) builds a PROTOCOL_TLS_CLIENT
+    context with ``min=TLSv1_2`` and no max pin, so OpenSSL negotiates
+    the highest mutually-supported version. eisy/Polisy lands on TLS 1.3,
+    stock ISY-994 (4.5.4+) lands on TLS 1.2.
+
+    Verifies #494 acceptance criteria: no ``DeprecationWarning`` from
+    PyISY's own code and no Python ``ssl`` deprecation noise either,
+    since both 1.2 and 1.3 are supported moderns."""
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", DeprecationWarning)
+        ctx = get_sslcontext(use_https=True)  # default tls_ver="auto"
+
     assert ctx is not None
+    assert ctx.minimum_version == ssl.TLSVersion.TLSv1_2
+    assert ctx.maximum_version == ssl.TLSVersion.MAXIMUM_SUPPORTED
+    # Self-signed eisy/Polisy out-of-the-box default.
+    assert ctx.verify_mode == ssl.CERT_NONE
+    assert ctx.check_hostname is False
+
+
+def test_get_sslcontext_verify_ssl_true_flips_cert_verification() -> None:
+    """``verify_ssl=True`` is the opt-in for users who installed a
+    properly-signed cert on their controller. It flips both
+    ``verify_mode`` and ``check_hostname``."""
+    ctx = get_sslcontext(use_https=True, verify_ssl=True)
+    assert ctx is not None
+    assert ctx.verify_mode == ssl.CERT_REQUIRED
+    assert ctx.check_hostname is True
+
+
+@pytest.mark.parametrize("tls_ver", [1.1, 1.2, 1.3])
+def test_get_sslcontext_numeric_pin_emits_deprecation_warning(tls_ver: float) -> None:
+    """Numeric ``tls_ver`` values still build a context for backward
+    compat (an ISY-994 manually downgraded below 1.2 still needs 1.1)
+    but PyISY emits exactly one ``DeprecationWarning`` per call to
+    nudge callers toward ``"auto"``."""
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        ctx = get_sslcontext(use_https=True, tls_ver=tls_ver)
+
+    pyisy_warns = [w for w in caught if "tls_ver" in str(w.message)]
+    assert len(pyisy_warns) == 1
+    assert issubclass(pyisy_warns[0].category, DeprecationWarning)
+
+    # Numeric pin still produces a working context, with min == max.
+    assert ctx is not None
+    assert ctx.minimum_version == ctx.maximum_version
+
+
+def test_get_sslcontext_rejects_unknown_value() -> None:
+    """Unsupported numeric or string values raise ValueError instead of
+    silently falling through (the old code path raised ``UnboundLocalError``
+    on a bad input — see #494)."""
+    with pytest.raises(ValueError, match="Unsupported TLS version"):
+        get_sslcontext(use_https=True, tls_ver=1.0)
+    with pytest.raises(ValueError, match="Unsupported TLS version"):
+        get_sslcontext(use_https=True, tls_ver="bogus")  # type: ignore[arg-type]
 
 
 # -- get_* REST wrappers ---------------------------------------------

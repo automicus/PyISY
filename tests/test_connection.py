@@ -57,14 +57,17 @@ async def test_increase_available_connections_raises_semaphore(
 
 def test_can_https_rejects_unsupported_tls_version() -> None:
     assert can_https(1.0) is False
+    assert can_https("garbage") is False
 
 
-def test_can_https_accepts_tls_1_1_and_1_2() -> None:
-    # Will return True only if the host's OpenSSL still supports TLSv1.1.
-    # We don't strictly assert True (CI hosts vary); we just assert no crash
-    # and that the return type is bool.
+def test_can_https_accepts_auto_and_supported_versions() -> None:
+    # "auto" is the new default and lets OpenSSL negotiate the highest
+    # mutually-supported TLS version (floor 1.2). The numeric values are
+    # still accepted for backward compat (deprecated; see #494).
+    assert can_https("auto") is True
     assert isinstance(can_https(1.1), bool)
     assert isinstance(can_https(1.2), bool)
+    assert isinstance(can_https(1.3), bool)
 
 
 async def test_connection_info_contents(conn: Connection) -> None:
@@ -135,7 +138,7 @@ async def test_request_200_returns_body(conn: Connection) -> None:
     ("kwargs", "expected_scheme"),
     [
         ({"use_https": False}, "http://"),
-        ({"use_https": True, "tls_ver": 1.2}, "https://"),
+        ({"use_https": True}, "https://"),
     ],
 )
 async def test_url_scheme_matches_use_https(kwargs: dict, expected_scheme: str) -> None:
