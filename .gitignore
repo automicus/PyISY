@@ -68,3 +68,5 @@ example/
 
 # Output when dumping to file enabled
 .output/*
+
+.venv/
