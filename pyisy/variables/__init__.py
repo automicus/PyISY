@@ -104,8 +104,11 @@ class Variables:
         valid_definitions = False
         for ind in range(2):
             # parse definitions
-            if xmls[ind] is None or xmls[ind] in EMPTY_VARIABLE_RESPONSES:
-                # No variables of this type defined.
+            if not xmls[ind] or xmls[ind] in EMPTY_VARIABLE_RESPONSES:
+                # No variables of this type defined. ``not xmls[ind]``
+                # catches both ``None`` (request returned nothing) and
+                # ``""`` (the ``ok404`` / framing-desync path in
+                # ``Connection.request``).
                 _LOGGER.info("No Type %s variables defined", ind + 1)
                 continue
             try:
