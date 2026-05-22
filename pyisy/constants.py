@@ -30,6 +30,7 @@ class EventStreamStatus(StrEnum):
 
     LOST_STREAM_CONNECTION = "lost_stream_connection"
     CONNECTED = "connected"
+    SYNCING = "stream_syncing"
     DISCONNECTED = "disconnected"
     START_UPDATES = "start_updates"
     STOP_UPDATES = "stop_updates"
@@ -46,6 +47,7 @@ class EventStreamStatus(StrEnum):
 # their string values, so existing `== ES_CONNECTED` checks keep working.
 ES_LOST_STREAM_CONNECTION = EventStreamStatus.LOST_STREAM_CONNECTION
 ES_CONNECTED = EventStreamStatus.CONNECTED
+ES_SYNCING = EventStreamStatus.SYNCING
 ES_DISCONNECTED = EventStreamStatus.DISCONNECTED
 ES_START_UPDATES = EventStreamStatus.START_UPDATES
 ES_STOP_UPDATES = EventStreamStatus.STOP_UPDATES

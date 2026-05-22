@@ -27,6 +27,7 @@ from ..constants import (
     ES_NOT_STARTED,
     ES_RECONNECTING,
     ES_STOP_UPDATES,
+    ES_SYNCING,
     PROP_STATUS,
     TAG_EVENT_INFO,
     TAG_NODE,
@@ -50,6 +51,11 @@ WS_HB_GRACE = 2
 WS_TIMEOUT = 10.0
 WS_MAX_RETRIES = 4
 WS_RETRY_BACKOFF: list[float] = [0.01, 1, 10, 30, 60]  # Seconds
+
+# Quiet-window / hard-cap timings for the post-connect SYNCING gate (see
+# _promote_when_quiet). Module-level so tests can monkeypatch them small.
+WS_SYNC_QUIET_SECONDS: float = 1.0
+WS_SYNC_MAX_SECONDS: float = 10.0
 
 
 class WebSocketClient:
@@ -88,6 +94,11 @@ class WebSocketClient:
         self._program_key = None
         self.websocket_task: asyncio.Task[None] = None
         self.guardian_task: asyncio.Task[None] = None
+        # Watcher that promotes ES_SYNCING -> ES_CONNECTED once the
+        # post-connect status replay drains; _frame_count is the sample
+        # it reads to detect quiet. See _promote_when_quiet (#512).
+        self._sync_task: asyncio.Task[None] | None = None
+        self._frame_count: int = 0
 
         if websession is None:
             websession = get_new_client_session(use_https, tls_ver)
@@ -156,6 +167,7 @@ class WebSocketClient:
     def status(self, value):
         """Set the current node state and notify listeners."""
         if self._status != value:
+            _LOGGER.debug("Event stream status: %s -> %s", self._status, value)
             self._status = value
             self.isy.connection_events.notify(self._status)
         return self._status
@@ -241,6 +253,49 @@ class WebSocketClient:
         self._sid = attr_from_xml(xmldoc, "Event", ATTR_STREAM_ID)
         _LOGGER.debug("ISY Updated Events Stream ID: %s", self._sid)
 
+    def _cancel_sync_task(self) -> None:
+        """Cancel the SYNCING quiet-window watcher, if running."""
+        if self._sync_task is not None:
+            self._sync_task.cancel()
+            self._sync_task = None
+
+    async def _promote_when_quiet(self) -> None:
+        """Promote ES_SYNCING -> ES_CONNECTED once the post-connect status
+        replay goes quiet (or the hard cap elapses).
+
+        On connect the controller replays every node's current status as a
+        burst of frames; holding ES_SYNCING until the burst settles keeps
+        ``connection_events`` consumers from treating the replay as live
+        events (spurious triggers on every connect/restart; #512). Records
+        still update during ES_SYNCING — ``_route_message`` keeps feeding —
+        only the "stream is live" signal waits.
+
+        Sampled rather than event-driven so the read loop stays a plain
+        ``async for``: every WS_SYNC_QUIET_SECONDS we check whether any
+        frame arrived since the last sample. A window with no new frame is
+        treated as quiet (including the first window on a silent
+        controller). WS_SYNC_MAX_SECONDS caps the wait so a perpetually
+        chatty controller still goes live. Cancelled by ``websocket``'s
+        ``finally`` if the socket drops first, so a connection that never
+        settles never reports ES_CONNECTED.
+
+        The window is anchored to socket-open, not to the first replayed
+        frame: the gate assumes the replay begins within the first quiet
+        window (true in practice — IoX serves it from cache on the
+        subscribe round-trip). A pathologically delayed first frame is the
+        known limitation, accepted to keep the silent-controller path fast.
+        """
+        deadline = self._loop.time() + WS_SYNC_MAX_SECONDS
+        seen = self._frame_count
+        while self.status == ES_SYNCING:
+            await asyncio.sleep(WS_SYNC_QUIET_SECONDS)
+            quiet = self._frame_count == seen
+            seen = self._frame_count
+            if quiet or self._loop.time() >= deadline:
+                break
+        if self.status == ES_SYNCING:
+            self.status = ES_CONNECTED
+
     async def websocket(self, retries: int = 0) -> None:
         """Start websocket connection."""
         try:
@@ -253,19 +308,28 @@ class WebSocketClient:
                 receive_timeout=self._hbwait + WS_HB_GRACE,
                 ssl=self.sslcontext,
             ) as ws:
-                self.status = ES_CONNECTED
                 retries = 0
                 _LOGGER.debug("Successfully connected to websocket.")
+                # Hold ES_SYNCING through the controller's post-connect status
+                # replay so consumers don't fire on it; watcher promotes once
+                # quiet (#512).
+                self._frame_count = 0
+                self.status = ES_SYNCING
+                self._sync_task = self._loop.create_task(self._promote_when_quiet())
 
-                async for msg in ws:
-                    msg_type = msg.type
-                    if msg_type is aiohttp.WSMsgType.TEXT:
-                        await self._route_message(msg.data)
-                    elif msg_type is aiohttp.WSMsgType.BINARY:
-                        _LOGGER.warning("Unexpected binary message received.")
-                    elif msg_type is aiohttp.WSMsgType.ERROR:
-                        _LOGGER.error("Error during receive %s", ws.exception())
-                        break
+                try:
+                    async for msg in ws:
+                        msg_type = msg.type
+                        if msg_type is aiohttp.WSMsgType.TEXT:
+                            self._frame_count += 1
+                            await self._route_message(msg.data)
+                        elif msg_type is aiohttp.WSMsgType.BINARY:
+                            _LOGGER.warning("Unexpected binary message received.")
+                        elif msg_type is aiohttp.WSMsgType.ERROR:
+                            _LOGGER.error("Error during receive %s", ws.exception())
+                            break
+                finally:
+                    self._cancel_sync_task()
 
         except asyncio.CancelledError:
             self.status = ES_DISCONNECTED

@@ -26,7 +26,9 @@ from pyisy.constants import (
     ES_NOT_STARTED,
     ES_RECONNECTING,
     ES_STOP_UPDATES,
+    ES_SYNCING,
 )
+from pyisy.events import websocket as ws_module
 from pyisy.events.websocket import WS_MAX_RETRIES, WebSocketClient
 
 # -- fixtures ---------------------------------------------------------
@@ -206,19 +208,38 @@ class _FakeWS:
 
     Yields a scripted sequence of ``msg`` objects, then completes the
     ``async for``. ``exception()`` and ``close_code`` mimic the real
-    surface so the post-loop branch in ``websocket()`` can read them."""
+    surface so the post-loop branch in ``websocket()`` can read them.
 
-    def __init__(self, messages, exc=None, close_code: int = 1000) -> None:
+    ``keep_open=True`` leaves the socket blocked (open) after the scripted
+    frames drain, until ``close()`` is awaited — this lets a test watch
+    the SYNCING -> CONNECTED quiet-window promotion without the read loop
+    tearing the socket down first. Each ``__anext__`` suspends once
+    (``await asyncio.sleep(0)``) so the sync watcher task gets to run."""
+
+    def __init__(self, messages, exc=None, close_code: int = 1000, keep_open: bool = False) -> None:
         self._messages = list(messages)
         self._exc = exc
         self.close_code = close_code
+        self._keep_open = keep_open
+        self.closed = False
+        self._closed_evt = asyncio.Event()
 
     def __aiter__(self):
-        async def _gen():
-            for m in self._messages:
-                yield m
+        return self
 
-        return _gen()
+    async def __anext__(self):
+        if self.closed:
+            raise StopAsyncIteration
+        if self._messages:
+            await asyncio.sleep(0)
+            return self._messages.pop(0)
+        if self._keep_open:
+            await self._closed_evt.wait()
+        raise StopAsyncIteration
+
+    async def close(self) -> None:
+        self.closed = True
+        self._closed_evt.set()
 
     def exception(self):
         return self._exc
@@ -395,6 +416,161 @@ async def test_websocket_skips_reconnect_when_stopped_during_loop(ws_client: Web
     with patch.object(WebSocketClient, "_reconnect") as reconnect:
         await ws_client.websocket()
     reconnect.assert_not_called()
+
+
+# -- SYNCING quiet-window gate (#512) ---------------------------------
+
+
+async def test_promote_when_quiet_promotes_after_idle(ws_client: WebSocketClient, monkeypatch) -> None:
+    """A silent controller (replay already drained) promotes
+    SYNCING -> CONNECTED after a single quiet window."""
+    monkeypatch.setattr(ws_module, "WS_SYNC_QUIET_SECONDS", 0.01)
+    monkeypatch.setattr(ws_module, "WS_SYNC_MAX_SECONDS", 1.0)
+    ws_client._status = ES_SYNCING
+    ws_client._frame_count = 3  # frames already received; none arriving now
+    await ws_client._promote_when_quiet()
+    assert ws_client.status == ES_CONNECTED
+
+
+async def test_promote_when_quiet_holds_until_replay_drains(ws_client: WebSocketClient, monkeypatch) -> None:
+    """While the post-connect replay keeps delivering frames the watcher
+    holds SYNCING; once the burst goes quiet it promotes to CONNECTED.
+    This is the core guard against spurious triggers on every connect."""
+    # QUIET (0.2s) is 20x the replay frame interval (0.01s), so a false
+    # "quiet" reading would require the replay task to be starved for a
+    # whole window (~20 missed wakeups) -- not a realistic CI stall. The
+    # observation window below spans two full quiet windows.
+    monkeypatch.setattr(ws_module, "WS_SYNC_QUIET_SECONDS", 0.2)
+    monkeypatch.setattr(ws_module, "WS_SYNC_MAX_SECONDS", 5.0)
+    ws_client._status = ES_SYNCING
+    ws_client._frame_count = 0
+
+    stop = asyncio.Event()
+
+    async def _replay() -> None:
+        # Frames arrive far faster than the quiet window, so every sample
+        # the watcher takes sees movement -> never quiet.
+        while not stop.is_set():
+            ws_client._frame_count += 1
+            await asyncio.sleep(0.01)
+
+    replay = asyncio.create_task(_replay())
+    watcher = asyncio.create_task(ws_client._promote_when_quiet())
+    try:
+        # Two quiet windows pass while the replay is still busy.
+        await asyncio.sleep(0.5)
+        assert not watcher.done()
+        assert ws_client.status == ES_SYNCING
+
+        # Replay drains -> the next quiet sample promotes to CONNECTED.
+        stop.set()
+        await replay
+        await asyncio.wait_for(watcher, timeout=2.0)
+        assert ws_client.status == ES_CONNECTED
+    finally:
+        stop.set()
+        watcher.cancel()
+
+
+async def test_promote_when_quiet_hard_cap_under_constant_traffic(
+    ws_client: WebSocketClient, monkeypatch
+) -> None:
+    """A perpetually chatty controller (frames never stop) must still
+    promote at the WS_SYNC_MAX_SECONDS hard cap rather than stall in
+    SYNCING forever."""
+    monkeypatch.setattr(ws_module, "WS_SYNC_QUIET_SECONDS", 0.05)
+    monkeypatch.setattr(ws_module, "WS_SYNC_MAX_SECONDS", 0.15)
+    ws_client._status = ES_SYNCING
+    ws_client._frame_count = 0
+
+    stop = asyncio.Event()
+
+    async def _flood() -> None:
+        while not stop.is_set():
+            ws_client._frame_count += 1
+            await asyncio.sleep(0.005)
+
+    flood = asyncio.create_task(_flood())
+    try:
+        await asyncio.wait_for(ws_client._promote_when_quiet(), timeout=2.0)
+        assert ws_client.status == ES_CONNECTED
+    finally:
+        stop.set()
+        await asyncio.gather(flood, return_exceptions=True)
+
+
+async def test_websocket_holds_syncing_through_replay_then_connects(
+    ws_client: WebSocketClient, monkeypatch
+) -> None:
+    """End-to-end through ``websocket()``: a replayed frame is routed
+    (records still update) while the stream stays SYNCING, and CONNECTED
+    is only emitted after the quiet window."""
+    # A wide quiet window (0.2s) keeps the "still SYNCING" assertion below
+    # well clear of the watcher's first post-frame sample -- the routed
+    # poll breaks within a few ms, leaving ~0.2s of slack before promotion
+    # becomes possible, so a scheduler hiccup can't race it.
+    monkeypatch.setattr(ws_module, "WS_SYNC_QUIET_SECONDS", 0.2)
+    monkeypatch.setattr(ws_module, "WS_SYNC_MAX_SECONDS", 5.0)
+    ws = _FakeWS(messages=[_ws_msg(aiohttp.WSMsgType.TEXT, "<x/>")], keep_open=True)
+    ws_client.req_session.ws_connect = _ws_connect_returning(ws)
+    routed: list[str] = []
+
+    async def _capture(self, msg):
+        routed.append(msg)
+
+    with (
+        patch.object(WebSocketClient, "_route_message", _capture),
+        patch.object(WebSocketClient, "_reconnect"),
+    ):
+        task = asyncio.create_task(ws_client.websocket())
+        try:
+            # Wait for the replayed frame to be routed into state.
+            for _ in range(200):
+                if routed:
+                    break
+                await asyncio.sleep(0.005)
+            await asyncio.sleep(0)  # flush any same-tick callbacks
+
+            # Replay routed (state synced) but the stream is not yet live.
+            assert routed == ["<x/>"]
+            assert ws_client.status == ES_SYNCING
+
+            # After the quiet window the stream goes live.
+            for _ in range(200):
+                if ws_client.status == ES_CONNECTED:
+                    break
+                await asyncio.sleep(0.01)
+            assert ws_client.status == ES_CONNECTED
+        finally:
+            await ws.close()
+            await asyncio.wait_for(task, timeout=2.0)
+
+
+async def test_websocket_socket_drop_before_quiet_never_connects(
+    ws_client: WebSocketClient, monkeypatch
+) -> None:
+    """If the socket drops before the replay settles, the watcher is
+    cancelled in the ``finally`` and CONNECTED is never emitted — a
+    connection that never settles must not report itself as live."""
+    monkeypatch.setattr(ws_module, "WS_SYNC_QUIET_SECONDS", 5.0)
+    monkeypatch.setattr(ws_module, "WS_SYNC_MAX_SECONDS", 10.0)
+    ws = _FakeWS(messages=[_ws_msg(aiohttp.WSMsgType.TEXT, "<x/>")])  # drains then closes
+    ws_client.req_session.ws_connect = _ws_connect_returning(ws)
+    notifications: list[str] = []
+    ws_client.isy.connection_events.notify = notifications.append
+
+    async def _capture(self, msg):
+        return None
+
+    with (
+        patch.object(WebSocketClient, "_route_message", _capture),
+        patch.object(WebSocketClient, "_reconnect"),
+    ):
+        await ws_client.websocket()
+
+    assert ES_SYNCING in notifications
+    assert ES_CONNECTED not in notifications
+    assert ws_client._sync_task is None  # cancelled in the finally
 
 
 # -- helpers ----------------------------------------------------------
