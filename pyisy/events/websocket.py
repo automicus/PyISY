@@ -52,12 +52,8 @@ WS_TIMEOUT = 10.0
 WS_MAX_RETRIES = 4
 WS_RETRY_BACKOFF: list[float] = [0.01, 1, 10, 30, 60]  # Seconds
 
-# After the socket opens the controller replays every node's current
-# status as a burst of ST/DON/DOF frames. The stream is held in
-# ES_SYNCING until that burst goes quiet for WS_SYNC_QUIET_SECONDS (no
-# frame), then flips to ES_CONNECTED. WS_SYNC_MAX_SECONDS is a hard cap
-# so a perpetually chatty controller can never stall the stream in
-# ES_SYNCING. Module-level so tests can monkeypatch them small.
+# Quiet-window / hard-cap timings for the post-connect SYNCING gate (see
+# _promote_when_quiet). Module-level so tests can monkeypatch them small.
 WS_SYNC_QUIET_SECONDS: float = 1.0
 WS_SYNC_MAX_SECONDS: float = 10.0
 
@@ -282,6 +278,12 @@ class WebSocketClient:
         chatty controller still goes live. Cancelled by ``websocket``'s
         ``finally`` if the socket drops first, so a connection that never
         settles never reports ES_CONNECTED.
+
+        The window is anchored to socket-open, not to the first replayed
+        frame: the gate assumes the replay begins within the first quiet
+        window (true in practice — IoX serves it from cache on the
+        subscribe round-trip). A pathologically delayed first frame is the
+        known limitation, accepted to keep the silent-controller path fast.
         """
         deadline = self._loop.time() + WS_SYNC_MAX_SECONDS
         seen = self._frame_count
@@ -308,10 +310,9 @@ class WebSocketClient:
             ) as ws:
                 retries = 0
                 _LOGGER.debug("Successfully connected to websocket.")
-                # Socket is open, but the controller now replays every
-                # node's current status. Hold ES_SYNCING (not ES_CONNECTED)
-                # until that burst drains so consumers don't fire on the
-                # replay; the watcher promotes once it goes quiet (#512).
+                # Hold ES_SYNCING through the controller's post-connect status
+                # replay so consumers don't fire on it; watcher promotes once
+                # quiet (#512).
                 self._frame_count = 0
                 self.status = ES_SYNCING
                 self._sync_task = self._loop.create_task(self._promote_when_quiet())
