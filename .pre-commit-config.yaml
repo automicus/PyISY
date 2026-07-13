@@ -14,7 +14,7 @@ repos:
       - id: end-of-file-fixer
       - id: trailing-whitespace
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.15.13
+    rev: v0.15.21
     hooks:
       - id: ruff-check
         args:
@@ -36,6 +36,6 @@ repos:
     hooks:
       - id: yamllint
   - repo: https://github.com/rbubley/mirrors-prettier
-    rev: v3.8.3
+    rev: v3.9.5
     hooks:
       - id: prettier
