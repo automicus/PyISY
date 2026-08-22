@@ -11,7 +11,12 @@ from xml.dom import minidom
 
 import aiohttp
 
-from ..connection import TLSVer, get_new_client_session, get_sslcontext
+from ..connection import (
+    TLSVer,
+    basic_auth_header,
+    get_new_client_session,
+    get_sslcontext,
+)
 from ..constants import (
     ACTION_KEY,
     ACTION_KEY_CHANGED,
@@ -83,7 +88,8 @@ class WebSocketClient:
         self._port = port
         self._username = username
         self._password = password
-        self._auth = aiohttp.BasicAuth(self._username, self._password)
+        self._auth_header = basic_auth_header(self._username, self._password)
+        self._headers = {**WS_HEADERS, "Authorization": self._auth_header}
         self._webroot = webroot.rstrip("/")
         self._tls_ver = tls_ver
         self.use_https = use_https
@@ -301,9 +307,8 @@ class WebSocketClient:
         try:
             async with self.req_session.ws_connect(
                 self._url,
-                auth=self._auth,
                 heartbeat=WS_HEARTBEAT,
-                headers=WS_HEADERS,
+                headers=self._headers,
                 timeout=WS_TIMEOUT,
                 receive_timeout=self._hbwait + WS_HB_GRACE,
                 ssl=self.sslcontext,

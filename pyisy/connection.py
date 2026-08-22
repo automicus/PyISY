@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import ssl
 import warnings
+from base64 import b64encode
 from typing import Literal
 from urllib.parse import quote, urlencode
 
@@ -57,6 +58,17 @@ HTTP_HEADERS = {
 
 EMPTY_XML_RESPONSE = '<?xml version="1.0" encoding="UTF-8"?>'
 
+
+def basic_auth_header(username: str, password: str) -> str:
+    """Return the value of an HTTP Basic ``Authorization`` header.
+
+    ``aiohttp.BasicAuth`` is deprecated and goes away in aiohttp 4.0. Its
+    replacement, ``aiohttp.encode_basic_auth()``, needs aiohttp 3.14, which
+    the test suite cannot use yet (see ``requirements-test.txt``).
+    """
+    return "Basic " + b64encode(f"{username}:{password}".encode()).decode()
+
+
 # ``ssl.OP_LEGACY_SERVER_CONNECT`` was added to the stdlib ``ssl``
 # module in Python 3.12; CI still runs on 3.11. The underlying OpenSSL
 # flag ``SSL_OP_LEGACY_SERVER_CONNECT`` has had the stable value
@@ -88,7 +100,8 @@ class Connection:
         self._port = port
         self._username = username
         self._password = password
-        self._auth = aiohttp.BasicAuth(self._username, self._password)
+        self._auth_header = basic_auth_header(self._username, self._password)
+        self._headers = {**HTTP_HEADERS, "Authorization": self._auth_header}
         self._webroot = webroot.rstrip("/")
         self.req_session = websession
         self._tls_ver = tls_ver
@@ -126,7 +139,7 @@ class Connection:
     def connection_info(self) -> dict[str, str | int | bytes | None]:
         """Return the connection info required to connect to the ISY."""
         connection_info = {}
-        connection_info["auth"] = self._auth.encode()
+        connection_info["auth"] = self._auth_header
         connection_info["addr"] = self._address
         connection_info["port"] = int(self._port)
         connection_info["passwd"] = self._password
@@ -176,8 +189,7 @@ class Connection:
                 self.semaphore,
                 self.req_session.get(
                     url,
-                    auth=self._auth,
-                    headers=HTTP_HEADERS,
+                    headers=self._headers,
                     timeout=HTTP_TIMEOUT,
                     ssl=self.sslcontext,
                 ) as res,
