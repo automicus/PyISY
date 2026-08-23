@@ -83,7 +83,8 @@ class WebSocketClient:
         self._port = port
         self._username = username
         self._password = password
-        self._auth = aiohttp.BasicAuth(self._username, self._password)
+        self._auth_header = aiohttp.encode_basic_auth(self._username, self._password)
+        self._headers = {**WS_HEADERS, "Authorization": self._auth_header}
         self._webroot = webroot.rstrip("/")
         self._tls_ver = tls_ver
         self.use_https = use_https
@@ -301,9 +302,8 @@ class WebSocketClient:
         try:
             async with self.req_session.ws_connect(
                 self._url,
-                auth=self._auth,
                 heartbeat=WS_HEARTBEAT,
-                headers=WS_HEADERS,
+                headers=self._headers,
                 timeout=WS_TIMEOUT,
                 receive_timeout=self._hbwait + WS_HB_GRACE,
                 ssl=self.sslcontext,

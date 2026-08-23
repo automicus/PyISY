@@ -2,9 +2,4 @@ pytest>=9.1.1
 pytest-asyncio>=1.4.0
 pytest-cov>=7.1.0
 syrupy>=5.5.3
-aioresponses>=0.7.9
-# aioresponses 0.7.9 (latest release) predates aiohttp 3.14's new required
-# ClientResponse `stream_writer` kwarg -- fix is open upstream but unreleased:
-# https://github.com/pnuckowski/aioresponses/pull/288. Remove this cap once
-# a released aioresponses version picks it up.
-aiohttp<3.14
+aiointercept>=0.1.9

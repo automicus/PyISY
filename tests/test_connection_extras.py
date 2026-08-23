@@ -11,7 +11,7 @@ from unittest.mock import AsyncMock, patch
 
 import aiohttp
 import pytest
-from aioresponses import aioresponses
+from aiointercept import aiointercept
 
 from pyisy.connection import (
     EMPTY_XML_RESPONSE,
@@ -121,7 +121,7 @@ async def test_ping_returns_true_on_response(conn: Connection) -> None:
     True if the controller responds at all (200 or 404 are both
     "alive")."""
     url = conn.compile_url(["ping"])
-    with aioresponses() as mocked:
+    async with aiointercept(mock_external_urls=True) as mocked:
         mocked.get(url, status=200, body="<x/>")
         assert await conn.ping() is True
 
@@ -131,8 +131,8 @@ async def test_ping_returns_false_on_unreachable(conn: Connection) -> None:
     so ping returns True. Use a connection error to simulate
     unreachable."""
     url = conn.compile_url(["ping"])
-    with aioresponses() as mocked:
-        mocked.get(url, exception=aiohttp.ClientConnectionError("boom"), repeat=True)
+    async with aiointercept(mock_external_urls=True) as mocked:
+        mocked.get(url, exception=True, repeat=True)
         assert await conn.ping() is False
 
 
@@ -141,7 +141,7 @@ async def test_get_description_builds_desc_path(conn: Connection) -> None:
     ``/rest/`` and points at the UPnP-style ``/desc`` document. We
     stub ``request`` directly because the real ``request`` crashes on
     URLs that don't contain ``"rest"`` (filed as #488); once that's
-    fixed, this test can switch to an aioresponses round-trip."""
+    fixed, this test can switch to an aiointercept round-trip."""
     conn.request = AsyncMock(return_value="<root/>")
     result = await conn.get_description()
     url = conn.request.await_args.args[0]
@@ -252,9 +252,10 @@ async def test_request_503_falls_through_to_retry_and_returns_none(
     branch. With backoff exhausted (5 retries x small sleep), the
     function eventually returns None."""
     url = conn.compile_url(["status"])
-    with aioresponses() as mocked, patch("pyisy.connection.RETRY_BACKOFF", [0, 0, 0, 0, 0]):
-        mocked.get(url, status=503, repeat=True)
-        result = await conn.request(url)
+    with patch("pyisy.connection.RETRY_BACKOFF", [0, 0, 0, 0, 0]):
+        async with aiointercept(mock_external_urls=True) as mocked:
+            mocked.get(url, status=503, repeat=True)
+            result = await conn.request(url)
     assert result is None
 
 
@@ -264,9 +265,10 @@ async def test_request_empty_xml_response_falls_through_to_retry(
     """A 200 OK with ``<?xml ... ?>`` and nothing else is treated as
     "controller serving stale empty doc" and falls into retry/backoff."""
     url = conn.compile_url(["nodes"])
-    with aioresponses() as mocked, patch("pyisy.connection.RETRY_BACKOFF", [0, 0, 0, 0, 0]):
-        mocked.get(url, status=200, body=EMPTY_XML_RESPONSE, repeat=True)
-        result = await conn.request(url)
+    with patch("pyisy.connection.RETRY_BACKOFF", [0, 0, 0, 0, 0]):
+        async with aiointercept(mock_external_urls=True) as mocked:
+            mocked.get(url, status=200, body=EMPTY_XML_RESPONSE, repeat=True)
+            result = await conn.request(url)
     assert result is None
 
 
@@ -275,11 +277,8 @@ async def test_request_client_response_error_returns_none(conn: Connection) -> N
     are not retried — the controller is broken in a way that won't
     recover. Returns None unless ``retries=None``."""
     url = conn.compile_url(["nodes"])
-    with aioresponses() as mocked:
-        mocked.get(
-            url,
-            exception=aiohttp.ClientResponseError(request_info=None, history=(), status=502, message="bad"),
-        )
+    err = aiohttp.ClientResponseError(request_info=None, history=(), status=502, message="bad")
+    with patch.object(conn.req_session, "get", side_effect=err):
         result = await conn.request(url)
     assert result is None
 
@@ -296,16 +295,13 @@ async def test_request_client_response_error_with_ok404_returns_empty(
     into ``ok404=True`` (variable defs, network resources) should see
     that absorbed as ``""`` rather than an ERROR-level log + None."""
     url = conn.compile_url(["vars", "definitions", "1"])
-    with aioresponses() as mocked:
-        mocked.get(
-            url,
-            exception=aiohttp.ClientResponseError(
-                request_info=None,
-                history=(),
-                status=400,
-                message="Expected HTTP/, RTSP/ or ICE/:",
-            ),
-        )
+    err = aiohttp.ClientResponseError(
+        request_info=None,
+        history=(),
+        status=400,
+        message="Expected HTTP/, RTSP/ or ICE/:",
+    )
+    with patch.object(conn.req_session, "get", side_effect=err):
         result = await conn.request(url, ok404=True)
     assert result == ""
 
@@ -336,10 +332,11 @@ async def test_request_ssl_error_always_raises_connection_error(
         MagicMock(),
         ssl.SSLError(1, "[SSL: UNSUPPORTED_PROTOCOL] unsupported protocol"),
     )
-    with aioresponses() as mocked:
-        mocked.get(url, exception=ssl_err)
-        with pytest.raises(ISYConnectionError, match="SSL/TLS error") as excinfo:
-            await conn.request(url)
+    with (
+        patch.object(conn.req_session, "get", side_effect=ssl_err),
+        pytest.raises(ISYConnectionError, match="SSL/TLS error") as excinfo,
+    ):
+        await conn.request(url)
     # Cause chain preserves the original aiohttp SSL error for
     # callers / log handlers that want to introspect it.
     assert isinstance(excinfo.value.__cause__, aiohttp.ClientSSLError)
@@ -358,10 +355,11 @@ async def test_request_ssl_error_raises_on_test_connection_path(
 
     url = conn.compile_url(["config"])
     ssl_err = aiohttp.ClientConnectorSSLError(MagicMock(), ssl.SSLError(1, "unsupported protocol"))
-    with aioresponses() as mocked:
-        mocked.get(url, exception=ssl_err)
-        with pytest.raises(ISYConnectionError, match="SSL/TLS error"):
-            await conn.request(url, retries=None)
+    with (
+        patch.object(conn.req_session, "get", side_effect=ssl_err),
+        pytest.raises(ISYConnectionError, match="SSL/TLS error"),
+    ):
+        await conn.request(url, retries=None)
 
 
 async def test_request_legacy_reneg_failure_enables_compat_and_retries() -> None:
@@ -393,12 +391,22 @@ async def test_request_legacy_reneg_failure_enables_compat_and_retries() -> None
                 "[SSL: UNSAFE_LEGACY_RENEGOTIATION_DISABLED] unsafe legacy renegotiation disabled",
             ),
         )
-        with aioresponses() as mocked:
+        real_get = https_conn.req_session.get
+        attempts = 0
+
+        def _get(*args: object, **kwargs: object) -> object:
             # First call: handshake refusal. Second call (after the
             # retry flips the flag): success.
-            mocked.get(url, exception=reneg_err)
+            nonlocal attempts
+            attempts += 1
+            if attempts == 1:
+                raise reneg_err
+            return real_get(*args, **kwargs)
+
+        async with aiointercept(mock_external_urls=True) as mocked:
             mocked.get(url, status=200, body="<configuration/>")
-            result = await https_conn.request(url)
+            with patch.object(https_conn.req_session, "get", side_effect=_get):
+                result = await https_conn.request(url)
 
         assert result == "<configuration/>"
         assert https_conn.sslcontext.options & OP_LEGACY_SERVER_CONNECT
@@ -424,10 +432,11 @@ async def test_request_legacy_reneg_does_not_trigger_for_unrelated_ssl_errors() 
             MagicMock(),
             ssl.SSLError(1, "[SSL: UNSUPPORTED_PROTOCOL] unsupported protocol"),
         )
-        with aioresponses() as mocked:
-            mocked.get(url, exception=proto_err)
-            with pytest.raises(ISYConnectionError, match="SSL/TLS error"):
-                await https_conn.request(url)
+        with (
+            patch.object(https_conn.req_session, "get", side_effect=proto_err),
+            pytest.raises(ISYConnectionError, match="SSL/TLS error"),
+        ):
+            await https_conn.request(url)
 
         # Flag must remain OFF — the user's security posture isn't
         # silently weakened on every SSL failure.
@@ -443,7 +452,7 @@ async def test_request_non_rest_url_does_not_crash(conn: Connection) -> None:
     a ``/desc`` URL that lacks that substring, so the happy path used to
     raise ``IndexError`` before the body could be returned."""
     url = "http://h:80/desc"
-    with aioresponses() as mocked:
+    async with aiointercept(mock_external_urls=True) as mocked:
         mocked.get(url, status=200, body="<root/>")
         result = await conn.request(url)
     assert result == "<root/>"
@@ -454,16 +463,17 @@ async def test_request_retry404_eventually_returns_none(conn: Connection) -> Non
     instead of returning immediately. After the retry budget is spent
     the result is still None."""
     url = conn.compile_url(["nodes", "X", "cmd", "DON"])
-    with aioresponses() as mocked, patch("pyisy.connection.RETRY_BACKOFF", [0, 0, 0, 0, 0]):
-        mocked.get(url, status=404, repeat=True)
-        result = await conn.request(url, retry404=True)
+    with patch("pyisy.connection.RETRY_BACKOFF", [0, 0, 0, 0, 0]):
+        async with aiointercept(mock_external_urls=True) as mocked:
+            mocked.get(url, status=404, repeat=True)
+            result = await conn.request(url, retry404=True)
     assert result is None
 
 
 async def test_test_connection_returns_config_on_success(conn: Connection) -> None:
     url = conn.compile_url(["config"])
     body = "<configuration/>"
-    with aioresponses() as mocked:
+    async with aiointercept(mock_external_urls=True) as mocked:
         mocked.get(url, status=200, body=body)
         result = await conn.test_connection()
     assert result == body

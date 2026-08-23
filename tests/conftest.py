@@ -233,3 +233,9 @@ async def isy(fake_connection: FakeConnection) -> ISY:
     finally:
         # FakeConnection.close is an AsyncMock; shutdown() awaits it cleanly.
         await isy.shutdown()
+
+
+@pytest.fixture(autouse=True)
+def intercept_ip_hosts(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Route IP literal hosts through aiohttp's resolver for aiointercept."""
+    monkeypatch.setattr("aiointercept.core.is_ip_address", lambda _host: False)
