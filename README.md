@@ -34,6 +34,7 @@ python3 -m pyisy http://your-isy-url:port username password
 import asyncio
 from pyisy import ISY
 
+
 async def main():
     # Connect to ISY controller
     isy = ISY("192.168.1.10", 80, "admin", "password")
@@ -51,6 +52,7 @@ async def main():
 
     # Shutdown the connection
     await isy.shutdown()
+
 
 if __name__ == "__main__":
     asyncio.run(main())
