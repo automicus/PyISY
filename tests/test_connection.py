@@ -78,6 +78,16 @@ async def test_connection_info_contents(conn: Connection) -> None:
     assert "auth" in info
 
 
+async def test_auth_header_uses_latin1_encoding() -> None:
+    """Non-ASCII credentials must encode as latin-1, the bytes the
+    deprecated ``aiohttp.BasicAuth`` sent, so upgrades don't 401."""
+    c = Connection(address="h", port=80, username="admin", password="p\u00e4ssword")
+    try:
+        assert c.connection_info["auth"] == "Basic YWRtaW46cORzc3dvcmQ="
+    finally:
+        await c.close()
+
+
 async def test_request_401_raises_invalid_auth(conn: Connection) -> None:
     """A ``401 Unauthorized`` from the controller must surface as
     ``ISYInvalidAuthError`` rather than being silently retried."""
