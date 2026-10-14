@@ -52,6 +52,7 @@ ignore = [
     "TRY003", # nice to have
     "PLR2004", # to many to fix right now
     "PLR0913",  # ship has sail on this one
+    "PLR0917",  # ship has sail on this one (public positional-arg API)
     "PLR0911",  # ship has sail on this one
     "PLR0912", # hard to fix without a major refactor
     "PLR0915", # hard to fix without a major refactor
