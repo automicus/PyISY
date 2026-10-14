@@ -88,7 +88,10 @@ class Connection:
         self._port = port
         self._username = username
         self._password = password
-        self._auth = aiohttp.BasicAuth(self._username, self._password)
+        # latin-1 matches the bytes aiohttp.BasicAuth sent, so existing non-ASCII
+        # credentials keep authenticating; encode_basic_auth defaults to utf-8.
+        self._auth_header = aiohttp.encode_basic_auth(self._username, self._password, encoding="latin-1")
+        self._headers = {**HTTP_HEADERS, "Authorization": self._auth_header}
         self._webroot = webroot.rstrip("/")
         self.req_session = websession
         self._tls_ver = tls_ver
@@ -126,7 +129,7 @@ class Connection:
     def connection_info(self) -> dict[str, str | int | bytes | None]:
         """Return the connection info required to connect to the ISY."""
         connection_info = {}
-        connection_info["auth"] = self._auth.encode()
+        connection_info["auth"] = self._auth_header
         connection_info["addr"] = self._address
         connection_info["port"] = int(self._port)
         connection_info["passwd"] = self._password
@@ -176,8 +179,7 @@ class Connection:
                 self.semaphore,
                 self.req_session.get(
                     url,
-                    auth=self._auth,
-                    headers=HTTP_HEADERS,
+                    headers=self._headers,
                     timeout=HTTP_TIMEOUT,
                     ssl=self.sslcontext,
                 ) as res,

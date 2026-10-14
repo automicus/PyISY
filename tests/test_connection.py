@@ -5,7 +5,7 @@ from __future__ import annotations
 from unittest.mock import patch
 
 import pytest
-from aioresponses import aioresponses
+from aiointercept import aiointercept
 
 from pyisy.connection import (
     MAX_HTTP_CONNECTIONS_IOX,
@@ -78,11 +78,21 @@ async def test_connection_info_contents(conn: Connection) -> None:
     assert "auth" in info
 
 
+async def test_auth_header_uses_latin1_encoding() -> None:
+    """Non-ASCII credentials must encode as latin-1, the bytes the
+    deprecated ``aiohttp.BasicAuth`` sent, so upgrades don't 401."""
+    c = Connection(address="h", port=80, username="admin", password="p\u00e4ssword")
+    try:
+        assert c.connection_info["auth"] == "Basic YWRtaW46cORzc3dvcmQ="
+    finally:
+        await c.close()
+
+
 async def test_request_401_raises_invalid_auth(conn: Connection) -> None:
     """A ``401 Unauthorized`` from the controller must surface as
     ``ISYInvalidAuthError`` rather than being silently retried."""
     url = conn.compile_url(["config"])
-    with aioresponses() as mocked:
+    async with aiointercept(mock_external_urls=True) as mocked:
         mocked.get(url, status=401, repeat=True)
         with pytest.raises(ISYInvalidAuthError):
             await conn.request(url)
@@ -94,13 +104,11 @@ async def test_test_connection_raises_when_config_unreachable(
     """``test_connection`` re-raises as ``ISYConnectionError`` when the
     config endpoint never responds — this is what ``ISY.initialize`` relies
     on to fail fast on bad creds / unreachable host."""
-    import aiohttp
-
     url = conn.compile_url(["config"])
-    with aioresponses() as mocked:
+    async with aiointercept(mock_external_urls=True) as mocked:
         # aiohttp.ClientError is caught by Connection.request and re-raised
         # as ISYConnectionError when retries=None (the test_connection path).
-        mocked.get(url, exception=aiohttp.ClientConnectionError("boom"))
+        mocked.get(url, exception=True)
         with pytest.raises(ISYConnectionError):
             await conn.test_connection()
 
@@ -109,7 +117,7 @@ async def test_request_404_returns_none_without_retry404(conn: Connection) -> No
     """A plain 404 (no ``retry404=True``) must return ``None`` without
     falling into the retry/backoff loop."""
     url = conn.compile_url(["nodes", "missing"])
-    with aioresponses() as mocked:
+    async with aiointercept(mock_external_urls=True) as mocked:
         mocked.get(url, status=404)
         result = await conn.request(url)
     assert result is None
@@ -119,7 +127,7 @@ async def test_request_404_with_ok404_returns_empty_string(conn: Connection) -> 
     """``ok404=True`` makes 404 a success indicator returning ``""`` — used by
     ``ping`` / ``get_network`` where a 404 means "feature not present"."""
     url = conn.compile_url(["network", "resources"])
-    with aioresponses() as mocked:
+    async with aiointercept(mock_external_urls=True) as mocked:
         mocked.get(url, status=404)
         result = await conn.request(url, ok404=True)
     assert result == ""
@@ -128,7 +136,7 @@ async def test_request_404_with_ok404_returns_empty_string(conn: Connection) -> 
 async def test_request_200_returns_body(conn: Connection) -> None:
     url = conn.compile_url(["config"])
     body = "<configuration><x/></configuration>"
-    with aioresponses() as mocked:
+    async with aiointercept(mock_external_urls=True) as mocked:
         mocked.get(url, status=200, body=body)
         result = await conn.request(url)
     assert result == body

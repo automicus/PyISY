@@ -53,6 +53,19 @@ async def ws_client(stub_isy) -> WebSocketClient:
     )
 
 
+async def test_auth_header_uses_latin1_encoding(stub_isy) -> None:
+    """Websocket auth must send the same latin-1 bytes as the REST client."""
+    client = WebSocketClient(
+        isy=stub_isy,
+        address="127.0.0.1",
+        port=80,
+        username="admin",
+        password="p\u00e4ssword",
+        websession=MagicMock(),
+    )
+    assert client._headers["Authorization"] == "Basic YWRtaW46cORzc3dvcmQ="
+
+
 # -- heartbeat_time ---------------------------------------------------
 
 
