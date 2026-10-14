@@ -1,4 +1,4 @@
 codespell>=2.4.3
-pre-commit>=4.6.0
+pre-commit>=4.6.2
 sphinx>=9.0.4
 recommonmark>=0.7.1
